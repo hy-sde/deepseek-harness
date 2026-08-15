@@ -24,6 +24,10 @@ A self-referential agent that can inspect and change its in-memory Cordis plugin
 
 An opt-in Web overlay for durable, Session-local reminders. It supports positive whole-second `after_seconds` delays and absolute `at` targets through `schedule_create`, `schedule_list`, and `schedule_delete`; active reminders persist in the original Session, resume when that Session becomes live again, and do not run while it is cold. Run `dsh web --patch examples/web-schedule/cordis.yml`; see [web-schedule/README.md](web-schedule/README.md) for absolute-time authority, delivery, and recovery boundaries.
 
+## logseq
+
+An opt-in Web overlay that ports the oh-my-pi `logseq-diary.ts` and `logseq-work.ts` extensions: the `logseq_diary_ingest` and `logseq_work_log_ingest` model tools plus `/diary` and `/diary-work` slash commands, driving the `logseq` CLI against a graph. Run `dsh web --patch examples/logseq/cordis.yml`; see [logseq/README.md](logseq/README.md).
+
 ## acp-agent
 
 An Agent Client Protocol automation server for programmatic clients, with session, permission, and cancellation support. See the [ACP example reference](acp-agent/README.md).

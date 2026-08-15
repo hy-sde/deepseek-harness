@@ -183,6 +183,12 @@
     - id: ui-sidebar
       name: '@deepseek-ai/dsh-client-ui-sidebar'
 
+    # Countdown timer cell beside Settings at the sidebar foot: start /
+    # restart, preset or custom duration (default 45 min), and a chime + Web
+    # notification when the time is up. Name comes from this package.
+    - id: ui-countdown
+      name: '@deepseek-ai/dsh-client-ui-countdown'
+
     - id: ui-settings
       name: '@deepseek-ai/dsh-client-ui-settings'
 

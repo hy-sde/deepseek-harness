@@ -1,0 +1,6 @@
+# Opt-in LogSeq patch over the shipped Web composition. Adds the diary and
+# work-log ingest tools plus the /diary and /diary-work slash commands.
+
+- insert:
+    - id: logseq-example
+      name: '@deepseek-ai/dsh-logseq-example'

@@ -607,6 +607,11 @@
         "src/**/*.ts"
       ]
     },
+    "packages/examples/logseq-example": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
     "packages/subagent/subagent-spawn-in-process": {
       "entry": [
         "tests/**/*.spec.ts",
