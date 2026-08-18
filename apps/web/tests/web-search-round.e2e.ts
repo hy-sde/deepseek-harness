@@ -1,15 +1,12 @@
 // Web e2e scenario for the shipped default search composition. A real browser
-// drives `web_search`; the model stream is replayed while the real DeepSeek
-// provider calls a deterministic local Anthropic-compatible endpoint through
-// the real credentials service.
+// drives `web_search`; the model stream is replayed while the real public
+// provider searches through a deterministic engine HTML document served at the
+// network boundary — one stubbed fetch, no external search traffic.
 import { readFile } from 'node:fs/promises'
-import { createServer, type Server } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
-import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import { afterAll, beforeAll, describe, expect, it, onTestFailed, vi } from 'vitest'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { WEB_SEARCH_MAX_RESULTS } from '@deepseek-ai/dsh-tool-web'
 import {
@@ -24,8 +21,9 @@ const UI_EXPECTED = fileURLToPath(new URL('./snapshots/web-search-round/ui.expec
 const MODE = webSnapshotMode()
 const QUERY = 'DeepSeek Harness snapshot search'
 const PROMPT = `Use web_search to search exactly "${QUERY}". Then reply exactly SEARCH_DONE and stop.`
-const SEARCH_CREDENTIAL_REF = credentialRef('DSH_WEB_SEARCH_E2E_KEY')
-const SEARCH_CREDENTIAL = 'snapshot-search-key'
+
+/** The single engine endpoint the scenario exercises through the stubbed network boundary. */
+const ENGINE_ENDPOINT = 'https://html.duckduckgo.com/html/'
 
 /**
  * Provider results the double returns, exceeding the shipped `searchMaxResults`
@@ -58,82 +56,57 @@ function resultPageAge(ordinal: number): string {
 /** The 1-based provider ordinals, in provider order. */
 const RESULT_ORDINALS = Array.from({ length: PROVIDER_RESULT_COUNT }, (_value, index) => index + 1)
 
-interface CapturedSearchRequest {
-  path: string
-  apiKey: string | undefined
-  body: unknown
+interface CapturedEngineFetch {
+  url: string
+  body: string | undefined
 }
 
-/** Start the deterministic DeepSeek Messages double used by the real provider. */
-async function startSearchServer(captured: CapturedSearchRequest[]): Promise<{ server: Server; baseURL: string }> {
-  const server = createServer((request, response) => {
-    let body = ''
-    request.setEncoding('utf8')
-    request.on('data', (chunk: string) => { body += chunk })
-    request.on('end', () => {
-      captured.push({
-        path: request.url ?? '',
-        apiKey: typeof request.headers['x-api-key'] === 'string' ? request.headers['x-api-key'] : undefined,
-        body: JSON.parse(body) as unknown,
+/** The static result page the stubbed network boundary serves to the engine. */
+function engineResultHtml(): string {
+  return `<html><body>${RESULT_ORDINALS.map(ordinal => `
+    <div class="result">
+      <a class="result__a" href="//duckduckgo.com/l/?uddg=${encodeURIComponent(resultUrl(ordinal))}">${resultTitle(ordinal)}</a>
+      <div class="result__snippet">${resultSnippet(ordinal)}</div>
+      <div class="result__timestamp">${resultPageAge(ordinal)}</div>
+    </div>`).join('')}
+  </body></html>`
+}
+
+/**
+ * Stub the global network boundary for the real public provider: the provider
+ * runs in this process, so a `fetch` stub scoped to the engine endpoint serves
+ * a deterministic result page while every other request passes through to the
+ * real fetch. The search therefore keeps the genuine provider code path.
+ */
+function stubEngineFetch(captured: CapturedEngineFetch[]): void {
+  const originalFetch = globalThis.fetch
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    if (url === ENGINE_ENDPOINT) {
+      captured.push({ url, body: typeof init?.body === 'string' ? init.body : undefined })
+      return new Response(engineResultHtml(), {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
       })
-      response.writeHead(200, { 'content-type': 'application/json' })
-      response.end(JSON.stringify({
-        content: [
-          {
-            type: 'text',
-            text: `Found ${PROVIDER_RESULT_COUNT} sources.`,
-            citations: RESULT_ORDINALS.map(ordinal => ({
-              type: 'web_search_result_location',
-              url: resultUrl(ordinal),
-              cited_text: resultSnippet(ordinal),
-            })),
-          },
-          {
-            type: 'web_search_tool_result',
-            content: RESULT_ORDINALS.map(ordinal => ({
-              type: 'web_search_result',
-              url: resultUrl(ordinal),
-              title: resultTitle(ordinal),
-              page_age: resultPageAge(ordinal),
-            })),
-          },
-        ],
-      }))
-    })
-  })
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => {
-      server.off('error', reject)
-      resolve()
-    })
-  })
-  const address = server.address() as AddressInfo
-  return { server, baseURL: `http://127.0.0.1:${address.port}` }
+    }
+    return originalFetch(input as RequestInfo | URL, init)
+  }))
 }
 
 describe('web e2e: shipped default web search', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
-  let searchServer: Server | undefined
-  let searchBaseURL: string
   let tripwire: ReturnType<typeof watchConsole>
-  const searchRequests: CapturedSearchRequest[] = []
+  const engineFetches: CapturedEngineFetch[] = []
   const sessionEvents: SessionEvent[] = []
 
   beforeAll(async () => {
-    const search = await startSearchServer(searchRequests)
-    searchServer = search.server
-    searchBaseURL = search.baseURL
+    stubEngineFetch(engineFetches)
     scaffold = await launchWebScaffold({
-      deepSeekSearch: {
-        baseURL: search.baseURL,
-        apiKeyEnv: SEARCH_CREDENTIAL_REF,
-      },
+      publicSearch: { engines: ['duckduckgo'] },
       ...(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 }),
     })
-    await scaffold.ctx.credentials.set(SEARCH_CREDENTIAL_REF, SEARCH_CREDENTIAL)
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
@@ -144,18 +117,9 @@ describe('web e2e: shipped default web search', () => {
   }, 120_000)
 
   afterAll(async () => {
+    vi.unstubAllGlobals()
     await browser?.close()
     await scaffold?.close()
-    await new Promise<void>((resolve, reject) => {
-      if (searchServer === undefined) {
-        resolve()
-        return
-      }
-      searchServer.close((error) => {
-        if (error === undefined) resolve()
-        else reject(error)
-      })
-    })
   })
 
   it('drives the recorded search to a settled turn (all modes)', async () => {
@@ -173,28 +137,11 @@ describe('web e2e: shipped default web search', () => {
   }, 200_000)
 
   it.skipIf(MODE === 'record')('uses the real provider and persists the capped structured result', () => {
-    expect(searchRequests).toHaveLength(1)
-    expect(searchRequests[0]).toMatchObject({
-      path: '/messages',
-      apiKey: SEARCH_CREDENTIAL,
-      body: {
-        messages: [{
-          role: 'user',
-          content: [{ type: 'text', text: `Perform a web search for the query: ${QUERY}` }],
-        }],
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      },
-    })
-
-    const auxiliaryRequest = sessionEvents.find(
-      (event): event is Extract<SessionEvent, { type: 'web/deepseek-search-llm-request' }> =>
-        event.type === 'web/deepseek-search-llm-request',
-    )
-    expect(auxiliaryRequest?.data).toEqual({
-      endpoint: `${searchBaseURL}/messages`,
-      apiVersion: '2023-06-01',
-      body: searchRequests[0]?.body,
-    })
+    // The real public provider made exactly one engine request through the
+    // stubbed network boundary: the single configured engine's result page.
+    expect(engineFetches).toHaveLength(1)
+    expect(engineFetches[0]).toMatchObject({ url: ENGINE_ENDPOINT })
+    expect(engineFetches[0]?.body).toContain(`q=${encodeURIComponent(QUERY)}`)
 
     const searchCall = sessionEvents.find(
       (event): event is Extract<SessionEvent, { type: 'tool/call' }> =>

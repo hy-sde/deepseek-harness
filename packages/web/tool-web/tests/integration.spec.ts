@@ -1,9 +1,9 @@
 /**
  * Integration: the real fetch backend (`dsh-web-fetch-http`) + a real search provider
- * (`dsh-web-search-exa`) + the real seam (`dsh-web`) + the model tool (`dsh-tool-web`) + the
+ * (`dsh-web-search-public`) + the real seam (`dsh-web`) + the model tool (`dsh-tool-web`) + the
  * tool-call timeout policy (`dsh-tool-call-timeout-policy`), exercised through `ctx.tools.execute()` —
  * nothing bypasses the tool registry. Fetch verifies world effects against loopback HTTP; search
- * uses the real Exa provider with only its network boundary stubbed.
+ * uses the real public provider against a deterministic engine HTML document.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,7 +15,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import WebRuntime from '@deepseek-ai/dsh-web'
 import * as WebFetchLocal from '@deepseek-ai/dsh-web-fetch-http'
-import * as WebSearchExa from '@deepseek-ai/dsh-web-search-exa'
+import * as WebSearchPublic from '@deepseek-ai/dsh-web-search-public'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import * as TimeoutPolicy from '@deepseek-ai/dsh-tool-call-timeout-policy'
 
@@ -38,9 +38,9 @@ beforeEach(async () => {
   ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
-  await ctx.plugin(WebRuntime, { searchProvider: WebSearchExa.EXA_PROVIDER_ID, fetchProvider: WebFetchLocal.LOCAL_FETCH_PROVIDER_ID })
+  await ctx.plugin(WebRuntime, { searchProvider: WebSearchPublic.PUBLIC_PROVIDER_ID, fetchProvider: WebFetchLocal.LOCAL_FETCH_PROVIDER_ID })
   await ctx.plugin(WebFetchLocal, {})
-  await ctx.plugin(WebSearchExa, { apiKey: 'exa-key', baseURL: 'https://api.exa.test' })
+  await ctx.plugin(WebSearchPublic, { engines: ['duckduckgo'], timeoutMs: 1000 })
   // The shipped deployment shape: the tool-call budget is declared by tool-web
   // config (default 30s, attached as ToolDefinition.timeoutMs) and enforced by
   // the zero-config timeout-policy plugin, set above the provider backstop so the
@@ -91,11 +91,17 @@ describe('web_fetch integration over the real backend', () => {
   })
 })
 
-describe('web_search integration over the real Exa provider', () => {
+describe('web_search integration over the real public provider', () => {
   it('runs web_search end-to-end and formats the provider result', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(
-      JSON.stringify({ results: [{ url: 'https://result.test', title: 'Result', highlights: ['a highlight'] }] }),
-      { status: 200, headers: { 'content-type': 'application/json' } },
+      `<html><body>
+        <div class="result">
+          <a class="result__a" href="//duckduckgo.com/l/?uddg=${encodeURIComponent('https://result.test')}">Result</a>
+          <div class="result__snippet">a highlight</div>
+          <div class="result__timestamp">2026-07-01</div>
+        </div>
+      </body></html>`,
+      { status: 200, headers: { 'content-type': 'text/html' } },
     )))
     const out = await call('web_search', { query: 'deepseek-official' })
     expect(out.isError).toBe(false)

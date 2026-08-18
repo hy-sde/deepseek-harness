@@ -236,15 +236,14 @@ export interface LaunchOptions {
   /** Leave the current welcome notice pending; ordinary scenarios pre-acknowledge it before browser boot. */
   welcomeNoticePending?: boolean
   /**
-   * Patch the shipped DeepSeek search row to a deterministic endpoint and
-   * credential reference. Browser search scenarios keep the real provider and
-   * credentials seam while avoiding external search traffic and ambient keys.
+   * Patch the shipped public search row down to a deterministic engine set.
+   * Browser search scenarios keep the real public provider and seam while
+   * avoiding external search traffic: a single engine means one engine fetch,
+   * which the scenario stubs at the network boundary.
    */
-  deepSeekSearch?: {
-    /** Anthropic-compatible base URL; the provider appends `/messages`. */
-    baseURL: string
-    /** Credential reference resolved by the shipped search provider. */
-    apiKeyEnv: string
+  publicSearch?: {
+    /** Engine ids tried in order; a single engine keeps a scenario deterministic. */
+    engines: string[]
   }
   /**
    * Replace the roster the scaffold mounts by default (the shipped directory
@@ -476,14 +475,11 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         { id: 'tool-cordis', name: '@deepseek-ai/dsh-tool-cordis' },
       ] }]
       : [],
-    ...options.deepSeekSearch === undefined
+    ...options.publicSearch === undefined
       ? []
       : [{
-        id: 'web-search-deepseek',
-        config: {
-          apiKeyEnv: options.deepSeekSearch.apiKeyEnv,
-          baseURL: options.deepSeekSearch.baseURL,
-        },
+        id: 'web-search-public',
+        config: { engines: options.publicSearch.engines },
       }],
     ...mode === 'record' || options.deepSeekMissingCredential === true
       ? []

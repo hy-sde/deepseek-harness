@@ -4,7 +4,7 @@ English | [中文](README.zh.md)
 
 A credential-free `WebSearchProvider` for the harness [web capability seam](../web/README.md) (`ctx.web`). With no API key or environment variable, it chains five public search engines — Startpage first, then DuckDuckGo → Ecosia → Google → Mojeek — and returns the first engine that yields results. If an engine returns no results, times out, or is bot-challenged, the chain advances to the next engine, so searches keep working as long as at least one engine responds.
 
-This is an **implementation** package: it registers a provider into `ctx.web`, it does not own the `ctx.web` key and it does not register a model-facing tool (that is `@deepseek-ai/dsh-tool-web`). Like `@deepseek-ai/dsh-web-search-deepseek`, it is a function/namespace plugin (`inject: ['web']`) that registers its backend, not a default-export service.
+This is an **implementation** package: it registers a provider into `ctx.web`, it does not own the `ctx.web` key and it does not register a model-facing tool (that is `@deepseek-ai/dsh-tool-web`). It is a function/namespace plugin (`inject: ['web']`) that registers its backend, not a default-export service.
 
 ## Config
 

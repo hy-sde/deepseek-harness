@@ -4,7 +4,7 @@
 
 一个无需凭据的 `WebSearchProvider`，用于 harness [web 能力 seam](../web/README.md)（`ctx.web`）。无需 API 密钥或环境变量，它按顺序链接五个公共搜索引擎——先 Startpage，再 DuckDuckGo → Ecosia → Google → Mojeek——并返回第一个产生结果的引擎。若某引擎返回零结果、超时或被风控拦截，链路会推进到下一个引擎，因此只要至少一个引擎有响应，检索就能继续工作。
 
-这是一个**实现**包：它向 `ctx.web` 注册提供方，不拥有 `ctx.web` 键，也不注册面向模型的工具（后者属于 `@deepseek-ai/dsh-tool-web`）。与 `@deepseek-ai/dsh-web-search-deepseek` 一样，它是函数／命名空间插件（`inject: ['web']`），负责注册后端，而非默认导出服务。
+这是一个**实现**包：它向 `ctx.web` 注册提供方，不拥有 `ctx.web` 键，也不注册面向模型的工具（后者属于 `@deepseek-ai/dsh-tool-web`）。它是函数／命名空间插件（`inject: ['web']`），负责注册后端，而非默认导出服务。
 
 ## 配置
 
