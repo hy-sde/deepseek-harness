@@ -1,11 +1,14 @@
 /**
- * Pure protocol translation for the local host: what the server's capabilities allow, and how its
- * `Location`/`LocationLink`/`Hover` payloads normalize into the seam's closed result unions. No I/O
- * or process state — every function here is a pure transform, which the fake-stdio tests pin exactly.
+ * Pure protocol translation for the local host: what the server's capabilities allow, how its
+ * `Location`/`LocationLink`/`Hover` payloads and write-path `TextEdit`/`PublishDiagnostics`
+ * payloads normalize into the seam's contracts, and how returned formats apply to in-memory text.
+ * No I/O or process state — every function here is a pure transform, which the fake-stdio tests pin
+ * exactly.
  * @module @deepseek-ai/dsh-lsp-stdio/translate
  */
 
 import type {
+  LspDiagnostic,
   LspHover,
   LspLocation,
   LspOperation,
@@ -18,10 +21,12 @@ import type {
   WireLocation,
   WireLocationLink,
   WireMarkedString,
+  WirePosition,
   WireProviderCapability,
   WireRange,
   WireServerCapabilities,
   WireTextDocumentSyncKind,
+  WireTextEdit,
 } from './protocol.ts'
 
 /**
@@ -67,6 +72,15 @@ function supportsCapability(value: WireProviderCapability): boolean {
  */
 export function supportsOperation(capabilities: WireServerCapabilities, operation: LspOperation): boolean {
   return supportsCapability(capabilityValue(capabilities, operation))
+}
+
+/**
+ * Whether the server advertises `textDocument/formatting` support.
+ * @param capabilities - the server's `initialize` capabilities.
+ * @returns true when `documentFormattingProvider` is present.
+ */
+export function supportsFormatting(capabilities: WireServerCapabilities): boolean {
+  return supportsCapability(capabilities.documentFormattingProvider)
 }
 
 /**
@@ -227,6 +241,154 @@ function isMarkedString(value: unknown): value is WireMarkedString {
   if (value === null || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return typeof record.language === 'string' && typeof record.value === 'string'
+}
+
+/**
+ * Normalize a `textDocument/formatting` result into `TextEdit[]`. `null` — the protocol's no-edit
+ * marker — yields `[]`; any non-array payload or malformed member throws.
+ * @param payload - the raw `textDocument/formatting` result.
+ * @returns the validated edits (empty for `null`).
+ * @throws Error when the payload is structurally invalid.
+ */
+export function normalizeFormattingEdits(payload: unknown): WireTextEdit[] {
+  if (payload === null) return []
+  if (payload === undefined) throw malformedResponse('LSP formatting result was missing')
+  if (!Array.isArray(payload)) throw malformedResponse('LSP formatting result was not a TextEdit array or null')
+  const edits: WireTextEdit[] = []
+  for (const element of payload) {
+    if (element === null || typeof element !== 'object') {
+      throw malformedResponse('LSP formatting result contained a non-object entry')
+    }
+    const record = element as Record<string, unknown>
+    if (!isRange(record.range) || typeof record.newText !== 'string') {
+      throw malformedResponse('LSP formatting result contained a malformed TextEdit')
+    }
+    edits.push({ range: toRange(record.range), newText: record.newText })
+  }
+  return edits
+}
+
+/**
+ * Apply normalized `TextEdit`s to in-memory text. LSP requires edits in ascending position order
+ * without overlaps; applying in descending position order leaves every remaining edit's range valid
+ * as the suffix changes, and each position is clipped to the document so a server bug cannot corrupt
+ * the string math. Character offsets count UTF-16 code units, matching JS strings.
+ * @param text - the original document text.
+ * @param edits - the validated edits to apply (any order; sorted descending internally).
+ * @returns the edited text, unchanged for an empty edit list.
+ */
+export function applyEditsToText(text: string, edits: readonly WireTextEdit[]): string {
+  if (edits.length === 0) return text
+  const descending = [...edits].sort(compareEditsDescending)
+  let result = text
+  for (const edit of descending) {
+    const start = textOffset(result, edit.range.start)
+    const end = textOffset(result, edit.range.end)
+    result = result.slice(0, start) + edit.newText + result.slice(end)
+  }
+  return result
+}
+
+/**
+ * Normalize a `textDocument/publishDiagnostics` payload for the target document. Only a publish
+ * whose `uri` equals the target and whose `version` (when present) equals the opened version is
+ * accepted — a version-mismatched publish is a stale snapshot and is dropped. The result is sorted
+ * by range (start line, start char, end line, end char).
+ * @param payload - the raw `PublishDiagnostics` params, or `null`/a non-object (never published).
+ * @param targetUri - the URI the diagnostics were collected for.
+ * @param version - the document version the document was opened at.
+ * @returns the normalized, sorted diagnostics (empty for a non-matching or absent publish).
+ */
+export function normalizeDiagnostics(payload: unknown, targetUri: string, version: number): LspDiagnostic[] {
+  if (payload === null || typeof payload !== 'object') return []
+  const publish = payload as Record<string, unknown>
+  if (publish.uri !== targetUri) return []
+  if (publish.version !== undefined && publish.version !== version) return []
+  const raw = publish.diagnostics
+  if (!Array.isArray(raw)) return []
+  const diagnostics: LspDiagnostic[] = []
+  for (const element of raw) {
+    const diagnostic = toDiagnostic(element)
+    if (diagnostic !== null) diagnostics.push(diagnostic)
+  }
+  diagnostics.sort(compareDiagnostics)
+  return diagnostics
+}
+
+/** Validate and shape one untrusted wire diagnostic, or drop it when structurally invalid. */
+function toDiagnostic(value: unknown): LspDiagnostic | null {
+  if (value === null || typeof value !== 'object') return null
+  const record = value as Record<string, unknown>
+  if (!isRange(record.range) || typeof record.message !== 'string') return null
+  const severity = isSeverity(record.severity) ? record.severity : undefined
+  const source = typeof record.source === 'string' ? record.source : undefined
+  return {
+    range: toRange(record.range),
+    message: record.message,
+    ...(severity === undefined ? {} : { severity }),
+    ...(source === undefined ? {} : { source }),
+  }
+}
+
+/** Whether an untrusted value is a valid LSP severity (1 Error, 2 Warning, 3 Info, 4 Hint). */
+function isSeverity(value: unknown): value is 1 | 2 | 3 | 4 {
+  return value === 1 || value === 2 || value === 3 || value === 4
+}
+
+/** Sort two diagnostics by range: start line, start char, end line, end char. */
+function compareDiagnostics(a: LspDiagnostic, b: LspDiagnostic): number {
+  const byStart = comparePositions(a.range.start, b.range.start)
+  if (byStart !== 0) return byStart
+  return comparePositions(a.range.end, b.range.end)
+}
+
+/** Order two edits so the LATER one (in document order) is applied first. */
+function compareEditsDescending(a: WireTextEdit, b: WireTextEdit): number {
+  const byStart = comparePositions(b.range.start, a.range.start)
+  if (byStart !== 0) return byStart
+  return comparePositions(b.range.end, a.range.end)
+}
+
+/** Ascending document order: by line, then by UTF-16 character. */
+function comparePositions(a: WirePosition, b: WirePosition): number {
+  if (a.line !== b.line) return a.line - b.line
+  return a.character - b.character
+}
+
+/**
+ * The absolute offset of an LSP position in `text`, clipped to the document. Line terminators are
+ * `\n`, `\r\n`, or `\r`; a position past the last line clamps to the end, and a character past the
+ * line's end clamps to the line end.
+ */
+function textOffset(text: string, position: WirePosition): number {
+  let offset = 0
+  let line = 0
+  while (line < position.line && offset < text.length) {
+    const nl = text.indexOf('\n', offset)
+    const cr = text.indexOf('\r', offset)
+    const at = pickTerminator(nl, cr)
+    if (at === undefined) break
+    offset = at + (text[at] === '\r' && text[at + 1] === '\n' ? 2 : 1)
+    line++
+  }
+  if (line < position.line) return text.length
+  const end = lineEndIndex(text, offset)
+  return Math.min(offset + position.character, end)
+}
+
+/** The line terminator position at or after `from`, or `undefined` when the rest has none. */
+function lineEndIndex(text: string, from: number): number {
+  const nl = text.indexOf('\n', from)
+  const cr = text.indexOf('\r', from)
+  return pickTerminator(nl, cr) ?? text.length
+}
+
+/** The earliest of a `\n` and `\r` occurrence, preferring an equal-position candidate deterministically. */
+function pickTerminator(nl: number, cr: number): number | undefined {
+  if (nl < 0 && cr < 0) return undefined
+  if (cr < 0) return nl
+  if (nl < 0) return cr
+  return Math.min(nl, cr)
 }
 
 /** Create the stable structured error used for malformed server result payloads. */

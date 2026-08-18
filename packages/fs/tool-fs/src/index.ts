@@ -31,6 +31,8 @@ export interface Config {
   readMaxBytes?: number
   /** Files at or above this size stream instead of loading whole into memory. */
   readStreamMinSize?: number
+  /** Register the literal `edit` tool. Set false when a rich editor replaces it; default true. */
+  enableEdit?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -38,6 +40,7 @@ export const Config: z<Config> = z.object({
   readMaxLineLength: z.number().default(READ_MAX_LINE_LENGTH),
   readMaxBytes: z.number().default(READ_MAX_BYTES),
   readStreamMinSize: z.number().default(STREAM_MIN_SIZE),
+  enableEdit: z.boolean().default(true),
 })
 
 /** The shape after schemastery applied the defaults. */
@@ -75,5 +78,5 @@ export function apply(ctx: Context, config: Config): void {
   // the mounted ctx.fs confines (ctx.fs.sandboxMode).
   const sandbox = new FsSandboxController(ctx)
   applyWriteTool(ctx, sandbox)
-  applyEditTool(ctx, sandbox)
+  if (resolved.enableEdit) applyEditTool(ctx, sandbox)
 }

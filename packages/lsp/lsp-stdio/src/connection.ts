@@ -1,12 +1,12 @@
 /**
  * A JSON-RPC endpoint over one language server spawned through the subprocess
- * capability. Owns id correlation, outbound requests/notifications, and inbound
- * server→client requests: it answers `workspace/configuration` from static
- * config, and rejects `workspace/applyEdit` (this host never applies edits or
- * runs commands). It caps stderr, surfaces framing/decoder failures as a
- * fatal close, and exposes tree-scoped termination through the handle so the
- * instance owns teardown; group/tree mechanics live in the subprocess
- * Service Provider.
+ * capability. Owns id correlation, outbound requests/notifications, inbound
+ * server→client requests (it answers `workspace/configuration` from static
+ * config and rejects `workspace/applyEdit`), and a transient registry of
+ * notification listeners keyed by method. It caps stderr, surfaces
+ * framing/decoder failures as a fatal close, and exposes tree-scoped
+ * termination through the handle so the instance owns teardown; group/tree
+ * mechanics live in the subprocess Service Provider.
  * @module @deepseek-ai/dsh-lsp-stdio/connection
  */
 
@@ -68,6 +68,8 @@ export class LspConnection {
   private readonly stdin: Writable
   private readonly decoder: MessageDecoder
   private readonly pending = new Map<number, Pending>()
+  /** One set of transient listeners per server→client notification method. */
+  private readonly notificationListeners = new Map<string, Set<(params: unknown) => void>>()
   private nextId = 1
   private closeReason: Error | undefined
   /** Set once the process has fully exited; the instance awaits it during teardown. */
@@ -192,6 +194,29 @@ export class LspConnection {
   }
 
   /**
+   * Register a listener for one server→client notification method. Every notification method this
+   * host does not know about stays ignored; only registered methods are delivered.
+   * @param method - the JSON-RPC notification method (e.g. `textDocument/publishDiagnostics`).
+   * @param listener - the notification handler (must not throw).
+   * @returns a disposer that removes the listener; safe to call after close.
+   */
+  onNotification(method: string, listener: (params: unknown) => void): () => void {
+    let listeners = this.notificationListeners.get(method)
+    if (listeners === undefined) {
+      listeners = new Set()
+      this.notificationListeners.set(method, listeners)
+    }
+    listeners.add(listener)
+    return () => {
+      const current = this.notificationListeners.get(method)
+      if (current === undefined) return
+      current.delete(listener)
+      // Drop the empty set so a closed connection retains no per-method registry.
+      if (current.size === 0) this.notificationListeners.delete(method)
+    }
+  }
+
+  /**
    * Send a `$/cancelRequest` for an in-flight request id (best-effort; ignores write failure).
    * @param requestId - the numeric id of the request to cancel.
    */
@@ -251,10 +276,19 @@ export class LspConnection {
       return
     }
     if (typeof method === 'string') {
-      // A server→client notification (e.g. diagnostics, logs): ignored by this MVP host.
+      // A server→client notification (e.g. diagnostics): deliver to registered listeners only;
+      // every other notification remains ignored.
+      this.dispatchNotification(method, frame.params)
       return
     }
     if (typeof id === 'number') this.handleResponse(id, frame)
+  }
+
+  private dispatchNotification(method: string, params: unknown): void {
+    const listeners = this.notificationListeners.get(method)
+    if (listeners === undefined || listeners.size === 0) return
+    // A snapshot so a listener that disposes another listener during iteration cannot skip work.
+    for (const listener of [...listeners]) listener(params)
   }
 
   private async handleServerRequest(id: number | string, method: string, params: unknown): Promise<void> {

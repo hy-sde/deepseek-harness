@@ -865,7 +865,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'lsp',
     summary: 'The LSP capability seam (`ctx.lsp`).',
-    description: 'The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query execution; exposes exactly the four operations and no protocol escape hatch.',
+    description: 'The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query execution; exposes exactly the four operations and the two write-path operations, and no protocol escape hatch.',
     methods: [
       {
         signature: 'registerProvider(provider: LspProvider): () => void',
@@ -878,6 +878,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Select a provider by the file\'s extension and run one query. Selection is per-query and order-independent; no match throws `LspError` `LSP_UNAVAILABLE`.',
         parameters: [{ name: 'request', description: 'the normalized query.' }, { name: 'signal', description: 'optional cancellation forwarded to the selected provider.' }],
         returns: 'the normalized, closed-union result.',
+      },
+      {
+        signature: 'format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>',
+        description: 'Select a provider by the file\'s extension and run one format. Selection mirrors `query`; no match throws `LspError` `LSP_UNAVAILABLE`.',
+        parameters: [{ name: 'request', description: 'the write-path format request.' }, { name: 'signal', description: 'optional cancellation forwarded to the selected provider.' }],
+        returns: 'the formatted text, or `null` when the provider/server had nothing to format.',
+      },
+      {
+        signature: 'collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>',
+        description: 'Select a provider by the file\'s extension and collect diagnostics. Selection mirrors `query`; no match throws `LspError` `LSP_UNAVAILABLE`.',
+        parameters: [{ name: 'request', description: 'the write-path diagnostics request.' }, { name: 'signal', description: 'optional cancellation forwarded to the selected provider.' }],
+        returns: 'the normalized diagnostics (empty when none were published).',
       },
     ],
   },
@@ -3030,10 +3042,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface EpochHeader {\n    config: LlmCallConfig;\n    adapterDefaults?: LlmCallConfigAdapterDefaults;\n    system?: string;\n    tools?: ToolSchema[];\n}',
   },
   {
-    name: 'FileDiff',
-    declaration: 'export interface FileDiff {\n    path: string;\n    oldText: string | null;\n    newText: string;\n}',
-  },
-  {
     name: 'FileLocation',
     declaration: 'export interface FileLocation {\n    path: string;\n    line?: number;\n}',
   },
@@ -3318,6 +3326,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export class LlmRuntime extends Service {\n    constructor(ctx: Context);\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    async resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig>;\n    async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;\n    stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
   {
+    name: 'LspDiagnostic',
+    declaration: 'export interface LspDiagnostic {\n    readonly range: LspRange;\n    readonly severity?: 1 | 2 | 3 | 4;\n    readonly source?: string;\n    readonly message: string;\n}',
+  },
+  {
+    name: 'LspDiagnosticsRequest',
+    declaration: 'export interface LspDiagnosticsRequest {\n    readonly filePath: string;\n    readonly workspaceRoot: string;\n    readonly text: string;\n    readonly version: number;\n}',
+  },
+  {
+    name: 'LspDiagnosticsResult',
+    declaration: 'export interface LspDiagnosticsResult {\n    readonly diagnostics: readonly LspDiagnostic[];\n}',
+  },
+  {
+    name: 'LspFormatRequest',
+    declaration: 'export interface LspFormatRequest {\n    readonly filePath: string;\n    readonly workspaceRoot: string;\n    readonly text: string;\n    readonly formattingOptions?: {\n        readonly tabSize: number;\n        readonly insertSpaces: boolean;\n    };\n}',
+  },
+  {
+    name: 'LspFormatResult',
+    declaration: 'export type LspFormatResult = {\n    readonly formattedText: string | null;\n};',
+  },
+  {
     name: 'LspHover',
     declaration: 'export interface LspHover {\n    readonly contents: string;\n    readonly range?: LspRange;\n}',
   },
@@ -3335,7 +3363,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LspProvider',
-    declaration: 'export interface LspProvider {\n    readonly id: LspProviderId;\n    readonly extensionToLanguage: Readonly<Record<string, string>>;\n    query(request: LspProviderQuery, signal?: AbortSignal): Promise<LspQueryResult>;\n}',
+    declaration: 'export interface LspProvider {\n    readonly id: LspProviderId;\n    readonly extensionToLanguage: Readonly<Record<string, string>>;\n    query(request: LspProviderQuery, signal?: AbortSignal): Promise<LspQueryResult>;\n    format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>;\n    collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>;\n}',
   },
   {
     name: 'LspProviderId',

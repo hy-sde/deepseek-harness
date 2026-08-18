@@ -1,0 +1,28 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "composite": false,
+    "incremental": false,
+    "noEmit": false,
+    "tsBuildInfoFile": null,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "../../..",
+    "paths": {
+      "@deepseek-ai/cordis": ["./vendor/cordis/lib/types/index.d.ts"],
+      "@deepseek-ai/schemastery": ["./vendor/schemastery/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-fs": ["./packages/fs/fs/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-lsp": ["./packages/lsp/lsp/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-sandbox-policy": ["./packages/sandbox/sandbox-policy/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-sandbox": ["./packages/sandbox/sandbox/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-tools": ["./packages/core/tools/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-system-prompt": ["./packages/core/system-prompt/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-hashline": ["./packages/edit/hashline/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-session": ["./packages/core/session/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-llm": ["./packages/llm/llm/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-invariants": ["./packages/runtime-diagnostics/invariants/lib/types/index.d.ts"]
+    }
+  },
+  "include": ["src"]
+}

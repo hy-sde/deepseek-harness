@@ -1,8 +1,9 @@
 /**
  * The subset of LSP wire types this generic host reads and writes: initialize capabilities, the four
- * request results (`Location`, `LocationLink`, `Hover`), and the `textDocumentSync` shapes used to
- * decide transient-open support. Types only. Fields absent from a real server payload stay optional;
- * the translation layer normalizes them into the seam's closed unions.
+ * request results (`Location`, `LocationLink`, `Hover`), the `textDocumentSync` shapes used to
+ * decide transient-open support, and the write-path `TextEdit`/`PublishDiagnostics` payloads. Types
+ * only. Fields absent from a real server payload stay optional; the translation layer normalizes
+ * them into the seam's normalized contracts.
  * @module @deepseek-ai/dsh-lsp-stdio/protocol
  */
 
@@ -52,6 +53,30 @@ export interface WireHover {
   readonly range?: WireRange
 }
 
+/** A `TextEdit`: a range plus the replacement text to substitute over it. */
+export interface WireTextEdit {
+  readonly range: WireRange
+  readonly newText: string
+}
+
+/** A `Diagnostic`: the range, optional severity/source, and the message, as published. */
+export interface WireDiagnostic {
+  readonly range: WireRange
+  readonly severity?: number
+  readonly source?: string
+  readonly message: string
+}
+
+/**
+ * The params of a server→client `textDocument/publishDiagnostics` notification. `version` is absent
+ * when the server publishes without versioning; `diagnostics` is the array of `Diagnostic` objects.
+ */
+export interface WirePublishDiagnostics {
+  readonly uri: string
+  readonly version?: number
+  readonly diagnostics: readonly WireDiagnostic[]
+}
+
 /** The legacy enum form of `textDocumentSync` (`0` None, `1` Full, `2` Incremental). */
 export type WireTextDocumentSyncKind = 0 | 1 | 2
 
@@ -72,6 +97,7 @@ export interface WireServerCapabilities {
   readonly referencesProvider?: WireProviderCapability
   readonly implementationProvider?: WireProviderCapability
   readonly hoverProvider?: WireProviderCapability
+  readonly documentFormattingProvider?: WireProviderCapability
 }
 
 /** The `initialize` result envelope. */

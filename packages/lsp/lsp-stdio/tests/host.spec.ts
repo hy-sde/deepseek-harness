@@ -9,7 +9,7 @@ import { promisify } from 'node:util'
 import { Context } from '@deepseek-ai/cordis'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import { deadline } from '@deepseek-ai/dsh-timeout'
-import { canonicalizeWorkspace, readHostSource } from '@deepseek-ai/dsh-lsp-stdio'
+import { canonicalizeWorkspace, readHostSource, resolveSourceUrl } from '@deepseek-ai/dsh-lsp-stdio'
 
 const execFileAsync = promisify(execFile)
 
@@ -180,5 +180,35 @@ describe('readHostSource', () => {
     await writeFile(join(ws, 'repl.ts'), 'const s = "�"\n')
     const source = await readSource('repl.ts')
     expect(source.text).toBe('const s = "�"\n')
+  })
+})
+
+describe('resolveSourceUrl', () => {
+  it('returns the canonical file URL for a relative path, with or without a signal', async () => {
+    await writeFile(join(ws, 'a.ts'), 'x')
+    const host = await workspace()
+    expect(await resolveSourceUrl(fs, 'a.ts', host)).toBe(pathToFileURL(join(ws, 'a.ts')).href)
+    const controller = new AbortController()
+    expect(await resolveSourceUrl(fs, 'a.ts', host, controller.signal)).toBe(pathToFileURL(join(ws, 'a.ts')).href)
+  })
+
+  it('rejects an absolute source outside the workspace', async () => {
+    const outside = join(root, 'out.ts')
+    await writeFile(outside, 'x')
+    await expect(resolveSourceUrl(fs, outside, await workspace())).rejects.toThrow(/outside the workspace/)
+  })
+
+  it('honors a pre-aborted source resolution', async () => {
+    const controller = new AbortController()
+    controller.abort(new Error('url resolution cancelled'))
+    await expect(resolveSourceUrl(fs, 'missing.ts', await workspace(), controller.signal))
+      .rejects.toThrow(/url resolution cancelled/)
+  })
+
+  it('wraps a provider failure while resolving the source', async () => {
+    const canonical = await workspace()
+    fs.resolve = async () => { throw 'raw resolve failure' }
+    await expect(resolveSourceUrl(fs, 'broken.ts', canonical))
+      .rejects.toThrow('source "broken.ts" cannot be resolved: raw resolve failure')
   })
 })

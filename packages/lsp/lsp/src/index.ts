@@ -1,13 +1,14 @@
 /**
- * Service Definition for the LSP capability seam (`ctx.lsp`): a language-server provider registry and per-query,
- * order-independent selection over normalized goToDefinition/findReferences/goToImplementation/
- * hover queries.
+ * Service Definition for the LSP capability seam (`ctx.lsp`): a language-server provider registry
+ * and per-query, order-independent selection over normalized goToDefinition/findReferences/
+ * goToImplementation/hover queries plus the write-path format/diagnostics operations.
  *
  * A provider reserves a branded id and an exclusive set of file extensions atomically:
  * {@link Lsp.registerProvider} validates and conflict-checks everything before mutating, so an
  * invalid or conflicting registration publishes nothing, and its disposer releases every
- * reservation together. Selection routes a query by the file's final extension; it never depends on
- * registration order. The seam exposes exactly the four operations and no JSON-RPC escape hatch.
+ * reservation together. Selection routes a request by the file's final extension; it never depends
+ * on registration order. The seam exposes the four query operations, format, and collectDiagnostics
+ * — and no JSON-RPC escape hatch.
  * @module @deepseek-ai/dsh-lsp
  */
 
@@ -15,6 +16,10 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import type { LspProviderId } from './brand.ts'
 import type {
+  LspDiagnosticsRequest,
+  LspDiagnosticsResult,
+  LspFormatRequest,
+  LspFormatResult,
   LspProvider,
   LspQueryRequest,
   LspQueryResult,
@@ -23,6 +28,11 @@ import type {
 
 export { LspProviderId } from './brand.ts'
 export type {
+  LspDiagnostic,
+  LspDiagnosticsRequest,
+  LspDiagnosticsResult,
+  LspFormatRequest,
+  LspFormatResult,
   LspHover,
   LspLocation,
   LspOperation,
@@ -146,6 +156,22 @@ export class Lsp extends Service implements LspService {
       throw new LspError(`no LSP provider handles "${request.filePath}"`, 'LSP_UNAVAILABLE')
     }
     return route.provider.query({ ...request, languageId: route.languageId }, signal)
+  }
+
+  async format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult> {
+    const route = this.routes.get(finalExtension(request.filePath))
+    if (route === undefined) {
+      throw new LspError(`no LSP provider handles "${request.filePath}"`, 'LSP_UNAVAILABLE')
+    }
+    return route.provider.format(request, signal)
+  }
+
+  async collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult> {
+    const route = this.routes.get(finalExtension(request.filePath))
+    if (route === undefined) {
+      throw new LspError(`no LSP provider handles "${request.filePath}"`, 'LSP_UNAVAILABLE')
+    }
+    return route.provider.collectDiagnostics(request, signal)
   }
 }
 

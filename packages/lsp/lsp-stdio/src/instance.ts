@@ -9,21 +9,29 @@
 
 import { LspError } from '@deepseek-ai/dsh-lsp'
 import type {
+  LspDiagnosticsRequest,
+  LspDiagnosticsResult,
+  LspFormatRequest,
+  LspFormatResult,
   LspOperation,
   LspProviderQuery,
   LspQueryResult,
 } from '@deepseek-ai/dsh-lsp'
-import { deadline } from '@deepseek-ai/dsh-timeout'
+import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { abortable, abortError } from './abort.ts'
 import { LspConnection } from './connection.ts'
 import type { ConnectionSpawner, ConnectionSpec, ConnectionWriter } from './connection.ts'
 import type { HostSource } from './host.ts'
-import type { WireInitializeResult, WireServerCapabilities } from './protocol.ts'
+import type { WireInitializeResult, WireServerCapabilities, WireTextEdit } from './protocol.ts'
 import {
+  applyEditsToText,
   negotiatePositionEncoding,
+  normalizeDiagnostics,
+  normalizeFormattingEdits,
   normalizeHover,
   normalizeLocations,
   requestMethod,
+  supportsFormatting,
   supportsOperation,
   supportsTransientOpen,
 } from './translate.ts'
@@ -36,6 +44,8 @@ export interface InstanceSpec extends ConnectionSpec {
   readonly initializationOptions: unknown
   /** Graceful `shutdown`/`exit` budget before escalation (ms). */
   readonly shutdownTimeoutMs: number
+  /** Bounded wait for a `textDocument/publishDiagnostics` notification during collection (ms). */
+  readonly diagnosticsTimeoutMs: number
 }
 
 /**
@@ -103,6 +113,50 @@ export class LspInstance {
     // Keep the tail alive regardless of this query's outcome so the next caller still serializes. The
     // tail follows the ACTUAL prior work (this.queue), not the abortable view, so a caller giving up
     // on the wait does not deserialize the queue.
+    this.queue = this.queue.then(() => run).then(() => undefined, () => undefined)
+    return run
+  }
+
+  /**
+   * Format a document through `textDocument/formatting`, applying the returned edits to the caller's
+   * authoritative in-memory text.
+   * @param request - the caller's write-path format request.
+   * @param uri - the canonical file URI resolved by the provider.
+   * @param languageId - the language id derived from the provider's extension mapping.
+   * @param signal - optional cancellation for this lifecycle.
+   * @returns the formatted text, or `null` when the server cannot/does not format.
+   */
+  format(request: LspFormatRequest, uri: string, languageId: string, signal?: AbortSignal): Promise<LspFormatResult> {
+    const run = abortable(this.queue, signal)
+      .then(() => this.runFormat(request, uri, languageId, signal))
+      .catch(async (error: unknown) => {
+        if (this.isTransportFailure(error)) await this.startTeardown()
+        throw error
+      })
+    this.queue = this.queue.then(() => run).then(() => undefined, () => undefined)
+    return run
+  }
+
+  /**
+   * Collect this document's diagnostics through a transient open and a version-fresh publish wait.
+   * @param request - the caller's write-path diagnostics request.
+   * @param uri - the canonical file URI resolved by the provider.
+   * @param languageId - the language id derived from the provider's extension mapping.
+   * @param signal - optional cancellation for this lifecycle.
+   * @returns the normalized diagnostics (empty on no publish or version mismatch).
+   */
+  collectDiagnostics(
+    request: LspDiagnosticsRequest,
+    uri: string,
+    languageId: string,
+    signal?: AbortSignal,
+  ): Promise<LspDiagnosticsResult> {
+    const run = abortable(this.queue, signal)
+      .then(() => this.runCollectDiagnostics(request, uri, languageId, signal))
+      .catch(async (error: unknown) => {
+        if (this.isTransportFailure(error)) await this.startTeardown()
+        throw error
+      })
     this.queue = this.queue.then(() => run).then(() => undefined, () => undefined)
     return run
   }
@@ -185,6 +239,152 @@ export class LspInstance {
                already-settled query outcome if an unexpected cleanup primitive itself rejects. */
           }
         }
+      }
+    }
+  }
+
+  private async runFormat(request: LspFormatRequest, uri: string, languageId: string, signal?: AbortSignal): Promise<LspFormatResult> {
+    const capabilities = await this.readyCapabilities(signal)
+    if (!supportsTransientOpen(capabilities.textDocumentSync)) {
+      // Like `query`, a server without transient open cannot serve the write path at all — the
+      // required didOpen is impossible, so this is a hard capability failure, not a graceful null.
+      throw new LspError('server does not support the transient textDocument/didOpen this host requires', 'LSP_UNSUPPORTED_OPERATION')
+    }
+    // A server without documentFormattingProvider formats nothing: degrade to `null` so a write path
+    // keeps the caller's text unchanged instead of failing the format-on-write.
+    if (!supportsFormatting(capabilities)) return { formattedText: null }
+    const options = request.formattingOptions === undefined
+      ? { tabSize: 2, insertSpaces: true }
+      : { tabSize: request.formattingOptions.tabSize, insertSpaces: request.formattingOptions.insertSpaces }
+    let opened = false
+    try {
+      /* v8 ignore next -- guards an abort landing between the ready wait and didOpen; not deterministically reproducible. */
+      if (signal?.aborted) throw abortError(signal)
+      try {
+        await abortable(this.connection.notify('textDocument/didOpen', {
+          textDocument: { uri, languageId, version: 1, text: request.text },
+        }), signal)
+      } catch (error) {
+        await this.startTeardown()
+        throw error
+      }
+      opened = true
+      const edits = await this.requestFormatting(uri, options, signal)
+      // A formatting provider that returned no edits formats nothing; the write path keeps its text.
+      if (edits.length === 0) return { formattedText: null }
+      return { formattedText: applyEditsToText(request.text, edits) }
+    } finally {
+      await this.closeDocument(uri, opened)
+    }
+  }
+
+  private async runCollectDiagnostics(
+    request: LspDiagnosticsRequest,
+    uri: string,
+    languageId: string,
+    signal?: AbortSignal,
+  ): Promise<LspDiagnosticsResult> {
+    const capabilities = await this.readyCapabilities(signal)
+    if (!supportsTransientOpen(capabilities.textDocumentSync)) {
+      throw new LspError('server does not support the transient textDocument/didOpen this host requires', 'LSP_UNSUPPORTED_OPERATION')
+    }
+    // Arm the per-uri collector BEFORE didOpen so a publish racing the client's open processing is
+    // caught (version freshness — not arrival order — is the correctness property). The deadline
+    // fuses caller cancellation with the collection budget; a server that never publishes (no
+    // diagnostic capability) times out into an empty result instead of an error.
+    const deadlineSignal = deadline(signal, this.spec.diagnosticsTimeoutMs, 'LSP_DIAGNOSTICS_TIMEOUT')
+    let opened = false
+    let removeListener: (() => void) | undefined
+    try {
+      /* v8 ignore next -- guards an abort landing between the ready wait and didOpen; not reproducible. */
+      if (signal?.aborted) throw abortError(signal)
+      const received = Promise.withResolvers<unknown>()
+      removeListener = this.connection.onNotification('textDocument/publishDiagnostics', (params) => {
+        const record = params as Record<string, unknown> | null
+        if (record === null || typeof record !== 'object') return
+        if (record.uri !== uri) return
+        // Version freshness: only a publish carrying no version (legacy servers) or exactly the
+        // opened version matches; a mismatch means a stale snapshot for some other lifecycle.
+        if (record.version !== undefined && record.version !== request.version) return
+        received.resolve(params)
+      })
+      try {
+        await abortable(this.connection.notify('textDocument/didOpen', {
+          textDocument: { uri, languageId, version: request.version, text: request.text },
+        }), signal)
+      } catch (error) {
+        await this.startTeardown()
+        throw error
+      }
+      opened = true
+      const payload = await abortable(received.promise, deadlineSignal.signal).catch((error: unknown) => {
+        // The bounded publish wait elapsed without a matching notification: report no diagnostics.
+        // A caller cancellation is still an error, classified (like a query) by its abort reason.
+        if (timeoutOf(deadlineSignal.signal) !== undefined) return undefined
+        throw error
+      })
+      return { diagnostics: normalizeDiagnostics(payload, uri, request.version) }
+    } finally {
+      /* v8 ignore next -- `removeListener` is always assigned before any throw can reach this
+         finally; the undefined guard is defensive against future reordering. */
+      if (removeListener !== undefined) removeListener()
+      deadlineSignal[Symbol.dispose]()
+      await this.closeDocument(uri, opened)
+    }
+  }
+
+  /** Await the handshake and return the capabilities, tearing down a poisoned instance on failure. */
+  private async readyCapabilities(signal?: AbortSignal): Promise<WireServerCapabilities> {
+    if (this.disposed) throw new LspError('LSP instance was disposed', 'LSP_DISPOSED')
+    /* v8 ignore next -- the abortable queue wait rejects a pre-aborted signal before these run methods; belt-and-suspenders. */
+    if (signal?.aborted) throw abortError(signal)
+    // Observe abort during the handshake wait, and never pool a poisoned instance (same policy as
+    // runQuery): a failed `ready` must not make every later write-path call for this workspace hang.
+    try {
+      await abortable(this.ready, signal)
+    } catch (error) {
+      if (!this.dead) {
+        await this.startTeardown()
+      }
+      throw error
+    }
+    /* v8 ignore next -- `ready` resolves only after capabilities are set; defensive. */
+    if (this.capabilities === undefined) throw new Error('LSP instance is not initialized')
+    return this.capabilities
+  }
+
+  /** Send `textDocument/formatting` with the resolved options and normalize its `TextEdit[]` result. */
+  private async requestFormatting(
+    uri: string,
+    options: { tabSize: number; insertSpaces: boolean },
+    signal?: AbortSignal,
+  ): Promise<WireTextEdit[]> {
+    const params = {
+      textDocument: { uri },
+      options: { tabSize: options.tabSize, insertSpaces: options.insertSpaces },
+    }
+    const requestId = this.connection.peekNextId()
+    const send = this.connection.request('textDocument/formatting', params)
+    const payload = signal === undefined ? await send : await this.raceAbort(send, requestId, signal)
+    return normalizeFormattingEdits(payload)
+  }
+
+  /** Await a transient document's didClose; a close-write failure invalidates the instance. */
+  private async closeDocument(uri: string, opened: boolean): Promise<void> {
+    // A disposed or closed instance (e.g. a request whose server ignored `$/cancelRequest`) is
+    // already tearing down; sending didClose would race that teardown and let the next queued
+    // operation's document lifecycle overlap the still-active one.
+    if (!opened || this.dead) return
+    try {
+      await this.connection.notify('textDocument/didClose', { textDocument: { uri } })
+    } catch {
+      // A close-write failure does not replace the settled result, but the instance can no longer be
+      // trusted: invalidate it and await bounded process termination.
+      try {
+        await this.startTeardown()
+      } catch {
+        /* v8 ignore next -- teardown owns all expected process races; this only preserves the
+           already-settled outcome if an unexpected cleanup primitive itself rejects. */
       }
     }
   }

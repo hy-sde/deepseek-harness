@@ -22,6 +22,19 @@
  *   "configuration" | "applyEdit" | "notification" | "unknown"; the reply is logged to stderr.
  * - LSP_FAKE_ERROR: "1" answers textDocument/* requests with a JSON-RPC error response.
  * - LSP_FAKE_GARBAGE: "1" emits an unframed garbage byte before the initialize reply.
+ * - LSP_FAKE_FORMAT_EDITS: JSON TextEdit[] (or null) answer for textDocument/formatting.
+ * - LSP_FAKE_FORMAT_MARKER: appends the formatting request options object to this path.
+ * - LSP_FAKE_PUBLISH_DIAGNOSTICS: JSON `{ uri, diagnostics, version, forUri }` emitted as a
+ *   textDocument/publishDiagnostics notification when a didOpen for `forUri` (default `uri`)
+ *   arrives; `version` "open" uses the version from that didOpen, a number is sent verbatim (e.g.
+ *   "open+1" tests version freshness), and anything else omits the version field (legacy
+ *   unversioned publish). A `forUri` differing from `uri` publishes a notification for a document
+ *   that was never opened (uri-filtering tests).
+ * - LSP_FAKE_PUBLISH_DELAY_MS: delays the notifications from LSP_FAKE_PUBLISH_DIAGNOSTICS.
+ * - LSP_FAKE_PUBLISH_RAW: "1" makes a scripted publish emit a structurally malformed notification
+ *   whose params is the number 42 instead of a publishDiagnostics payload (uriel-resilience tests).
+ * - LSP_FAKE_CLOSE_STDIN: "1" closes the server's own stdin right after receiving `initialized`,
+ *   poisoning the client's transport so subsequent didOpen writes fail (transport-failure tests).
  *
  * Run: node fixture-server.ts (Node's erasable TypeScript syntax support).
  */
@@ -44,9 +57,19 @@ const noShutdown = process.env.LSP_FAKE_NO_SHUTDOWN === '1'
 const onOpen = process.env.LSP_FAKE_ON_OPEN
 const errorReply = process.env.LSP_FAKE_ERROR === '1'
 const garbage = process.env.LSP_FAKE_GARBAGE === '1'
+const formatMarker = process.env.LSP_FAKE_FORMAT_MARKER
+const publishDelayMs = Number(process.env.LSP_FAKE_PUBLISH_DELAY_MS ?? 0)
+const closeStdinAfterInitialized = process.env.LSP_FAKE_CLOSE_STDIN === '1'
+const publishRawParams = process.env.LSP_FAKE_PUBLISH_RAW === '1'
+interface PublishPlan { uri?: string; forUri?: string; diagnostics?: unknown; version?: unknown }
+const publishPlan = process.env.LSP_FAKE_PUBLISH_DIAGNOSTICS === undefined
+  ? null
+  : JSON.parse(process.env.LSP_FAKE_PUBLISH_DIAGNOSTICS) as PublishPlan
 
 let serverRequestId = 10_000
 const pendingServerRequests = new Map<number, string>()
+/** Opened document URI → version, recorded so a scripted publish can honor the didOpen version. */
+const openVersions = new Map<string, number>()
 
 process.on('SIGTERM', () => {
   markExit('TERM')
@@ -58,6 +81,7 @@ function resultFor(method: string): unknown {
     case 'textDocument/definition': return envJson('LSP_FAKE_DEF', null)
     case 'textDocument/references': return envJson('LSP_FAKE_REFS', null)
     case 'textDocument/implementation': return envJson('LSP_FAKE_IMPL', null)
+    case 'textDocument/formatting': return envJson('LSP_FAKE_FORMAT_EDITS', null)
     case 'textDocument/hover': {
       // LSP_FAKE_ECHO_ENV names a variable whose VALUE becomes the hover
       // contents — a test can assert exactly what env reached this process.
@@ -113,6 +137,7 @@ function handle(message: { id?: number; method?: string; params?: unknown; resul
           referencesProvider: true,
           implementationProvider: true,
           hoverProvider: true,
+          documentFormattingProvider: true,
           ...(extraCaps as Record<string, unknown>),
         },
       },
@@ -138,8 +163,14 @@ function handle(message: { id?: number; method?: string; params?: unknown; resul
   }
   if (method === 'textDocument/didOpen') {
     if (crashOnOpen) process.exit(1)
+    const params = message.params as { textDocument?: { uri?: unknown; version?: unknown; text?: unknown } } | undefined
+    const doc = params?.textDocument
+    if (typeof doc?.uri === 'string') {
+      openVersions.set(doc.uri, typeof doc.version === 'number' ? doc.version : 0)
+      const trigger = (publishPlan?.forUri ?? publishPlan?.uri) as string | undefined
+      if (trigger !== undefined && doc.uri === trigger) schedulePublish(doc.uri)
+    }
     if (openMarker !== undefined) {
-      const params = message.params as { textDocument?: { text?: unknown } } | undefined
       appendFileSync(openMarker, `${JSON.stringify(params?.textDocument?.text)}\n`)
     }
     if (onOpen !== undefined) emitServerRequest(onOpen)
@@ -147,12 +178,28 @@ function handle(message: { id?: number; method?: string; params?: unknown; resul
   }
   if (method === 'initialized') {
     if (initializedMarker !== undefined) appendFileSync(initializedMarker, 'INITIALIZED\n')
-    if (pauseStdinAfterInitialized) process.stdin.pause()
+    if (closeStdinAfterInitialized) {
+      // Closing our own stdin poisons the client's write path immediately (its stdin emits EPIPE
+      // on the next write), giving a deterministic transport failure before any didOpen succeeds.
+      process.stdin.removeAllListeners('data')
+      process.stdin.end()
+    } else if (pauseStdinAfterInitialized) {
+      process.stdin.pause()
+    }
     return
   }
-  if (method === 'textDocument/didClose') return
+  if (method === 'textDocument/didClose') {
+    const params = message.params as { textDocument?: { uri?: unknown } } | undefined
+    const closeUri = typeof params?.textDocument?.uri === 'string' ? params.textDocument.uri : undefined
+    if (closeUri !== undefined) openVersions.delete(closeUri)
+    return
+  }
   if (method?.startsWith('textDocument/')) {
     if (hang) return
+    if (method === 'textDocument/formatting' && formatMarker !== undefined) {
+      const params = message.params as { options?: unknown } | undefined
+      appendFileSync(formatMarker, `${JSON.stringify(params?.options)}\n`)
+    }
     const reply = (): void => {
       if (errorReply) {
         send({ id, error: { code: -32000, message: 'server refused the request' } })
@@ -193,6 +240,29 @@ function emitServerRequest(kind: string): void {
   const params = kind === 'configuration' ? { items: [{ section: 'a' }, { section: 'b' }] } : {}
   pendingServerRequests.set(id, method)
   send({ id, method, params })
+}
+
+/** Emit the scripted publish honoring its `forUri` binding (`uri` is fixed by the plan, so a
+ * publish may carry a uri other than the opened document). */
+function schedulePublish(triggerUri: string): void {
+  if (publishPlan === null) return
+  const emit = (): void => {
+    if (publishRawParams) {
+      // A structurally malformed publish notification: params is not an object at all.
+      send({ method: 'textDocument/publishDiagnostics', params: 42 })
+      return
+    }
+    const params: Record<string, unknown> = { uri: publishPlan.uri, diagnostics: publishPlan.diagnostics ?? [] }
+    const openedVersion = openVersions.get(triggerUri)
+    if (typeof publishPlan.version === 'number') params.version = publishPlan.version
+    else if (publishPlan.version === 'open') {
+      if (openedVersion !== undefined) params.version = openedVersion
+    }
+    // Any other scripted version (undefined/absent/'none') sends no version field — a legacy publish.
+    send({ method: 'textDocument/publishDiagnostics', params })
+  }
+  if (publishDelayMs > 0) setTimeout(emit, publishDelayMs)
+  else emit()
 }
 
 function send(message: Record<string, unknown>): void {

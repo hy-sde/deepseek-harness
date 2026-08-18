@@ -23,6 +23,40 @@ export interface HostSource {
 }
 
 /**
+ * Resolve one source path the caller already owns text for, returning only the canonical file URI.
+ * The write path skips the bounded read because the caller passes authoritative in-memory content;
+ * it must still canonicalize and contain the path against the workspace.
+ * @param fs - filesystem provider sharing the language server's execution world.
+ * @param filePath - absolute source path or path relative to `workspace`.
+ * @param workspace - already-canonical workspace.
+ * @param signal - optional cancellation.
+ * @returns the canonical file URI in the execution world's platform syntax.
+ */
+export async function resolveSourceUrl(
+  fs: FileSystem,
+  filePath: string,
+  workspace: HostWorkspace,
+  signal?: AbortSignal,
+): Promise<string> {
+  throwIfAborted(signal)
+  let target: FsTarget
+  try {
+    target = await fs.resolve(filePath, {
+      cwd: workspace.canonicalPath,
+      ...signal === undefined ? {} : { signal },
+    })
+  } catch (error: unknown) {
+    throwIfAborted(signal)
+    throw new Error(`source "${filePath}" cannot be resolved: ${messageOf(error)}`, { cause: error })
+  }
+  throwIfAborted(signal)
+  if (!fs.contains(workspace.target, target)) {
+    throw new Error(`source "${filePath}" resolves outside the workspace`)
+  }
+  return fs.fileUrl(target)
+}
+
+/**
  * Resolve and validate one workspace through `ctx.fs`.
  * @param fs - filesystem provider sharing the language server's execution world.
  * @param workspaceRoot - caller-supplied workspace path.

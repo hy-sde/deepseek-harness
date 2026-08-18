@@ -56,6 +56,7 @@ function makeInstance(
     maxStderrBytes: 100_000,
     shutdownTimeoutMs: 200,
     killGraceMs: 200,
+    diagnosticsTimeoutMs: 400,
     ...overrides,
   }, spawnSubprocess, writer)
   live.push(instance)
@@ -91,6 +92,7 @@ function scriptInstance(script: string, overrides: Partial<InstanceSpec> = {}): 
     maxStderrBytes: 100_000,
     shutdownTimeoutMs: 150,
     killGraceMs: 150,
+    diagnosticsTimeoutMs: 400,
     ...overrides,
   }, spawnSubprocess)
   live.push(instance)
@@ -107,6 +109,14 @@ const RESPONDING_SERVER =
   + '}});'
 
 const locJson = () => JSON.stringify({ uri: pathToFileURL(join(ws, 'a.ts')).href, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } } })
+
+/** An inline server that rejects the initialize handshake with a JSON-RPC error (no recovery). */
+const FAILED_HANDSHAKE_SERVER =
+  'let b=Buffer.alloc(0);'
+  + 'const fr=(o)=>{const x=Buffer.from(JSON.stringify({jsonrpc:"2.0",...o}));return Buffer.concat([Buffer.from(`Content-Length: ${x.length}\\r\\n\\r\\n`),x]);};'
+  + 'process.stdin.on("data",c=>{b=Buffer.concat([b,c]);for(;;){const s=b.indexOf("\\r\\n\\r\\n");if(s<0)break;const len=Number(/(\\d+)/.exec(b.toString("ascii",0,s))[1]);if(b.length<s+4+len)break;const m=JSON.parse(b.toString("utf8",s+4,s+4+len));b=b.subarray(s+4+len);'
+  + 'if(m.method==="initialize")process.stdout.write(fr({id:m.id,error:{code:-32000,message:"initialize exploded"}}));'
+  + '}});'
 
 describe('LspInstance server-request handling', () => {
   it('answers workspace/configuration with the static config per item', async () => {
@@ -340,6 +350,156 @@ describe('LspInstance disposal', () => {
     await new Promise<void>(resolve => setTimeout(resolve, 200))
     controller.abort('a string reason, not an Error')
     await expect(pending).rejects.toThrow(/aborted/)
+  })
+})
+
+describe('LspInstance write path', () => {
+  it('formats the caller text from a textDocument/formatting result', async () => {
+    const edit = { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 11 } }, newText: 'const z = 1' }
+    const instance = makeInstance({ LSP_FAKE_FORMAT_EDITS: JSON.stringify([edit]) })
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .resolves.toEqual({ formattedText: 'const z = 1\n' })
+  })
+
+  it('returns null when the server lacks documentFormattingProvider', async () => {
+    const instance = makeInstance({ LSP_FAKE_CAPS: JSON.stringify({ documentFormattingProvider: false }) })
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .resolves.toEqual({ formattedText: null })
+  })
+
+  it('rejects when the server lacks transient open', async () => {
+    const instance = makeInstance({ LSP_FAKE_SYNC: '0' })
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .rejects.toThrow(/transient textDocument\/didOpen/)
+  })
+
+  it('rejects a format after disposal', async () => {
+    const instance = makeInstance({ LSP_FAKE_FORMAT_EDITS: 'null' })
+    await instance.dispose()
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .rejects.toThrow(expect.objectContaining({ code: 'LSP_DISPOSED' }))
+  })
+
+  it('tears down when the formatting request write fails', async () => {
+    const instance = makeInstance({}, {
+      shutdownTimeoutMs: 100,
+      killGraceMs: 100,
+    }, failingWriter('textDocument/formatting'))
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .rejects.toThrow()
+    expect(instance.dead).toBe(true)
+  })
+
+  it('keeps a settled format result but tears down when didClose cannot be written', async () => {
+    const edit = { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 11 } }, newText: 'const z = 1' }
+    const instance = makeInstance({ LSP_FAKE_FORMAT_EDITS: JSON.stringify([edit]) }, {
+      shutdownTimeoutMs: 100,
+      killGraceMs: 100,
+    }, failingWriter('textDocument/didClose'))
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .resolves.toEqual({ formattedText: 'const z = 1\n' })
+    expect(instance.dead).toBe(true)
+  })
+
+  it('collects diagnostics published for the opened document at the opened version', async () => {
+    const plan = {
+      uri: pathToFileURL(join(ws, 'a.ts')).href,
+      diagnostics: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, severity: 1, message: 'parse error' }],
+      version: 'open',
+    }
+    const instance = makeInstance({ LSP_FAKE_PUBLISH_DIAGNOSTICS: JSON.stringify(plan) })
+    await expect(instance.collectDiagnostics(
+      { filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n', version: 4 },
+      pathToFileURL(join(ws, 'a.ts')).href,
+      'typescript',
+    )).resolves.toEqual({
+      diagnostics: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, severity: 1, message: 'parse error' }],
+    })
+  })
+
+  it('returns empty diagnostics when the server never publishes', async () => {
+    const instance = makeInstance({})
+    await expect(instance.collectDiagnostics(
+      { filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n', version: 2 },
+      pathToFileURL(join(ws, 'a.ts')).href,
+      'typescript',
+    )).resolves.toEqual({ diagnostics: [] })
+  })
+
+  it('tears down when the collect didOpen write fails', async () => {
+    const instance = makeInstance({}, {
+      shutdownTimeoutMs: 100,
+      killGraceMs: 100,
+    }, failingWriter('textDocument/didOpen'))
+    await expect(instance.collectDiagnostics(
+      { filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n', version: 2 },
+      pathToFileURL(join(ws, 'a.ts')).href,
+      'typescript',
+    )).rejects.toThrow()
+    expect(instance.dead).toBe(true)
+  })
+
+  it('rejects collectDiagnostics after disposal', async () => {
+    const instance = makeInstance({})
+    await instance.dispose()
+    await expect(instance.collectDiagnostics(
+      { filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n', version: 2 },
+      pathToFileURL(join(ws, 'a.ts')).href,
+      'typescript',
+    )).rejects.toThrow(expect.objectContaining({ code: 'LSP_DISPOSED' }))
+  })
+
+  it('tears down when the format didOpen write fails', async () => {
+    const instance = makeInstance({}, {
+      shutdownTimeoutMs: 100,
+      killGraceMs: 100,
+    }, failingWriter('textDocument/didOpen'))
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .rejects.toThrow()
+    expect(instance.dead).toBe(true)
+  })
+
+  it('rejects collectDiagnostics when the server lacks transient open', async () => {
+    const instance = makeInstance({ LSP_FAKE_SYNC: '0' })
+    await expect(instance.collectDiagnostics(
+      { filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n', version: 2 },
+      pathToFileURL(join(ws, 'a.ts')).href,
+      'typescript',
+    )).rejects.toThrow(/transient textDocument\/didOpen/)
+  })
+
+  it('aborts the collect publish wait on caller cancellation', async () => {
+    // An ample budget keeps the deadline from elapsing first; the open marker proves the lifecycle
+    // has reached the publish wait before the caller aborts, so the abort must classify as a
+    // rejection rather than degrade into an empty snapshot.
+    const marker = join(root, 'collect-open.log')
+    const instance = makeInstance({ LSP_FAKE_OPEN_MARKER: marker }, { diagnosticsTimeoutMs: 3000 })
+    const controller = new AbortController()
+    const pending = instance.collectDiagnostics(
+      { filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n', version: 2 },
+      pathToFileURL(join(ws, 'a.ts')).href,
+      'typescript',
+      controller.signal,
+    )
+    await waitForFile(marker)
+    controller.abort(new Error('caller cancelled'))
+    await expect(pending).rejects.toThrow(/caller cancelled/)
+  })
+
+  it('tears down when the initialize handshake fails during format', async () => {
+    const instance = scriptInstance(FAILED_HANDSHAKE_SERVER, { shutdownTimeoutMs: 100, killGraceMs: 100 })
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .rejects.toThrow(/initialize exploded/)
+    expect(instance.dead).toBe(true)
+  })
+
+  it('does not re-tear-down an already-dead instance when the handshake fails', async () => {
+    // An immediate-exit "server" fails the handshake with the connection already dead: the instance
+    // must not attempt a second teardown, only propagate the failure.
+    const instance = scriptInstance('process.exit(1)', { shutdownTimeoutMs: 100, killGraceMs: 100 })
+    await expect(instance.format({ filePath: 'a.ts', workspaceRoot: ws, text: 'const x = 1\n' }, pathToFileURL(join(ws, 'a.ts')).href, 'typescript'))
+      .rejects.toThrow()
+    expect(instance.dead).toBe(true)
   })
 })
 

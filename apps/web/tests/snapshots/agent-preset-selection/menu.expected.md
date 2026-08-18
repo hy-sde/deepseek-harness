@@ -5,3 +5,7 @@
   - menuitem "Code mode All Standard mode capabilities, with tools exposed through the Code Mode SDK so the model can combine multi-step operations in one TypeScript program."
   - menuitem "Minimal mode Two-tool coding agent with persistent bash and str_replace_editor."
   - menuitem "Creator mode Built for creating custom agent presets, with all Standard mode capabilities plus runtime inspection, plugin experiments, and preset-authoring guidance."
+  - menuitem "Edit Mode Coding agent whose edits go through the rich edit tool (replace / patch / apply_patch / hashline), with LSP format-on-write and diagnostics.":
+    - text: Edit Mode Coding agent whose edits go through the rich edit tool (replace / patch / apply_patch / hashline), with LSP format-on-write and diagnostics.
+    - img
+  - menuitem "Minimal Edit Mode Two-tool coding agent with persistent bash and the rich edit tool (replace / patch / apply_patch / hashline)."

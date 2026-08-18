@@ -176,7 +176,7 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 
 ### `ctx.lsp` — `LspService`
 
-The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query execution; exposes exactly the four operations and no protocol escape hatch.
+The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query execution; exposes exactly the four operations and the two write-path operations, and no protocol escape hatch.
 
 ```ts cordis-catalog
 /**
@@ -196,7 +196,25 @@ registerProvider(provider: LspProvider): () => void
  * @returns the normalized, closed-union result.
  */
 query(request: LspQueryRequest, signal?: AbortSignal): Promise<LspQueryResult>
+
+/**
+ * Select a provider by the file's extension and run one format. Selection mirrors `query`;
+ * no match throws `LspError` `LSP_UNAVAILABLE`.
+ * @param request - the write-path format request.
+ * @param signal - optional cancellation forwarded to the selected provider.
+ * @returns the formatted text, or `null` when the provider/server had nothing to format.
+ */
+format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>
+
+/**
+ * Select a provider by the file's extension and collect diagnostics. Selection mirrors `query`;
+ * no match throws `LspError` `LSP_UNAVAILABLE`.
+ * @param request - the write-path diagnostics request.
+ * @param signal - optional cancellation forwarded to the selected provider.
+ * @returns the normalized diagnostics (empty when none were published).
+ */
+collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>
 ```
 
-Source: [`packages/lsp/lsp/src/types.ts:113`](../../packages/lsp/lsp/src/types.ts)
+Source: [`packages/lsp/lsp/src/types.ts:191`](../../packages/lsp/lsp/src/types.ts)
 <!-- END GENERATED cordis-surface -->

@@ -4,6 +4,8 @@ import Lsp, {
   finalExtension,
   LspError,
   LspProviderId,
+  type LspDiagnosticsRequest,
+  type LspFormatRequest,
   type LspProvider,
   type LspProviderQuery,
   type LspQueryResult,
@@ -26,6 +28,12 @@ function makeProvider(
       seen.push(request)
       seenSignals.push(signal)
       return Promise.resolve(result)
+    },
+    format() {
+      return Promise.resolve({ formattedText: null })
+    },
+    collectDiagnostics() {
+      return Promise.resolve({ diagnostics: [] })
     },
   }
 }
@@ -183,5 +191,88 @@ describe('Lsp registration', () => {
 
   it('brands a provider id without altering the string', () => {
     expect(LspProviderId('ts')).toBe('ts')
+  })
+})
+
+describe('Lsp write-path routing', () => {
+  it('routes format by extension and returns the provider result verbatim', async () => {
+    const { lsp } = await mountLsp()
+    const provider = makeProvider('ts', { '.ts': 'typescript' })
+    lsp.registerProvider(provider)
+    await expect(lsp.format({ filePath: 'a.ts', workspaceRoot: '/ws', text: 'const x = 1\n' }))
+      .resolves.toEqual({ formattedText: null })
+  })
+
+  it('fails LSP_UNAVAILABLE for format on an unhandled extension', async () => {
+    const { lsp } = await mountLsp()
+    lsp.registerProvider(makeProvider('ts', { '.ts': 'typescript' }))
+    await expect(lsp.format({ filePath: 'a.py', workspaceRoot: '/ws', text: 'x = 1\n' }))
+      .rejects.toThrow(expect.objectContaining({ code: 'LSP_UNAVAILABLE' }))
+  })
+
+  it('routes collectDiagnostics by extension and returns an empty result by default', async () => {
+    const { lsp } = await mountLsp()
+    const provider = makeProvider('ts', { '.ts': 'typescript' })
+    lsp.registerProvider(provider)
+    await expect(lsp.collectDiagnostics({ filePath: 'a.ts', workspaceRoot: '/ws', text: 'const x = 1\n', version: 3 }))
+      .resolves.toEqual({ diagnostics: [] })
+  })
+
+  it('fails LSP_UNAVAILABLE for collectDiagnostics on an unhandled extension', async () => {
+    const { lsp } = await mountLsp()
+    lsp.registerProvider(makeProvider('ts', { '.ts': 'typescript' }))
+    await expect(lsp.collectDiagnostics({ filePath: 'a.py', workspaceRoot: '/ws', text: 'x = 1\n', version: 1 }))
+      .rejects.toThrow(expect.objectContaining({ code: 'LSP_UNAVAILABLE' }))
+  })
+
+  it('forwards the caller text, options, and signal to the provider format', async () => {
+    const { lsp } = await mountLsp()
+    let seenRequest: LspFormatRequest | undefined
+    let seenSignal: AbortSignal | undefined
+    const provider: LspProvider = {
+      id: LspProviderId('fmt'),
+      extensionToLanguage: { '.ts': 'typescript' },
+      query: () => { throw new Error('unexpected query') },
+      format(request, signal) {
+        seenRequest = request
+        seenSignal = signal
+        return Promise.resolve({ formattedText: 'formatted' })
+      },
+      collectDiagnostics: () => { throw new Error('unexpected collect') },
+    }
+    lsp.registerProvider(provider)
+    const controller = new AbortController()
+    const request: LspFormatRequest = {
+      filePath: 'a.ts',
+      workspaceRoot: '/ws',
+      text: 'const x = 1\n',
+      formattingOptions: { tabSize: 4, insertSpaces: false },
+    }
+    await expect(lsp.format(request, controller.signal)).resolves.toEqual({ formattedText: 'formatted' })
+    expect(seenRequest).toBe(request)
+    expect(seenSignal).toBe(controller.signal)
+  })
+
+  it('forwards the caller request and signal to the provider collectDiagnostics', async () => {
+    const { lsp } = await mountLsp()
+    let seenRequest: LspDiagnosticsRequest | undefined
+    let seenSignal: AbortSignal | undefined
+    const provider: LspProvider = {
+      id: LspProviderId('diag'),
+      extensionToLanguage: { '.ts': 'typescript' },
+      query: () => { throw new Error('unexpected query') },
+      format: () => { throw new Error('unexpected format') },
+      collectDiagnostics(request, signal) {
+        seenRequest = request
+        seenSignal = signal
+        return Promise.resolve({ diagnostics: [] })
+      },
+    }
+    lsp.registerProvider(provider)
+    const controller = new AbortController()
+    const request: LspDiagnosticsRequest = { filePath: 'a.ts', workspaceRoot: '/ws', text: 'const x = 1\n', version: 7 }
+    await expect(lsp.collectDiagnostics(request, controller.signal)).resolves.toEqual({ diagnostics: [] })
+    expect(seenRequest).toBe(request)
+    expect(seenSignal).toBe(controller.signal)
   })
 })

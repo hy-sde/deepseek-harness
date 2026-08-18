@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyEditsToText,
   negotiatePositionEncoding,
+  normalizeDiagnostics,
+  normalizeFormattingEdits,
   normalizeHover,
   normalizeLocations,
   requestMethod,
+  supportsFormatting,
   supportsOperation,
   supportsTransientOpen,
 } from '@deepseek-ai/dsh-lsp-stdio'
@@ -11,6 +15,135 @@ import type { WireServerCapabilities } from '@deepseek-ai/dsh-lsp-stdio/src/prot
 
 const RANGE = { start: { line: 1, character: 2 }, end: { line: 1, character: 5 } }
 
+describe('supportsFormatting', () => {
+  it('reads the documentFormattingProvider slot (boolean and options forms)', () => {
+    expect(supportsFormatting({ documentFormattingProvider: true })).toBe(true)
+    expect(supportsFormatting({ documentFormattingProvider: { workDoneProgress: true } })).toBe(true)
+    expect(supportsFormatting({ documentFormattingProvider: false })).toBe(false)
+    expect(supportsFormatting({})).toBe(false)
+  })
+})
+
+describe('normalizeFormattingEdits', () => {
+  it('returns null-answer and missing-payload handling empty vs throw', () => {
+    expect(normalizeFormattingEdits(null)).toEqual([])
+    expect(() => normalizeFormattingEdits(undefined)).toThrow(expect.objectContaining({ code: 'LSP_MALFORMED_RESPONSE' }))
+  })
+
+  it('normalizes a TextEdit array', () => {
+    const edits = [{ range: RANGE, newText: 'x' }]
+    expect(normalizeFormattingEdits(edits)).toEqual([{ range: RANGE, newText: 'x' }])
+  })
+
+  it('rejects a non-array payload', () => {
+    expect(() => normalizeFormattingEdits({ range: RANGE, newText: 'x' })).toThrow(/not a TextEdit array or null/)
+  })
+
+  it('rejects a non-object entry and a malformed TextEdit', () => {
+    expect(() => normalizeFormattingEdits([42])).toThrow(/non-object entry/)
+    expect(() => normalizeFormattingEdits([{ range: RANGE }])).toThrow(/malformed TextEdit/)
+    expect(() => normalizeFormattingEdits([{ range: RANGE, newText: 42 }])).toThrow(/malformed TextEdit/)
+    expect(() => normalizeFormattingEdits([{ range: { start: null, end: null }, newText: 'x' }])).toThrow(/malformed TextEdit/)
+  })
+})
+
+describe('applyEditsToText', () => {
+  it('returns the original text for no edits', () => {
+    expect(applyEditsToText('abc', [])).toBe('abc')
+  })
+
+  it('applies one replacement edit', () => {
+    const edit = { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, newText: 'zzz' }
+    expect(applyEditsToText('abc def', [edit])).toBe('zzz def')
+  })
+
+  it('applies multiple edits in descending position order', () => {
+    const text = 'aaa\nbbb\nccc\n'
+    const edits = [
+      { range: { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } }, newText: 'XXX' },
+      { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, newText: '111' },
+    ]
+    expect(applyEditsToText(text, edits)).toBe('111\nXXX\nccc\n')
+  })
+
+  it('clips an over-long position to the document, and a position past the last line to its end', () => {
+    const edit = { range: { start: { line: 0, character: 2 }, end: { line: 2, character: 99 } }, newText: '!' }
+    expect(applyEditsToText('ab\ncd\n', [edit])).toBe('ab!')
+  })
+
+  it('treats \\r and \\r\\n as line terminators as well', () => {
+    const edit = { range: { start: { line: 1, character: 0 }, end: { line: 1, character: 1 } }, newText: 'X' }
+    expect(applyEditsToText('a\r\nbc\rde\n', [edit])).toBe('a\r\nXc\rde\n')
+  })
+
+  it('uses a bare \\r (no later \\n) as the line terminator', () => {
+    const edit = { range: { start: { line: 1, character: 0 }, end: { line: 1, character: 1 } }, newText: 'X' }
+    expect(applyEditsToText('a\rb', [edit])).toBe('a\rX')
+  })
+
+  it('clamps a position whose line has no terminator to the document end', () => {
+    // 'single' has no line break at all: resolving line 1 finds no terminator and clamps to length.
+    const edit = { range: { start: { line: 0, character: 0 }, end: { line: 1, character: 2 } }, newText: 'X' }
+    expect(applyEditsToText('single', [edit])).toBe('X')
+  })
+
+  it('orders edits that share a start position by descending range end', () => {
+    // Overlapping edits are out of contract; the accepted rule keeps the deterministic order the
+    // comparator settles on — among equal starts, the shorter range applies first.
+    const text = 'abcdef'
+    const edits = [
+      { range: { start: { line: 0, character: 2 }, end: { line: 0, character: 4 } }, newText: 'X' },
+      { range: { start: { line: 0, character: 2 }, end: { line: 0, character: 6 } }, newText: 'Y' },
+    ]
+    expect(applyEditsToText(text, edits)).toBe('abX')
+  })
+})
+
+describe('normalizeDiagnostics', () => {
+  const diagnostic = (start: [number, number], end: [number, number], message: string) => ({
+    range: {
+      start: { line: start[0] as number, character: start[1] as number },
+      end: { line: end[0] as number, character: end[1] as number },
+    },
+    message,
+  })
+
+  it('returns empty for a null, non-object, or non-array diagnostics payload', () => {
+    expect(normalizeDiagnostics(null, 'file:///a', 1)).toEqual([])
+    expect(normalizeDiagnostics(42, 'file:///a', 1)).toEqual([])
+    expect(normalizeDiagnostics({ uri: 'file:///a', diagnostics: 'nope' }, 'file:///a', 1)).toEqual([])
+  })
+
+  it('requires the target uri and the opened version (or an absent version)', () => {
+    const publish = { uri: 'file:///a', diagnostics: [diagnostic([0, 0], [0, 2], 'm')], version: 3 }
+    expect(normalizeDiagnostics(publish, 'file:///a', 3)).toHaveLength(1)
+    expect(normalizeDiagnostics(publish, 'file:///other', 3)).toEqual([])
+    expect(normalizeDiagnostics(publish, 'file:///a', 2)).toEqual([])
+    expect(normalizeDiagnostics({ uri: 'file:///a', diagnostics: publish.diagnostics }, 'file:///a', 3)).toHaveLength(1)
+  })
+
+  it('drops malformed entries (incl. non-objects) and sorts by range', () => {
+    const payload = {
+      uri: 'file:///a',
+      version: 1,
+      diagnostics: [
+        { range: { start: { line: 2, character: 0 }, end: { line: 2, character: 2 } }, message: 'late' },
+        { range: { start: { line: 0, character: 5 }, end: { line: 0, character: 8 } }, message: 'early', severity: 2, source: 'ts' },
+        { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 4 } }, message: 'same start A' },
+        { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 2 } }, message: 'same start B' },
+        { message: 'no range' },
+        { range: { start: { line: 3, character: 0 }, end: null }, message: 'bad range' },
+        42,
+      ],
+    }
+    expect(normalizeDiagnostics(payload, 'file:///a', 1)).toEqual([
+      { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 2 } }, message: 'same start B' },
+      { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 4 } }, message: 'same start A' },
+      { range: { start: { line: 0, character: 5 }, end: { line: 0, character: 8 } }, severity: 2, source: 'ts', message: 'early' },
+      { range: { start: { line: 2, character: 0 }, end: { line: 2, character: 2 } }, message: 'late' },
+    ])
+  })
+})
 describe('requestMethod', () => {
   it('maps each operation to its textDocument request', () => {
     expect(requestMethod('goToDefinition')).toBe('textDocument/definition')

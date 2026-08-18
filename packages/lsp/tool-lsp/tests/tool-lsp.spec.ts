@@ -23,6 +23,12 @@ function stubProvider(
       seen.push(request)
       return Promise.resolve(respond(request))
     },
+    format() {
+      return Promise.resolve({ formattedText: null })
+    },
+    collectDiagnostics() {
+      return Promise.resolve({ diagnostics: [] })
+    },
   }
 }
 
@@ -216,6 +222,12 @@ describe('tool-lsp execution', () => {
       query(_request, signal) {
         seen.push(signal)
         return Promise.resolve(okLocations)
+      },
+      format() {
+        return Promise.resolve({ formattedText: null })
+      },
+      collectDiagnostics() {
+        return Promise.resolve({ diagnostics: [] })
       },
     }
     const { ctx } = await mount(provider)

@@ -1,0 +1,101 @@
+# The `code-edit` agent preset: a coding agent whose targeted mutation tool is
+# the rich four-mode `edit` (replace / patch / apply_patch / hashline),
+# ported from oh-my-pi, backed by the harness LSP seam for format-on-write and
+# diagnostics-on-write.
+#
+# This file is an AGENT-PLANE composition. Tool rows (tool-fs, tool-edit,
+# ask-user, todo) register into the host `tools` registry and need no realm;
+# service rows (the LSP seam and its stdio provider) MUST sit inside a group
+# carrying an `isolate` realm: without one they publish into the root realm and
+# the second session mounting this preset collides with the first.
+#
+# The general-purpose editor slot is owned by `tool-edit`, so `tool-fs` is
+# mounted with `enableEdit: false` — it still provides `read`, `write`, and
+# `read_image`, while the rich editor takes over the `edit` name.
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+      Edit files with the `edit` tool, which supports four editing modes:
+      `replace` (literal old_string -> new_string with fuzzy fallback), `patch`
+      (structured JSON hunks), `apply_patch` (*** Begin Patch envelopes), and
+      `hashline` (line-anchored compact patches). Read a file before editing it.
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+# ── shell ───────────────────────────────────────────────────────────────────
+
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── filesystem ──────────────────────────────────────────────────────────────
+
+# read/write (and read_image when attachments are mounted) only — the `edit`
+# name is owned by tool-edit inside the edit-lsp group below.
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+  config:
+    enableEdit: false
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+# ── rich editor + LSP ───────────────────────────────────────────────────────
+
+# The LSP seam and its stdio provider live in an entry-local realm so each
+# mounted session owns its language-server processes; `tool-edit` sits beside
+# them so it can resolve the optional `ctx.lsp` writethrough (format-on-write,
+# diagnostics-on-write). Without a server for a file type, writethrough
+# silently no-ops and the edit still succeeds.
+- id: edit-lsp
+  name: cordis:group
+  group: true
+  isolate:
+    lsp: true
+  config:
+    - id: lsp
+      name: '@deepseek-ai/dsh-lsp'
+
+    - id: lsp-stdio
+      name: '@deepseek-ai/dsh-lsp-stdio'
+      config:
+        servers:
+          typescript:
+            command: npx
+            args: [--yes, typescript-language-server@5.0.0, --stdio]
+            extensionToLanguage:
+              .ts: typescript
+              .tsx: typescriptreact
+              .js: javascript
+              .jsx: javascriptreact
+
+    - id: tool-edit
+      name: '@deepseek-ai/dsh-tool-edit'
+      config:
+        mode: auto
+        formatOnWrite: true
+        diagnosticsOnEdit: true
+
+# ── interactions ────────────────────────────────────────────────────────────
+
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: tool-todo
+  name: '@deepseek-ai/dsh-tool-todo'
+  config:
+    allowParallelInProgress: true

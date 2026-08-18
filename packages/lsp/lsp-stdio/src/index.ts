@@ -13,27 +13,35 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { LspError, LspProviderId } from '@deepseek-ai/dsh-lsp'
+import { LspError, LspProviderId, finalExtension } from '@deepseek-ai/dsh-lsp'
 import type {
+  LspDiagnosticsRequest,
+  LspDiagnosticsResult,
+  LspFormatRequest,
+  LspFormatResult,
   LspProvider,
   LspProviderQuery,
   LspQueryResult,
 } from '@deepseek-ai/dsh-lsp'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { abortable, abortError } from './abort.ts'
-import { canonicalizeWorkspace, readHostSource } from './host.ts'
+import { canonicalizeWorkspace, readHostSource, resolveSourceUrl } from './host.ts'
 import type { HostWorkspace } from './host.ts'
 import { LspInstance } from './instance.ts'
 import type { ConnectionSpawner } from './connection.ts'
 import type { InstanceSpec } from './instance.ts'
 
-export { canonicalizeWorkspace, readHostSource } from './host.ts'
+export { canonicalizeWorkspace, readHostSource, resolveSourceUrl } from './host.ts'
 export { encodeMessage, MessageDecoder } from './framing.ts'
 export {
+  applyEditsToText,
   negotiatePositionEncoding,
+  normalizeDiagnostics,
+  normalizeFormattingEdits,
   normalizeHover,
   normalizeLocations,
   requestMethod,
+  supportsFormatting,
   supportsOperation,
   supportsTransientOpen,
 } from './translate.ts'
@@ -51,6 +59,7 @@ const DEFAULT_MAX_STDERR_BYTES = 1_000_000
 const DEFAULT_MAX_DOCUMENT_BYTES = 4_000_000
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 5_000
 const DEFAULT_KILL_GRACE_MS = 2_000
+const DEFAULT_DIAGNOSTICS_TIMEOUT_MS = 4_000
 
 /** One configured local language server and its host bounds. */
 export interface LspLocalServerConfig {
@@ -76,6 +85,8 @@ export interface LspLocalServerConfig {
   shutdownTimeoutMs?: number
   /** Request-cancel and SIGTERM→SIGKILL grace (ms). Default 2000. */
   killGraceMs?: number
+  /** Bounded wait for a `textDocument/publishDiagnostics` notification during collection (ms). Default 4000. */
+  diagnosticsTimeoutMs?: number
 }
 
 /** Plugin configuration: provider id → local language-server configuration. */
@@ -100,6 +111,7 @@ const LspLocalServerConfig: z<LspLocalServerConfig> = z.object({
   maxDocumentBytes: z.number().default(DEFAULT_MAX_DOCUMENT_BYTES),
   shutdownTimeoutMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_SHUTDOWN_TIMEOUT_MS),
   killGraceMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_KILL_GRACE_MS),
+  diagnosticsTimeoutMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_DIAGNOSTICS_TIMEOUT_MS),
 })
 
 export const Config: z<Config> = z.object({
@@ -191,7 +203,7 @@ function validateServerConfig(providerId: string, resolved: ResolvedServerConfig
   // nonpositive value would let a server that ignores shutdown hang disposal forever. Fail at load.
   assertTimer(providerId, 'shutdownTimeoutMs', resolved.shutdownTimeoutMs)
   assertTimer(providerId, 'killGraceMs', resolved.killGraceMs)
-  // Byte caps must be positive: a nonpositive stderr cap defeats the retained-tail bound
+  assertTimer(providerId, 'diagnosticsTimeoutMs', resolved.diagnosticsTimeoutMs)  // Byte caps must be positive: a nonpositive stderr cap defeats the retained-tail bound
   // (`slice(-0)` keeps everything), `maxMessageBytes: 0` makes every response fatal, and a bad
   // document cap fails later in the read path instead of at load.
   assertPositiveInteger(providerId, 'maxStderrBytes', resolved.maxStderrBytes)
@@ -302,6 +314,107 @@ class LocalLspProvider implements LspProvider {
     })
   }
 
+  async format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult> {
+    // Honor an already-aborted signal before provider I/O so a canceled request never starts a server.
+    this.assertActive(signal)
+    const formatSignal = this.querySignal(signal)
+    const workspaceResult = canonicalizeWorkspace(this.fs, request.workspaceRoot, formatSignal)
+    const workspaceLookup = workspaceResult.then(() => undefined, () => undefined)
+    this.workspaceLookups.add(workspaceLookup)
+    let workspace: HostWorkspace
+    try {
+      workspace = await workspaceResult
+    } finally {
+      this.workspaceLookups.delete(workspaceLookup)
+    }
+    this.assertActive(formatSignal)
+    const workspaceKey = workspace.target.targetKey
+    return this.enqueue(workspaceKey, formatSignal, async () => {
+      this.assertActive(formatSignal)
+      // The caller owns the authoritative text, so resolve only the URI — still inside the queue
+      // before spawning, so an invalid source cannot leave an idle process pooled.
+      const uri = await resolveSourceUrl(this.fs, request.filePath, workspace, formatSignal)
+      const languageId = this.languageFor(request.filePath)
+      // Disposal may have snapshotted the instance map while host I/O was pending. Re-check before a
+      // synchronous get-or-create so every spawned process remains owned by teardown.
+      this.assertActive(formatSignal)
+      let instance = this.instanceFor(workspaceKey, workspace)
+      try {
+        return await instance.format(request, uri, languageId, formatSignal)
+      } catch (error) {
+        // A selected child can have died while idle or fail during the next write. Formatting is
+        // idempotent over the caller's in-memory text, so replace that transport once and retry.
+        if (!instance.isTransportFailure(error)) throw error
+        await instance.dispose()
+        this.evictIfCurrent(workspaceKey, instance)
+        this.assertActive(formatSignal)
+        instance = this.instanceFor(workspaceKey, workspace)
+        return await instance.format(request, uri, languageId, formatSignal)
+      } finally {
+        // Reach quiescence before dropping a dead slot; a replacement must survive this ownership check.
+        if (instance.dead) {
+          await instance.dispose()
+          this.evictIfCurrent(workspaceKey, instance)
+        }
+      }
+    })
+  }
+
+  async collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult> {
+    this.assertActive(signal)
+    const diagnosticsSignal = this.querySignal(signal)
+    const workspaceResult = canonicalizeWorkspace(this.fs, request.workspaceRoot, diagnosticsSignal)
+    const workspaceLookup = workspaceResult.then(() => undefined, () => undefined)
+    this.workspaceLookups.add(workspaceLookup)
+    let workspace: HostWorkspace
+    try {
+      workspace = await workspaceResult
+    } finally {
+      this.workspaceLookups.delete(workspaceLookup)
+    }
+    this.assertActive(diagnosticsSignal)
+    const workspaceKey = workspace.target.targetKey
+    return this.enqueue(workspaceKey, diagnosticsSignal, async () => {
+      this.assertActive(diagnosticsSignal)
+      const uri = await resolveSourceUrl(this.fs, request.filePath, workspace, diagnosticsSignal)
+      const languageId = this.languageFor(request.filePath)
+      this.assertActive(diagnosticsSignal)
+      let instance = this.instanceFor(workspaceKey, workspace)
+      try {
+        return await instance.collectDiagnostics(request, uri, languageId, diagnosticsSignal)
+      } catch (error) {
+        /* v8 ignore start -- a collect lifecycle is notification-only (no in-flight request), so a
+           selected child that died while idle surfaces its transport failure only when the pooled
+           connection is already failed at didOpen-write time — a timing race pinned at the instance
+           level; the replace-once block stays as contract parity with `query` and `format`. */
+        // Replace the transport once when the selected child failed, mirroring query's policy.
+        if (!instance.isTransportFailure(error)) throw error
+        await instance.dispose()
+        this.evictIfCurrent(workspaceKey, instance)
+        this.assertActive(diagnosticsSignal)
+        instance = this.instanceFor(workspaceKey, workspace)
+        return await instance.collectDiagnostics(request, uri, languageId, diagnosticsSignal)
+      } finally {
+        // Reach quiescence before dropping a dead slot; a replacement must survive this ownership check.
+        if (instance.dead) {
+          await instance.dispose()
+          this.evictIfCurrent(workspaceKey, instance)
+        }
+      }
+      /* v8 ignore stop */
+    })
+  }
+
+  /** Resolve the language id for a source path from this provider's extension mapping. */
+  private languageFor(filePath: string): string {
+    const languageId = this.extensionToLanguage[finalExtension(filePath)]
+    if (languageId === undefined) {
+      /* v8 ignore next -- the seam routes only mapped extensions here; this backs an out-of-contract direct call. */
+      throw new LspError(`no LSP provider handles "${filePath}"`, 'LSP_UNAVAILABLE')
+    }
+    return languageId
+  }
+
   /** Serialize one complete query lifecycle for a canonical workspace. */
   private enqueue<T>(workspace: WorkspaceKey, signal: AbortSignal | undefined, run: () => Promise<T>): Promise<T> {
     const previous = this.queues.get(workspace) ?? Promise.resolve()
@@ -345,6 +458,7 @@ class LocalLspProvider implements LspProvider {
       maxStderrBytes: this.config.maxStderrBytes,
       shutdownTimeoutMs: this.config.shutdownTimeoutMs,
       killGraceMs: this.config.killGraceMs,
+      diagnosticsTimeoutMs: this.config.diagnosticsTimeoutMs,
     }
     return new LspInstance(spec, this.spawner)
   }

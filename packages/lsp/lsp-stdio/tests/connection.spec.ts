@@ -99,6 +99,41 @@ describe('LspConnection', () => {
     await expect(conn.request('textDocument/hover', {})).resolves.toBeDefined()
   })
 
+  it('delivers a scripted publish to listeners and removes each listener on dispose', async () => {
+    // A plan with `version: 'open'` publishes the version recorded from the didOpen, proving the
+    // wiring matches the version a collector waits on.
+    const plan = {
+      uri: 'file:///x',
+      diagnostics: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }, message: 'm' }],
+      version: 'open',
+    }
+    const conn = connect({ LSP_FAKE_PUBLISH_DIAGNOSTICS: JSON.stringify(plan) })
+    await conn.request('initialize', { capabilities: {} })
+    const seen: unknown[] = []
+    const first = conn.onNotification('textDocument/publishDiagnostics', (params) => { seen.push(params) })
+    const second = conn.onNotification('textDocument/publishDiagnostics', (params) => { seen.push(params) })
+    // Removing the second listener must stop its delivery and drop the per-method registry only
+    // when the set empties (the first dispose keeps it, the second removes it).
+    second()
+    await conn.notify('textDocument/didOpen', { textDocument: { uri: 'file:///x', languageId: 'ts', version: 1, text: 'hi' } })
+    await waitFor(() => seen.length >= 1)
+    expect(seen).toHaveLength(1)
+    expect(seen[0]).toMatchObject({ uri: 'file:///x', version: 1, diagnostics: [{ message: 'm' }] })
+    first()
+  })
+
+  it('drops the notification registry when the last listener is disposed', async () => {
+    const conn = connect({})
+    await conn.request('initialize', { capabilities: {} })
+    const remove = conn.onNotification('textDocument/publishDiagnostics', () => {})
+    remove()
+    // A second dispose is tolerated (defensive) even though there is nothing to remove.
+    remove()
+    // The method registry empties, so nothing fires and the connection stays healthy.
+    await conn.notify('textDocument/didOpen', { textDocument: { uri: 'file:///x', languageId: 'ts', version: 1, text: 'hi' } })
+    await expect(conn.request('textDocument/hover', {})).resolves.toBeDefined()
+  })
+
   it('sends an error response when the server-request handler rejects', async () => {
     const seen: SeenRequest[] = []
     const conn = connect(

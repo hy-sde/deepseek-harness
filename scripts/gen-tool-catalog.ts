@@ -46,6 +46,7 @@ import * as ToolBashPersistent from '@deepseek-ai/dsh-tool-bash-persistent'
 import CordisHostRunner from '@deepseek-ai/dsh-cordis-host-runner'
 import * as ToolCordis from '@deepseek-ai/dsh-tool-cordis'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
+import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
 import * as ToolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
 import * as ToolStrReplaceEditor from '@deepseek-ai/dsh-tool-str-replace-editor'
 import TerminalSessionService from '@deepseek-ai/dsh-terminal'
@@ -292,6 +293,22 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-edit',
+    dir: 'tool-edit',
+    source: 'packages/edit/tool-edit/src/index.ts',
+    requires: ['ctx.tools', 'ctx.fs', 'ctx.systemPrompt', 'ctx.lsp (optional: format-on-write / diagnostics-on-write)'],
+    writes: ['tool/call', 'fs/write-intent or fs/edit-intent for mutations', 'fs/observed after read presence/absence or successful file operation', 'tool/result'],
+    async mount(ctx) {
+      // The rich editor injects `fs` like tool-fs; the bare provider suffices
+      // for schema harvest. LSP is optional (read via ctx.get), so no server
+      // seam is mounted here.
+      await ctx.plugin(LocalFileSystem)
+      await ctx.plugin(ToolEdit)
+    },
+    note:
+      'Four-mode `edit` (replace / patch / apply_patch / hashline) ported from @oh-my-pi. Mount alongside tool-fs with `enableEdit: false` so the rich editor owns the `edit` name.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-fs',
