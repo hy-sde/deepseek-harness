@@ -27,4 +27,5 @@ Status: implemented
 - 随附 `minimal` 预设现在挂载 bash（`dsh-tool-bash-persistent`）以及 read/write + `edit`（`tool-fs` 设 `enableEdit: false`、`tool-edit` 设 `mode: auto`），并在各自隔离的 realm 中提供 PTY 与裸 `fs-local` 后端。它的 persona 仍是完整系统提示词且抑制 runtime-context，上下文压缩依旧缺席。
 - `examples/jsonrpc-agent/minimal.cordis.yml`（独立的 SDK 孪生）使用相同的 rich 编辑器行；Python SDK model-visible 快照与 SDK smoke 的模型跟进行现在驱动 `write` 而非 `str_replace_editor` 的 `create`。
 - tool-catalog、config-catalog、module-graph、event-producer-consumer 与 subsystem 页面不再以任何语言列出 `str_replace_editor`。
+- oh-my-pi edit-benchmark 驱动已移出 harness：独立字符串替换编辑器删除后，`scripts/run-edit-benchmark.ts` 与 `scripts/summarize-edit-benchmark.ts` 被删除（benchmark 现已位于独立的插件仓库），仓库内无任何引用。
 - 预设组合测试把 minimal 名册固定为 `bash`、`edit`、`read`、`read_image`、`write`，并断言不出现 search/ask/todo 行；web minimal 快照与预设创作 golden 均已同步更新。2026-08-10 的 [单一编辑器笔记](2026-08-10-default-presets-single-editor.md) 保留其论据，但其 minimal 例外被本笔记取代；两者互相交叉链接。

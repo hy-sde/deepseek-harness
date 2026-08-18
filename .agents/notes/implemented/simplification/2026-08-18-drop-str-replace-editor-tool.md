@@ -62,6 +62,10 @@ confused the Web preset picker.
   follow-up now drive `write` instead of `str_replace_editor` `create`.
 - Tool-catalog, config-catalog, module-graph, event-producer-consumer, and
   subsystem pages no longer list `str_replace_editor` in either language.
+- The oh-my-pi edit-benchmark driver moved out of the harness: with the
+  standalone string-replacement editor gone, `scripts/run-edit-benchmark.ts`
+  and `scripts/summarize-edit-benchmark.ts` were deleted (the benchmark now
+  lives in a separate plugin repo) and nothing in the repo references them.
 - Preset composition tests pin the minimal roster as
   `bash`, `edit`, `read`, `read_image`, `write` and assert no search/ask/todo
   rows; the web minimal snapshot and the preset-authoring goldens were updated
