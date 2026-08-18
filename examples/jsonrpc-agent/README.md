@@ -33,7 +33,7 @@ Pass the config path through the Python SDK's `cordis` option or `DSH_CORDIS_CON
 [`minimal.cordis.yml`](minimal.cordis.yml) is the complete standalone counterpart of the Web `minimal` preset. `DSH_SYSTEM_PROMPT` selects its system prompt, with `You are a helpful software engineer assistant.` as the fallback. It suppresses every system-prompt runtime-context contribution for fresh sessions and mounts no context-compaction plugin. Its model-facing tools are exactly:
 
 - owner-scoped persistent `bash`
-- `str_replace_editor` with `view`, `create`, `str_replace`, and `insert`
+- `read` / `write` from `tool-fs` and the rich `edit` tool (`replace` / `patch` / `apply_patch` / `hashline`)
 
 It composes the local PTY, bare `fs-local` backend, danger-full-access policy for persistent Bash, and uncompressed JSONL persistence needed by the bundled runtime. Bash and absolute editor paths can modify any path available to the runtime process, so run this variant only against a disposable checkout or container. The persistent PTY requires a POSIX terminal environment and is not a Windows agent interface.
 

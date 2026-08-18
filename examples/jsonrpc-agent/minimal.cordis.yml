@@ -1,7 +1,7 @@
 # Complete unattended minimal-agent composition for the Python SDK. The model
 # sees one deployment-selected system prompt and only the owner-scoped
-# persistent Bash and string-replace editor tools. Runtime-context injection and
-# context compaction are absent.
+# persistent Bash and rich edit tools. Runtime-context injection and context
+# compaction are absent.
 
 - id: sdk-jsonrpc-server
   name: '@deepseek-ai/dsh-sdk-jsonrpc-server'
@@ -38,11 +38,22 @@
     timeoutMs: 300000
 
 # The editor uses the bare local filesystem; persistent Bash still consumes the
-# shared danger-full-access sandbox policy above.
+# shared danger-full-access sandbox policy above. tool-fs contributes read/write
+# here (its own `edit` is disabled), and tool-edit owns the `edit` name.
 - id: fs-local
   name: '@deepseek-ai/dsh-fs-local'
   config:
     cwd: !!js process.env.DSH_CWD ?? process.cwd()
+
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+  config:
+    enableEdit: false
+
+- id: tool-edit
+  name: '@deepseek-ai/dsh-tool-edit'
+  config:
+    mode: auto
 
 - id: agent-spine
   name: '@deepseek-ai/dsh-agent-spine-demo'
@@ -69,11 +80,6 @@
       * To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.
       * Please avoid commands that may produce a very large amount of output.
       * Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.
-
-- id: str-replace-editor
-  name: '@deepseek-ai/dsh-tool-str-replace-editor'
-  config:
-    maxOutputChars: 16000
 
 - id: sessions
   name: '@deepseek-ai/dsh-session-persistence-jsonl'

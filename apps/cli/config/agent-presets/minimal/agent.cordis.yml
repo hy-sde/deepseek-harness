@@ -3,7 +3,8 @@
 # The persona is the complete system prompt, so global identity, Web orientation,
 # tool guidance, and later assembly listeners cannot add prompt text. Runtime
 # context snapshots are suppressed for this preset, and the model composes only
-# persistent `bash` and `str_replace_editor`. Context compaction is absent.
+# persistent `bash` and the rich `edit` tool (replace / patch / apply_patch /
+# hashline) over `tool-fs` read/write. Context compaction is absent.
 
 - id: persona
   name: '@deepseek-ai/dsh-persona'
@@ -56,7 +57,12 @@
       config:
         cwd: !!js process.env.DSH_CWD ?? process.cwd()
 
-    - id: str-replace-editor
-      name: '@deepseek-ai/dsh-tool-str-replace-editor'
+    - id: tool-fs
+      name: '@deepseek-ai/dsh-tool-fs'
       config:
-        maxOutputChars: 16000
+        enableEdit: false
+
+    - id: tool-edit
+      name: '@deepseek-ai/dsh-tool-edit'
+      config:
+        mode: auto

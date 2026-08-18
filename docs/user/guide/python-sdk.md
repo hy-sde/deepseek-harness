@@ -86,11 +86,11 @@ print(result.final_response)
 |---|---|
 | System prompt | `DSH_SYSTEM_PROMPT`, falling back to `You are a helpful software engineer assistant.` |
 | Model in `minimal.py` | `--model`, then `DSH_MODEL`, then `deepseek-v4-flash` |
-| Model-facing tools | Persistent `bash` and `str_replace_editor` only |
+| Model-facing tools | Persistent `bash`, `read` / `write` from `tool-fs`, and the rich `edit` tool |
 | Bash timeout | 300 seconds |
-| Editor output limit | 16,000 characters |
+| Editor output limit | N/A (rich edit has no fixed output cap) |
 | Context compaction | Disabled |
-| Filesystem | Bare local backend; absolute editor paths may address any path visible to the runtime process |
+| Filesystem | Bare local backend; absolute writer/editor paths may address any path visible to the runtime process |
 | Session persistence | Uncompressed JSONL under `DSH_SESSION_ROOT` |
 
 The composition omits harness identity, workspace prompt text, skills, one-shot Bash, task tools, compaction, and every other model-facing plugin. Sandbox-policy facts are logged as runtime user context rather than appended to the system prompt.

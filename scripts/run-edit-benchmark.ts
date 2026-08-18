@@ -72,7 +72,7 @@ Usage:
   pnpm exec tsx scripts/run-edit-benchmark.ts --preset <id> --fixtures <dir> --out <file> [--tasks a,b,c] [--limit N] [--timeout-ms N]
 
 Flags:
-  --preset    Shipped preset id to mount per agent (e.g. minimal, minimal-code-edit).
+  --preset    Shipped preset id to mount per agent (e.g. minimal, code-edit).
   --fixtures  Directory containing extracted benchmark fixture task dirs.
   --out       JSON output file for per-task results.
   --tasks     Comma-separated task ids; defaults to the 40-task pilot slice.
@@ -176,7 +176,6 @@ export function writeBenchPatch(preset: string, dir: string): string {
     'tool-jobs',
     'tool-fs',
     'tool-fs-search',
-    'tool-str-replace-editor',
     'skill-filesystem',
     'tool-skill',
     'tool-goal',

@@ -34,10 +34,9 @@ interface DeliverablesState extends DeliverablesTurnData {
 
 /**
  * Paths a call view reports having created or changed, by render intent rather
- * than tool name: a diff card, or a generic card whose kind is `edit` (the
- * shape `str_replace_editor`'s insert presents). Every other card produces
- * nothing to open — a read looked, a delete removed, a terminal ran. Only
- * root call views enter this Turn accumulator; nested Code Mode dispatches
+ * than tool name: a diff card, or a generic card whose kind is `edit`. Every
+ * other card produces nothing to open — a read looked, a delete removed, a
+ * terminal ran. Only root call views enter this Turn accumulator; nested Code Mode dispatches
  * preserve the pre-assembly behavior and do not contribute independently.
  */
 function producedPaths(view: ToolResultNode['callView']): readonly string[] {
@@ -55,9 +54,8 @@ function producedPaths(view: ToolResultNode['callView']): readonly string[] {
  * The source is the mutation tools' own follow-along `locations`, not the
  * closing prose: a produced file must be listed whether or not the model
  * remembered to name it. A mutation is recognized by render intent, not by
- * tool name — a diff card, or a generic card whose `kind` is `edit` (the shape
- * `str_replace_editor`'s insert presents) — so a new mutation tool joins by
- * declaring what it does. Reads contribute nothing (looking at a file does not
+ * tool name — a diff card, or a generic card whose `kind` is `edit` — so a new
+ * mutation tool joins by declaring what it does. Reads contribute nothing (looking at a file does not
  * produce it), and neither do deletes (there is nothing left to open) or
  * failed calls. Paths keep first-seen order and appear once, so a file written
  * and then edited in the same turn is one entry.

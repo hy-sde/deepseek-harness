@@ -26,7 +26,7 @@ import { runProfile } from '../apps/cli/src/profile-boot.ts'
 /** The web-app bundle's host-plane tool-row disables, mirrored verbatim. */
 const WEB_DISABLES = [
   'tool-bash', 'tool-pwsh', 'tool-jobs', 'tool-fs', 'tool-fs-search',
-  'tool-str-replace-editor', 'skill-filesystem', 'tool-skill', 'tool-goal',
+  'skill-filesystem', 'tool-skill', 'tool-goal',
   'plan-mode', 'compaction-basic', 'command-compact', 'tool-result-pruner',
   'tool-subagent-control', 'tool-subagent-list-agents', 'tool-subagent',
   'tool-subagent-fork', 'workflow-worker-thread', 'tool-workflow',

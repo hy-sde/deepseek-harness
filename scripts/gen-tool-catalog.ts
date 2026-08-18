@@ -49,7 +49,6 @@ import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
 import * as ToolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
 import * as ToolAst from '@deepseek-ai/dsh-tool-ast'
-import * as ToolStrReplaceEditor from '@deepseek-ai/dsh-tool-str-replace-editor'
 import TerminalSessionService from '@deepseek-ai/dsh-terminal'
 import * as ToolPty from '@deepseek-ai/dsh-tool-terminal'
 import * as ToolGoal from '@deepseek-ai/dsh-tool-goal'
@@ -281,19 +280,6 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description.',
-  },
-  {
-    pkg: '@deepseek-ai/dsh-tool-str-replace-editor',
-    dir: 'tool-str-replace-editor',
-    source: 'packages/fs/tool-str-replace-editor/src/index.ts',
-    requires: ['ctx.tools', 'ctx.fs'],
-    writes: ['tool/call', 'fs/observed after view presence/absence, edit absence, or successful mutation', 'tool/result'],
-    async mount(ctx) {
-      await ctx.plugin(LocalFileSystem)
-      await ctx.plugin(ToolStrReplaceEditor)
-    },
-    note:
-      'Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-edit',

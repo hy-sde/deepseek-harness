@@ -86,7 +86,6 @@ for (const name of toolNames) {
   const bf = base.aggregates.toolFailures[name] ?? 0
   const ef = edit.aggregates.toolFailures[name] ?? 0
   if (name === 'edit') console.log(`  edit             base=${b} (fails ${bf})  edit=${e} (fails ${ef})  — the ported tool`)
-  else if (name === 'str_replace_editor') console.log(`  str_replace_editor base=${b} (fails ${bf})  edit=${e} (fails ${ef})  — the baseline tool`)
   else console.log(`  ${name.padEnd(18)} base=${b}  edit=${e}`)
 }
 const baseFailTotal = Object.values(base.aggregates.toolFailures).reduce((a, b) => a + b, 0)

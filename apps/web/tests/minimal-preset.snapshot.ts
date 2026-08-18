@@ -85,8 +85,8 @@ describe('minimal agent preset', () => {
     const editor = await scaffold.ctx.tools.execute({
       signal,
       callId: CallId('minimal-editor-smoke'),
-      name: 'str_replace_editor',
-      arguments: { command: 'view', path: seedPath },
+      name: 'read',
+      arguments: { file_path: seedPath },
       agent: agentHandle.agent,
     })
 
@@ -105,13 +105,20 @@ describe('minimal agent preset', () => {
     }).toMatchInlineSnapshot(`
       {
         "bash": "PERSISTED:{{cwd}}/persistent-state",
-        "editor": "Here's the content of {{cwd}}/preset-smoke.txt with line numbers (which has a total of 2 lines):
-           1  MINIMAL_EDITOR_OK
-           2",
+        "editor": "<path>{{cwd}}/preset-smoke.txt</path>
+      <type>file</type>
+      <content>
+      1: MINIMAL_EDITOR_OK
+
+      (End of file - total 1 lines)
+      </content>",
         "prompt": "You are a helpful software engineer assistant.",
         "tools": [
           "bash",
-          "str_replace_editor",
+          "edit",
+          "read",
+          "read_image",
+          "write",
         ],
       }
     `)

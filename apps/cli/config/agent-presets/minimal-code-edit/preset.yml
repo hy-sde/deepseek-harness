@@ -1,3 +1,0 @@
-name: Minimal Edit Mode
-description: Two-tool coding agent with persistent bash and the rich edit tool (replace / patch / apply_patch / hashline).
-order: 6

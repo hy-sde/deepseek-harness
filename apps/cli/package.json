@@ -74,7 +74,6 @@
     "@deepseek-ai/dsh-schedule": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
     "@deepseek-ai/dsh-tool-skill": "workspace:^",
-    "@deepseek-ai/dsh-tool-str-replace-editor": "workspace:^",
     "@deepseek-ai/dsh-tool-subagent": "workspace:^",
     "@deepseek-ai/dsh-tool-subagent-control": "workspace:^",
     "@deepseek-ai/dsh-tool-jobs": "workspace:^",

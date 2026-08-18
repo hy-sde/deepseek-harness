@@ -33,7 +33,7 @@
 [`minimal.cordis.yml`](minimal.cordis.yml) 是 Web `minimal` preset 的完整独立版本。`DSH_SYSTEM_PROMPT` 选择它的系统提示词，未设置时使用 `You are a helpful software engineer assistant.`。它为新建会话抑制每个 system-prompt runtime-context 贡献，且不挂载上下文压缩插件。面向模型的工具严格只有：
 
 - 所有者作用域内持久化的 `bash`
-- 提供 `view`、`create`、`str_replace` 与 `insert` 的 `str_replace_editor`
+- 来自 `tool-fs` 的 `read` / `write`，以及 rich `edit` 工具（`replace` / `patch` / `apply_patch` / `hashline`）
 
 它组合了内置运行时所需的本地 PTY、裸 `fs-local` 后端、供持久 Bash 使用的 danger-full-access 策略，以及未压缩的 JSONL 持久化。Bash 和编辑器绝对路径可以修改运行时进程有权访问的任何路径，因此只能针对可丢弃的 checkout 或容器运行该变体。持久 PTY 需要 POSIX 终端环境，因此不适用于 Windows agent 接口。
 

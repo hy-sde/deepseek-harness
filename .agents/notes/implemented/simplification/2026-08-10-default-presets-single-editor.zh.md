@@ -2,6 +2,8 @@
 
 Status: implemented
 
+已被取代：minimal 例外被整体移除——[彻底移除 str_replace_editor](../simplification/2026-08-18-drop-str-replace-editor-tool.md) 现在把 `minimal` 作为 rich 双工具预设随附，并删除独立插件。
+
 [English](2026-08-10-default-presets-single-editor.md) | 中文
 
 ## 问题

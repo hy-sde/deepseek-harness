@@ -25,7 +25,7 @@ CODE_PROMPT = "Use run_code to compute the packaged worker smoke value."
 CODE_WORKER_TEXT = "code worker smoke ok"
 WORKFLOW_PROMPT = "Use workflow to compute the packaged worker smoke value without agents."
 WORKFLOW_WORKER_TEXT = "workflow worker smoke ok"
-MINIMAL_PROMPT = "Exercise the packaged minimal agent's persistent Bash and string-replacement editor."
+MINIMAL_PROMPT = "Exercise the packaged minimal agent's persistent Bash and rich edit tool."
 MINIMAL_TEXT = "minimal agent smoke ok"
 MINIMAL_EDITOR_PATH_PREFIX = "Editor path: "
 MINIMAL_CORDIS = (
@@ -272,15 +272,14 @@ def minimal_tool_followup(
             raise AssertionError("persistent editor smoke prompt has no editor path")
         return tool_call_chunks(
             "minimal-editor",
-            "str_replace_editor",
+            "write",
             {
-                "command": "create",
-                "path": editor_path,
-                "file_text": "created by packaged editor\n",
+                "file_path": editor_path,
+                "content": "created by packaged editor\n",
             },
         )
-    if call_id == "minimal-editor" and tool_name == "str_replace_editor":
-        if "New file created successfully" not in tool_text:
+    if call_id == "minimal-editor" and tool_name == "write":
+        if "<content>\nCreated file\n</content>" not in tool_text:
             raise AssertionError(f"packaged editor did not create its file: {tool_text}")
         return text_chunks(MINIMAL_TEXT)
     raise AssertionError(f"unexpected minimal-agent follow-up: {call_id} {tool_name}: {tool_text}")

@@ -234,10 +234,10 @@ describe('the shipped Web composition', () => {
       expect(assembly.sections).toEqual([
         { name: 'deployment:persona', text: MINIMAL_PROMPT },
       ])
-      expect(assembly.tools.map(tool => tool.name)).toEqual(['bash', 'str_replace_editor'])
+      expect(assembly.tools.map(tool => tool.name)).toEqual(['bash', 'edit', 'read', 'read_image', 'write'])
       expect(assembly.tools.find(tool => tool.name === 'bash')?.description).toBe(MINIMAL_BASH_DESCRIPTION)
-      expect(JSON.stringify(assembly.tools.find(tool => tool.name === 'str_replace_editor')?.parameters))
-        .toContain('Absolute path')
+      expect(JSON.stringify(assembly.tools.find(tool => tool.name === 'edit')?.parameters))
+        .toContain('old_string')
       expect(ctx.agentPresets.serviceFor(handle.agent, 'compaction')).toBeUndefined()
       expect(handle.agent.ctx.get('compaction')).toBeUndefined()
     } finally {
@@ -255,7 +255,7 @@ describe('the shipped Web composition', () => {
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
     })
     try {
-      expect(toolNames(ctx, minimal.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(ctx, minimal.agent)).toEqual(['bash', 'edit', 'read', 'read_image', 'write'])
       expect(toolNames(ctx, full.agent).length).toBeGreaterThan(10)
 
       await minimal.dispose()
@@ -282,7 +282,7 @@ describe('the shipped Web composition', () => {
       ]))
       // And it keeps the standard agent's own tools rather than replacing them.
       expect(tools).toEqual(expect.arrayContaining(['bash', 'read', 'edit', 'skill']))
-      expect(tools).not.toContain('str_replace_editor')
+      expect(tools).toContain('write')
 
       // The preset's own authoring skill registers into ITS layer of the host
       // registry: the cordis agent's view carries it, the global view does not.
@@ -309,9 +309,9 @@ describe('the shipped Web composition', () => {
       // the capabilities — so the assembly is what carries the claim.
       const assembly = await ctx.systemPrompt.assemble({ scope: coded.agent })
       expect(assembly.tools.map(tool => tool.name)).toEqual(['run_code'])
-      expect(toolNames(ctx, coded.agent)).not.toContain('str_replace_editor')
+      expect(toolNames(ctx, coded.agent)).toContain('read')
       const sdk = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
-      expect(sdk).not.toContain('str_replace_editor')
+      expect(sdk).toContain('write')
       expect(sdk).toContain('web_search')
 
       // The presentation is this agent's alone: the deployment default is
@@ -404,7 +404,7 @@ describe('the shipped Web composition', () => {
       // stays the preset's choice — minimal mounts no `tool-skill`, so its
       // tool table has no loader even though the global layer is readable.
       expect((await ctx.skills.list({ scope: handle.agent })).map(skill => skill.name)).toContain('dsh-badge')
-      expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'edit', 'read', 'read_image', 'write'])
     } finally {
       await handle.dispose()
     }
@@ -774,7 +774,7 @@ describe('authoring a preset on the shipped composition', () => {
     try {
       // The same tools the shipped `minimal` composes, from a directory copied
       // through the service into a root outside the installed harness.
-      expect(toolNames(authorCtx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+      expect(toolNames(authorCtx, handle.agent)).toEqual(['bash', 'edit', 'read', 'read_image', 'write'])
     } finally {
       await handle.dispose()
     }
@@ -809,9 +809,10 @@ describe('the default preset as a user setting', () => {
         setup: agentCtx => ctx.agentPresets.mount(agentCtx).then(() => undefined),
       })
       try {
-        // `mount()` with no id resolves the effective default. Two tools, not
-        // `standard`'s catalog: the setting decided the composition.
-        expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
+        // `mount()` with no id resolves the effective default. The small tool
+        // surface, not `standard`'s catalog: the setting decided the
+        // composition.
+        expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'edit', 'read', 'read_image', 'write'])
       } finally {
         await handle.dispose()
       }

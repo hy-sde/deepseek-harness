@@ -71,7 +71,6 @@ describe('shipped code-edit preset', () => {
     expect(names).toContain('edit')
     expect(names).toContain('read')
     expect(names).toContain('write')
-    expect(names).not.toContain('str_replace_editor')
     expect(names).toContain('bash')
     expect(names).toContain('glob')
     expect(names).toContain('grep')
@@ -88,7 +87,7 @@ describe('shipped code-edit preset', () => {
     expect(ctx.tools.schemas().map(schema => schema.name)).not.toContain('edit')
   })
 
-  it('minimal-code-edit mounts as minimal with the rich editor in place of str_replace_editor', async () => {
+  it('minimal mounts as a two-tool composition with the rich editor', async () => {
     const ctx = new Context()
     ctx.baseUrl = pathToFileURL(SHIPPED_ROOT).href + '/'
     await ctx.plugin(Loader)
@@ -108,27 +107,26 @@ describe('shipped code-edit preset', () => {
     ctx.provide('shellEnv', {})
     ctx.provide('userQuestions', {})
     await ctx.plugin(AgentPresets, {
-      default: 'minimal-code-edit',
+      default: 'minimal',
       roots: [{ path: SHIPPED_ROOT, trust: 'system' }],
       includeUserRoot: false,
     })
 
-    const key = await ctx.agentPresets.standingKeyFor('minimal-code-edit')
-    expect(key).toEqual({ agentPreset: 'minimal-code-edit' })
+    const key = await ctx.agentPresets.standingKeyFor('minimal')
+    expect(key).toEqual({ agentPreset: 'minimal' })
 
     const handle = await ctx.agents.create({
-      sessionId: SessionId('minimal-code-edit-preset-smoke'),
-      setup: async agentCtx => void await ctx.agentPresets.mount(agentCtx, 'minimal-code-edit'),
+      sessionId: SessionId('minimal-preset-smoke'),
+      setup: async agentCtx => void await ctx.agentPresets.mount(agentCtx, 'minimal'),
     })
     const names = ctx.tools.schemas(handle.agent).map(schema => schema.name).sort()
 
-    // Two-tool carrier (bash + rich editor) exactly like `minimal`, with the
-    // rich `edit` owning the name and no search/ask/todo rows.
+    // Two-tool carrier (bash + rich editor): the rich `edit` owns the name,
+    // tool-fs contributes read/write only, and there is no search/ask/todo rows.
     expect(names).toContain('bash')
     expect(names).toContain('edit')
     expect(names).toContain('read')
     expect(names).toContain('write')
-    expect(names).not.toContain('str_replace_editor')
     expect(names).not.toContain('glob')
     expect(names).not.toContain('grep')
     expect(names).not.toContain('ask_user_question')
