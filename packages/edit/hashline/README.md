@@ -1,5 +1,7 @@
 # @deepseek-ai/dsh-hashline
 
+English | [中文](README.zh.md)
+
 Hashline: a compact, line-anchored patch language and applier, ported from
 [@oh-my-pi/hashline](https://github.com/can1357/oh-my-pi/tree/main/packages/hashline).
 

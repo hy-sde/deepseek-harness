@@ -24,6 +24,10 @@
 
 用于持久、仅限 Session 内提醒的可选 Web overlay。它通过 `schedule_create`、`schedule_list` 和 `schedule_delete` 支持正整数秒的 `after_seconds` 延时与绝对 `at` 目标；活动提醒保存在原 Session 中，该 Session 再次 live 时恢复，而 cold 期间不会运行。使用 `dsh web --patch examples/web-schedule/cordis.yml` 启动；绝对时间 authority 以及交付与恢复边界详见 [web-schedule/README.md](web-schedule/README.md)。
 
+## logseq
+
+可选的 Web overlay，移植了 oh-my-pi 的 `logseq-diary.ts` 与 `logseq-work.ts` 扩展：提供 `logseq_diary_ingest` 和 `logseq_work_log_ingest` 两个模型工具，以及 `/diary` 和 `/diary-work` 斜杠命令，驱动 `logseq` CLI 操作一个 graph。使用 `dsh web --patch examples/logseq/cordis.yml` 启动；详见 [logseq/README.md](logseq/README.md)。
+
 ## acp-agent
 
 面向程序化客户端的 ACP（Agent Client Protocol）自动化服务器，支持会话、权限和取消操作。详见 [ACP 示例参考](acp-agent/README.md)。

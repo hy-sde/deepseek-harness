@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "b2038222ce9f3c34a9d3e0fb4db193732da1e23b",
-    "indexed_at": "2026-08-18T01:45:27Z",
+    "commit": "bc7cc54673a8c8f7ffac462050a5d33d952226db",
+    "indexed_at": "2026-08-18T02:00:30Z",
     "project": "Users-hui-Documents-github-deepseek-harness",
-    "nodes": 62397,
-    "edges": 153526,
-    "original_size": 157679616,
-    "compressed_size": 24551010,
+    "nodes": 62837,
+    "edges": 153887,
+    "original_size": 158138368,
+    "compressed_size": 24565170,
     "compression_level": 3
 }

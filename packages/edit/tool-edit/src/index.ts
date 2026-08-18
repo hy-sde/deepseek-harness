@@ -34,7 +34,7 @@ import { executeReplace } from './replace.ts'
 import { createEditSession, type EditMode, type EditSession, type ResolvedConfig } from './session.ts'
 
 export const name = 'tool-edit'
-export const inject = ['tools', 'fs', 'systemPrompt'] as const
+export const inject = ['tools', 'fs', 'systemPrompt']
 
 /** Runtime configuration for the `edit` tool. */
 export interface Config {

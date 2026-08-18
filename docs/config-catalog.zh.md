@@ -1201,10 +1201,12 @@ export interface LspLocalServerConfig {
   shutdownTimeoutMs?: number
   /** Request-cancel and SIGTERM→SIGKILL grace (ms). Default 2000. */
   killGraceMs?: number
+  /** Bounded wait for a `textDocument/publishDiagnostics` notification during collection (ms). Default 4000. */
+  diagnosticsTimeoutMs?: number
 }
 ```
 
-来源：[`packages/lsp/lsp-stdio/src/index.ts:82`](../packages/lsp/lsp-stdio/src/index.ts)
+来源：[`packages/lsp/lsp-stdio/src/index.ts:93`](../packages/lsp/lsp-stdio/src/index.ts)
 
 <a id="deepseek-aidsh-mcp-client"></a>
 
@@ -2374,6 +2376,39 @@ export interface Config {
 
 来源：[`packages/shell/tool-bash-persistent/src/index.ts:400`](../packages/shell/tool-bash-persistent/src/index.ts)
 
+<a id="deepseek-aidsh-tool-edit"></a>
+
+## `@deepseek-ai/dsh-tool-edit`
+
+需要：`tools` · `fs` · `systemPrompt`
+
+```ts config-catalog
+/** Runtime configuration for the `edit` tool. */
+export interface Config {
+  /** Which mode the single `edit` tool runs (default 'auto': dispatch by args). */
+  mode?: EditMode
+  /** Whether fuzzy whitespace matching is allowed (replace/patch). */
+  fuzzyMatch?: boolean
+  /** Similarity threshold for fuzzy matches (0..1). */
+  fuzzyThreshold?: number
+  /** hashline: reject edits on lines the model never saw. */
+  enforceSeenLines?: boolean
+  /** LSP-write through: format the file with the formatter on write. */
+  formatOnWrite?: boolean
+  /** LSP-write through: collect diagnostics after a successful write. */
+  diagnosticsOnEdit?: boolean
+  /** Deduplicate diagnostics by message (applies when diagnosticsOnEdit). */
+  diagnosticsDeduplicate?: boolean
+  /** Override the model-facing tool description. */
+  description?: string
+}
+
+/** Modes the `edit` tool can run in (fixed by config, not per-call). */
+export type EditMode = 'auto' | 'hashline' | 'replace' | 'patch' | 'apply_patch'
+```
+
+来源：[`packages/edit/tool-edit/src/index.ts:40`](../packages/edit/tool-edit/src/index.ts)
+
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
@@ -2391,6 +2426,8 @@ export interface Config {
   readMaxBytes?: number
   /** Files at or above this size stream instead of loading whole into memory. */
   readStreamMinSize?: number
+  /** Register the literal `edit` tool. Set false when a rich editor replaces it; default true. */
+  enableEdit?: boolean
 }
 ```
 
@@ -3155,6 +3192,7 @@ export interface Config {
 - `@deepseek-ai/dsh-client-web`（[`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts)）
 - `@deepseek-ai/dsh-client-web-react`（[`packages/client/web-react/src/index.ts`](../packages/client/web-react/src/index.ts)）
 - `@deepseek-ai/dsh-cmdline`（[`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts)）
+- `@deepseek-ai/dsh-hashline`（[`packages/edit/hashline/src/index.ts`](../packages/edit/hashline/src/index.ts)）
 - `@deepseek-ai/dsh-home-paths`（[`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts)）
 - `@deepseek-ai/dsh-hook-protocol`（[`packages/hooks/hook-protocol/src/index.ts`](../packages/hooks/hook-protocol/src/index.ts)）
 - `@deepseek-ai/dsh-launch-environment`（[`packages/util/launch-environment/src/index.ts`](../packages/util/launch-environment/src/index.ts)）

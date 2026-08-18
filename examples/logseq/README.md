@@ -1,5 +1,7 @@
 # LogSeq diary and work-log extension
 
+English | [中文](README.zh.md)
+
 This overlay opts one `dsh web` process into LogSeq diary and work-log logging without changing the shipped default Web composition:
 
 ```sh

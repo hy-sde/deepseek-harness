@@ -1,5 +1,7 @@
 # @deepseek-ai/dsh-tool-edit
 
+English | [中文](README.zh.md)
+
 Model-facing rich edit tool for the DeepSeek Harness: one `edit` tool with four
 edit modes, ported from [oh-my-pi](https://github.com/can1357/oh-my-pi)'s
 coding agent (`packages/coding-agent/src/edit`).

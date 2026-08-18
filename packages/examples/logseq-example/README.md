@@ -1,5 +1,7 @@
 # @deepseek-ai/dsh-logseq-example
 
+English | [中文](README.zh.md)
+
 Runnable example plugin that ports the oh-my-pi `logseq-diary.ts` and `logseq-work.ts` extensions to a DeepSeek Harness Cordis plugin: two model tools on `ctx.tools` (`logseq_diary_ingest`, `logseq_work_log_ingest`) and, when a command registry is composed, the `/diary` and `/diary-work` slash commands on `ctx.commands`.
 
 Mount it through the overlay at [`examples/logseq/cordis.yml`](../../../examples/logseq/cordis.yml):
