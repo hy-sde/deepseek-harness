@@ -3332,6 +3332,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export class LlmRuntime extends Service {\n    constructor(ctx: Context);\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    async resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig>;\n    async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;\n    stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
   {
+    name: 'LspCodeAction',
+    declaration: 'export interface LspCodeAction {\n    readonly title: string;\n    readonly kind?: string;\n    readonly isPreferred?: boolean;\n    readonly diagnostics: readonly LspDiagnostic[];\n}',
+  },
+  {
     name: 'LspDiagnostic',
     declaration: 'export interface LspDiagnostic {\n    readonly range: LspRange;\n    readonly severity?: 1 | 2 | 3 | 4;\n    readonly source?: string;\n    readonly message: string;\n}',
   },
@@ -3342,6 +3346,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'LspDiagnosticsResult',
     declaration: 'export interface LspDiagnosticsResult {\n    readonly diagnostics: readonly LspDiagnostic[];\n}',
+  },
+  {
+    name: 'LspDocumentSymbol',
+    declaration: 'export interface LspDocumentSymbol {\n    readonly name: string;\n    readonly kind: number;\n    readonly range: LspRange;\n    readonly selectionRange: LspRange;\n    readonly depth: number;\n    readonly detail?: string;\n}',
   },
   {
     name: 'LspFormatRequest',
@@ -3361,7 +3369,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LspOperation',
-    declaration: 'export type LspOperation = \'goToDefinition\' | \'findReferences\' | \'goToImplementation\' | \'hover\';',
+    declaration: 'export type LspOperation = \'goToDefinition\' | \'findReferences\' | \'goToImplementation\' | \'hover\' | \'goToTypeDefinition\' | \'documentSymbols\' | \'codeActions\' | \'rename\' | \'diagnostics\';',
   },
   {
     name: 'LspPosition',
@@ -3381,15 +3389,19 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LspQueryRequest',
-    declaration: 'export interface LspQueryRequest {\n    readonly operation: LspOperation;\n    readonly filePath: string;\n    readonly position: LspPosition;\n    readonly workspaceRoot: string;\n}',
+    declaration: 'export interface LspQueryRequest {\n    readonly operation: LspOperation;\n    readonly filePath: string;\n    readonly position: LspPosition;\n    readonly workspaceRoot: string;\n    readonly newName?: string;\n}',
   },
   {
     name: 'LspQueryResult',
-    declaration: 'export type LspQueryResult = {\n    readonly kind: \'locations\';\n    readonly locations: readonly LspLocation[];\n    readonly resolvedWorkspaceUri: string;\n} | {\n    readonly kind: \'hover\';\n    readonly hover: LspHover | null;\n};',
+    declaration: 'export type LspQueryResult = {\n    readonly kind: \'locations\';\n    readonly locations: readonly LspLocation[];\n    readonly resolvedWorkspaceUri: string;\n} | {\n    readonly kind: \'hover\';\n    readonly hover: LspHover | null;\n} | {\n    readonly kind: \'documentSymbols\';\n    readonly symbols: readonly LspDocumentSymbol[];\n    readonly resolvedWorkspaceUri: string;\n} | {\n    readonly kind: \'codeActions\';\n    readonly actions: readonly LspCodeAction[];\n    readonly resolvedWorkspaceUri: string;\n} | {\n    readonly kind: \'rename\';\n    readonly files: readonly LspRenameFile[];\n    readonly resolvedWorkspaceUri: string;\n} | {\n    readonly kind: \'diagnostics\';\n    readonly diagnostics: readonly LspDiagnostic[];\n    readonly resolvedWorkspaceUri: string;\n};',
   },
   {
     name: 'LspRange',
     declaration: 'export interface LspRange {\n    readonly start: LspPosition;\n    readonly end: LspPosition;\n}',
+  },
+  {
+    name: 'LspRenameFile',
+    declaration: 'export interface LspRenameFile {\n    readonly uri: string;\n    readonly edits: readonly {\n        readonly range: LspRange;\n        readonly newText: string;\n    }[];\n}',
   },
   {
     name: 'ManualCompactAgentContext',

@@ -54,6 +54,15 @@
   config:
     sampleOverCapGlobResults: false
 
+# ── structural search / rewrite ─────────────────────────────────────────────
+
+# ast_grep (structural search) and ast_edit (preview / apply structural
+# rewrite) over the packaged ast-grep native binary — no host install and no
+# shell layer. The `subprocess` seam stays on the host plane; only the
+# model-facing tools move.
+- id: tool-ast
+  name: '@deepseek-ai/dsh-tool-ast'
+
 # ── rich editor + LSP ───────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each
@@ -89,6 +98,14 @@
         mode: auto
         formatOnWrite: true
         diagnosticsOnEdit: true
+
+    # Read-only LSP navigation: definition, references, implementation, type
+    # definition, hover, document symbols, code actions, rename PREVIEW, and
+    # diagnostics through the publish listener. Never writes files.
+    - id: tool-lsp
+      name: '@deepseek-ai/dsh-tool-lsp'
+      config:
+        timeoutMs: 60000
 
 # ── interactions ────────────────────────────────────────────────────────────
 

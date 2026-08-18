@@ -88,10 +88,20 @@ describe('tool-lsp registration', () => {
     expect(ctx.tools.get('lsp')?.timeoutMs).toBe(5000)
   })
 
-  it('exposes exactly the four operations in the schema enum', async () => {
+  it('exposes exactly the registered operations in the schema enum', async () => {
     const { ctx } = await mount(stubProvider(() => okLocations))
     const schema = ctx.tools.get('lsp')?.parameters as { properties: { operation: { enum: string[] } } }
-    expect(schema.properties.operation.enum).toEqual(['goToDefinition', 'findReferences', 'goToImplementation', 'hover'])
+    expect(schema.properties.operation.enum).toEqual([
+      'goToDefinition',
+      'findReferences',
+      'goToImplementation',
+      'goToTypeDefinition',
+      'hover',
+      'documentSymbols',
+      'codeActions',
+      'rename',
+      'diagnostics',
+    ])
   })
 
   it('has no default export (namespace plugin shape)', () => {
@@ -209,7 +219,7 @@ describe('tool-lsp execution', () => {
 
   it('returns a structured INVALID_ARGS on a bad operation', async () => {
     const { ctx } = await mount(stubProvider(() => okLocations))
-    const result = await call(ctx, { operation: 'rename', file_path: 'a.ts', line: 1, character: 1 }, workspaceRoot)
+    const result = await call(ctx, { operation: 'notAnOperation', file_path: 'a.ts', line: 1, character: 1 }, workspaceRoot)
     expect(result.isError).toBe(true)
     expect(result.error?.info?.code).toBe('INVALID_ARGS')
   })

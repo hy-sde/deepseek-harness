@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-18-structural-ast-search-and-rewrite-tools.md
+2026-08-18-structural-ast-search-and-rewrite-tools.md: 57481f378aa232b8b4cd58331409e1e0585e0974
+2026-08-18-structural-ast-search-and-rewrite-tools.zh.md: e35d2db6f36108506b659dad59e5b89f9b934362

@@ -229,6 +229,13 @@
       config:
         sampleOverCapGlobResults: false
 
+    # AST structural search/rewrite over the packaged ast-grep binary, mountable
+    # anywhere the subprocess + filesystem seams exist. ast_edit always PREVIEWS
+    # first and only writes with apply: true, through the filesystem seam
+    # (observation + version guard + sandbox policy).
+    - id: tool-ast
+      name: '@deepseek-ai/dsh-tool-ast'
+
     - id: agent-instructions
       name: '@deepseek-ai/dsh-agent-instructions'
       config:

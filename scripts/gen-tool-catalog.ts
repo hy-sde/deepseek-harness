@@ -48,6 +48,7 @@ import * as ToolCordis from '@deepseek-ai/dsh-tool-cordis'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
 import * as ToolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
+import * as ToolAst from '@deepseek-ai/dsh-tool-ast'
 import * as ToolStrReplaceEditor from '@deepseek-ai/dsh-tool-str-replace-editor'
 import TerminalSessionService from '@deepseek-ai/dsh-terminal'
 import * as ToolPty from '@deepseek-ai/dsh-tool-terminal'
@@ -344,6 +345,24 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-ast',
+    dir: 'tool-ast',
+    source: 'packages/ast/tool-ast/src/index.ts',
+    requires: ['ctx.tools', 'ctx.subprocess', 'ctx.systemPrompt', 'ctx.fs (ast_edit apply)'],
+    writes: ['tool/call', 'fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)', 'tool/result'],
+    async mount(ctx) {
+      // The tools inject `subprocess` (they spawn the packaged ast-grep binary
+      // through the seam) and `fs` (ast_edit apply writes through ctx.fs with
+      // observation + sandbox policy). Registration never spawns, and the sandbox
+      // policy is optional (read via ctx.get), so the bare providers suffice.
+      await ctx.plugin(LocalFileSystem)
+      await ctx.plugin(LocalSubprocessRuntime)
+      await ctx.plugin(ToolAst)
+    },
+    note:
+      'ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy).',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-terminal',
@@ -681,10 +700,20 @@ function toolSource(entry: ToolPackage, toolName: string): string {
   return source
 }
 
+/** Escape `<>` in prose so VitePress does not read placeholder tokens as HTML, while keeping backtick code spans verbatim. */
+export function escapeDescriptionHtml(description: string): string {
+  return description
+    .split(/(`+[^`]*`+)/)
+    .map((segment, index) =>
+      index % 2 === 1 ? segment : segment.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    )
+    .join('')
+}
+
 /** Render one tool's entry: name, description, JSON-Schema parameters, source. */
 function renderTool(schema: ToolSchema, source: string): string[] {
   const out = [`### \`${schema.name}\``, '']
-  if (schema.description) out.push(schema.description, '')
+  if (schema.description) out.push(escapeDescriptionHtml(schema.description), '')
   out.push('```json', JSON.stringify(schema.parameters, null, 2), '```', '')
   out.push(`Source: [\`${source}\`](../${source})`, '')
   return out

@@ -22,9 +22,9 @@ harness 已具备文本搜索与文件读取能力，但二者都无法识别程
 
 `dsh-lsp-stdio` 是通用 host，不是语言服务器目录或安装器。部署显式配置命令与映射；未来 preset 属于组合插件或 `cordis.yml` overlay。
 
-模型与 seam 仅公开 `goToDefinition`、`findReferences`、`goToImplementation` 和 `hover`；`ctx.lsp` 不提供任意 JSON-RPC 方法。这些操作字面量与 Claude Code 熟悉的 camelCase 命名一致，而工具名与 `file_path` 字段仍由 harness 自行定义。
+模型与 seam 仅公开 `goToDefinition`、`findReferences`、`goToImplementation`、`goToTypeDefinition`、`hover`、`documentSymbols`、`codeActions`、`rename`（仅预览）和 `diagnostics`；`ctx.lsp` 不提供任意 JSON-RPC 方法。这些操作字面量与 Claude Code 熟悉的 camelCase 命名一致，而工具名与 `file_path` 字段仍由 harness 自行定义。`codeActions` 与 `rename` 从不写入：seam 返回归一化预览，文件系统 seam 负责变更，因此观察、版本校验与沙盒策略持续生效。
 
-提示词将 LSP 定位为精确查询手段：`Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, or references.`
+提示词将 LSP 定位为精确查询手段：`Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, references, or symbol structure. Positions are one-based line and character (UTF-16) at the cursor; an off-symbol position may return no results. findReferences always includes the declaration. documentSymbols and diagnostics use the file only (pass 1 1 for line/character). rename requires new_name and returns a preview of every edit the server would make (it never writes files).`
 
 ## 包与职责边界
 
@@ -37,7 +37,9 @@ seam 只公开 `query(request, signal?)`，因为没有字段需要实现层填�
 ```ts
 import type { Branded } from '@deepseek-ai/dsh-brand'
 
-type LspOperation = 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
+type LspOperation =
+  | 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'goToTypeDefinition' | 'hover'
+  | 'documentSymbols' | 'codeActions' | 'rename' | 'diagnostics'
 type LspProviderId = Branded<'LspProviderId'>
 
 interface LspPosition {
@@ -64,6 +66,38 @@ interface LspProviderQuery extends LspQueryRequest {
 type LspQueryResult =
   | { readonly kind: 'locations'; readonly locations: readonly { readonly uri: string; readonly range: LspRange }[]; readonly resolvedWorkspaceUri: string }
   | { readonly kind: 'hover'; readonly hover: { readonly contents: string; readonly range?: LspRange } | null }
+  | { readonly kind: 'documentSymbols'; readonly symbols: readonly LspDocumentSymbol[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'codeActions'; readonly actions: readonly LspCodeAction[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'rename'; readonly files: readonly LspRenameFile[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'diagnostics'; readonly diagnostics: readonly LspDiagnostic[]; readonly resolvedWorkspaceUri: string }
+
+interface LspDocumentSymbol {
+  readonly name: string
+  readonly kind: number
+  readonly range: LspRange
+  readonly selectionRange: LspRange
+  readonly depth: number
+  readonly detail?: string
+}
+
+interface LspCodeAction {
+  readonly title: string
+  readonly kind?: string
+  readonly isPreferred?: boolean
+  readonly diagnostics: readonly LspDiagnostic[]
+}
+
+interface LspRenameFile {
+  readonly uri: string
+  readonly edits: readonly { readonly range: LspRange; readonly newText: string }[]
+}
+
+interface LspDiagnostic {
+  readonly range: LspRange
+  readonly severity?: 1 | 2 | 3 | 4
+  readonly source?: string
+  readonly message: string
+}
 
 interface LspProvider {
   readonly id: LspProviderId
@@ -87,10 +121,13 @@ interface LspService {
 
 ```ts
 interface LspToolInput {
-  readonly operation: 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
+  readonly operation:
+    | 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'goToTypeDefinition' | 'hover'
+    | 'documentSymbols' | 'codeActions' | 'rename' | 'diagnostics'
   readonly file_path: string
   readonly line: number
   readonly character: number
+  readonly new_name?: string
 }
 ```
 
@@ -120,7 +157,7 @@ seam 和提供方不增加启动或请求截止时间。非工具调用方不会
 
 1. 通过 `ctx.fs` 解析源文件并检查其位于工作区内，再通过同一提供方流式读取当前文本，同时执行文档字节上限。
 2. 发送 `textDocument/didOpen`，其中包含版本 `1`、完整文本和配置的语言 id。该写入仍可取消；写入失败或遭取消会使实例失效，并等待有界进程终止完成，池才能复用它。
-3. 发送所请求的 `textDocument/definition`、`textDocument/references`、`textDocument/implementation` 或 `textDocument/hover` 请求。
+3. 发送所请求的 `textDocument/definition`、`textDocument/references`、`textDocument/implementation`、`textDocument/typeDefinition`、`textDocument/hover`、`textDocument/documentSymbol`、`textDocument/codeAction`、`textDocument/rename`（携带新名称）或 `textDocument/diagnostic` 请求。`diagnostics` 还会在临时打开后等待服务器的 `textDocument/publishDiagnostics`（或推送式 `textDocument/diagnostic` 拉取结果）返回；排队的查询只在其轮次开始时读取当前字节。
 4. 如果 `didOpen` 成功，则在请求完成或取消后于 `finally` 中尝试发送 `textDocument/didClose`。关闭写入失败不会覆盖已经确定的结果或错误，但会使实例失效，并等待有界进程终止完成。
 
 每次调用后都关闭文档，因此第一版不需要 `didChange`、`didSave`、内容缓存、变更监听器或文档 LRU。每个工作区的提供方队列可取消，并串行执行源文件读取、打开、查询和关闭的完整生命周期，因此等待中的查询只在轮到它时才读取当前字节；实例也会串行执行协议生命周期。不同工作区可以并行。服务器工作区索引仍负责从源文件跳转到的已关闭文件。
@@ -139,15 +176,15 @@ seam 和提供方不增加启动或请求截止时间。非工具调用方不会
 
 ## 明确延后的 API
 
-符号操作因需要不同 schema 且与读取或搜索重叠而延后；未来的工作区符号工具必须接收搜索词。调用层级因支持度不一而延后，`prepareCallHierarchy` 仍是内部准备步骤，不是模型操作。
+调用层级因支持度不一而延后，`prepareCallHierarchy` 仍是内部准备步骤，不是模型操作。工作区级操作（工作区符号、工作区重命名）因需要不同 schema 且与搜索重叠而延后；未来的工作区符号工具必须接收搜索词。
 
-诊断需要独立的新鲜度、累积与 transcript 规则。重命名、代码操作和格式化等变更能力需要单独工具，并集成预览、权限和写入策略。
+变更保持在该 seam 之外：`rename` 仅预览，`codeActions` 只列出（并附带其关联诊断）但绝不执行或应用。应用工作区编辑、执行服务器命令与 `rename_file` 需要经过文件系统 seam 的预览、权限和写入策略集成；工具将其文档化为暂缓项，使观察／版本／沙盒保证绝不会被服务器写入绕过。
 
 提供方信任配置的服务器。其文件系统可见性与进程隔离完全取决于挂载的执行环境；LSP 不增加独立的沙箱策略。
 
 ## 备选方案
 
-**照搬 Claude Code 的统一 schema。** 它的光标操作验证了核心场景，但符号与调用层级需要不同参数。照搬九种操作会固化尚未验证的接口，因此该 seam 只对齐四种语义查询。
+**完全照搬 Claude Code 的统一 schema。** 它的光标操作验证了核心场景，但调用层级与工作区级操作需要不同参数且与搜索重叠。seam 对齐九种光标／文件级操作，这些操作保持单一参数形态——仅为 `rename` 增加 `new_name`——其余留待未来的工作区工具。
 
 **允许提供方注册工具。** 已加载服务器会控制模型 schema 和提示词，无法在本地与远程提供方之间维持统一约定。
 
@@ -174,14 +211,14 @@ seam 和提供方不增加启动或请求截止时间。非工具调用方不会
 ## 测试
 
 - 包测试固定三个包的依赖方向、运行时注入和仅通过 `ctx.lsp` 通信的边界。
-- 工具测试固定四种操作、坐标校验、配置限制与省略标记、提示词和 UI 展示。
+- 工具测试固定九种操作、坐标与 `new_name` 校验、配置限制与省略标记、提示词和 UI 展示。
 - 注册表测试固定原子占用/释放、不受顺序影响的选择，以及结构化的不可用、已释放、冲突和不支持操作错误。
-- 测试用 stdio server 固定精确的初始化能力、四种协议映射、`Location`/`LocationLink` 与 `hover` 归一化，以及 `findReferences` 到 `references.includeDeclaration` 的映射。
+- 测试用 stdio server 固定精确的初始化能力、九种协议映射、`Location`/`LocationLink`、`hover`、扁平化文档符号、代码操作、重命名编辑与诊断归一化，以及 `findReferences` 到 `references.includeDeclaration` 的映射。
 - 同步测试固定 UTF-16 协商与转换、受支持和被拒绝的 `textDocumentSync` 形式、打开写入阻塞与失败、配对的临时打开/关闭、关闭写入失败和错误响应拒绝。
 - 超时测试固定一个 `TOOL_TIMEOUT` 预算、不对上游取消错误分类、LSP 无隐藏截止时间，以及受限且等待完成的清理。
 - 生命周期测试固定启动 single-flight、完整生命周期串行化及排队查询读取最新源文件、跨工作区并行、可取消队列、崩溃后不重放的替换、stdin 失败后的进程拆除，以及 dispose 后完全停稳。
 - 文件系统宿主测试固定 session cwd 要求、提供方自有的 containment 与 URI 渲染、有界文档读取、无格式源文本和不发送 `fs/observed`。
-- 无密钥且固定版本的 TypeScript 真实服务器 e2e 覆盖四种操作；可运行配置使用同一项显式提供方映射。
+- 无密钥且固定版本的 TypeScript 真实服务器 e2e 覆盖九种操作；可运行配置使用同一项显式提供方映射。
 - 快照覆盖模型可见 schema、提示词、结果和省略提示；构建产物冒烟测试覆盖分帧与清理。
 - 包与架构文档覆盖配置、安全边界和搜索/读取指导；同一改动中，新的 `packages/lsp/` 包组要加入 AGENTS.md 的仓库布局块、packages/README.md 的分组表和 architecture.md。
 

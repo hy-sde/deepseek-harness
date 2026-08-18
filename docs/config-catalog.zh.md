@@ -2338,6 +2338,38 @@ export type TokenMeterConfig = Record<string, never>
 
 来源：[`packages/llm/token-meter/src/types.ts:12`](../packages/llm/token-meter/src/types.ts)
 
+<a id="deepseek-aidsh-tool-ast"></a>
+
+## `@deepseek-ai/dsh-tool-ast`
+
+需要：`tools` · `subprocess` · `systemPrompt` · `fs`
+
+```ts config-catalog
+/** Plugin configuration: result caps and the timeout budget shared by both tools. */
+export interface Config {
+  /** Largest number of matches one `ast_grep` call retains inline (default 100). */
+  astGrepMaxMatches?: number
+  /** Largest previewed bytes of one matched node (default 2000). */
+  astGrepMaxNodeBytes?: number
+  /** Largest previewed bytes of one `ast_edit` hunk side (default 4000). */
+  astEditMaxHunkBytes?: number
+  /** Largest number of files one `ast_edit` run reports/writes (default 200). */
+  astEditMaxFiles?: number
+  /** Largest serialized `presentationMeta` for one result (default 65536). */
+  searchMetaMaxBytes?: number
+  /** Largest raw engine stdout a run will parse (default 8 MiB). */
+  rawOutputMaxBytes?: number
+  /** Terminate-escalation grace (ms), bounded by `MAX_TIMER_DELAY_MS` (default 3000). */
+  graceMs?: number
+  /** Max retained stderr tail bytes (default 64 KiB). */
+  stderrMaxBytes?: number
+  /** Cooperative tool-call timeout budget (ms) on both tools (default 30000). */
+  timeoutMs?: number
+}
+```
+
+来源：[`packages/ast/tool-ast/src/index.ts:66`](../packages/ast/tool-ast/src/index.ts)
+
 <a id="deepseek-aidsh-tool-bash"></a>
 
 ## `@deepseek-ai/dsh-tool-bash`

@@ -26,10 +26,13 @@ import type { WireInitializeResult, WireServerCapabilities, WireTextEdit } from 
 import {
   applyEditsToText,
   negotiatePositionEncoding,
+  normalizeCodeActions,
   normalizeDiagnostics,
+  normalizeDocumentSymbols,
   normalizeFormattingEdits,
   normalizeHover,
   normalizeLocations,
+  normalizeRename,
   requestMethod,
   supportsFormatting,
   supportsOperation,
@@ -161,6 +164,72 @@ export class LspInstance {
     return run
   }
 
+  /**
+   * Collect this document's diagnostics — read-path variant that uses the provider-read source
+   * (like `query`) instead of caller-owned text: the source is already read before spawning, so this
+   * opens it at version 1 and waits for a matching publish, exactly like `collectDiagnostics`.
+   * @param request - the provider query (`operation` must be `'diagnostics'`; `position`/`newName` are ignored).
+   * @param source - the pre-validated, already-read host source.
+   * @param signal - optional cancellation for this lifecycle.
+   * @returns the normalized diagnostics (empty on no publish).
+   */
+  diagnostics(request: LspProviderQuery, source: HostSource, signal?: AbortSignal): Promise<LspQueryResult> {
+    const run = abortable(this.queue, signal)
+      .then(() => this.runDiagnostics(request, source, signal))
+      .catch(async (error: unknown) => {
+        if (this.isTransportFailure(error)) await this.startTeardown()
+        throw error
+      })
+    this.queue = this.queue.then(() => run).then(() => undefined, () => undefined)
+    return run
+  }
+
+  private async runDiagnostics(request: LspProviderQuery, source: HostSource, signal?: AbortSignal): Promise<LspQueryResult> {
+    const capabilities = await this.readyCapabilities(signal)
+    if (!supportsTransientOpen(capabilities.textDocumentSync)) {
+      throw new LspError('server does not support the transient textDocument/didOpen this host requires', 'LSP_UNSUPPORTED_OPERATION')
+    }
+    const uri = source.fileUrl
+    const version = 1
+    const deadlineSignal = deadline(signal, this.spec.diagnosticsTimeoutMs, 'LSP_DIAGNOSTICS_TIMEOUT')
+    let opened = false
+    let removeListener: (() => void) | undefined
+    try {
+      /* v8 ignore next -- guards an abort landing between the ready wait and didOpen; not reproducible. */
+      if (signal?.aborted) throw abortError(signal)
+      const received = Promise.withResolvers<unknown>()
+      removeListener = this.connection.onNotification('textDocument/publishDiagnostics', (params) => {
+        const record = params as Record<string, unknown> | null
+        if (record === null || typeof record !== 'object') return
+        if (record.uri !== uri) return
+        if (record.version !== undefined && record.version !== version) return
+        received.resolve(params)
+      })
+      try {
+        await abortable(this.connection.notify('textDocument/didOpen', {
+          textDocument: { uri, languageId: request.languageId, version, text: source.text },
+        }), signal)
+      } catch (error) {
+        await this.startTeardown()
+        throw error
+      }
+      opened = true
+      const payload = await abortable(received.promise, deadlineSignal.signal).catch((error: unknown) => {
+        if (timeoutOf(deadlineSignal.signal) !== undefined) return undefined
+        throw error
+      })
+      return {
+        kind: 'diagnostics' as const,
+        diagnostics: normalizeDiagnostics(payload, uri, version),
+        resolvedWorkspaceUri: this.spec.workspaceUri,
+      }
+    } finally {
+      if (removeListener !== undefined) removeListener()
+      deadlineSignal[Symbol.dispose]()
+      await this.closeDocument(uri, opened)
+    }
+  }
+
   private async initialize(): Promise<void> {
     const initializeResult = await this.connection.request('initialize', {
       // A subprocess provider may run in another PID namespace or machine;
@@ -220,7 +289,7 @@ export class LspInstance {
         throw error
       }
       opened = true
-      const payload = await this.sendRequest(request.operation, uri, request.position, signal)
+      const payload = await this.sendRequest(request, uri, signal)
       return this.normalize(request.operation, payload)
     } finally {
       // A disposed or closed instance (e.g. an aborted request whose server ignored
@@ -390,20 +459,33 @@ export class LspInstance {
   }
 
   private async sendRequest(
-    operation: LspOperation,
+    request: LspProviderQuery,
     uri: string,
-    position: LspProviderQuery['position'],
     signal?: AbortSignal,
   ): Promise<unknown> {
-    const params = {
+    const position = request.position
+    const params: Record<string, unknown> = {
       textDocument: { uri },
       position: { line: position.line, character: position.character },
       // findReferences always includes declarations: the caller gets no flag and impact analysis
       // never omits the defining site.
-      ...(operation === 'findReferences' ? { context: { includeDeclaration: true } } : {}),
+      ...(request.operation === 'findReferences' ? { context: { includeDeclaration: true } } : {}),
+      // rename carries the requested new name on the wire.
+      ...(request.operation === 'rename' && request.newName !== undefined ? { newName: request.newName } : {}),
+      // codeAction needs a range + context: the seam passes a zero-width range at the cursor and an
+      // empty trigger context (callers collect their own diagnostics for context if they need it).
+      ...(request.operation === 'codeActions'
+        ? {
+          range: {
+            start: { line: position.line, character: position.character },
+            end: { line: position.line, character: position.character },
+          },
+          context: { diagnostics: [], triggerKind: 1 },
+        }
+        : {}),
     }
     const requestId = this.connection.peekNextId()
-    const send = this.connection.request(requestMethod(operation), params)
+    const send = this.connection.request(requestMethod(request.operation), params)
     if (signal === undefined) return send
     return this.raceAbort(send, requestId, signal)
   }
@@ -444,8 +526,30 @@ export class LspInstance {
     if (operation === 'hover') {
       return { kind: 'hover', hover: normalizeHover(payload) }
     }
-    // The filesystem provider owns URI syntax for the execution platform, which may differ from the
-    // harness host. Preserve that coordinate through rendering instead of reparsing `spec.cwd` there.
+    if (operation === 'documentSymbols') {
+      return {
+        kind: 'documentSymbols',
+        symbols: normalizeDocumentSymbols(payload),
+        resolvedWorkspaceUri: this.spec.workspaceUri,
+      }
+    }
+    if (operation === 'codeActions') {
+      return {
+        kind: 'codeActions',
+        actions: normalizeCodeActions(payload),
+        resolvedWorkspaceUri: this.spec.workspaceUri,
+      }
+    }
+    if (operation === 'rename') {
+      return {
+        kind: 'rename',
+        files: normalizeRename(payload),
+        resolvedWorkspaceUri: this.spec.workspaceUri,
+      }
+    }
+    // Navigation operations normalize to locations. The filesystem provider owns URI syntax for
+    // the execution platform, which may differ from the harness host. Preserve that coordinate
+    // through rendering instead of reparsing `spec.cwd` there.
     return { kind: 'locations', locations: normalizeLocations(payload), resolvedWorkspaceUri: this.spec.workspaceUri }
   }
 

@@ -78,6 +78,12 @@ describe('shipped code-edit preset', () => {
     expect(names).toContain('ask_user_question')
     expect(names).toContain('todo_write')
 
+    // Structural search/rewrite (tool-ast) and LSP navigation (tool-lsp) mount
+    // beside the rich editor; the LSP seam rows live behind the isolate realm.
+    expect(names).toContain('ast_grep')
+    expect(names).toContain('ast_edit')
+    expect(names).toContain('lsp')
+
     // tools are registered only inside the mounted agent's scope.
     expect(ctx.tools.schemas().map(schema => schema.name)).not.toContain('edit')
   })

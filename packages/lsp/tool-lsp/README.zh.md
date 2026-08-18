@@ -2,15 +2,15 @@
 
 [English](README.md) | 中文
 
-面向模型的 **`lsp` 工具**，基于 `ctx.lsp`：一个只读工具，通过四种操作执行精确代码导航。它拥有模型 schema、提示词指引、坐标转换、结果限制与格式化，以及 UI 呈现；不导入任何提供方。
+面向模型的 **`lsp` 工具**，基于 `ctx.lsp`：一个只读工具，通过九种只读操作执行精确代码导航。它拥有模型 schema、提示词指引、坐标转换、结果限制与格式化，以及 UI 呈现；不导入任何提供方。
 
 Namespace 插件（`name`／`inject`／`Config`／`apply`，无默认导出）。注入 `tools`、`lsp` 和 `systemPrompt`。
 
 ## 工具
 
-`lsp` 接受 `operation`（`goToDefinition` | `findReferences` | `goToImplementation` | `hover`）、`file_path`、`line` 和 `character`。`line` 与 `character` 是正的、从 1 开始的 UTF-16 光标坐标；工具将其转换为 seam 从零开始的位置，并把渲染位置转换回来。`findReferences` 包含声明，因此影响分析不会遗漏定义位置。提供方、language id、工作区根目录、限制、超时、初始化和可执行文件均不进入模型输入。
+`lsp` 接受 `operation`（`goToDefinition` | `findReferences` | `goToImplementation` | `goToTypeDefinition` | `hover` | `documentSymbols` | `codeActions` | `rename` | `diagnostics`）、`file_path`、`line` 和 `character`；`rename` 还需 `new_name`。`line` 与 `character` 是正的、从 1 开始的 UTF-16 光标坐标；工具将其转换为 seam 从零开始的位置，并把渲染坐标转换回来。`findReferences` 包含声明，因此影响分析不会遗漏定义位置。`documentSymbols` 与 `diagnostics` 只读取文件（忽略光标，因此传 `1 1`）。`codeActions` 只列出可用的快速修复与重构，绝不应用。`rename` 预览服务器为 `new_name` 计算的每一处编辑，但绝不写文件。提供方、language id、工作区根目录、限制、超时、初始化和可执行文件均不进入模型输入。
 
-该工具要求从会话 `header.cwd` 取得工作区根目录，没有回退值：缺失时会在查询前以 `LSP_WORKSPACE_REQUIRED` 失败。其规范结果是完整的已规范化 Service Definition 联合类型：`{ kind: "locations", locations, resolvedWorkspaceUri }` 或 `{ kind: "hover", hover }`；Code Mode 可以直接检查每个已取得的位置和从零开始的范围。原生渲染以提供方的规范工作区 URI 为基准，投影按文件稳定分组的 `path:line:character` 条目，而不对会话 cwd 应用宿主平台路径规则。`file:` URI 落在该工作区 URI 内时成为工作区相对路径，位于其外时成为从 URI 派生的绝对路径；格式错误的 URI 与非 `file:` URI 保持原样。空位置和 `null` hover 都是成功的无结果响应；格式错误的提供方载荷仍是结构化错误。
+该工具要求从会话 `header.cwd` 取得工作区根目录，没有回退值：缺失时会在查询前以 `LSP_WORKSPACE_REQUIRED` 失败。其规范结果是完整的已规范化 Service Definition 联合类型：`{ kind: "locations", locations, resolvedWorkspaceUri }`、`{ kind: "hover", hover }`、`{ kind: "documentSymbols", symbols, resolvedWorkspaceUri }`、`{ kind: "codeActions", actions, resolvedWorkspaceUri }`、`{ kind: "rename", files, resolvedWorkspaceUri }` 或 `{ kind: "diagnostics", diagnostics, resolvedWorkspaceUri }`；Code Mode 可以直接检查每个已取得的位置、符号、操作、编辑和从零开始的范围。原生渲染以提供方的规范工作区 URI 为基准，投影按文件稳定分组的 `path:line:character` 条目，而不对会话 cwd 应用宿主平台路径规则。`file:` URI 落在该工作区 URI 内时成为工作区相对路径，位于其外时成为从 URI 派生的绝对路径；格式错误的 URI 与非 `file:` URI 保持原样。空位置、`null` hover 以及空的符号／操作／编辑／诊断集合都是成功的无结果响应；格式错误的提供方载荷仍是结构化错误。
 
 ## 配置
 
@@ -31,7 +31,7 @@ Namespace 插件（`name`／`inject`／`Config`／`apply`，无默认导出）�
 ##### 逐字指引
 
 ```markdown
-Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, or references. Positions are one-based line and character (UTF-16) at the cursor; an off-symbol position may return no results. findReferences always includes the declaration.
+Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, references, or symbol structure. Positions are one-based line and character (UTF-16) at the cursor; an off-symbol position may return no results. findReferences always includes the declaration. documentSymbols and diagnostics use the file only (pass 1 1 for line/character). rename requires new_name and returns a preview of every edit the server would make (it never writes files).
 ```
 
 #### Token 影响
@@ -60,7 +60,7 @@ Use search/read for ordinary navigation. Use lsp when textual matches are ambigu
 
 #### 模型看到的内容
 
-按文件分组的 `path:line:character` 位置行或规范化 hover 文本，先由 `maxLocations` 限制，再由 `maxResultChars` 限制；省略与截断标记计入完整字符上限。这些上限只影响原生／模型呈现，不影响规范值。空结果使用不同的 `No results.`／`No hover information.` 行。
+按文件分组的 `path:line:character` 位置行；规范化 hover 文本；带缩进深度、含从 1 开始坐标的文档符号树；带 kind／preferred 标记的编号代码操作列表；按文件列出 `path:line → newText` 的重命名编辑；或 `path:line [Severity] (source) — message` 诊断——每种都先由 `maxLocations` 限制，再由 `maxResultChars` 限制；省略与截断标记计入完整字符上限。这些上限只影响原生／模型呈现，不影响规范值。空结果使用不同的行：`No results.`／`No hover information.`／`No symbols found.`／`No code actions available.`／`Rename returned no edits.`／`No diagnostics.`
 
 #### Token 影响
 
@@ -88,3 +88,4 @@ Use search/read for ordinary navigation. Use lsp when textual matches are ambigu
 
 - **UTF-16 光标坐标**：列坐标与协议精确一致，但模型难以在非 BMP 字符周围计数；未落在符号上的位置可能返回空结果，因此提示词解释了该约定，但不鼓励广泛使用 LSP（见 [seam Agent Note](../../../.agents/notes/implemented/architecture/2026-07-15-lsp-capability-seam.md)）。
 - **不承诺跨服务器完整性**：受支持的服务器仍可能根据索引就绪情况返回空或部分结果；该工具不承诺跨语言或服务器的完整性。
+- **写入保持范围之外**：`codeActions`、`rename` 乃至 `rename` 的补丁都只是预览。应用工作区编辑、执行服务器命令以及文件重命名（原工具中的 `rename_file` 操作）被有意暂缓：变更属于文件系统 seam，因此观察、版本校验与沙盒策略会持续生效。

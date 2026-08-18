@@ -21,19 +21,28 @@ import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import {
   DEFAULT_MAX_LOCATIONS,
   DEFAULT_MAX_RESULT_CHARS,
+  formatCodeActions,
+  formatDiagnostics,
+  formatDocumentSymbols,
   formatHover,
   formatLocations,
+  formatRename,
   LSP_OPERATIONS,
   parseLspArgs,
   presentLspCall,
 } from './render.ts'
+import type { LspToolArgs } from './render.ts'
 import { sessionCwd } from './session-cwd.ts'
 
 export {
   DEFAULT_MAX_LOCATIONS,
   DEFAULT_MAX_RESULT_CHARS,
+  formatCodeActions,
+  formatDiagnostics,
+  formatDocumentSymbols,
   formatHover,
   formatLocations,
+  formatRename,
   LSP_OPERATIONS,
   parseLspArgs,
   presentLspCall,
@@ -52,7 +61,7 @@ export const DEFAULT_LSP_TOOL_TIMEOUT_MS = 60_000
 
 /** The stable system-prompt guidance positioning LSP as a precision aid. */
 export const LSP_PROMPT_TEXT =
-  'Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, or references. Positions are one-based line and character (UTF-16) at the cursor; an off-symbol position may return no results. findReferences always includes the declaration.'
+  'Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, references, or symbol structure. Positions are one-based line and character (UTF-16) at the cursor; an off-symbol position may return no results. findReferences always includes the declaration. documentSymbols and diagnostics use the file only (pass 1 1 for line/character). rename requires new_name and returns a preview of every edit the server would make (it never writes files).'
 
 /** Plugin configuration: result caps and the timeout budget. */
 export interface Config {
@@ -106,17 +115,18 @@ export function apply(ctx: Context, config: Config): void {
   ctx.tools.register(defineTool({
     name: 'lsp',
     description:
-      'Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, hover. line and character are one-based UTF-16 cursor coordinates. findReferences includes the declaration.',
+      'Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, diagnostics. line and character are one-based UTF-16 cursor coordinates; pass 1 1 for documentSymbols and diagnostics, which use only the file. findReferences includes the declaration; codeActions lists available quick fixes/refactorings (never applies them); rename previews every edit for new_name (never writes files).',
     parameters: {
       operation: {
         type: 'string',
         required: true,
         enum: [...LSP_OPERATIONS],
-        description: 'goToDefinition, findReferences, goToImplementation, or hover.',
+        description: 'goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, or diagnostics.',
       },
       file_path: { type: 'string', required: true, description: 'The source file to query, relative to the workspace or absolute.' },
-      line: { type: 'number', required: true, description: 'One-based line of the cursor.' },
-      character: { type: 'number', required: true, description: 'One-based UTF-16 column of the cursor.' },
+      line: { type: 'number', required: true, description: 'One-based line of the cursor (pass 1 for documentSymbols / diagnostics).' },
+      character: { type: 'number', required: true, description: 'One-based UTF-16 column of the cursor (pass 1 for documentSymbols / diagnostics).' },
+      new_name: { type: 'string', description: 'The new symbol name for rename; required by rename, ignored by others.' },
     },
     output: {
       schema: {
@@ -162,14 +172,135 @@ export function apply(ctx: Context, config: Config): void {
               },
             },
           },
+          {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              kind: { type: 'string', required: true, const: 'documentSymbols' },
+              symbols: {
+                type: 'array',
+                required: true,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    name: { type: 'string', required: true },
+                    kind: { type: 'number', required: true },
+                    range: { ...LSP_RANGE_OUTPUT_SCHEMA, required: true },
+                    selectionRange: { ...LSP_RANGE_OUTPUT_SCHEMA, required: true },
+                    depth: { type: 'number', required: true },
+                    detail: { type: 'string' },
+                  },
+                },
+              },
+              resolvedWorkspaceUri: { type: 'string', required: true },
+            },
+          },
+          {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              kind: { type: 'string', required: true, const: 'codeActions' },
+              actions: {
+                type: 'array',
+                required: true,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    title: { type: 'string', required: true },
+                    kind: { type: 'string' },
+                    isPreferred: { type: 'boolean' },
+                    diagnostics: {
+                      type: 'array',
+                      required: true,
+                      items: {
+                        type: 'object',
+                        additionalProperties: false,
+                        properties: {
+                          range: { ...LSP_RANGE_OUTPUT_SCHEMA, required: true },
+                          severity: { type: 'number' },
+                          source: { type: 'string' },
+                          message: { type: 'string', required: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              resolvedWorkspaceUri: { type: 'string', required: true },
+            },
+          },
+          {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              kind: { type: 'string', required: true, const: 'rename' },
+              files: {
+                type: 'array',
+                required: true,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    uri: { type: 'string', required: true },
+                    edits: {
+                      type: 'array',
+                      required: true,
+                      items: {
+                        type: 'object',
+                        additionalProperties: false,
+                        properties: {
+                          range: { ...LSP_RANGE_OUTPUT_SCHEMA, required: true },
+                          newText: { type: 'string', required: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              resolvedWorkspaceUri: { type: 'string', required: true },
+            },
+          },
+          {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              kind: { type: 'string', required: true, const: 'diagnostics' },
+              diagnostics: {
+                type: 'array',
+                required: true,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    range: { ...LSP_RANGE_OUTPUT_SCHEMA, required: true },
+                    severity: { type: 'number' },
+                    source: { type: 'string' },
+                    message: { type: 'string', required: true },
+                  },
+                },
+              },
+              resolvedWorkspaceUri: { type: 'string', required: true },
+            },
+          },
         ],
       },
-      render: (_args, value) => {
+      render: (args, value) => {
+        const filePath = (args as LspToolArgs | null | undefined)?.file_path ?? ''
         switch (value.kind) {
           case 'locations':
             return [{ type: 'text', text: formatLocations(value.locations, value.resolvedWorkspaceUri, resolved.maxLocations, resolved.maxResultChars) }]
           case 'hover':
             return [{ type: 'text', text: formatHover(value.hover, resolved.maxResultChars) }]
+          case 'documentSymbols':
+            return [{ type: 'text', text: formatDocumentSymbols(filePath, value.symbols, resolved.maxLocations, resolved.maxResultChars) }]
+          case 'codeActions':
+            return [{ type: 'text', text: formatCodeActions(value.actions, resolved.maxLocations, resolved.maxResultChars) }]
+          case 'rename':
+            return [{ type: 'text', text: formatRename(value.files, value.resolvedWorkspaceUri, resolved.maxLocations, resolved.maxResultChars) }]
+          case 'diagnostics':
+            return [{ type: 'text', text: formatDiagnostics(filePath, value.diagnostics, resolved.maxLocations, resolved.maxResultChars) }]
           /* v8 ignore next -- exhaustive over the output schema's closed union; unreachable. */
           default:
             return assertNever(value, 'tool-lsp output')
@@ -188,6 +319,7 @@ export function apply(ctx: Context, config: Config): void {
         filePath: input.filePath,
         position: input.position,
         workspaceRoot,
+        ...(input.newName === undefined ? {} : { newName: input.newName }),
       }, exec.signal)
       switch (result.kind) {
         case 'locations':
@@ -218,6 +350,73 @@ export function apply(ctx: Context, config: Config): void {
                     },
                   },
               },
+          }
+        case 'documentSymbols':
+          return {
+            kind: 'documentSymbols' as const,
+            symbols: result.symbols.map(symbol => ({
+              name: symbol.name,
+              kind: symbol.kind,
+              range: {
+                start: { line: symbol.range.start.line, character: symbol.range.start.character },
+                end: { line: symbol.range.end.line, character: symbol.range.end.character },
+              },
+              selectionRange: {
+                start: { line: symbol.selectionRange.start.line, character: symbol.selectionRange.start.character },
+                end: { line: symbol.selectionRange.end.line, character: symbol.selectionRange.end.character },
+              },
+              depth: symbol.depth,
+              ...(symbol.detail === undefined ? {} : { detail: symbol.detail }),
+            })),
+            resolvedWorkspaceUri: result.resolvedWorkspaceUri,
+          }
+        case 'codeActions':
+          return {
+            kind: 'codeActions' as const,
+            actions: result.actions.map(action => ({
+              title: action.title,
+              ...(action.kind === undefined ? {} : { kind: action.kind }),
+              ...(action.isPreferred === undefined ? {} : { isPreferred: action.isPreferred }),
+              diagnostics: action.diagnostics.map(diagnostic => ({
+                range: {
+                  start: { line: diagnostic.range.start.line, character: diagnostic.range.start.character },
+                  end: { line: diagnostic.range.end.line, character: diagnostic.range.end.character },
+                },
+                ...(diagnostic.severity === undefined ? {} : { severity: diagnostic.severity }),
+                ...(diagnostic.source === undefined ? {} : { source: diagnostic.source }),
+                message: diagnostic.message,
+              })),
+            })),
+            resolvedWorkspaceUri: result.resolvedWorkspaceUri,
+          }
+        case 'rename':
+          return {
+            kind: 'rename' as const,
+            files: result.files.map(file => ({
+              uri: file.uri,
+              edits: file.edits.map(edit => ({
+                range: {
+                  start: { line: edit.range.start.line, character: edit.range.start.character },
+                  end: { line: edit.range.end.line, character: edit.range.end.character },
+                },
+                newText: edit.newText,
+              })),
+            })),
+            resolvedWorkspaceUri: result.resolvedWorkspaceUri,
+          }
+        case 'diagnostics':
+          return {
+            kind: 'diagnostics' as const,
+            diagnostics: result.diagnostics.map(diagnostic => ({
+              range: {
+                start: { line: diagnostic.range.start.line, character: diagnostic.range.start.character },
+                end: { line: diagnostic.range.end.line, character: diagnostic.range.end.character },
+              },
+              ...(diagnostic.severity === undefined ? {} : { severity: diagnostic.severity }),
+              ...(diagnostic.source === undefined ? {} : { source: diagnostic.source }),
+              message: diagnostic.message,
+            })),
+            resolvedWorkspaceUri: result.resolvedWorkspaceUri,
           }
         /* v8 ignore next -- exhaustive over the closed LspQueryResult union; unreachable. */
         default:

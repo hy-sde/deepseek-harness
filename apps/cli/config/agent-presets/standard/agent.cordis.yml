@@ -61,6 +61,49 @@
   config:
     sampleOverCapGlobResults: false
 
+# ── structural search / rewrite ─────────────────────────────────────────────
+
+# ast_grep (structural search) and ast_edit (preview / apply structural
+# rewrite) over the packaged ast-grep native binary — no host install and no
+# shell layer. The `subprocess` seam stays on the host plane; only the
+# model-facing tools move.
+- id: tool-ast
+  name: '@deepseek-ai/dsh-tool-ast'
+
+# ── LSP navigation ──────────────────────────────────────────────────────────
+
+# The LSP seam and its stdio provider live in an entry-local realm so each
+# mounted session owns its language-server processes; `tool-lsp` sits beside
+# them so it can resolve `ctx.lsp`. All queries are read-only (definition,
+# references, implementation, type definition, hover, document symbols, code
+# actions, rename PREVIEW, and diagnostics through the publish listener).
+- id: lsp-query
+  name: cordis:group
+  group: true
+  isolate:
+    lsp: true
+  config:
+    - id: lsp
+      name: '@deepseek-ai/dsh-lsp'
+
+    - id: lsp-stdio
+      name: '@deepseek-ai/dsh-lsp-stdio'
+      config:
+        servers:
+          typescript:
+            command: npx
+            args: [--yes, typescript-language-server@5.0.0, --stdio]
+            extensionToLanguage:
+              .ts: typescript
+              .tsx: typescriptreact
+              .js: javascript
+              .jsx: javascriptreact
+
+    - id: tool-lsp
+      name: '@deepseek-ai/dsh-tool-lsp'
+      config:
+        timeoutMs: 60000
+
 # ── background jobs ────────────────────────────────────────────────────────
 
 # Only the model-facing controls. The task REGISTRY stays on the host plane:

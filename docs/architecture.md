@@ -115,6 +115,7 @@ New behavior attaches to a documented extension point. Changing the loop itself 
 | Add a human command | register on `ctx.commands`; it dispatches without a model turn |
 | Add background work | register on `ctx.jobs`; `job_*` tools collect or stop it |
 | Add filesystem access or policy | register a `ctx.fs` provider or listen to `fs/*` events |
+| Add structural search / rewrite | register `ast_grep`/`ast_edit` (`dsh-tool-ast`) spawns the packaged ast-grep binary through `ctx.subprocess` |
 | Confine spawned processes | use a `ctx.sandbox` backend; consumers wrap argv before spawning |
 | Intercept a request, tool, or turn | use its `agent/*` or `tools/*` event; `agent/turn-stopping` stops a turn |
 | Add model-facing context | call `agent.inject()`; it lands in the next admitted request |

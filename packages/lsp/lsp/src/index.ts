@@ -28,9 +28,11 @@ import type {
 
 export { LspProviderId } from './brand.ts'
 export type {
+  LspCodeAction,
   LspDiagnostic,
   LspDiagnosticsRequest,
   LspDiagnosticsResult,
+  LspDocumentSymbol,
   LspFormatRequest,
   LspFormatResult,
   LspHover,
@@ -42,6 +44,7 @@ export type {
   LspQueryRequest,
   LspQueryResult,
   LspRange,
+  LspRenameFile,
   LspService,
 } from './types.ts'
 

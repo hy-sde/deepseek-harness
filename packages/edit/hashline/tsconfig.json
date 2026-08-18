@@ -5,5 +5,12 @@
     "outDir": "lib/types"
   },
   "include": ["src"],
-  "references": []
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    }
+  ]
 }

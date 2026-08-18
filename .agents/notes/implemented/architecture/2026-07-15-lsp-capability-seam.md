@@ -22,9 +22,9 @@ Add LSP as a three-package capability seam with one read-only model tool and one
 
 `dsh-lsp-stdio` is a generic host, not a language-server catalog or installer. Deployments explicitly configure commands and mappings; future presets belong in composition plugins or `cordis.yml` overlays.
 
-The model and seam expose exactly `goToDefinition`, `findReferences`, `goToImplementation`, and `hover`; no arbitrary JSON-RPC method escapes through `ctx.lsp`. These operation literals match Claude Code's familiar camelCase names while the tool name and `file_path` field remain harness-owned.
+The model and seam expose exactly `goToDefinition`, `findReferences`, `goToImplementation`, `goToTypeDefinition`, `hover`, `documentSymbols`, `codeActions`, `rename` (preview only), and `diagnostics`; no arbitrary JSON-RPC method escapes through `ctx.lsp`. These operation literals keep Claude Code's familiar camelCase names while the tool name and `file_path` field remain harness-owned. `codeActions` and `rename` never write: the seam returns normalized previews and the filesystem seam owns mutations, so observation, version guards, and sandbox policy keep applying.
 
-The prompt positions LSP as a precision aid: `Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, or references.`
+The prompt positions LSP as a precision aid: `Use search/read for ordinary navigation. Use lsp when textual matches are ambiguous or before a change requires precise definitions, implementations, references, or symbol structure. Positions are one-based line and character (UTF-16) at the cursor; an off-symbol position may return no results. findReferences always includes the declaration. documentSymbols and diagnostics use the file only (pass 1 1 for line/character). rename requires new_name and returns a preview of every edit the server would make (it never writes files).`
 
 ## Package and ownership boundaries
 
@@ -37,7 +37,9 @@ The contract shape:
 ```ts
 import type { Branded } from '@deepseek-ai/dsh-brand'
 
-type LspOperation = 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
+type LspOperation =
+  | 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'goToTypeDefinition' | 'hover'
+  | 'documentSymbols' | 'codeActions' | 'rename' | 'diagnostics'
 type LspProviderId = Branded<'LspProviderId'>
 
 interface LspPosition {
@@ -64,6 +66,38 @@ interface LspProviderQuery extends LspQueryRequest {
 type LspQueryResult =
   | { readonly kind: 'locations'; readonly locations: readonly { readonly uri: string; readonly range: LspRange }[]; readonly resolvedWorkspaceUri: string }
   | { readonly kind: 'hover'; readonly hover: { readonly contents: string; readonly range?: LspRange } | null }
+  | { readonly kind: 'documentSymbols'; readonly symbols: readonly LspDocumentSymbol[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'codeActions'; readonly actions: readonly LspCodeAction[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'rename'; readonly files: readonly LspRenameFile[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'diagnostics'; readonly diagnostics: readonly LspDiagnostic[]; readonly resolvedWorkspaceUri: string }
+
+interface LspDocumentSymbol {
+  readonly name: string
+  readonly kind: number
+  readonly range: LspRange
+  readonly selectionRange: LspRange
+  readonly depth: number
+  readonly detail?: string
+}
+
+interface LspCodeAction {
+  readonly title: string
+  readonly kind?: string
+  readonly isPreferred?: boolean
+  readonly diagnostics: readonly LspDiagnostic[]
+}
+
+interface LspRenameFile {
+  readonly uri: string
+  readonly edits: readonly { readonly range: LspRange; readonly newText: string }[]
+}
+
+interface LspDiagnostic {
+  readonly range: LspRange
+  readonly severity?: 1 | 2 | 3 | 4
+  readonly source?: string
+  readonly message: string
+}
 
 interface LspProvider {
   readonly id: LspProviderId
@@ -87,18 +121,21 @@ The single `lsp` tool accepts:
 
 ```ts
 interface LspToolInput {
-  readonly operation: 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
+  readonly operation:
+    | 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'goToTypeDefinition' | 'hover'
+    | 'documentSymbols' | 'codeActions' | 'rename' | 'diagnostics'
   readonly file_path: string
   readonly line: number
   readonly character: number
+  readonly new_name?: string
 }
 ```
 
-`line` and `character` are positive, one-based UTF-16 cursor coordinates; the tool converts them to the seam's zero-based `LspPosition` and converts rendered locations back. `findReferences` includes declarations so impact analysis does not omit the defining site. Provider, language id, workspace root, limits, timeout, initialization, and executable remain outside model input.
+`line` and `character` are positive, one-based UTF-16 cursor coordinates; the tool converts them to the seam's zero-based `LspPosition` and converts rendered coordinates back. `findReferences` includes declarations so impact analysis does not omit the defining site. `documentSymbols` and `diagnostics` read the file only and ignore the cursor (the tool tells the model to pass `1 1`). `rename` requires `new_name` and previews every edit the server computes without writing. Provider, language id, workspace root, limits, timeout, initialization, and executable remain outside model input.
 
 The tool requires `workspaceRoot` from session `header.cwd`, with no fallback; absence fails as `LSP_WORKSPACE_REQUIRED` before querying or startup. The local provider resolves relative paths against that root and accepts absolute paths directly; both forms are canonicalized and rejected before startup when the target is outside the canonical workspace.
 
-Locations render as stable, file-grouped `path:line:character` entries without applying harness-host path rules. A valid `file:` URI becomes a relative path inside the provider's canonical workspace URI or a URI-derived absolute path outside it; malformed and non-`file:` URIs remain verbatim. `maxLocations` defaults to `100` and reports omitted items; `maxResultChars` defaults to `16_000` and bounds every complete rendered result, including its truncation metadata. Empty locations and `null` hover are successful no-result responses; missing or malformed server payloads fail with structured `LSP_MALFORMED_RESPONSE` errors.
+Locations render as stable, file-grouped `path:line:character` entries without applying harness-host path rules. A valid `file:` URI becomes a relative path inside the provider's canonical workspace URI or a URI-derived absolute path outside it; malformed and non-`file:` URIs remain verbatim. Document symbols render as a depth-indented tree, code actions as a numbered list with kind/preferred markers, rename as per-file `path:line → newText` edit lines, and diagnostics as `path:line [Severity] (source) — message` lines. `maxLocations` defaults to `100` and reports omitted items; `maxResultChars` defaults to `16_000` and bounds every complete rendered result, including its truncation metadata. Empty locations, `null` hover, and empty symbol/action/edit/diagnostic collections are successful no-result responses; missing or malformed server payloads fail with structured `LSP_MALFORMED_RESPONSE` errors.
 
 The transport-neutral presenter uses `{ card: 'generic', kind: 'search', title, locations: [{ path: file_path, line }] }` with an args-derived operation/cursor `title`. Because `FileLocation` has no character, follow-along focuses the input line while the title preserves the cursor; presentation remains pure.
 
@@ -120,7 +157,7 @@ The local provider uses a compatibility-first transient-open sequence for every 
 
 1. Resolve and contain the source through `ctx.fs`, then stream its current text through the same provider while enforcing the document byte limit.
 2. Send `textDocument/didOpen` with version `1`, full text, and the configured language id. Its write remains abortable; failure or cancellation invalidates the instance and awaits bounded process termination before the pool can reuse it.
-3. Send the requested `textDocument/definition`, `textDocument/references`, `textDocument/implementation`, or `textDocument/hover` request.
+3. Send the requested `textDocument/definition`, `textDocument/references`, `textDocument/implementation`, `textDocument/typeDefinition`, `textDocument/hover`, `textDocument/documentSymbol`, `textDocument/codeAction`, `textDocument/rename` (with the new name), or `textDocument/diagnostic` request. `diagnostics` additionally waits for the server's `textDocument/publishDiagnostics` (or the pushed `textDocument/diagnostic` pull result) after a transient open; queued queries read current bytes only when their turn starts.
 4. If `didOpen` succeeded, attempt `textDocument/didClose` in `finally` after the request settles or aborts. A close-write failure does not replace the settled result or error, but invalidates the instance and awaits bounded process termination.
 
 Documents close after each call, so the first version needs no `didChange`, `didSave`, content cache, mutation listener, or document LRU. One abortable per-workspace provider queue serializes source-read/open/query/close lifecycles, so a waiting query reads current bytes only when its turn starts; the instance also keeps protocol lifecycles serialized. Distinct workspaces may run in parallel. The server's workspace index remains responsible for closed files reached from the source.
@@ -139,15 +176,15 @@ Abort reaches every query phase and sends `$/cancelRequest` once an id exists. A
 
 ## Deliberately deferred API
 
-Symbols are deferred because they need different schemas and overlap read/search; a future workspace-symbol tool must accept a search query. Call hierarchy is deferred because support is uneven, and `prepareCallHierarchy` remains an internal prerequisite rather than a model operation.
+Call hierarchy is deferred because support is uneven, and `prepareCallHierarchy` remains an internal prerequisite rather than a model operation. Workspace-wide operations (workspace symbol, workspace rename) are deferred because they need different schemas and overlap search; a future workspace-symbol tool must accept a search query.
 
-Diagnostics need separate freshness, accumulation, and transcript rules. Mutations such as rename, code actions, and formatting require separate tools with preview, permission, and write-policy integration.
+Mutations stay out of the seam: rename is preview-only, and code actions are listed (with their linked diagnostics) but never executed or applied. Applying workspace edits, executing server commands, and `rename_file` need preview, permission, and write-policy integration through the filesystem seam; the tool documents them as deferred so the observation/version/sandbox guarantees never get bypassed by a server write.
 
 The provider trusts its configured server. Its filesystem visibility and process confinement are exactly those of the mounted execution world; LSP adds no independent sandbox policy.
 
 ## Alternatives considered
 
-**Copy Claude Code's unified schema.** Its cursor operations validate the core use case, but symbols and call hierarchy need different arguments. Copying all nine operations would freeze speculative surface, so the seam aligns only on the four semantic queries.
+**Copy Claude Code's unified schema wholesale.** Its cursor operations validate the core use case, but call hierarchy and workspace-wide operations need different arguments and overlap search. The seam aligns on the nine cursor/file-scoped operations that keep one argument shape — prints `new_name` only for `rename` — and leaves the rest to future workspace tools.
 
 **Let providers register tools.** Loaded servers would then control model schema and prompts, preventing one stable contract across local and remote providers.
 
@@ -174,14 +211,14 @@ The provider trusts its configured server. Its filesystem visibility and process
 ## Testing
 
 - Package tests pin the three-package dependency direction, runtime injections, and `ctx.lsp`-only communication.
-- Tool tests pin the four operations, coordinate validation, configured bounds and omission markers, prompt, and UI presentation.
+- Tool tests pin the nine operations, coordinate and `new_name` validation, configured bounds and omission markers, prompt, and UI presentation.
 - Registry tests pin atomic reservation/release, order-independent selection, and structured unavailable, disposed, conflict, and unsupported-operation errors.
-- Fake-stdio tests pin exact initialization capabilities, four protocol mappings, `Location`/`LocationLink` and hover normalization, and `findReferences` mapping to `references.includeDeclaration`.
+- Fake-stdio tests pin exact initialization capabilities, the nine protocol mappings, `Location`/`LocationLink`, hover, flattened-document-symbol, code-action, rename-edit, and diagnostic normalization, and `findReferences` mapping to `references.includeDeclaration`.
 - Synchronization tests pin UTF-16 negotiation and conversion, supported and rejected `textDocumentSync` forms, blocked and failed open writes, balanced transient open/close, close-write failure, and malformed-response rejection.
 - Timeout tests pin one `TOOL_TIMEOUT` budget, unclassified upstream cancellation, no hidden LSP deadline, and bounded awaited teardown.
 - Lifecycle tests pin startup single-flight, complete-lifecycle serialization with fresh queued source reads, cross-workspace parallelism, abortable queues, crash replacement without replay, failed-stdin teardown, and quiescent disposal.
 - Filesystem-host tests pin session-cwd requirements, provider-owned containment and URI rendering, bounded document reads, unformatted source, and no `fs/observed` event.
-- A keyless pinned TypeScript real-server e2e exercises all four operations; runnable configuration uses the same explicit provider mapping.
+- A keyless pinned TypeScript real-server e2e exercises the nine operations; runnable configuration uses the same explicit provider mapping.
 - Snapshots cover model-visible schema, prompt, results, and omissions; a built-artifact smoke test covers framing and cleanup.
 - Package and architecture docs cover configuration, security boundaries, and search/read guidance; the new `packages/lsp/` group is added to the AGENTS.md repository-layout block, the packages/README.md group table, and architecture.md in the same change.
 

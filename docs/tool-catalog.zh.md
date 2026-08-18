@@ -25,8 +25,10 @@
 | `@deepseek-ai/dsh-tool-cordis` | `cordis_define`、`cordis_inspect_list`、`cordis_inspect_query`、`cordis_inspect_self`、`cordis_run`、`cordis_stop`、`cordis_undefine` | `ctx.tools`、`ctx.dynamicCordisRunner` | `tool/call`、`tool/result`、`process-local dynamic package lifecycle` | - | 不在任何随产品发布的树中，需要显式选择启用；动态 Package 代码可以访问真实运行时，见 .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md。该工具集注入 `@deepseek-ai/dsh-cordis-host-runner` 提供的 `ctx.dynamicCordisRunner`，后者拥有定义注册表和 vm 沙箱；组合缺少它时这些工具不会激活。运行中的 Package 在停止、undefine 或 DSH 重启前可以注册**额外的**模型可见工具；发生这类工具集变化时，系统会记录完整且有变动的请求头。 |
 | `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 bash 工具；部署组合提供 PTY 后端，并可覆盖面向模型的环境描述。 |
 | `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`、`ctx.fs` | `tool/call`、`fs/observed after view presence/absence, edit absence, or successful mutation`、`tool/result` | - | 基于文件系统 seam 的独立查看／创建／唯一字面量替换／按行插入工具；可与任何 shell 或终端接口组合。 |
+| `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`tool/result` | - | 四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。 |
 | `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (read_image registration)`、`ctx.llm + an image-capable route (read_image execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时 `read_image` 不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。 |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
+| `@deepseek-ai/dsh-tool-ast` | `ast_edit`、`ast_grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt`、`ctx.fs (ast_edit apply)` | `tool/call`、`fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`、`tool/result` | - | ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。 |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
@@ -600,6 +602,95 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 基于文件系统 seam 的独立查看／创建／唯一字面量替换／按行插入工具；可与任何 shell 或终端接口组合。
 
+<a id="deepseek-aidsh-tool-edit"></a>
+
+## `@deepseek-ai/dsh-tool-edit`
+
+### `edit`
+
+单文件编辑工具。模式由配置固定，而非每次调用指定；合适的参数形态见 &lt;parameters&gt;。
+
+"replace" 模式（默认）——带模糊空白匹配的字面量字符串替换。必须使用能唯一标识变更的最小的 old_string。非唯一的 old_string 必须补充上下文，或对全部出现使用 replace_all: true。跨文件重命名字符串 → replace_all: true。
+
+"patch" 模式——应用 diff 变更块。变更块头：当上下文行唯一时为裸 `@@`，否则为从文件逐字复制的 `@@ $ANCHOR`。每个变更块主体只能包含以 ' ' | '+' | '-' 开头的行，且至少有一处变更（+ 或 −）。使用足够的 ` ` 前缀上下文行使匹配唯一（通常 2–8）。在编辑结构化代码块时，包含其开头与结尾行，使编辑保持在块内。绝不要用行号作为锚点。若某次 patch 失败，请重新读取文件并生成全新的 patch——绝不要重试同一 diff。
+
+"apply_patch" 模式——Codex 风格信封：
+*** Begin Patch
+*** Add File: &lt;path&gt;
++&lt;initial contents lines&gt;
+*** Update File: &lt;path&gt; [*** Move to: &lt;new path&gt;]
+@@ &lt;optional anchor/class/function&gt;
+- &lt;old line&gt;
++ &lt;new line&gt;
+  &lt;context line&gt;
+*** Delete File: &lt;path&gt;
+*** End Patch
+文件引用相对，绝不绝对。新建文件的行必须以 `+` 开头。
+
+"hashline" 模式——基于行的锚定 patch 语言。&lt;guidance&gt;
+Section: [PATH#TAG]; TAG: 最新 read/search 的 4 位十六进制快照，每个 section 必填。
+HEADER FORMS:
+- PUT N.=M: — 用主体行（body rows）替换原始第 N–M 行（含）
+- PUT N*: — 替换以 N 开始的语法块（自动解析结束行）
+- PUT &lt;N: — 在第 N 行之前插入主体行（PUT &lt;1: = 文件头）
+- PUT >N: — 在第 N 行之后插入主体行（PUT >$: = 文件尾）
+- CUT N.=M / CUT N* — 删除并捕获若干行／块；可选 @name 寄存器
+- REM — 删除 section 文件；MV DEST — 移动／重命名 section 文件
+- 主体行只能位于 `:` 头之下；行是逐字的 +TEXT（保留前导空白）。
+  字面量开头的短横／加号：`- item` → `+- item`；`+ item` → `++ item`。
+- 数字始终是原始的，绝不被变更块移动。每次编辑重新编号并改变 #TAG。
+- 只触碰已显示的行；未显示的变更块被拒绝。省略（…、..、折叠的 N-M: 行）不可见。
+- 范围：只包含变更的行；绝不为保守行加宽。分开的变更 → 分开的变更块。
+- 绝不要用此工具格式化／重排版；请运行项目格式化器。
+完整的提示指引位于该包的 hashline 提示中（此处不重复）。
+&lt;/guidance&gt;
+
+&lt;parameters&gt;
+replace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }
+patch mode:   { path: string, edits: Array<{ op: "create"|"delete"|"update", rename?: string, diff?: string }> }
+apply_patch / hashline mode: { input: string }
+&lt;/parameters&gt;
+
+&lt;critical&gt;You MUST read the target file before editing it.
+Missing reads are caught by the fs-observation-policy when mounted;
+otherwise the edit proceeds from whatever content the tool can read.&lt;/critical&gt;
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "the file path (relative to the working directory)"
+    },
+    "old_string": {
+      "type": "string",
+      "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
+    },
+    "new_string": {
+      "type": "string",
+      "description": "the replacement text"
+    },
+    "replace_all": {
+      "type": "boolean",
+      "description": "when true, replaces every occurrence."
+    },
+    "edits": {
+      "type": "array",
+      "description": "list of edit entries: { op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }"
+    },
+    "input": {
+      "type": "string",
+      "description": "a full *** Begin Patch ... *** End Patch envelope. a hashline patch document ([path#tag] sections)"
+    }
+  }
+}
+```
+
+来源：[`packages/edit/tool-edit/src/index.ts`](../packages/edit/tool-edit/src/index.ts)
+
+四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。
+
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
@@ -776,6 +867,111 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 来源：[`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-search/src/index.ts)
 
 glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。
+
+<a id="deepseek-aidsh-tool-ast"></a>
+
+## `@deepseek-ai/dsh-tool-ast`
+
+### `ast_edit`
+
+按 AST 模式在结构上重写源文件。默认情况下只**预览**建议的变更块，不写入任何内容；设置 apply: true 才写入文件。支持 ast-grep 模式语法：`$NAME` 捕获一个可在重写中以 `$NAME` 引用的节点。每个匹配的节点都会被重写；不存在交互式选择。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pat": {
+      "type": "string",
+      "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+    },
+    "rewrite": {
+      "type": "string",
+      "description": "Replacement template. Captured metavariables from pat substitute here (e.g. `$NAME`). Empty rewrite deletes the matched node."
+    },
+    "path": {
+      "type": "string",
+      "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+    },
+    "include": {
+      "type": "string",
+      "description": "One glob filter for which files to rewrite (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+    },
+    "lang": {
+      "type": "string",
+      "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+    },
+    "strictness": {
+      "type": "string",
+      "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia.",
+      "enum": [
+        "cst",
+        "smart",
+        "ast",
+        "relaxed",
+        "signature",
+        "template"
+      ]
+    },
+    "apply": {
+      "type": "boolean",
+      "description": "true to write the rewrites to disk; false (default) previews only."
+    }
+  },
+  "required": [
+    "pat",
+    "rewrite"
+  ]
+}
+```
+
+来源：[`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
+
+### `ast_grep`
+
+按 AST 模式对源文件进行结构化搜索。返回带行号、按文件分组的匹配节点。内联返回前 100 条匹配；被截断时汇报总数。支持 ast-grep 模式语法：`$NAME` 捕获一个节点，`$_` 匹配任意单个节点，`$$$NAME` 捕获零个或多个节点。对匹配文件使用 read 获取周边上下文。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pat": {
+      "type": "string",
+      "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+    },
+    "path": {
+      "type": "string",
+      "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+    },
+    "include": {
+      "type": "string",
+      "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+    },
+    "lang": {
+      "type": "string",
+      "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+    },
+    "strictness": {
+      "type": "string",
+      "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia; \"signature\" matches node kinds without text.",
+      "enum": [
+        "cst",
+        "smart",
+        "ast",
+        "relaxed",
+        "signature",
+        "template"
+      ]
+    }
+  },
+  "required": [
+    "pat"
+  ]
+}
+```
+
+来源：[`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
+
+ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 
@@ -1139,7 +1335,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 ### `lsp`
 
-查询语言服务器，以精确导航代码。operation 可取 goToDefinition、findReferences、goToImplementation 或 hover。line 和 character 是从 1 开始的 UTF-16 光标坐标。findReferences 包含声明。
+查询语言服务器，以精确导航代码。operation 可取 goToDefinition、findReferences、goToImplementation、goToTypeDefinition、hover、documentSymbols、codeActions、rename 或 diagnostics。line 和 character 是从 1 开始的 UTF-16 光标坐标；documentSymbols 和 diagnostics 只使用文件（line／character 传 1 1）。findReferences 包含声明；codeActions 只列出可用的快速修复／重构（绝不应用）；rename 预览 new_name 的每一处编辑（绝不写文件）。
 
 ```json
 {
@@ -1147,12 +1343,17 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
   "properties": {
     "operation": {
       "type": "string",
-      "description": "goToDefinition, findReferences, goToImplementation, or hover.",
+      "description": "goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, or diagnostics.",
       "enum": [
         "goToDefinition",
         "findReferences",
         "goToImplementation",
-        "hover"
+        "goToTypeDefinition",
+        "hover",
+        "documentSymbols",
+        "codeActions",
+        "rename",
+        "diagnostics"
       ]
     },
     "file_path": {
@@ -1161,11 +1362,15 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
     },
     "line": {
       "type": "number",
-      "description": "One-based line of the cursor."
+      "description": "One-based line of the cursor (pass 1 for documentSymbols / diagnostics)."
     },
     "character": {
       "type": "number",
-      "description": "One-based UTF-16 column of the cursor."
+      "description": "One-based UTF-16 column of the cursor (pass 1 for documentSymbols / diagnostics)."
+    },
+    "new_name": {
+      "type": "string",
+      "description": "The new symbol name for rename; required by rename, ignored by others."
     }
   },
   "required": [

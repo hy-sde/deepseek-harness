@@ -20,6 +20,8 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   subprocess/  subprocess capability + local process-tree provider
   terminal/         persistent sessions
   fs/          filesystem capability + policy
+  edit/        rich editor capability: hashline patch language + model-facing edit tool
+  ast/         structural code capability: ast_grep/ast_edit over the packaged ast-grep binary
   lsp/         language-server capability
   skill/       skill provider registry + local impl + catalog/loader tool
   web/         web capability: Service Definition + search/fetch providers + tool Consumer

@@ -36,10 +36,13 @@ export { encodeMessage, MessageDecoder } from './framing.ts'
 export {
   applyEditsToText,
   negotiatePositionEncoding,
+  normalizeCodeActions,
   normalizeDiagnostics,
+  normalizeDocumentSymbols,
   normalizeFormattingEdits,
   normalizeHover,
   normalizeLocations,
+  normalizeRename,
   requestMethod,
   supportsFormatting,
   supportsOperation,
@@ -294,6 +297,11 @@ class LocalLspProvider implements LspProvider {
       this.assertActive(querySignal)
       let instance = this.instanceFor(workspaceKey, workspace)
       try {
+        // The diagnostics operation collects through the publish listener (the provider-read source
+        // standing in for a caller-owned text+version), not a request/reply — route it separately.
+        if (request.operation === 'diagnostics') {
+          return await instance.diagnostics(request, source, querySignal)
+        }
         return await instance.query(request, source, querySignal)
       } catch (error) {
         // A selected child can have died while idle or fail during the next write. Queries are
@@ -303,6 +311,9 @@ class LocalLspProvider implements LspProvider {
         this.evictIfCurrent(workspaceKey, instance)
         this.assertActive(querySignal)
         instance = this.instanceFor(workspaceKey, workspace)
+        if (request.operation === 'diagnostics') {
+          return await instance.diagnostics(request, source, querySignal)
+        }
         return await instance.query(request, source, querySignal)
       } finally {
         // Reach quiescence before dropping a dead slot; a replacement must survive this ownership check.

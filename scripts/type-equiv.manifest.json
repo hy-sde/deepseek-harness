@@ -1427,6 +1427,26 @@
     },
     {
       "doc": "docs/subsystems/lsp.md",
+      "symbol": "LspDocumentSymbol",
+      "source": "packages/lsp/lsp/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/lsp.md",
+      "symbol": "LspCodeAction",
+      "source": "packages/lsp/lsp/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/lsp.md",
+      "symbol": "LspRenameFile",
+      "source": "packages/lsp/lsp/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/lsp.md",
+      "symbol": "LspDiagnostic",
+      "source": "packages/lsp/lsp/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/lsp.md",
       "symbol": "LspQueryResult",
       "source": "packages/lsp/lsp/src/types.ts"
     },

@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   applyEditsToText,
   negotiatePositionEncoding,
+  normalizeCodeActions,
   normalizeDiagnostics,
+  normalizeDocumentSymbols,
   normalizeFormattingEdits,
   normalizeHover,
   normalizeLocations,
+  normalizeRename,
   requestMethod,
   supportsFormatting,
   supportsOperation,
@@ -145,11 +148,19 @@ describe('normalizeDiagnostics', () => {
   })
 })
 describe('requestMethod', () => {
-  it('maps each operation to its textDocument request', () => {
+  it('maps each request-backed operation to its textDocument request', () => {
     expect(requestMethod('goToDefinition')).toBe('textDocument/definition')
     expect(requestMethod('findReferences')).toBe('textDocument/references')
     expect(requestMethod('goToImplementation')).toBe('textDocument/implementation')
+    expect(requestMethod('goToTypeDefinition')).toBe('textDocument/typeDefinition')
     expect(requestMethod('hover')).toBe('textDocument/hover')
+    expect(requestMethod('documentSymbols')).toBe('textDocument/documentSymbol')
+    expect(requestMethod('codeActions')).toBe('textDocument/codeAction')
+    expect(requestMethod('rename')).toBe('textDocument/rename')
+  })
+
+  it('rejects the publish-listener diagnostics operation (no request method)', () => {
+    expect(() => requestMethod('diagnostics')).toThrow(expect.objectContaining({ code: 'LSP_MALFORMED_RESPONSE' }))
   })
 })
 
@@ -159,11 +170,22 @@ describe('supportsOperation', () => {
       definitionProvider: true,
       referencesProvider: { workDoneProgress: true },
       implementationProvider: false,
+      typeDefinitionProvider: true,
+      documentSymbolProvider: { workDoneProgress: true },
+      codeActionProvider: false,
+      renameProvider: true,
     }
     expect(supportsOperation(caps, 'goToDefinition')).toBe(true)
     expect(supportsOperation(caps, 'findReferences')).toBe(true)
     expect(supportsOperation(caps, 'goToImplementation')).toBe(false)
-    expect(supportsOperation(caps, 'hover')).toBe(false)
+    expect(supportsOperation(caps, 'goToTypeDefinition')).toBe(true)
+    expect(supportsOperation(caps, 'documentSymbols')).toBe(true)
+    expect(supportsOperation(caps, 'codeActions')).toBe(false)
+    expect(supportsOperation(caps, 'rename')).toBe(true)
+  })
+
+  it('rejects diagnostics (publish-listener path has no capability slot)', () => {
+    expect(supportsOperation({}, 'diagnostics')).toBe(false)
   })
 })
 
@@ -302,5 +324,158 @@ describe('normalizeHover', () => {
   it('rejects a malformed range instead of silently dropping it', () => {
     expect(() => normalizeHover({ contents: 'x', range: { start: { line: 1 } } }))
       .toThrow(expect.objectContaining({ code: 'LSP_MALFORMED_RESPONSE' }))
+  })
+})
+
+describe('normalizeDocumentSymbols', () => {
+  it('returns empty for null and []; rejects missing and non-array payloads', () => {
+    expect(normalizeDocumentSymbols(null)).toEqual([])
+    expect(normalizeDocumentSymbols([])).toEqual([])
+    expect(() => normalizeDocumentSymbols(undefined)).toThrow(expect.objectContaining({ code: 'LSP_MALFORMED_RESPONSE' }))
+    expect(() => normalizeDocumentSymbols({ name: 'x', kind: 2 })).toThrow(/not an array/)
+  })
+
+  it('flattens a hierarchical DocumentSymbol tree in document order with depth', () => {
+    const payload = [
+      {
+        name: 'outer',
+        kind: 5,
+        range: { start: { line: 0, character: 0 }, end: { line: 2, character: 1 } },
+        selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } },
+        detail: 'class Outer',
+        children: [
+          {
+            name: 'inner',
+            kind: 6,
+            range: { start: { line: 1, character: 2 }, end: { line: 1, character: 9 } },
+            selectionRange: { start: { line: 1, character: 2 }, end: { line: 1, character: 7 } },
+          },
+        ],
+      },
+    ]
+    const result = normalizeDocumentSymbols(payload)
+    expect(result).toHaveLength(2)
+    expect(result[0]).toMatchObject({
+      name: 'outer',
+      kind: 5,
+      depth: 0,
+      selectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } },
+      detail: 'class Outer',
+    })
+    expect(result[1]).toMatchObject({ name: 'inner', kind: 6, depth: 1 })
+  })
+
+  it('falls back range to selectionRange when a hierarchical symbol has no range', () => {
+    const result = normalizeDocumentSymbols([{ name: 'a', kind: 2, selectionRange: RANGE, children: [] }])
+    expect(result[0]?.range).toEqual(RANGE)
+  })
+
+  it('rejects a hierarchical symbol missing both selectionRange and location markers', () => {
+    expect(() => normalizeDocumentSymbols([{ name: 'a', kind: 2, range: RANGE }]))
+      .toThrow(/neither selectionRange nor location/)
+  })
+
+  it('maps flat SymbolInformation entries to leaf symbols', () => {
+    const result = normalizeDocumentSymbols([{ name: 'b', kind: 2, location: { uri: 'file:///b', range: RANGE }, containerName: 'lib' }])
+    expect(result).toEqual([{ name: 'b', kind: 2, range: RANGE, selectionRange: RANGE, depth: 0 }])
+  })
+
+  it('rejects entries that are neither DocumentSymbol nor SymbolInformation', () => {
+    expect(() => normalizeDocumentSymbols([{ nope: true }])).toThrow(/malformed symbol/)
+    expect(() => normalizeDocumentSymbols([null])).toThrow(/non-object/)
+    expect(() => normalizeDocumentSymbols([{ name: 'x' }])).toThrow(/malformed symbol/)
+  })
+})
+
+describe('normalizeCodeActions', () => {
+  it('returns empty for null and []; rejects missing/non-array payloads', () => {
+    expect(normalizeCodeActions(null)).toEqual([])
+    expect(normalizeCodeActions([])).toEqual([])
+    expect(() => normalizeCodeActions(undefined)).toThrow(expect.objectContaining({ code: 'LSP_MALFORMED_RESPONSE' }))
+    expect(() => normalizeCodeActions({ title: 'x', kind: 'quickfix' })).toThrow(/not an array/)
+  })
+
+  it('normalizes CodeAction entries with title/kind/isPreferred and their diagnostics', () => {
+    const result = normalizeCodeActions([{
+      title: 'Fix it',
+      kind: 'quickfix',
+      isPreferred: true,
+      diagnostics: [{ range: RANGE, message: 'oops', severity: 1, source: 'ts' }],
+    }])
+    expect(result).toEqual([{
+      title: 'Fix it',
+      kind: 'quickfix',
+      isPreferred: true,
+      diagnostics: [{ range: RANGE, message: 'oops', severity: 1, source: 'ts' }],
+    }])
+  })
+
+  it('keeps Command entries as title-only actions', () => {
+    const result = normalizeCodeActions([{ title: 'Run command', command: 'x.run' }])
+    expect(result).toEqual([{ title: 'Run command', diagnostics: [] }])
+  })
+
+  it('drops the edits field (the seam never materializes unresolved edits)', () => {
+    const result = normalizeCodeActions([{
+      title: 'Refactor',
+      kind: 'refactor',
+      edit: { changes: { 'file:///a': [{ range: RANGE, newText: 'x' }] } },
+    }])
+    expect(result[0]?.diagnostics).toEqual([])
+    expect('edit' in (result[0] as object)).toBe(false)
+  })
+
+  it('rejects entries with a non-string title', () => {
+    expect(() => normalizeCodeActions([{ title: 42, kind: 'quickfix' }])).toThrow(/without a title/)
+  })
+})
+
+describe('normalizeRename', () => {
+  it('returns empty for null and []; rejects malformed payloads', () => {
+    expect(normalizeRename(null)).toEqual([])
+    expect(normalizeRename([])).toEqual([])
+    expect(() => normalizeRename(undefined)).toThrow(expect.objectContaining({ code: 'LSP_MALFORMED_RESPONSE' }))
+    expect(() => normalizeRename({ changes: 'nope' })).toThrow(/non-array edit list/)
+  })
+
+  it('maps the changes map to per-file TextEdit lists preserving order', () => {
+    const result = normalizeRename({
+      changes: {
+        'file:///a': [{ range: RANGE, newText: 'x' }],
+        'file:///b': [
+          { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 4 } }, newText: 'y' },
+          { range: RANGE, newText: 'z' },
+        ],
+      },
+    })
+    expect(result).toEqual([
+      { uri: 'file:///a', edits: [{ range: RANGE, newText: 'x' }] },
+      { uri: 'file:///b', edits: [
+        { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 4 } }, newText: 'y' },
+        { range: RANGE, newText: 'z' },
+      ] },
+    ])
+  })
+
+  it('ignores documentChanges (structural edit support is out of seam scope) and returns empty', () => {
+    expect(normalizeRename({ documentChanges: [{ textDocument: { uri: 'file:///a', version: 1 }, edits: [{ range: RANGE, newText: 'x' }] }] }))
+      .toEqual([])
+  })
+
+  it('rejects a malformed TextEdit member', () => {
+    expect(() => normalizeRename({ changes: { 'file:///a': [{ range: RANGE }] } }))
+      .toThrow(/malformed TextEdit/)
+    expect(() => normalizeRename({ changes: { 'file:///a': ['nope'] } }))
+      .toThrow(/non-object TextEdit/)
+  })
+
+  it('skips null edit lists (a null change for one URI) while keeping the rest', () => {
+    const result = normalizeRename({ changes: { 'file:///a': null, 'file:///b': [{ range: RANGE, newText: 'x' }] } })
+    expect(result).toEqual([{ uri: 'file:///b', edits: [{ range: RANGE, newText: 'x' }] }])
+  })
+
+  it('returns empty for a workspace-edit without changes and for an object missing changes', () => {
+    expect(normalizeRename({ edit: { changes: { 'file:///a': [{ range: RANGE, newText: 'x' }] } } })).toEqual([])
+    expect(normalizeRename({})).toEqual([])
   })
 })

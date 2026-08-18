@@ -3,19 +3,30 @@
  * {@link LspError} taxonomy and the {@link LspProviderId} brand factory are runtime and live in
  * `index.ts`. Positions and ranges are zero-based UTF-16, matching the protocol; the model-facing
  * tool owns the one-based cursor convention. The seam exposes no protocol types, process or document
- * controls, or generic JSON-RPC escape hatch — only the four semantic operations and the two
- * write-path operations (formatting, diagnostics).
+ * controls, or generic JSON-RPC escape hatch — only the semantic operations (`goToDefinition`,
+ * `findReferences`, `goToImplementation`, `goToTypeDefinition`, `hover`, `documentSymbols`,
+ * `codeActions`, `rename`), the navigation `diagnostics` operation, and the two write-path
+ * operations (formatting, diagnostics).
  * @module @deepseek-ai/dsh-lsp/types
  */
 
 import type { LspProviderId } from './brand.ts'
 
 /**
- * The four semantic queries the seam and model expose. A closed union: adding an operation is a
- * compile-enforced change across the seam, providers, and the tool. Symbols and call hierarchy are
- * not operations here; they need different schemas.
+ * The model-exposed operations the seam and tool share. A closed union: adding an operation is a
+ * compile-enforced change across the seam, providers, and the tool. `documentSymbols`, `codeActions`,
+ * and `rename` produce their own result shapes; navigation operations normalize to locations.
  */
-export type LspOperation = 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
+export type LspOperation =
+  | 'goToDefinition'
+  | 'findReferences'
+  | 'goToImplementation'
+  | 'hover'
+  | 'goToTypeDefinition'
+  | 'documentSymbols'
+  | 'codeActions'
+  | 'rename'
+  | 'diagnostics'
 
 /** A zero-based UTF-16 cursor coordinate, matching the LSP wire convention. */
 export interface LspPosition {
@@ -35,16 +46,20 @@ export interface LspRange {
  * A caller's normalized query. Every field is required: `workspaceRoot` is caller-supplied,
  * `languageId` comes from the provider registration (not here), and consumers own timeouts and
  * result limits — so no field needs implementation defaulting and there is no `resolve()` step.
+ * `newName` is present only for `rename` (the requested symbol's new name); other operations leave
+ * it undefined.
  */
 export interface LspQueryRequest {
   /** Which semantic query to run. */
   readonly operation: LspOperation
   /** The source file to query (relative to `workspaceRoot` or absolute; the provider canonicalizes). */
   readonly filePath: string
-  /** The zero-based UTF-16 cursor position to query at. */
+  /** The zero-based UTF-16 cursor position to query at; `documentSymbols` ignores it. */
   readonly position: LspPosition
   /** The workspace root the provider resolves against and indexes; required, never defaulted. */
   readonly workspaceRoot: string
+  /** The new symbol name for `rename`; ignored by every other operation. */
+  readonly newName?: string
 }
 
 /**
@@ -74,9 +89,56 @@ export interface LspHover {
 }
 
 /**
+ * One normalized document symbol, flattened from the server's nested `DocumentSymbol` tree so the
+ * seam never serializes recursive shapes. Depth starts at `0` for top-level symbols; children follow
+ * their parent at `depth + 1` in document order.
+ */
+export interface LspDocumentSymbol {
+  /** The symbol name. */
+  readonly name: string
+  /** LSP `SymbolKind` (e.g. `2` Function, `5` Class, `6` Method, `13` Variable). */
+  readonly kind: number
+  /** The symbol's full range (e.g. a function body). */
+  readonly range: LspRange
+  /** The range of the symbol's name/identifier. */
+  readonly selectionRange: LspRange
+  /** Nesting depth (`0` top-level); the rows are already in document order. */
+  readonly depth: number
+  /** Optional detail line (signature / type parameters), when the server supplied it. */
+  readonly detail?: string
+}
+
+/** One normalized code action (a quick fix / refactoring offered by the server). */
+export interface LspCodeAction {
+  /** The action title, e.g. "Extract to function" or "Fix typo". */
+  readonly title: string
+  /** The LSP `CodeActionKind` (e.g. `quickfix`, `refactor.extract`). */
+  readonly kind?: string
+  /** Whether this action is marked preferred by the server. */
+  readonly isPreferred?: boolean
+  /** The diagnostics this action addresses (usually quick fixes), when the server supplied them. */
+  readonly diagnostics: readonly LspDiagnostic[]
+}
+
+/** A single text edit inside a rename result, on one document. */
+export interface LspRenameFile {
+  /** The target document URI for `edits`. */
+  readonly uri: string
+  /** The replacement edits, sorted for ascending application (apply in descending order). */
+  readonly edits: readonly {
+    /** The range to replace. */
+    readonly range: LspRange
+    /** The replacement text. */
+    readonly newText: string
+  }[]
+}
+
+/**
  * The closed result union. Navigation operations (`goToDefinition`, `findReferences`,
- * `goToImplementation`) normalize to `locations`; `hover` normalizes to content or `null`.
- * Consumers `switch` on `kind` to exhaustiveness so a new arm breaks compilation until handled.
+ * `goToImplementation`, `goToTypeDefinition`) normalize to `locations`; `hover` normalizes to
+ * content or `null`. `documentSymbols`, `codeActions`, and `rename` normalize to their own shapes;
+ * `diagnostics` reuses the normalized diagnostic list. Consumers `switch` on `kind` to
+ * exhaustiveness so a new arm breaks compilation until handled.
  *
  * The `locations` variant carries `resolvedWorkspaceUri`: the provider's canonical `file:` URI for
  * the request's workspace root. A caller that relativizes location URIs MUST use this, not parse the
@@ -86,6 +148,10 @@ export interface LspHover {
 export type LspQueryResult =
   | { readonly kind: 'locations'; readonly locations: readonly LspLocation[]; readonly resolvedWorkspaceUri: string }
   | { readonly kind: 'hover'; readonly hover: LspHover | null }
+  | { readonly kind: 'documentSymbols'; readonly symbols: readonly LspDocumentSymbol[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'codeActions'; readonly actions: readonly LspCodeAction[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'rename'; readonly files: readonly LspRenameFile[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'diagnostics'; readonly diagnostics: readonly LspDiagnostic[]; readonly resolvedWorkspaceUri: string }
 
 /**
  * A caller's write-path format request. The caller supplies authoritative in-memory text verbatim —

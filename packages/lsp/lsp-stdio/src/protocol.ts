@@ -59,7 +59,10 @@ export interface WireTextEdit {
   readonly newText: string
 }
 
-/** A `Diagnostic`: the range, optional severity/source, and the message, as published. */
+/**
+ * A `Diagnostic` in code-action context or publish payload format: the range, optional
+ * severity/source, and the message.
+ */
 export interface WireDiagnostic {
   readonly range: WireRange
   readonly severity?: number
@@ -86,6 +89,52 @@ export interface WireTextDocumentSyncOptions {
   readonly change?: WireTextDocumentSyncKind
 }
 
+/** A `DocumentSymbol`: a hierarchical symbol with nested children. */
+export interface WireDocumentSymbol {
+  readonly name: string
+  readonly detail?: string
+  readonly kind: number
+  readonly range?: WireRange
+  readonly selectionRange?: WireRange
+  readonly children?: readonly WireDocumentSymbol[]
+  readonly childrenLength?: number
+}
+
+/**
+ * A `SymbolInformation` (flat document-symbol form). `DocumentSymbol` lacks `location`;
+ * `SymbolInformation` lacks `selectionRange`/`children`.
+ */
+export interface WireSymbolInformation {
+  readonly name: string
+  readonly kind: number
+  readonly location: WireLocation
+  readonly containerName?: string
+}
+
+/** A `CodeAction` offered by a server (without its resolved edits, which require resolving). */
+export interface WireCodeAction {
+  readonly title: string
+  readonly kind?: string
+  readonly isPreferred?: boolean
+  readonly diagnostics?: readonly WireDiagnostic[]
+}
+
+/** A `Command` (some servers return raw commands instead of code actions). */
+export interface WireCommand {
+  readonly title: string
+  readonly command: string
+  readonly arguments?: readonly unknown[]
+}
+
+/**
+ * The per-document `changes` map of a `WorkspaceEdit`: `file:` URI → replacement `TextEdit`s.
+ */
+export interface WireWorkspaceEdit {
+  readonly changes?: Readonly<Record<string, readonly WireTextEdit[]>>
+  /** `documentChanges` — not consumed (fully normalized into `changes` shape by providers that emit it). */
+  readonly documentChanges?: readonly unknown[]
+}
+
 /** A `ServerCapabilities.provider` slot: a boolean or an options object (both mean "supported"). */
 export type WireProviderCapability = boolean | Record<string, unknown> | undefined
 
@@ -96,7 +145,11 @@ export interface WireServerCapabilities {
   readonly definitionProvider?: WireProviderCapability
   readonly referencesProvider?: WireProviderCapability
   readonly implementationProvider?: WireProviderCapability
+  readonly typeDefinitionProvider?: WireProviderCapability
   readonly hoverProvider?: WireProviderCapability
+  readonly documentSymbolProvider?: WireProviderCapability
+  readonly codeActionProvider?: WireProviderCapability
+  readonly renameProvider?: WireProviderCapability
   readonly documentFormattingProvider?: WireProviderCapability
 }
 

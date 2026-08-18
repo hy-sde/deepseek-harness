@@ -23,8 +23,10 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-cordis` | `cordis_define`, `cordis_inspect_list`, `cordis_inspect_query`, `cordis_inspect_self`, `cordis_run`, `cordis_stop`, `cordis_undefine` | `ctx.tools`, `ctx.dynamicCordisRunner` | `tool/call`, `tool/result`, `process-local dynamic package lifecycle` | - | Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@deepseek-ai/dsh-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or DSH restarts; a full changed request header logs those tool-set changes. |
 | `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description. |
 | `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`, `ctx.fs` | `tool/call`, `fs/observed after view presence/absence, edit absence, or successful mutation`, `tool/result` | - | Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API. |
+| `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `tool/result` | - | Four-mode `edit` (replace / patch / apply_patch / hashline) ported from @oh-my-pi. Mount alongside tool-fs with `enableEdit: false` so the rich editor owns the `edit` name. |
 | `@deepseek-ai/dsh-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (read_image registration)`, `ctx.llm + an image-capable route (read_image execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. `read_image` is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`, `grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments. |
+| `@deepseek-ai/dsh-tool-ast` | `ast_edit`, `ast_grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt`, `ctx.fs (ast_edit apply)` | `tool/call`, `fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`, `tool/result` | - | ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy). |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`, `terminal_list`, `terminal_open`, `terminal_read`, `terminal_send`, `terminal_signal` | `ctx.tools`, `ctx.terminals`, `ctx.systemPrompt`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema. |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
@@ -596,6 +598,106 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API.
 
+<a id="deepseek-aidsh-tool-edit"></a>
+
+## `@deepseek-ai/dsh-tool-edit`
+
+### `edit`
+
+Single-file edit tool. The mode is fixed by configuration, not per-call;
+the appropriate argument shape is documented in &lt;parameters&gt;.
+
+Mode "replace" (default) — literal string replacement with fuzzy whitespace
+matching. MUST use the smallest old_string uniquely identifying the change.
+A non-unique old_string MUST add context or use replace_all: true for all
+occurrences. Renaming a string across the file → replace_all: true.
+
+Mode "patch" — apply diff hunks. Hunk headers: bare `@@` when context lines
+are unique, else `@@ $ANCHOR` copied verbatim from the file. Each hunk body
+contains only lines starting with ' ' | '+' | '-', and at least one change
+(+ or -). Use enough ` `-prefixed context lines to make the match unique
+(usually 2–8). When editing structured blocks, include the opening and
+closing lines so the edit stays inside the block. NEVER use line numbers
+as anchors. If a patch fails, re-read the file and produce a fresh patch —
+never retry the same diff.
+
+Mode "apply_patch" — Codex-style envelope:
+*** Begin Patch
+*** Add File: &lt;path&gt;
++&lt;initial contents lines&gt;
+*** Update File: &lt;path&gt; [*** Move to: &lt;new path&gt;]
+@@ &lt;optional anchor/class/function&gt;
+- &lt;old line&gt;
++ &lt;new line&gt;
+  &lt;context line&gt;
+*** Delete File: &lt;path&gt;
+*** End Patch
+File references relative, never absolute. New-file lines MUST start `+`.
+
+Mode "hashline" — a line-anchored patch language. &lt;guidance&gt;
+Section: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.
+HEADER FORMS:
+- PUT N.=M: — replace original inclusive lines N–M with body (body rows)
+- PUT N*: — replace the syntactic block beginning N (closing line resolved)
+- PUT &lt;N: — insert body rows before line N (PUT &lt;1: = file head)
+- PUT &gt;N: — insert body rows after line N (PUT &gt;$: = file tail)
+- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register
+- REM — delete section file; MV DEST — move/rename section file
+- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).
+  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.
+- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.
+- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.
+- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.
+- NEVER format/restyle with this tool; run the project formatter.
+Full prompt guidance lives in the package's hashline prompt (not duplicated here).
+&lt;/guidance&gt;
+
+&lt;parameters&gt;
+replace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }
+patch mode:   { path: string, edits: Array&lt;{ op: "create"|"delete"|"update", rename?: string, diff?: string }&gt; }
+apply_patch / hashline mode: { input: string }
+&lt;/parameters&gt;
+
+&lt;critical&gt;You MUST read the target file before editing it.
+Missing reads are caught by the fs-observation-policy when mounted;
+otherwise the edit proceeds from whatever content the tool can read.&lt;/critical&gt;
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "the file path (relative to the working directory)"
+    },
+    "old_string": {
+      "type": "string",
+      "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
+    },
+    "new_string": {
+      "type": "string",
+      "description": "the replacement text"
+    },
+    "replace_all": {
+      "type": "boolean",
+      "description": "when true, replaces every occurrence."
+    },
+    "edits": {
+      "type": "array",
+      "description": "list of edit entries: { op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }"
+    },
+    "input": {
+      "type": "string",
+      "description": "a full *** Begin Patch ... *** End Patch envelope. a hashline patch document ([path#tag] sections)"
+    }
+  }
+}
+```
+
+Source: [`packages/edit/tool-edit/src/index.ts`](../packages/edit/tool-edit/src/index.ts)
+
+Four-mode `edit` (replace / patch / apply_patch / hashline) ported from @oh-my-pi. Mount alongside tool-fs with `enableEdit: false` so the rich editor owns the `edit` name.
+
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
@@ -772,6 +874,111 @@ Search file contents with a ripgrep regular expression. Returns matching lines w
 Source: [`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-search/src/index.ts)
 
 glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments.
+
+<a id="deepseek-aidsh-tool-ast"></a>
+
+## `@deepseek-ai/dsh-tool-ast`
+
+### `ast_edit`
+
+Structurally rewrite source files by AST pattern. By default it PREVIEWS the proposed hunks without writing anything; set apply: true to write the files. Supports ast-grep pattern syntax: `$NAME` captures one node referenced in the rewrite as `$NAME`. Every matched node is rewritten; there is no interactive selection.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pat": {
+      "type": "string",
+      "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+    },
+    "rewrite": {
+      "type": "string",
+      "description": "Replacement template. Captured metavariables from pat substitute here (e.g. `$NAME`). Empty rewrite deletes the matched node."
+    },
+    "path": {
+      "type": "string",
+      "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+    },
+    "include": {
+      "type": "string",
+      "description": "One glob filter for which files to rewrite (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+    },
+    "lang": {
+      "type": "string",
+      "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+    },
+    "strictness": {
+      "type": "string",
+      "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia.",
+      "enum": [
+        "cst",
+        "smart",
+        "ast",
+        "relaxed",
+        "signature",
+        "template"
+      ]
+    },
+    "apply": {
+      "type": "boolean",
+      "description": "true to write the rewrites to disk; false (default) previews only."
+    }
+  },
+  "required": [
+    "pat",
+    "rewrite"
+  ]
+}
+```
+
+Source: [`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
+
+### `ast_grep`
+
+Structurally search source files by AST pattern. Returns matching nodes with line numbers, grouped by file. Returns the first 100 matches inline; a capped result reports the total. Supports ast-grep pattern syntax: `$NAME` captures one node, `$_` matches any single node, `$$$NAME` captures zero+ nodes. Use read on a matched file for surrounding context.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pat": {
+      "type": "string",
+      "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+    },
+    "path": {
+      "type": "string",
+      "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+    },
+    "include": {
+      "type": "string",
+      "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+    },
+    "lang": {
+      "type": "string",
+      "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+    },
+    "strictness": {
+      "type": "string",
+      "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia; \"signature\" matches node kinds without text.",
+      "enum": [
+        "cst",
+        "smart",
+        "ast",
+        "relaxed",
+        "signature",
+        "template"
+      ]
+    }
+  },
+  "required": [
+    "pat"
+  ]
+}
+```
+
+Source: [`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
+
+ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy).
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 
@@ -1135,7 +1342,7 @@ Registered only inside live root Agent scopes created after the opt-in Schedule 
 
 ### `lsp`
 
-Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, hover. line and character are one-based UTF-16 cursor coordinates. findReferences includes the declaration.
+Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, diagnostics. line and character are one-based UTF-16 cursor coordinates; pass 1 1 for documentSymbols and diagnostics, which use only the file. findReferences includes the declaration; codeActions lists available quick fixes/refactorings (never applies them); rename previews every edit for new_name (never writes files).
 
 ```json
 {
@@ -1143,12 +1350,17 @@ Query a language server for precise code navigation. operation is one of goToDef
   "properties": {
     "operation": {
       "type": "string",
-      "description": "goToDefinition, findReferences, goToImplementation, or hover.",
+      "description": "goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, or diagnostics.",
       "enum": [
         "goToDefinition",
         "findReferences",
         "goToImplementation",
-        "hover"
+        "goToTypeDefinition",
+        "hover",
+        "documentSymbols",
+        "codeActions",
+        "rename",
+        "diagnostics"
       ]
     },
     "file_path": {
@@ -1157,11 +1369,15 @@ Query a language server for precise code navigation. operation is one of goToDef
     },
     "line": {
       "type": "number",
-      "description": "One-based line of the cursor."
+      "description": "One-based line of the cursor (pass 1 for documentSymbols / diagnostics)."
     },
     "character": {
       "type": "number",
-      "description": "One-based UTF-16 column of the cursor."
+      "description": "One-based UTF-16 column of the cursor (pass 1 for documentSymbols / diagnostics)."
+    },
+    "new_name": {
+      "type": "string",
+      "description": "The new symbol name for rename; required by rename, ignored by others."
     }
   },
   "required": [
