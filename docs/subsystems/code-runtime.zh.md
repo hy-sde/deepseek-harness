@@ -33,6 +33,28 @@ interface CodeRunRequest {
    * binding calls are the CALLER's to settle — the runtime only stops asking.
    */
   signal?: AbortSignal
+  /**
+   * Optional persistent-kernel identity, a non-empty opaque string. Runs that
+   * share a `sessionId` execute against the SAME kernel state (globals,
+   * working directory, event loop), so a later program sees what an earlier
+   * one assigned. Absent means one-shot: every run executes in fresh state,
+   * exactly as before this field existed. Providers that do not implement
+   * persistence MUST ignore it — a namespace list, program, and abort signal
+   * are all the one-shot contract needs, so a provider gains persistence only
+   * by choosing to honor this field. The provider, not the caller, owns the
+   * session lifecycle (idle reaping, disposal); the caller MUST NOT rely on a
+   * session outliving the runtime.
+   */
+  sessionId?: string
+  /**
+   * With {@link sessionId}: discard that session's existing kernel state and
+   * start the run in a fresh one. Without `sessionId` this flag is a no-op
+   * (there is nothing to reset in a one-shot run). A resetting run waits for
+   * the previous kernel's shutdown before executing, so stateful cleanup in
+   * prior programs completes first. Both fields together let a program offer
+   * "reset the kernel" as a first-class recovery from corrupted state.
+   */
+  reset?: boolean
 }
 ```
 
@@ -54,6 +76,15 @@ interface CodeRunResult {
   value?: CodeJsonValue
   /** Text the program emitted, in order, bounded only as part of the outer result. */
   logs: string[]
+  /**
+   * The session's execution count after this run: 1 for the first run of a
+   * {@link CodeRunRequest.sessionId | session}, 2 for the second, and so on.
+   * Present only when the run executed through a persistent session and the
+   * runtime could observe the count; one-shot runs omit it. Purely
+   * informational — consumers may render it as cell numbering but must not
+   * drive behavior from it.
+   */
+  executionCount?: number
   /** Present iff the run failed; see {@link CodeRunFailure} for the taxonomy. */
   error?: CodeRunFailure
 }
@@ -158,7 +189,7 @@ interface CodeRunFailure {
 
 ## 服务
 
-`CodeRuntime`（`ctx.codeRuntime`，抽象服务，定义于 [`packages/code-runtime/code-runtime/src/index.ts`](../../packages/code-runtime/code-runtime/src/index.ts)）由 `run(request)` 加两个只读描述符组成：`language`（程序必须使用的语言，已知值为 `'typescript'` 与 `'python'`，即 `dsh-tools` 能呈现的那些，其中只有 `'typescript'` 有已发布的后端；生成语言相关展示的 Consumer 据此切换，遇到无法展示的语言时应显式报错）和 `isolation`（执行基底，`'worker-thread'`、`'process'`、`'container'`；仅为诊断标签，**不构成安全承诺**）。实现必须保证各次运行彼此隔离（无跨运行状态），并在 dispose（资源释放）时等待系统完全停稳：teardown 要等到所有进行中的运行均已终止并结算后才完成。
+`CodeRuntime`（`ctx.codeRuntime`，抽象服务，定义于 [`packages/code-runtime/code-runtime/src/index.ts`](../../packages/code-runtime/code-runtime/src/index.ts)）由 `run(request)` 加三个只读描述符组成：`language`（程序必须使用的语言，已知值为 `'typescript'` 与 `'python'`，即 `dsh-tools` 能呈现的那些；`'typescript'` 既有一次性 worker-thread 后端，也有持久化子进程后端，`'python'` 有持久化子进程后端；生成语言相关展示的 Consumer 据此切换，遇到无法展示的语言时应显式报错）、`isolation`（执行基底，`'worker-thread'`、`'process'`、`'container'`；仅为诊断标签，**不构成安全承诺**）和 `persistent`（后端能否跨同一会话的多次运行保留状态——不支持的后端必须忽略 `sessionId`/`reset` 并按一次性运行处理；Consumer 据此切换）。实现必须保证没有共享 `sessionId` 的运行彼此隔离（持久化是唯一的跨运行桥梁），并在 dispose（资源释放）时等待系统完全停稳：teardown 要等到所有进行中的运行均已终止并结算后才完成。支持会话的后端（如 `dsh-code-runtime-python`、`dsh-code-runtime-nodejs`）可在携带相同 `sessionId` 的 `run` 调用之间保活一个内核、上报 `executionCount`、将 `reset: true` 视为“丢弃会话既有状态”，并按配置的超时收割空闲会话——这份有状态的成本属于后端，通过 `persistent` 如实呈现，而非隐藏行为。
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

@@ -33,6 +33,28 @@ interface CodeRunRequest {
    * binding calls are the CALLER's to settle — the runtime only stops asking.
    */
   signal?: AbortSignal
+  /**
+   * Optional persistent-kernel identity, a non-empty opaque string. Runs that
+   * share a `sessionId` execute against the SAME kernel state (globals,
+   * working directory, event loop), so a later program sees what an earlier
+   * one assigned. Absent means one-shot: every run executes in fresh state,
+   * exactly as before this field existed. Providers that do not implement
+   * persistence MUST ignore it — a namespace list, program, and abort signal
+   * are all the one-shot contract needs, so a provider gains persistence only
+   * by choosing to honor this field. The provider, not the caller, owns the
+   * session lifecycle (idle reaping, disposal); the caller MUST NOT rely on a
+   * session outliving the runtime.
+   */
+  sessionId?: string
+  /**
+   * With {@link sessionId}: discard that session's existing kernel state and
+   * start the run in a fresh one. Without `sessionId` this flag is a no-op
+   * (there is nothing to reset in a one-shot run). A resetting run waits for
+   * the previous kernel's shutdown before executing, so stateful cleanup in
+   * prior programs completes first. Both fields together let a program offer
+   * "reset the kernel" as a first-class recovery from corrupted state.
+   */
+  reset?: boolean
 }
 ```
 
@@ -54,6 +76,15 @@ interface CodeRunResult {
   value?: CodeJsonValue
   /** Text the program emitted, in order, bounded only as part of the outer result. */
   logs: string[]
+  /**
+   * The session's execution count after this run: 1 for the first run of a
+   * {@link CodeRunRequest.sessionId | session}, 2 for the second, and so on.
+   * Present only when the run executed through a persistent session and the
+   * runtime could observe the count; one-shot runs omit it. Purely
+   * informational — consumers may render it as cell numbering but must not
+   * drive behavior from it.
+   */
+  executionCount?: number
   /** Present iff the run failed; see {@link CodeRunFailure} for the taxonomy. */
   error?: CodeRunFailure
 }
@@ -158,7 +189,7 @@ interface CodeRunFailure {
 
 ## The service
 
-`CodeRuntime` (`ctx.codeRuntime`, abstract — defined in [`packages/code-runtime/code-runtime/src/index.ts`](../../packages/code-runtime/code-runtime/src/index.ts)) is `run(request)` plus two readonly descriptors: `language` (what the program must be written in — `'typescript'` and `'python'` are the well-known values, those `dsh-tools` presents, and only `'typescript'` has a published backend; a consumer generating language-specific presentation switches on it and fails loud on one it cannot present) and `isolation` (the execution substrate — `'worker-thread'`, `'process'`, `'container'`; a diagnostic label, **not a security claim**). Implementations must keep runs isolated from each other (no cross-run state) and dispose to quiescence: in-flight runs are terminated and awaited before teardown completes.
+`CodeRuntime` (`ctx.codeRuntime`, abstract — defined in [`packages/code-runtime/code-runtime/src/index.ts`](../../packages/code-runtime/code-runtime/src/index.ts)) is `run(request)` plus three readonly descriptors: `language` (what the program must be written in — `'typescript'` and `'python'` are the well-known values, those `dsh-tools` presents; `'typescript'` has both a one-shot worker-thread backend and a persistent subprocess backend, `'python'` has a persistent subprocess backend; a consumer generating language-specific presentation switches on it and fails loud on one it cannot present), `isolation` (the execution substrate — `'worker-thread'`, `'process'`, `'container'`; a diagnostic label, **not a security claim**), and `persistent` (whether the backend can keep state across runs of a session — a backend that cannot must ignore `sessionId`/`reset` and stay one-shot; a consumer switches on it). Implementations must keep runs without a shared `sessionId` isolated from each other (persistence is the only cross-run bridge) and dispose to quiescence: in-flight runs are terminated and awaited before teardown completes. Session-capable backends (e.g. `dsh-code-runtime-python`, `dsh-code-runtime-nodejs`) may keep a kernel alive between `run` calls carrying the same `sessionId`, report `executionCount`, treat `reset: true` as "discard prior session state", and reap idle sessions at a configured timeout — the cost of that state is the backend's, surfaced honestly through `persistent` rather than hidden behavior.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

@@ -85,4 +85,24 @@ describe('CodeRuntime service seam', () => {
     await expect(ctx.plugin(StubRuntime)).rejects.toThrow(/registered/)
   })
 
+  it('defaults to one-shot: persistent is false and session fields ride the request untouched', async () => {
+    const { runtime } = await setup()
+    // The seam default is one-shot unless a provider opts in.
+    expect(runtime.persistent).toBe(false)
+    const controller = new AbortController()
+    const request: CodeRunRequest = {
+      program: 'x = 1',
+      bindings: [],
+      signal: controller.signal,
+      sessionId: 'demo-session',
+      reset: false,
+    }
+    runtime.nextResult = { logs: [], executionCount: 7 }
+    const result = await runtime.run(request)
+    // The request is forwarded as-is: providers decide how to honor sessionId/reset.
+    expect(runtime.requests[0]).toMatchObject({ sessionId: 'demo-session', reset: false })
+    // The result's session-scoped executionCount passes the seam untouched too.
+    expect(result).toEqual({ logs: [], executionCount: 7 })
+  })
+
 })

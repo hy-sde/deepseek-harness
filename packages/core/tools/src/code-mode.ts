@@ -311,6 +311,17 @@ export function createRunCodeTool(registry: ToolRuntime, options: RunCodeBridgeO
         required: true,
         description: RUN_CODE_DESCRIPTION_PARAM_DESCRIPTION,
       },
+      session: {
+        type: 'string',
+        description: 'Optional persistent-kernel session id: runs sharing a session id keep kernel state '
+          + '(assignments, imports, top-level await results) across calls when the mounted backend '
+          + 'supports persistence; one-shot backends ignore it entirely.',
+      },
+      reset: {
+        type: 'boolean',
+        description: 'Discard the session\'s prior kernel state (variables, imports) before this run. '
+          + 'Costs one reset instead of many retries; requires `session` to be meaningful.',
+      },
     },
     output: {
       schema: {
@@ -627,6 +638,8 @@ export function createRunCodeTool(registry: ToolRuntime, options: RunCodeBridgeO
               errorClass: { name: 'ToolCallError', memberNameProperty: 'toolName' },
             }],
             signal: runController.signal,
+            ...args.session !== undefined ? { sessionId: args.session } : {},
+            ...args.reset !== undefined ? { reset: args.reset } : {},
           })
         } finally {
           // Abort sub-dispatches and drain every in-flight dispatch before
@@ -675,6 +688,17 @@ export function createRunCodeTool(registry: ToolRuntime, options: RunCodeBridgeO
     get: () => parameterSchemaSpecToJsonSchema({
       code: { type: 'string', required: true, description: resolveFlavor(peekRuntime).codeDescription },
       description: { type: 'string', required: true, description: RUN_CODE_DESCRIPTION_PARAM_DESCRIPTION },
+      session: {
+        type: 'string',
+        description: 'Optional persistent-kernel session id: runs sharing a session id keep kernel state '
+          + '(assignments, imports, top-level await results) across calls when the mounted backend '
+          + 'supports persistence; one-shot backends ignore it entirely.',
+      },
+      reset: {
+        type: 'boolean',
+        description: 'Discard the session\'s prior kernel state (variables, imports) before this run. '
+          + 'Costs one reset instead of many retries; requires `session` to be meaningful.',
+      },
     }) as unknown as Record<string, unknown>,
   })
   return definition

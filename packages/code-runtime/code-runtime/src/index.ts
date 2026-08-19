@@ -118,6 +118,18 @@ export abstract class CodeRuntime extends Service {
    */
   abstract readonly isolation: string
 
+  /**
+   * Whether this runtime HONORS {@link CodeRunRequest.sessionId | sessionId}
+   * and {@link CodeRunRequest.reset | reset}: `true` means runs carrying the
+   * same non-empty `sessionId` execute against shared kernel state and
+   * `executionCount` may be reported; `false` (default) means every run is
+   * one-shot and the fields are ignored. Informational, not gating — a
+   * consumer MUST tolerate either value (it reads this to decide whether
+   * session-shaped UI, such as a `run_code` `session` parameter, is on the
+   * table, and fails loud only when it cannot present the mounted language).
+   */
+  readonly persistent: boolean = false
+
   constructor(ctx: Context) {
     super(ctx, 'codeRuntime')
   }
