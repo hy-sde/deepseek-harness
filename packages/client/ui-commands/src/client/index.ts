@@ -24,7 +24,7 @@ export { filterOptions, PopupSelectController } from './popup.ts'
 export type { PopupSelectDeps, PopupSpec, PopupState, TokenSegment } from './popup.ts'
 export type { PopupSelectInjected, PopupSelectViewProps } from './PopupSelectView.tsx'
 export type {
-  CommandContribution, CommandDecoration, CommandUiContract, CommandUiSpec, SelectConfirmation, SelectOption,
+  CommandContribution, CommandDecoration, CommandUiContract, CommandUiSpec, SelectOption,
 } from './contract.ts'
 export type { CommandKey } from './locales.ts'
 

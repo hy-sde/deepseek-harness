@@ -1,6 +1,6 @@
 # Agent Note: GUI Full access risk confirmation
 
-Status: implemented
+Status: implemented → superseded by [2026-08-18-gui-full-access-direct-switch.md](2026-08-18-gui-full-access-direct-switch.md) (the risk gate is removed; Full access switches directly)
 
 English | [中文](2026-07-31-gui-full-access-confirmation.zh.md)
 

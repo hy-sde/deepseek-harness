@@ -160,11 +160,8 @@ describe('web e2e: settings modal and General preferences', () => {
 
     await dialog.getByRole('button', { name: 'Read Only' }).click()
     await page.getByRole('menuitem', { name: 'Full access' }).click()
-    const confirmation = page.getByRole('dialog', { name: '确认启用 Full access？' })
-    const enable = confirmation.getByRole('button', { name: '启用 Full access' })
-    expect(await enable.isDisabled()).toBe(true)
-    await confirmation.getByRole('checkbox').click()
-    await enable.click()
+    // No risk-confirmation dialog: the row persists the pick directly.
+    expect(await page.getByRole('dialog', { name: '确认启用 Full access？' }).count()).toBe(0)
     await dialog.getByRole('button', { name: 'Full access' }).waitFor({ timeout: 10_000 })
     const confirmedDocument = await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')
     expect(confirmedDocument).toContain('defaultPreset: danger-full-access')

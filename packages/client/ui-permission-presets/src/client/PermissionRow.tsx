@@ -7,12 +7,9 @@
 import { useEffect, useState } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import {
-  IconChevronDownOutline14, Menu, RiskConfirmation,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PermissionSettingsState } from './settings-store.ts'
 import type { PermissionSettingsKey } from './locales.ts'
-import { FULL_ACCESS_PRESET } from './presentation.ts'
 import css from './PermissionRow.module.css'
 
 /** Registration-side business face for the host-backed preference. */
@@ -41,8 +38,6 @@ export type PermissionRowProps =
 export function PermissionRow({ load, select, usePermission, t }: PermissionRowProps) {
   const state = usePermission(snapshot => snapshot)
   const [open, setOpen] = useState(false)
-  const [confirmingFullAccess, setConfirmingFullAccess] = useState(false)
-  const [acknowledged, setAcknowledged] = useState(false)
 
   useEffect(() => {
     void load()
@@ -51,77 +46,48 @@ export function PermissionRow({ load, select, usePermission, t }: PermissionRowP
   useEffect(() => {
     if (state.writable && state.status !== 'unavailable') return
     setOpen(false)
-    setAcknowledged(false)
-    setConfirmingFullAccess(false)
   }, [state.status, state.writable])
 
   if (state.status === 'unavailable') return null
   const selected = state.options.find(option => option.id === state.currentValue)
-  const busy = state.status === 'loading' || state.status === 'saving' || confirmingFullAccess
+  const busy = state.status === 'loading' || state.status === 'saving'
   const label = selected?.label
     ?? (busy ? t('loading') : t('unavailable'))
   const description: string = state.error ?? t('description')
 
   return (
-    <>
-      <div className={css.row}>
-        <div className={css.rowText}>
-          <div className={css.title}>{t('title')}</div>
-          <div className={css.desc} role={state.error === null ? undefined : 'alert'}>{description}</div>
-        </div>
-        <Menu
-          open={open}
-          onClose={() => { setOpen(false) }}
-          items={state.options.map(option => ({ id: option.id, label: option.label }))}
-          selectedId={state.currentValue}
-          onSelect={(id) => {
-            setOpen(false)
-            if (id === state.currentValue) return
-            if (id === FULL_ACCESS_PRESET) {
-              setAcknowledged(false)
-              setConfirmingFullAccess(true)
-              return
-            }
-            void select(id)
-          }}
-          align="end"
-          portal
-          anchor={(
-            <button
-              type="button"
-              className={css.selector}
-              aria-haspopup="menu"
-              aria-expanded={open}
-              disabled={busy || !state.writable || state.options.length === 0}
-              onClick={() => { setOpen(value => !value) }}
-            >
-              {label}
-              <IconChevronDownOutline14 className={css.chevron} />
-            </button>
-          )}
-        />
+    <div className={css.row}>
+      <div className={css.rowText}>
+        <div className={css.title}>{t('title')}</div>
+        <div className={css.desc} role={state.error === null ? undefined : 'alert'}>{description}</div>
       </div>
-      <RiskConfirmation
-        open={confirmingFullAccess}
-        title={t('confirm.title')}
-        description={t('confirm.description')}
-        acknowledgeLabel={t('confirm.acknowledge')}
-        cancelLabel={t('confirm.cancel')}
-        confirmLabel={t('confirm.enable')}
-        acknowledged={acknowledged}
-        disabled={!state.writable || state.status === 'saving'}
-        onAcknowledgedChange={setAcknowledged}
-        onCancel={() => {
-          setAcknowledged(false)
-          setConfirmingFullAccess(false)
+      <Menu
+        open={open}
+        onClose={() => { setOpen(false) }}
+        items={state.options.map(option => ({ id: option.id, label: option.label }))}
+        selectedId={state.currentValue}
+        onSelect={(id) => {
+          setOpen(false)
+          if (id === state.currentValue) return
+          void select(id)
         }}
-        onConfirm={() => {
-          setAcknowledged(false)
-          setConfirmingFullAccess(false)
-          void select(FULL_ACCESS_PRESET)
-        }}
+        align="end"
+        portal
+        anchor={(
+          <button
+            type="button"
+            className={css.selector}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            disabled={busy || !state.writable || state.options.length === 0}
+            onClick={() => { setOpen(value => !value) }}
+          >
+            {label}
+            <IconChevronDownOutline14 className={css.chevron} />
+          </button>
+        )}
       />
-    </>
+    </div>
   )
 }
 

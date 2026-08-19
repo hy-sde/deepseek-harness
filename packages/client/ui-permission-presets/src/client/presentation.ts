@@ -1,4 +1,4 @@
-/** Machine value of the preset that requires an explicit GUI risk gate. */
+/** Machine value of the preset rendered under the product label `Full access`. */
 export const FULL_ACCESS_PRESET = 'danger-full-access'
 
 /**

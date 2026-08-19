@@ -8,8 +8,7 @@
  * projection (the same host-computed select the composer chip renders); a
  * pick submits the `/permission <preset>` command line, so both surfaces
  * write through one path and the pushed projection frame is the one
- * confirmation. The Full access row carries the same explicit risk gate as
- * the composer chip; the shared popup shell owns the modal mechanics.
+ * confirmation.
  * The General-settings row separately writes the default preset for sessions
  * created later through the host Settings API.
  */
@@ -27,11 +26,9 @@ import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trig
 import type { PermissionSelect } from '@deepseek-ai/dsh-permission-presets/client'
 import { PermissionRow } from './PermissionRow.tsx'
 import type { PermissionRowInjected } from './PermissionRow.tsx'
+import { en, zh } from './locales.ts'
 import {
-  accessEn, accessZh, en, zh,
-} from './locales.ts'
-import {
-  displayPermissionPreset, FULL_ACCESS_PRESET,
+  displayPermissionPreset,
 } from './presentation.ts'
 import {
   PERMISSION_SETTINGS_NS, PermissionPresetSettingsController, refreshPermissionIfLoaded,
@@ -45,15 +42,13 @@ export type {
 /** Required services (cordis fiber inject). */
 export const inject = ['commandUi', 'sessions', 'slots', 'locale', 'connection', 'remote']
 
-const ACCESS_NS = 'permission.access'
-
 /** Read one session's current permissions projection value (undefined = capability absent). */
 function selectOf(session: SessionFace | undefined): PermissionSelect | undefined {
   return session?.projections.faceOf('permissions').getSnapshot() as PermissionSelect | undefined
 }
 
 /** Flatten the projection select into popup rows; `custom` is display state, never a target. */
-function optionsOf(value: PermissionSelect, t: (key: string) => string): SelectOption[] {
+function optionsOf(value: PermissionSelect): SelectOption[] {
   return value.options
     .filter(option => option.value !== 'custom')
     .map(option => ({
@@ -61,17 +56,6 @@ function optionsOf(value: PermissionSelect, t: (key: string) => string): SelectO
       label: displayPermissionPreset(option.value, option.name),
       ...(option.description !== undefined ? { detail: option.description } : {}),
       ...(option.value === value.currentValue ? { active: true } : {}),
-      ...(option.value === FULL_ACCESS_PRESET
-        ? {
-          confirmation: {
-            title: t('confirm.title'),
-            description: t('confirm.description'),
-            acknowledgeLabel: t('confirm.acknowledge'),
-            cancelLabel: t('confirm.cancel'),
-            confirmLabel: t('confirm.enable'),
-          },
-        }
-        : {}),
     }))
 }
 
@@ -83,30 +67,6 @@ function optionsOf(value: PermissionSelect, t: (key: string) => string): SelectO
 export function apply(ctx: ClientContext): void {
   const command = ctx.get('commandUi') as CommandUiContract
   const sessions = ctx.sessions
-  // This optional bundle and ui-conversation can load independently, so each
-  // owns the same safety copy under its own locale namespace.
-  /* jscpd:ignore-start */
-  ctx.effect(() => {
-    const disposers = [
-      ctx.locale.register(ACCESS_NS, 'zh', {
-        'confirm.title': accessZh['confirm.title'],
-        'confirm.description': accessZh['confirm.description'],
-        'confirm.acknowledge': accessZh['confirm.acknowledge'],
-        'confirm.cancel': accessZh['confirm.cancel'],
-        'confirm.enable': accessZh['confirm.enable'],
-      }),
-      ctx.locale.register(ACCESS_NS, 'en', {
-        'confirm.title': accessEn['confirm.title'],
-        'confirm.description': accessEn['confirm.description'],
-        'confirm.acknowledge': accessEn['confirm.acknowledge'],
-        'confirm.cancel': accessEn['confirm.cancel'],
-        'confirm.enable': accessEn['confirm.enable'],
-      }),
-    ]
-    return () => { for (const dispose of disposers) dispose() }
-  }, 'ui-permission: Full access confirmation dictionaries')
-  /* jscpd:ignore-end */
-  const t = ctx.locale.bind(ACCESS_NS)
   const sessionFor = (session: ClientSessionContext): SessionFace | undefined =>
     sessions.binding(session.sessionId)?.session
 
@@ -156,7 +116,7 @@ export function apply(ctx: ClientContext): void {
       options: (session) => {
         const value = selectOf(sessionFor(session))
         if (value === undefined) throw new Error('permission presets are not available on this host')
-        return Promise.resolve(optionsOf(value, t))
+        return Promise.resolve(optionsOf(value))
       },
       onSelect: async (option, session) => {
         const live = sessionFor(session)

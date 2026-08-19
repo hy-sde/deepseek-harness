@@ -83,7 +83,7 @@ describe('PermissionRow', () => {
     expect(mutate).toHaveBeenCalledOnce()
   })
 
-  it('requires explicit acknowledgement before saving Full access', async () => {
+  it('selects Full access directly without a risk confirmation', async () => {
     const mutate = vi.fn(() => Promise.resolve(ok(view('danger-full-access', 1))))
     const controller = new PermissionPresetSettingsController({
       settings: {
@@ -94,18 +94,13 @@ describe('PermissionRow', () => {
     mount(controller)
     fireEvent.click(await screen.findByRole('button', { name: 'Read Only' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'Full access' }))
-    expect(mutate).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.queryByRole('dialog', { name: 'Enable Full access?' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Read Only' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Full access' }))
-    const dialog = screen.getByRole('dialog', { name: 'Enable Full access?' })
-    const enable = screen.getByRole('button', { name: 'Enable Full access' })
-    expect((enable as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(screen.getByRole('checkbox'))
-    fireEvent.click(enable)
     await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
-    expect(dialog.isConnected).toBe(false)
+    expect(mutate).toHaveBeenCalledWith({
+      ns: 'permission',
+      ops: [{ op: 'set', path: ['defaultPreset'], value: 'danger-full-access' }],
+      expectedRevision: 0,
+    })
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('hides an unavailable namespace and disables a read-only provider', async () => {

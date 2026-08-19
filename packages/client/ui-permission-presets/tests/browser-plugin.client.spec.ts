@@ -19,7 +19,6 @@ import {
   PermissionRow, type PermissionRowInjected,
 } from '../src/client/PermissionRow.tsx'
 import { apply, inject } from '../src/client/index.ts'
-import { accessEn } from '../src/client/locales.ts'
 
 const sid = (k: string): SessionId => k as SessionId
 
@@ -128,13 +127,6 @@ describe('ui-permission browser plugin', () => {
     expect(again.find(option => option.id === 'read-only')?.detail).toBe('Reads only.')
     // Kebab-case names title-case; non-kebab host-configured names pass through.
     expect(again.map(option => option.label)).toEqual(['Read Only', 'Workspace Write', 'Full access'])
-    expect(again.find(option => option.id === 'danger-full-access')?.confirmation).toEqual({
-      title: 'Enable Full access?',
-      description: accessEn['confirm.description'],
-      acknowledgeLabel: 'I understand the risks and want to continue',
-      cancelLabel: 'Cancel',
-      confirmLabel: 'Enable Full access',
-    })
     b.values.set(sid('s1'), { ...SELECT, options: [{ value: 'plain', name: 'Ask Every Time' }] })
     const passthrough = await c.ui.options(proj, new AbortController().signal)
     expect(passthrough[0]?.label).toBe('Ask Every Time')

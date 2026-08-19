@@ -1,23 +1,14 @@
-// Web e2e scenario: every visible permission picker gates Full access behind
-// the same locale-aware, in-page risk confirmation. Zero model calls: the
-// scenario boots the shipped Web composition and exercises the real
-// permission projection, client command path, HTTP RPC, and pushed update.
-import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
+// Web e2e scenario: the composer permission picker switches to Full access
+// directly, with no risk-confirmation dialog. Zero model calls: the scenario
+// boots the shipped Web composition and exercises the real permission
+// projection, client command path, HTTP RPC, and pushed update.
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import {
-  assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
-  launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
-} from './scaffold.ts'
+import { launchWebScaffold, watchConsole, type WebScaffold } from './scaffold.ts'
 import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
 
-const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/access-confirmation', import.meta.url))
-const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
-const MODE = webSnapshotMode()
-
-describe('web e2e: Full access confirmation', () => {
+describe('web e2e: Full access switch in the composer picker', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
@@ -30,7 +21,7 @@ describe('web e2e: Full access confirmation', () => {
     // is temporarily unavailable.
     const executablePath = process.env.DSH_PLAYWRIGHT_EXECUTABLE_PATH
     browser = await chromium.launch(executablePath === undefined ? {} : { executablePath })
-    // Keep the product default Chinese locale: the golden pins the actual
+    // Keep the product default Chinese locale: the assertion pins the actual
     // registered dictionary rather than a test-local translation callback.
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
@@ -44,8 +35,8 @@ describe('web e2e: Full access confirmation', () => {
     await scaffold?.close()
   })
 
-  it('requires acknowledgement before the composer picker can enable Full access', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-full-access-confirmation'))
+  it('switches to Full access from the composer picker without any confirmation dialog', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-full-access-switch'))
     const access = page.locator('button[aria-label^="访问模式"]').first()
     await access.waitFor({ timeout: 10_000 })
 
@@ -53,28 +44,12 @@ describe('web e2e: Full access confirmation', () => {
 
     await access.click()
     await page.getByRole('menuitem', { name: 'Full access' }).click()
-    const dialog = page.getByRole('dialog', { name: '确认启用 Full access？' })
-    await dialog.waitFor({ timeout: 10_000 })
-    const enable = dialog.getByRole('button', { name: '启用 Full access' })
-    expect(await enable.isDisabled()).toBe(true)
 
-    // The modal is in this page's body (not a native/new window) and escapes
-    // the sticky composer's stacking context.
-    expect(await dialog.evaluate(node => node.parentElement?.parentElement === document.body)).toBe(true)
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
-    await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
-
-    await dialog.getByRole('checkbox', { name: '我已了解风险，并愿意继续' }).check()
-    expect(await enable.isEnabled()).toBe(true)
-    await enable.click()
+    // No risk-confirmation dialog: the switch lands immediately, confirmed by
+    // the pushed projection frame in the chip label.
+    expect(await page.getByRole('dialog').count()).toBe(0)
     await expect.poll(() => access.getAttribute('aria-label'), { timeout: 10_000 })
       .toBe('访问模式，当前：Full access')
-    expect(await dialog.count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
-
-  it('keeps its snapshot inventory closed', async () => {
-    expect(tripwire.warnings).toEqual([])
-    await assertFixtureInventory(SNAPSHOT_DIR, ['ui.expected.md'])
-  })
 })

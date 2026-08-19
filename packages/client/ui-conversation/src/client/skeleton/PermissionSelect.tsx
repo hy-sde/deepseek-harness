@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import clsx from 'clsx'
 import type { PermissionSelect as PermissionSelectValue } from '@deepseek-ai/dsh-permission-presets/client'
-import { IconChevronDownOutline14, Menu, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ComposerBarProps } from '../contract/slots.ts'
 import css from './PermissionSelect.module.css'
@@ -72,21 +72,17 @@ export interface PermissionSelectProps {
 export function PermissionSelect({ value, locked, command, t }: PermissionSelectProps) {
   const [pick, setPick] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
-  const [confirmation, setConfirmation] = useState<string | null>(null)
-  const [acknowledged, setAcknowledged] = useState(false)
 
   useEffect(() => {
     if (!locked && value !== undefined) return
     setOpen(false)
-    setAcknowledged(false)
-    setConfirmation(null)
   }, [locked, value])
 
   if (value === undefined) return null
 
   const currentValue = pick ?? value.currentValue
   const current = value.options.find(option => option.value === currentValue)
-  const busy = pick !== null || confirmation !== null
+  const busy = pick !== null
 
   const items: MenuEntry[] = value.options
     .filter(o => o.value !== 'custom')
@@ -105,68 +101,36 @@ export function PermissionSelect({ value, locked, command, t }: PermissionSelect
   const choose = (id: string): void => {
     setOpen(false)
     if (id === value.currentValue) return
-    if (id === FULL_ACCESS) {
-      setAcknowledged(false)
-      setConfirmation(id)
-      return
-    }
-    submit(id)
-  }
-
-  const closeConfirmation = (): void => {
-    setAcknowledged(false)
-    setConfirmation(null)
-  }
-
-  const confirmFullAccess = (): void => {
-    if (locked || !acknowledged || confirmation === null) return
-    const id = confirmation
-    closeConfirmation()
     submit(id)
   }
 
   return (
-    <>
-      <Menu
-        open={open}
-        items={items}
-        selectedId={currentValue}
-        onSelect={choose}
-        onClose={() => { setOpen(false) }}
-        side="top"
-        anchor={
-          <button
-            type="button"
-            className={css.trigger}
-            aria-label={t('input.accessMode', { name: current === undefined ? displayName(currentValue) : optionLabel(current) })}
-            title={current?.description}
-            disabled={locked || busy}
-            onClick={() => { setOpen(!open) }}
-          >
-            {permissionGlyph(currentValue) !== undefined && (
-              <span className={css.triggerIcon} aria-hidden>{permissionGlyph(currentValue)}</span>
-            )}
-            <span className={css.triggerLabel}>{current === undefined ? displayName(currentValue) : optionLabel(current)}</span>
-            {/* Same glyph + open rotation as the sibling ModelSelect trigger. */}
-            <span className={clsx(css.chevron, open && css.chevronOpen)} aria-hidden>
-              <IconChevronDownOutline14 />
-            </span>
-          </button>
-        }
-      />
-      <RiskConfirmation
-        open={confirmation !== null}
-        title={t('access.confirm.title')}
-        description={t('access.confirm.description')}
-        acknowledgeLabel={t('access.confirm.acknowledge')}
-        cancelLabel={t('access.confirm.cancel')}
-        confirmLabel={t('access.confirm.enable')}
-        acknowledged={acknowledged}
-        disabled={locked}
-        onAcknowledgedChange={setAcknowledged}
-        onCancel={closeConfirmation}
-        onConfirm={confirmFullAccess}
-      />
-    </>
+    <Menu
+      open={open}
+      items={items}
+      selectedId={currentValue}
+      onSelect={choose}
+      onClose={() => { setOpen(false) }}
+      side="top"
+      anchor={(
+        <button
+          type="button"
+          className={css.trigger}
+          aria-label={t('input.accessMode', { name: current === undefined ? displayName(currentValue) : optionLabel(current) })}
+          title={current?.description}
+          disabled={locked || busy}
+          onClick={() => { setOpen(!open) }}
+        >
+          {permissionGlyph(currentValue) !== undefined && (
+            <span className={css.triggerIcon} aria-hidden>{permissionGlyph(currentValue)}</span>
+          )}
+          <span className={css.triggerLabel}>{current === undefined ? displayName(currentValue) : optionLabel(current)}</span>
+          {/* Same glyph + open rotation as the sibling ModelSelect trigger. */}
+          <span className={clsx(css.chevron, open && css.chevronOpen)} aria-hidden>
+            <IconChevronDownOutline14 />
+          </span>
+        </button>
+      )}
+    />
   )
 }

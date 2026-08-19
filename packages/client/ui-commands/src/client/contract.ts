@@ -6,23 +6,12 @@
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 
-/** Copy for an option that must be acknowledged before onSelect can run. */
-export interface SelectConfirmation {
-  readonly title: string
-  readonly description: string
-  readonly acknowledgeLabel: string
-  readonly cancelLabel: string
-  readonly confirmLabel: string
-}
-
-/** One option row of a popupSelect shell. */
+/** Copy for an option row of a popupSelect shell. */
 export interface SelectOption {
   readonly id: string
   readonly label: string
   readonly detail?: string
   readonly active?: boolean
-  /** Optional in-page risk gate owned by the shared popup shell. */
-  readonly confirmation?: SelectConfirmation
 }
 
 /**
