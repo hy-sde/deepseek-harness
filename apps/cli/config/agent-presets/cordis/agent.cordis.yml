@@ -52,10 +52,13 @@
 
 # ── filesystem ──────────────────────────────────────────────────────────────
 
-# Both register into the host `tools` registry and provide nothing, so
-# they need no realm. The `fs` service and its policy stay in the host.
+# read/write (and read_image when attachments are mounted) only — the `edit`
+# name is owned by tool-edit inside the `lsp-query` group below. The `fs`
+# service and its policy stay in the host.
 - id: tool-fs
   name: '@deepseek-ai/dsh-tool-fs'
+  config:
+    enableEdit: false
 
 - id: tool-fs-search
   name: '@deepseek-ai/dsh-tool-fs-search'
@@ -71,13 +74,16 @@
 - id: tool-ast
   name: '@deepseek-ai/dsh-tool-ast'
 
-# ── LSP navigation ──────────────────────────────────────────────────────────
+# ── rich editor + LSP ────────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each
-# mounted session owns its language-server processes; `tool-lsp` sits beside
-# them so it can resolve `ctx.lsp`. All queries are read-only (definition,
-# references, implementation, type definition, hover, document symbols, code
-# actions, rename PREVIEW, and diagnostics through the publish listener).
+# mounted session owns its language-server processes. The rich four-mode
+# `edit` (tool-edit) sits beside them so it can resolve the optional `ctx.lsp`
+# writethrough (format-on-write, diagnostics-on-write); without a server for a
+# file type, writethrough silently no-ops and the edit still succeeds.
+# `tool-lsp` read-only navigation (definition, references, implementation,
+# type definition, hover, document symbols, code actions, rename PREVIEW, and
+# diagnostics through the publish listener) shares the same seam.
 - id: lsp-query
   name: cordis:group
   group: true
@@ -99,6 +105,13 @@
               .tsx: typescriptreact
               .js: javascript
               .jsx: javascriptreact
+
+    - id: tool-edit
+      name: '@deepseek-ai/dsh-tool-edit'
+      config:
+        mode: auto
+        formatOnWrite: true
+        diagnosticsOnEdit: true
 
     - id: tool-lsp
       name: '@deepseek-ai/dsh-tool-lsp'
