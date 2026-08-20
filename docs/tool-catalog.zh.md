@@ -32,6 +32,7 @@
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
+| `@deepseek-ai/dsh-tool-debug` | `debug` | `ctx.tools`, `ctx.dap`, `ctx.systemPrompt`, `a session workspace cwd` | `tool/call`, `tool/result`, `the composed debuggee process state via the mounted DAP adapter` | - | debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter. |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
@@ -1287,6 +1288,215 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 来源：[`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
 
 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。
+
+<a id="deepseek-aidsh-tool-debug"></a>
+
+## `@deepseek-ai/dsh-tool-debug`
+
+### `debug`
+
+Attach a real debugger to a running or launched process through the Debug Adapter Protocol (DAP). 28 operations: launch, attach, set/remove_breakpoint (source or function), set/remove_instruction_breakpoint, data_breakpoint_info, set/remove_data_breakpoint, continue, step_over, step_in, step_out, pause, evaluate, stack_trace, threads, scopes, variables, disassemble, read_memory, write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. One active session at a time — terminate before launching another.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "The debug operation to perform.",
+      "enum": [
+        "launch",
+        "attach",
+        "set_breakpoint",
+        "remove_breakpoint",
+        "set_instruction_breakpoint",
+        "remove_instruction_breakpoint",
+        "data_breakpoint_info",
+        "set_data_breakpoint",
+        "remove_data_breakpoint",
+        "continue",
+        "step_over",
+        "step_in",
+        "step_out",
+        "pause",
+        "evaluate",
+        "stack_trace",
+        "threads",
+        "scopes",
+        "variables",
+        "disassemble",
+        "read_memory",
+        "write_memory",
+        "modules",
+        "loaded_sources",
+        "custom_request",
+        "output",
+        "terminate",
+        "sessions"
+      ]
+    },
+    "program": {
+      "type": "string",
+      "description": "Debug target path; Delve accepts Go package directories."
+    },
+    "args": {
+      "type": "array",
+      "description": "Program arguments for launch.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "adapter": {
+      "type": "string",
+      "description": "Configured adapter id (gdb, lldb-dap, debugpy, dlv, ... or a dap.json entry)."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Call working directory; defaults to the session workspace."
+    },
+    "file": {
+      "type": "string",
+      "description": "Source file (breakpoint operations)."
+    },
+    "line": {
+      "type": "number",
+      "description": "Source line (breakpoint operations)."
+    },
+    "function": {
+      "type": "string",
+      "description": "Function name (breakpoint operations)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Variable or data name (data_breakpoint_info)."
+    },
+    "condition": {
+      "type": "string",
+      "description": "Breakpoint condition expression."
+    },
+    "hit_condition": {
+      "type": "string",
+      "description": "Breakpoint hit count condition."
+    },
+    "expression": {
+      "type": "string",
+      "description": "Expression to evaluate."
+    },
+    "context": {
+      "type": "string",
+      "description": "Evaluate context (default repl).",
+      "enum": [
+        "watch",
+        "repl",
+        "hover",
+        "variables",
+        "clipboard"
+      ]
+    },
+    "frame_id": {
+      "type": "number",
+      "description": "Stack frame id (scopes/evaluate)."
+    },
+    "scope_id": {
+      "type": "number",
+      "description": "Scope variables reference (variables)."
+    },
+    "variable_ref": {
+      "type": "number",
+      "description": "Variable reference (variables)."
+    },
+    "pid": {
+      "type": "number",
+      "description": "Process id for attach."
+    },
+    "port": {
+      "type": "number",
+      "description": "Remote attach port."
+    },
+    "host": {
+      "type": "string",
+      "description": "Remote attach host (default localhost)."
+    },
+    "levels": {
+      "type": "number",
+      "description": "Max stack frames for stack_trace."
+    },
+    "memory_reference": {
+      "type": "string",
+      "description": "Memory reference or address."
+    },
+    "instruction_reference": {
+      "type": "string",
+      "description": "Instruction reference for set_instruction_breakpoint."
+    },
+    "instruction_count": {
+      "type": "number",
+      "description": "Instructions to disassemble."
+    },
+    "instruction_offset": {
+      "type": "number"
+    },
+    "count": {
+      "type": "number",
+      "description": "Bytes to read for read_memory."
+    },
+    "data": {
+      "type": "string",
+      "description": "Base64 memory payload for write_memory."
+    },
+    "data_id": {
+      "type": "string",
+      "description": "Data breakpoint id."
+    },
+    "access_type": {
+      "type": "string",
+      "description": "Data breakpoint access type.",
+      "enum": [
+        "read",
+        "write",
+        "readWrite"
+      ]
+    },
+    "command": {
+      "type": "string",
+      "description": "Custom DAP request command."
+    },
+    "arguments": {
+      "type": "object",
+      "description": "Custom request arguments.",
+      "additionalProperties": true
+    },
+    "offset": {
+      "type": "number",
+      "description": "Byte offset for memory operations."
+    },
+    "resolve_symbols": {
+      "type": "boolean"
+    },
+    "allow_partial": {
+      "type": "boolean"
+    },
+    "start_module": {
+      "type": "number"
+    },
+    "module_count": {
+      "type": "number"
+    },
+    "timeout": {
+      "type": "number",
+      "description": "Per-request timeout in seconds (default 30)."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/debug/tool-debug/src/index.ts`](../packages/debug/tool-debug/src/index.ts)
+
+debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter.
+
 
 <a id="deepseek-aidsh-tool-lsp"></a>
 

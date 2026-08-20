@@ -177,6 +177,9 @@ importers:
       '@deepseek-ai/dsh-cordis-client-runner':
         specifier: workspace:^
         version: link:../../packages/extensions/cordis-client-runner
+      '@deepseek-ai/dsh-dap':
+        specifier: workspace:^
+        version: link:../../packages/debug/dap
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:^
         version: link:../../packages/fs/fs-local
@@ -270,6 +273,9 @@ importers:
       '@deepseek-ai/dsh-tool-cordis':
         specifier: workspace:^
         version: link:../../packages/extensions/tool-cordis
+      '@deepseek-ai/dsh-tool-debug':
+        specifier: workspace:^
+        version: link:../../packages/debug/tool-debug
       '@deepseek-ai/dsh-tool-edit':
         specifier: workspace:^
         version: link:../../packages/edit/tool-edit
@@ -4001,6 +4007,55 @@ importers:
       '@deepseek-ai/dsh-launch-environment':
         specifier: workspace:^
         version: link:../../util/launch-environment
+
+  packages/debug/dap:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-subprocess':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess
+      '@deepseek-ai/dsh-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
+      '@deepseek-ai/dsh-timeout':
+        specifier: workspace:^
+        version: link:../../util/timeout
+
+  packages/debug/tool-debug:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-dap':
+        specifier: workspace:^
+        version: link:../dap
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@deepseek-ai/dsh-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@deepseek-ai/dsh-timeout':
+        specifier: workspace:^
+        version: link:../../util/timeout
+      '@deepseek-ai/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
 
   packages/e2b/e2b:
     dependencies:
@@ -8859,6 +8914,9 @@ importers:
       '@deepseek-ai/dsh-credentials':
         specifier: workspace:^
         version: link:../../packages/credentials/credentials
+      '@deepseek-ai/dsh-dap':
+        specifier: workspace:^
+        version: link:../../packages/debug/dap
       '@deepseek-ai/dsh-fs':
         specifier: workspace:^
         version: link:../../packages/fs/fs
@@ -8877,6 +8935,9 @@ importers:
       '@deepseek-ai/dsh-goal-round-driver':
         specifier: workspace:^
         version: link:../../packages/goal/goal-round-driver
+      '@deepseek-ai/dsh-hashline':
+        specifier: workspace:^
+        version: link:../../packages/edit/hashline
       '@deepseek-ai/dsh-home-paths':
         specifier: workspace:^
         version: link:../../packages/util/home-paths
@@ -8913,6 +8974,12 @@ importers:
       '@deepseek-ai/dsh-llm-retry':
         specifier: workspace:^
         version: link:../../packages/llm/llm-retry
+      '@deepseek-ai/dsh-lsp':
+        specifier: workspace:^
+        version: link:../../packages/lsp/lsp
+      '@deepseek-ai/dsh-lsp-stdio':
+        specifier: workspace:^
+        version: link:../../packages/lsp/lsp-stdio
       '@deepseek-ai/dsh-mcp-client':
         specifier: workspace:^
         version: link:../../packages/mcp/mcp-client
@@ -9042,6 +9109,9 @@ importers:
       '@deepseek-ai/dsh-tool-ask-user':
         specifier: workspace:^
         version: link:../../packages/interaction/tool-ask-user
+      '@deepseek-ai/dsh-tool-ast':
+        specifier: workspace:^
+        version: link:../../packages/ast/tool-ast
       '@deepseek-ai/dsh-tool-bash':
         specifier: workspace:^
         version: link:../../packages/shell/tool-bash
@@ -9054,6 +9124,12 @@ importers:
       '@deepseek-ai/dsh-tool-cordis':
         specifier: workspace:^
         version: link:../../packages/extensions/tool-cordis
+      '@deepseek-ai/dsh-tool-debug':
+        specifier: workspace:^
+        version: link:../../packages/debug/tool-debug
+      '@deepseek-ai/dsh-tool-edit':
+        specifier: workspace:^
+        version: link:../../packages/edit/tool-edit
       '@deepseek-ai/dsh-tool-fs':
         specifier: workspace:^
         version: link:../../packages/fs/tool-fs
@@ -9066,6 +9142,9 @@ importers:
       '@deepseek-ai/dsh-tool-jobs':
         specifier: workspace:^
         version: link:../../packages/jobs/tool-jobs
+      '@deepseek-ai/dsh-tool-lsp':
+        specifier: workspace:^
+        version: link:../../packages/lsp/tool-lsp
       '@deepseek-ai/dsh-tool-ralph':
         specifier: workspace:^
         version: link:../../packages/workflow/tool-ralph

@@ -255,6 +255,7 @@
         "./packages/ast/*/src",
         "./packages/fs/*/src",
         "./packages/lsp/*/src",
+        "./packages/debug/*/src",
         "./packages/skill/*/src",
         "./packages/compaction/*/src",
         "./packages/context/*/src",

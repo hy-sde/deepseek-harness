@@ -69,6 +69,8 @@
     "@deepseek-ai/dsh-hashline": "workspace:^",
     "@deepseek-ai/dsh-lsp": "workspace:^",
     "@deepseek-ai/dsh-lsp-stdio": "workspace:^",
+    "@deepseek-ai/dsh-dap": "workspace:^",
+    "@deepseek-ai/dsh-tool-debug": "workspace:^",
     "@deepseek-ai/dsh-tool-ast": "workspace:^",
     "@deepseek-ai/dsh-tool-edit": "workspace:^",
     "@deepseek-ai/dsh-timeout": "workspace:^",

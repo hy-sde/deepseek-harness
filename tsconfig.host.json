@@ -308,6 +308,8 @@
     { "path": "./packages/lsp/lsp" },
     { "path": "./packages/lsp/lsp-stdio" },
     { "path": "./packages/lsp/tool-lsp" },
+    { "path": "./packages/debug/dap" },
+    { "path": "./packages/debug/tool-debug" },
     { "path": "./apps/cli" }
   ]
 }

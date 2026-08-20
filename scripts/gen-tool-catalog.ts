@@ -56,6 +56,8 @@ import * as ToolGoal from '@deepseek-ai/dsh-tool-goal'
 import * as ToolSchedule from '@deepseek-ai/dsh-schedule'
 import Lsp from '@deepseek-ai/dsh-lsp'
 import * as ToolLsp from '@deepseek-ai/dsh-tool-lsp'
+import Dap from '@deepseek-ai/dsh-dap'
+import * as ToolDebug from '@deepseek-ai/dsh-tool-debug'
 import * as ToolSkill from '@deepseek-ai/dsh-tool-skill'
 import * as ToolSessionQuery from '@deepseek-ai/dsh-tool-session-query'
 import * as ToolTasks from '@deepseek-ai/dsh-tool-jobs'
@@ -414,6 +416,24 @@ const TOOL_PACKAGES: ToolPackage[] = [
       + 'Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, '
       + 'and discloses session-local delivery; '
       + 'management reads and mutations require the shared Session persistence barrier.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-debug',
+    dir: 'tool-debug',
+    source: 'packages/debug/tool-debug/src/index.ts',
+    requires: ['ctx.tools', 'ctx.dap', 'ctx.systemPrompt', 'a session workspace cwd'],
+    writes: ['tool/call', 'tool/result', 'the composed debuggee process state via the mounted DAP adapter'],
+    async mount(ctx) {
+      // The tool registers from the seam alone; the 28-op schema is fixed. It
+      // needs a real `ctx.dap` provider (this package) at runtime to act.
+      // The seam provably spawns nothing during registration, so the real
+      // local subprocess service is inert here (same pattern as tool-fs-search).
+      await ctx.plugin(LocalSubprocessRuntime)
+      await ctx.plugin(Dap)
+      await ctx.plugin(ToolDebug)
+    },
+    note:
+      'debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-lsp',

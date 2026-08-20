@@ -124,6 +124,29 @@
       config:
         timeoutMs: 60000
 
+# ── debugger (DAP) ───────────────────────────────────────────────────────────
+
+# A real Debug Adapter Protocol seam (`ctx.dap`) plus the model-facing `debug`
+# tool (28 operations: launch/attach, source/function/instruction/data
+# breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/
+# evaluate, disassemble, read/write memory, modules, output, terminate). The
+# provider resolves the host `subprocess` seam and owns the adapter processes
+# and the active-session pointer, so it lives in an entry-local realm exactly
+# like the LSP seam — one `ctx.dap` per mounted session.
+- id: debug
+  name: cordis:group
+  group: true
+  isolate:
+    dap: true
+  config:
+    - id: dap
+      name: '@deepseek-ai/dsh-dap'
+
+    - id: tool-debug
+      name: '@deepseek-ai/dsh-tool-debug'
+      config:
+        timeoutMs: 120000
+
 # ── background jobs ────────────────────────────────────────────────────────
 
 # Only the model-facing controls. The task REGISTRY stays on the host plane:

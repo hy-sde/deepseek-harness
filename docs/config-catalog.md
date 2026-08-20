@@ -2609,6 +2609,26 @@ export interface Config {
 
 Source: [`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
 
+<a id="deepseek-aidsh-tool-debug"></a>
+
+## `@deepseek-ai/dsh-tool-debug`
+
+Requires: `tools` · `dap` · `systemPrompt`
+
+```ts config-catalog
+/** Plugin configuration: result caps and timeout budgets. */
+export interface Config {
+  /** Largest complete rendered result in characters (default 16000). */
+  maxResultChars?: number
+  /** Default per-request timeout in seconds (default 30). */
+  requestTimeoutSec?: number
+  /** Whole-tool-call timeout budget in ms (default 120000). */
+  timeoutMs?: number
+}
+```
+
+Source: [`packages/debug/tool-debug/src/index.ts:71`](../packages/debug/tool-debug/src/index.ts)
+
 <a id="deepseek-aidsh-tool-edit"></a>
 
 ## `@deepseek-ai/dsh-tool-edit`
@@ -3206,7 +3226,8 @@ Requires: `web`
 export interface Config {
   /** Per-engine transport timeout (ms). Default: 10000. Each engine also dies here even if it ignores aggregate cancellation. */
   timeoutMs?: number
-  /** Engine ids the fan-out races in this order (the tiebreak for consensus ties); unlisted engines stay disabled. Default: startpage, duckduckgo, ecosia, google, mojeek. */
+  /** Engine ids the fan-out races in this order (the tiebreak for consensus ties);
+   * unlisted engines stay disabled. Default: startpage, duckduckgo, ecosia, google, mojeek. */
   engines?: PublicEngineId[]
   /** User-Agent sent to the engines. Defaults to a browser-shaped constant. */
   userAgent?: string
@@ -3300,6 +3321,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))
 - `@deepseek-ai/dsh-commands` ([`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts))
 - `@deepseek-ai/dsh-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
+- `@deepseek-ai/dsh-dap` — requires `subprocess` ([`packages/debug/dap/src/index.ts`](../packages/debug/dap/src/index.ts))
 - `@deepseek-ai/dsh-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@deepseek-ai/dsh-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
 - `@deepseek-ai/dsh-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))

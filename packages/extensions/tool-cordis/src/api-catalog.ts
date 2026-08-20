@@ -510,6 +510,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
       },
       {
+        signature: 'readonly persistent: boolean = false',
+        description: 'Whether this runtime HONORS CodeRunRequest.sessionId | sessionId and CodeRunRequest.reset | reset: `true` means runs carrying the same non-empty `sessionId` execute against shared kernel state and `executionCount` may be reported; `false` (default) means every run is one-shot and the fields are ignored. Informational, not gating — a consumer MUST tolerate either value (it reads this to decide whether session-shaped UI, such as a `run_code` `session` parameter, is on the table, and fails loud only when it cannot present the mounted language).',
+        parameters: [],
+      },
+      {
         signature: 'abstract run(request: CodeRunRequest): Promise<CodeRunResult>',
         description: 'Execute one program against the request\'s bindings and capture what it emitted. See the class doc for the resolution contract (error is a result field; rejection means Service Definition contract misuse only).',
         parameters: [{ name: 'request', description: 'the program, its bindings, and the abort signal; the request carries everything the runtime acts on, with no hidden defaults.' }],
@@ -601,6 +606,251 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'abstract unset(ref: CredentialRef): Promise<void>',
         description: 'Remove one reference from the provider-managed writable source; removing an absent reference is a no-op. Rejects while a read-only source shadows the reference, like set.',
         parameters: [{ name: 'ref', description: 'the reference to remove.' }],
+      },
+    ],
+  },
+  {
+    key: 'dap',
+    summary: '`ctx.dap`: one session manager per isolated realm.',
+    description: '`ctx.dap`: one session manager per isolated realm. The manager owns the active-session pointer, adapter processes, breakpoint state, and captured output; every model-facing operation (see `@deepseek-ai/dsh-tool-debug`) delegates here. Lifecycle is fiber-scoped: disposal terminates every live adapter and stops the idle-cleanup timer.',
+    methods: [
+      {
+        signature: 'readonly manager: DapSessionManager',
+        description: 'One manager per provided service instance (per isolated realm/session).',
+        parameters: [],
+      },
+      {
+        signature: 'launch(...args: Parameters<DapSessionManager[\'launch\']>): Promise<DapSessionSummary>',
+        description: 'Launch a program under the given adapter (or auto-select one).',
+        parameters: [{ name: 'args', description: 'launch arguments, forwarded to the session manager.' }],
+        returns: 'the new session summary once the debuggee is configured.',
+      },
+      {
+        signature: 'attach(...args: Parameters<DapSessionManager[\'attach\']>): Promise<DapSessionSummary>',
+        description: 'Attach to a running process by pid, or to a port (debugpy listen/attach).',
+        parameters: [{ name: 'args', description: 'attach arguments, forwarded to the session manager.' }],
+        returns: 'the new session summary once the debuggee is configured.',
+      },
+      {
+        signature: 'getActiveSession(): DapSessionSummary | null',
+        description: 'The currently active session summary, or null.',
+        parameters: [],
+        returns: 'the active session summary, or null when no session is active.',
+      },
+      {
+        signature: 'listSessions(): DapSessionSummary[]',
+        description: 'Every live (and lingering) session summary under this manager.',
+        parameters: [],
+        returns: 'the list of session summaries.',
+      },
+      {
+        signature: 'getCapabilities(): DapCapabilities | null',
+        description: 'Capabilities of the active session, or null when none.',
+        parameters: [],
+        returns: 'the active session\'s capabilities, or null when no session is active.',
+      },
+      {
+        signature: 'setBreakpoint( ...args: Parameters<DapSessionManager[\'setBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapBreakpointRecord[]; sourcePath: string }>',
+        description: 'Read a source breakpoint at `file:line`; returns the updated list.',
+        parameters: [{ name: 'args', description: 'setBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated breakpoint list for the file and the session snapshot.',
+      },
+      {
+        signature: 'removeBreakpoint( ...args: Parameters<DapSessionManager[\'removeBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapBreakpointRecord[] }>',
+        description: 'Remove a source breakpoint at `file:line`.',
+        parameters: [{ name: 'args', description: 'removeBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated breakpoint list for the file and the session snapshot.',
+      },
+      {
+        signature: 'setFunctionBreakpoint( ...args: Parameters<DapSessionManager[\'setFunctionBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapFunctionBreakpointRecord[] }>',
+        description: 'Set a function breakpoint by qualified name.',
+        parameters: [{ name: 'args', description: 'setFunctionBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated function breakpoint list and the session snapshot.',
+      },
+      {
+        signature: 'removeFunctionBreakpoint( ...args: Parameters<DapSessionManager[\'removeFunctionBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapFunctionBreakpointRecord[] }>',
+        description: 'Remove a function breakpoint by name.',
+        parameters: [{ name: 'args', description: 'removeFunctionBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated function breakpoint list and the session snapshot.',
+      },
+      {
+        signature: 'continue(...args: Parameters<DapSessionManager[\'continue\']>): Promise<DapContinueOutcome>',
+        description: 'Resume execution of the active thread.',
+        parameters: [{ name: 'args', description: 'continue arguments (signal, timeout), forwarded to the session manager.' }],
+        returns: 'the stop outcome with the resulting session snapshot.',
+      },
+      {
+        signature: 'pause(...args: Parameters<DapSessionManager[\'pause\']>): Promise<DapSessionSummary>',
+        description: 'Pause the debuggee.',
+        parameters: [{ name: 'args', description: 'pause arguments (signal, timeout), forwarded to the session manager.' }],
+        returns: 'the session snapshot after the pause.',
+      },
+      {
+        signature: 'stepIn(...args: Parameters<DapSessionManager[\'stepIn\']>): Promise<DapContinueOutcome>',
+        description: 'Step into the current frame.',
+        parameters: [{ name: 'args', description: 'stepIn arguments, forwarded to the session manager.' }],
+        returns: 'the stop outcome with the resulting session snapshot.',
+      },
+      {
+        signature: 'stepOut(...args: Parameters<DapSessionManager[\'stepOut\']>): Promise<DapContinueOutcome>',
+        description: 'Step out of the current frame.',
+        parameters: [{ name: 'args', description: 'stepOut arguments, forwarded to the session manager.' }],
+        returns: 'the stop outcome with the resulting session snapshot.',
+      },
+      {
+        signature: 'stepOver(...args: Parameters<DapSessionManager[\'stepOver\']>): Promise<DapContinueOutcome>',
+        description: 'Step over the current line.',
+        parameters: [{ name: 'args', description: 'stepOver arguments, forwarded to the session manager.' }],
+        returns: 'the stop outcome with the resulting session snapshot.',
+      },
+      {
+        signature: 'threads(...args: Parameters<DapSessionManager[\'threads\']>): Promise<{ snapshot: DapSessionSummary; threads: DapThread[] }>',
+        description: 'List the debuggee\'s threads.',
+        parameters: [{ name: 'args', description: 'threads arguments, forwarded to the session manager.' }],
+        returns: 'the aggregated thread list and the session snapshot.',
+      },
+      {
+        signature: 'stackTrace( ...args: Parameters<DapSessionManager[\'stackTrace\']> ): Promise<{ snapshot: DapSessionSummary; stackFrames: DapStackFrame[]; totalFrames: number | undefined }>',
+        description: 'List the current thread\'s stack frames.',
+        parameters: [{ name: 'args', description: 'stackTrace arguments, forwarded to the session manager.' }],
+        returns: 'the stack frames, total frame count, and the session snapshot.',
+      },
+      {
+        signature: 'scopes(...args: Parameters<DapSessionManager[\'scopes\']>): Promise<{ snapshot: DapSessionSummary; scopes: DapScope[] }>',
+        description: 'List the scopes of a stack frame.',
+        parameters: [{ name: 'args', description: 'scopes arguments, forwarded to the session manager.' }],
+        returns: 'the scopes and the session snapshot.',
+      },
+      {
+        signature: 'variables( ...args: Parameters<DapSessionManager[\'variables\']> ): Promise<{ snapshot: DapSessionSummary; variables: DapVariable[] }>',
+        description: 'List the variables of a variable reference.',
+        parameters: [{ name: 'args', description: 'variables arguments, forwarded to the session manager.' }],
+        returns: 'the variables and the session snapshot.',
+      },
+      {
+        signature: 'evaluate( ...args: Parameters<DapSessionManager[\'evaluate\']> ): Promise<{ snapshot: DapSessionSummary; evaluation: DapEvaluateResponse | undefined }>',
+        description: 'Evaluate an expression in the current frame.',
+        parameters: [{ name: 'args', description: 'evaluate arguments, forwarded to the session manager.' }],
+        returns: 'the evaluation result and the session snapshot.',
+      },
+      {
+        signature: 'getOutput(limitBytes?: number): DapOutputSnapshot',
+        description: 'Captured stdout/stderr output of the active session (bounded).',
+        parameters: [{ name: 'limitBytes', description: 'optional cap on the number of returned output bytes.' }],
+        returns: 'the tail of the captured output and the session snapshot.',
+      },
+      {
+        signature: 'terminate(...args: Parameters<DapSessionManager[\'terminate\']>): Promise<DapSessionSummary | null>',
+        description: 'Terminate the active session\'s whole tree.',
+        parameters: [{ name: 'args', description: 'terminate arguments, forwarded to the session manager.' }],
+        returns: 'the final session snapshot, or null when no session was active.',
+      },
+      {
+        signature: 'setInstructionBreakpoint( ...args: Parameters<DapSessionManager[\'setInstructionBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapInstructionBreakpointRecord[] }>',
+        description: 'Set an instruction pointer breakpoint.',
+        parameters: [{ name: 'args', description: 'setInstructionBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated instruction breakpoint list and the session snapshot.',
+      },
+      {
+        signature: 'removeInstructionBreakpoint( ...args: Parameters<DapSessionManager[\'removeInstructionBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapInstructionBreakpointRecord[] }>',
+        description: 'Remove an instruction pointer breakpoint.',
+        parameters: [{ name: 'args', description: 'removeInstructionBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated instruction breakpoint list and the session snapshot.',
+      },
+      {
+        signature: 'dataBreakpointInfo( ...args: Parameters<DapSessionManager[\'dataBreakpointInfo\']> ): Promise<{ snapshot: DapSessionSummary; info: DapDataBreakpointInfoResponse }>',
+        description: 'Query data-breakpoint availability for a variable/expression.',
+        parameters: [{ name: 'args', description: 'dataBreakpointInfo arguments, forwarded to the session manager.' }],
+        returns: 'the data-breakpoint info and the session snapshot.',
+      },
+      {
+        signature: 'setDataBreakpoint( ...args: Parameters<DapSessionManager[\'setDataBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapDataBreakpointRecord[] }>',
+        description: 'Set a data breakpoint (write/read hardware breakpoint).',
+        parameters: [{ name: 'args', description: 'setDataBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated data breakpoint list and the session snapshot.',
+      },
+      {
+        signature: 'removeDataBreakpoint( ...args: Parameters<DapSessionManager[\'removeDataBreakpoint\']> ): Promise<{ snapshot: DapSessionSummary; breakpoints: DapDataBreakpointRecord[] }>',
+        description: 'Remove a data breakpoint.',
+        parameters: [{ name: 'args', description: 'removeDataBreakpoint arguments, forwarded to the session manager.' }],
+        returns: 'the updated data breakpoint list and the session snapshot.',
+      },
+      {
+        signature: 'disassemble( ...args: Parameters<DapSessionManager[\'disassemble\']> ): Promise<{ snapshot: DapSessionSummary; instructions: DapDisassembledInstruction[] }>',
+        description: 'Disassemble instructions around a memory reference.',
+        parameters: [{ name: 'args', description: 'disassemble arguments, forwarded to the session manager.' }],
+        returns: 'the disassembled instructions and the session snapshot.',
+      },
+      {
+        signature: 'readMemory( ...args: Parameters<DapSessionManager[\'readMemory\']> ): Promise<{ snapshot: DapSessionSummary; address: string; data: string | undefined; unreadableBytes: number | undefined }>',
+        description: 'Read raw process memory (base64 buffer string).',
+        parameters: [{ name: 'args', description: 'readMemory arguments, forwarded to the session manager.' }],
+        returns: 'the memory read result and the session snapshot.',
+      },
+      {
+        signature: 'writeMemory( ...args: Parameters<DapSessionManager[\'writeMemory\']> ): Promise<{ snapshot: DapSessionSummary; offset: number | undefined; bytesWritten: number | undefined }>',
+        description: 'Write raw process memory (base64 buffer string).',
+        parameters: [{ name: 'args', description: 'writeMemory arguments, forwarded to the session manager.' }],
+        returns: 'the memory write result and the session snapshot.',
+      },
+      {
+        signature: 'modules(...args: Parameters<DapSessionManager[\'modules\']>): Promise<{ snapshot: DapSessionSummary; modules: DapModule[] }>',
+        description: 'List loaded modules of the debuggee.',
+        parameters: [{ name: 'args', description: 'modules arguments, forwarded to the session manager.' }],
+        returns: 'the loaded modules and the session snapshot.',
+      },
+      {
+        signature: 'loadedSources( ...args: Parameters<DapSessionManager[\'loadedSources\']> ): Promise<{ snapshot: DapSessionSummary; sources: DapSource[] }>',
+        description: 'List source files loaded by the debuggee.',
+        parameters: [{ name: 'args', description: 'loadedSources arguments, forwarded to the session manager.' }],
+        returns: 'the loaded sources and the session snapshot.',
+      },
+      {
+        signature: 'customRequest( ...args: Parameters<DapSessionManager[\'customRequest\']> ): Promise<{ snapshot: DapSessionSummary; body: unknown }>',
+        description: 'Send an unstandardized DAP request to the active adapter.',
+        parameters: [{ name: 'args', description: 'customRequest arguments, forwarded to the session manager.' }],
+        returns: 'the adapter response body and the session snapshot.',
+      },
+      {
+        signature: 'disposeManager(): void',
+        description: 'Dispose every session under this manager.',
+        parameters: [],
+      },
+      {
+        signature: 'async classifyProgram(program: string, cwd: string): Promise<LaunchProgramKind>',
+        description: 'Classify a launch program as file/directory on disk.',
+        parameters: [{ name: 'program', description: 'the launch program path.' }, { name: 'cwd', description: 'the working directory used for resolution.' }],
+        returns: 'the classification of the program.',
+      },
+      {
+        signature: 'async selectLaunchAdapter( program: string, cwd: string, options?: { adapter?: string; programKind?: LaunchProgramKind; signal?: AbortSignal }, ): Promise<LaunchAdapterSelection>',
+        description: 'Select (or auto-select) a launch adapter for `program` in `cwd`.',
+        parameters: [{ name: 'program', description: 'the launch program path.' }, { name: 'cwd', description: 'the working directory used for adapter resolution.' }, { name: 'options', description: 'optional adapter name, program kind, and abort signal.' }],
+        returns: 'the launch adapter selection.',
+      },
+      {
+        signature: 'async selectAttachAdapter( cwd: string, options?: { adapter?: string; port?: number; signal?: AbortSignal }, ): Promise<DapResolvedAdapter | null>',
+        description: 'Select an attach adapter: explicit name, otherwise the best installed default.',
+        parameters: [{ name: 'cwd', description: 'the working directory used for adapter resolution.' }, { name: 'options', description: 'optional adapter name, port, and abort signal.' }],
+        returns: 'the resolved attach adapter, or null when none is available.',
+      },
+      {
+        signature: 'async listAdapters(cwd: string, signal?: AbortSignal): Promise<string[]>',
+        description: 'Every configured adapter whose command resolves under `cwd`.',
+        parameters: [{ name: 'cwd', description: 'the working directory used for adapter resolution.' }, { name: 'signal', description: 'optional abort signal.' }],
+        returns: 'the names of the available adapters.',
+      },
+      {
+        signature: 'async resolveAdapter(name: string, cwd: string, signal?: AbortSignal): Promise<DapResolvedAdapter | null>',
+        description: 'Resolve one named adapter under `cwd`, or null when unavailable.',
+        parameters: [{ name: 'name', description: 'the adapter name to resolve.' }, { name: 'cwd', description: 'the working directory used for adapter resolution.' }, { name: 'signal', description: 'optional abort signal.' }],
+        returns: 'the resolved adapter, or null when unavailable.',
+      },
+      {
+        signature: 'resolveLaunchOverrides( adapter: DapResolvedAdapter, program: string, programKind: LaunchProgramKind, ): Record<string, unknown>',
+        description: 'Compute adapter-specific launch overrides for a resolved program.',
+        parameters: [{ name: 'adapter', description: 'the resolved adapter.' }, { name: 'program', description: 'the launch program path.' }, { name: 'programKind', description: 'the classification of the launch program.' }],
+        returns: 'the adapter-specific launch override arguments.',
       },
     ],
   },
@@ -2890,11 +3140,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CodeRunRequest',
-    declaration: 'export interface CodeRunRequest {\n    program: string;\n    bindings: CodeBindingNamespace[];\n    signal?: AbortSignal;\n}',
+    declaration: 'export interface CodeRunRequest {\n    program: string;\n    bindings: CodeBindingNamespace[];\n    signal?: AbortSignal;\n    sessionId?: string;\n    reset?: boolean;\n}',
   },
   {
     name: 'CodeRunResult',
-    declaration: 'export interface CodeRunResult {\n    value?: CodeJsonValue;\n    logs: string[];\n    error?: CodeRunFailure;\n}',
+    declaration: 'export interface CodeRunResult {\n    value?: CodeJsonValue;\n    logs: string[];\n    executionCount?: number;\n    error?: CodeRunFailure;\n}',
   },
   {
     name: 'CollectedOutput',
@@ -3051,6 +3301,106 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CredentialRef',
     declaration: 'export type CredentialRef = Branded<\'CredentialRef\'>;',
+  },
+  {
+    name: 'DapAttachSessionOptions',
+    declaration: 'export interface DapAttachSessionOptions {\n    adapter: DapResolvedAdapter;\n    cwd: string;\n    pid?: number;\n    port?: number;\n    host?: string;\n}',
+  },
+  {
+    name: 'DapBreakpoint',
+    declaration: 'export interface DapBreakpoint {\n    id?: number;\n    verified: boolean;\n    message?: string;\n    source?: DapSource;\n    line?: number;\n    column?: number;\n    endLine?: number;\n    endColumn?: number;\n    instructionReference?: string;\n    offset?: number;\n}',
+  },
+  {
+    name: 'DapBreakpointRecord',
+    declaration: 'export interface DapBreakpointRecord {\n    id: number | undefined;\n    verified: boolean;\n    line: number;\n    condition: string | undefined;\n    message: string | undefined;\n}',
+  },
+  {
+    name: 'DapCapabilities',
+    declaration: 'export interface DapCapabilities {\n    supportsConfigurationDoneRequest?: boolean;\n    supportsFunctionBreakpoints?: boolean;\n    supportsConditionalBreakpoints?: boolean;\n    supportsTerminateRequest?: boolean;\n    supportsTerminateThreadsRequest?: boolean;\n    supportsEvaluateForHovers?: boolean;\n    supportsSetVariable?: boolean;\n    supportsRestartRequest?: boolean;\n    supportsCompletionsRequest?: boolean;\n    supportsLogPoints?: boolean;\n    supportsDisassembleRequest?: boolean;\n    supportsReadMemoryRequest?: boolean;\n    supportsWriteMemoryRequest?: boolean;\n    supportsModulesRequest?: boolean;\n    supportsLoadedSourcesRequest?: boolean;\n    supportsExceptionInfoRequest?: boolean;\n    supportsInstructionBreakpoints?: boolean;\n    supportsDataBreakpoints?: boolean;\n    supportsSteppingGranularity?: boolean;\n    supportsClipboardContext?: boolean;\n    [key: string]: unknown;\n}',
+  },
+  {
+    name: 'DapContinueOutcome',
+    declaration: 'export interface DapContinueOutcome {\n    snapshot: DapSessionSummary;\n    state: \'running\' | \'stopped\' | \'terminated\';\n    timedOut: boolean;\n}',
+  },
+  {
+    name: 'DapDataBreakpointInfoResponse',
+    declaration: 'export interface DapDataBreakpointInfoResponse {\n    dataId: string | null;\n    description: string;\n    accessTypes?: Array<\'read\' | \'write\' | \'readWrite\'>;\n    canPersist?: boolean;\n}',
+  },
+  {
+    name: 'DapDataBreakpointRecord',
+    declaration: 'export interface DapDataBreakpointRecord {\n    id: number | undefined;\n    verified: boolean;\n    dataId: string;\n    accessType: \'read\' | \'write\' | \'readWrite\' | undefined;\n    condition: string | undefined;\n    hitCondition: string | undefined;\n    message: string | undefined;\n}',
+  },
+  {
+    name: 'DapDisassembledInstruction',
+    declaration: 'export interface DapDisassembledInstruction {\n    address: string;\n    instructionBytes?: string;\n    instruction: string;\n    symbol?: string;\n    location?: DapSource;\n    line?: number;\n    column?: number;\n    endLine?: number;\n    endColumn?: number;\n}',
+  },
+  {
+    name: 'DapEvaluateResponse',
+    declaration: 'export interface DapEvaluateResponse {\n    result: string;\n    type?: string;\n    presentationHint?: {\n        kind?: string;\n        attributes?: string[];\n        visibility?: string;\n        lazy?: boolean;\n    };\n    variablesReference: number;\n    namedVariables?: number;\n    indexedVariables?: number;\n    memoryReference?: string;\n}',
+  },
+  {
+    name: 'DapFunctionBreakpointRecord',
+    declaration: 'export interface DapFunctionBreakpointRecord {\n    id: number | undefined;\n    verified: boolean;\n    name: string;\n    condition: string | undefined;\n    message: string | undefined;\n}',
+  },
+  {
+    name: 'DapInstructionBreakpointRecord',
+    declaration: 'export interface DapInstructionBreakpointRecord {\n    id: number | undefined;\n    verified: boolean;\n    instructionReference: string;\n    offset: number | undefined;\n    condition: string | undefined;\n    hitCondition: string | undefined;\n    message: string | undefined;\n}',
+  },
+  {
+    name: 'DapLaunchSessionOptions',
+    declaration: 'export interface DapLaunchSessionOptions {\n    adapter: DapResolvedAdapter;\n    program: string;\n    args?: string[];\n    cwd: string;\n    extraLaunchArguments?: Record<string, unknown>;\n}',
+  },
+  {
+    name: 'DapModule',
+    declaration: 'export interface DapModule {\n    id: number | string;\n    name: string;\n    path?: string;\n    isOptimized?: boolean;\n    isUserCode?: boolean;\n    version?: string;\n    symbolStatus?: string;\n    symbolFilePath?: string;\n    dateTimeStamp?: string;\n    addressRange?: string;\n}',
+  },
+  {
+    name: 'DapOutputSnapshot',
+    declaration: 'export interface DapOutputSnapshot {\n    snapshot: DapSessionSummary;\n    output: string;\n}',
+  },
+  {
+    name: 'DapResolvedAdapter',
+    declaration: 'export interface DapResolvedAdapter {\n    name: string;\n    command: string;\n    args: string[];\n    resolvedCommand: string;\n    languages: string[];\n    fileTypes: string[];\n    rootMarkers: string[];\n    launchDefaults: Record<string, unknown>;\n    attachDefaults: Record<string, unknown>;\n    connectMode: \'stdio\' | \'socket\' | \'tcp\';\n    acceptsDirectoryProgram: boolean;\n}',
+  },
+  {
+    name: 'DapScope',
+    declaration: 'export interface DapScope {\n    name: string;\n    presentationHint?: \'arguments\' | \'locals\' | \'registers\' | string;\n    variablesReference: number;\n    expensive: boolean;\n    source?: DapSource;\n    line?: number;\n    column?: number;\n    endLine?: number;\n    endColumn?: number;\n}',
+  },
+  {
+    name: 'DapSessionManager',
+    declaration: 'export class DapSessionManager {\n    constructor(options: DapSessionManagerOptions);\n    dispose(): void;\n    getActiveSession(): DapSessionSummary | null;\n    listSessions(): DapSessionSummary[];\n    getCapabilities(): DapCapabilities | null;\n    async launch(options: DapLaunchSessionOptions, signal?: AbortSignal, timeoutMs: number = 30000): Promise<DapSessionSummary>;\n    async attach(options: DapAttachSessionOptions, signal?: AbortSignal, timeoutMs: number = 30000): Promise<DapSessionSummary>;\n    #serializeBreakpointMutation<T>(session: DapSession, mutate: () => Promise<T>, signal?: AbortSignal): Promise<T>;\n    async #syncBreakpointTree(origin: DapSession, command: string, args: unknown, prepare: (session: DapSession) => void, apply: (session: DapSession, breakpoints: DapBreakpoint[] | undefined) => void, signal?: AbortSignal, timeoutMs: number = 30000): Promise<void>;\n    async setBreakpoint(file: string, line: number, condition?: string, signal?: AbortSignal, timeoutMs: number = 30000): Promise<{\n        snapshot: DapSessionSummary;\n        breakpoints: DapBreakpointRecord[];\n        sourcePath: string;\n    }>;\n    async removeBreakpoint(file: string, line: number, signal?: AbortSignal, timeoutMs: number = 30000): Promise<{\n        snapshot: DapSessionSummary;\n        breakpoints: DapBreakpointRecord[];\n        sourcePath: string;\n    }>;\n    async setFunctionBreakpoint(name: string, condition?: string, signal?: AbortSignal, timeoutMs: number = 30000): Promise<{\n       /* …truncated — full shape in source */',
+  },
+  {
+    name: 'DapSessionManagerOptions',
+    declaration: 'export interface DapSessionManagerOptions {\n    spawn: DapSpawner;\n    idleTimeoutMs?: number;\n    cleanupIntervalMs?: number;\n    maxOutputBytes?: number;\n    now?: () => number;\n}',
+  },
+  {
+    name: 'DapSessionStatus',
+    declaration: 'export type DapSessionStatus = \'launching\' | \'configuring\' | \'stopped\' | \'running\' | \'terminated\';',
+  },
+  {
+    name: 'DapSessionSummary',
+    declaration: 'export interface DapSessionSummary {\n    id: string;\n    adapter: string;\n    cwd: string;\n    program: string | undefined;\n    status: DapSessionStatus;\n    launchedAt: string;\n    lastUsedAt: string;\n    threadId: number | undefined;\n    frameId: number | undefined;\n    stopReason: string | undefined;\n    stopDescription: string | undefined;\n    frameName: string | undefined;\n    instructionPointerReference: string | undefined;\n    source: DapSource | undefined;\n    line: number | undefined;\n    column: number | undefined;\n    breakpointFiles: number;\n    breakpointCount: number;\n    functionBreakpointCount: number;\n    outputBytes: number;\n    outputTruncated: boolean;\n    exitCode: number | undefined;\n    needsConfigurationDone: boolean;\n    parentSessionId: string | undefined;\n    childSessionIds: string[] | undefined;\n}',
+  },
+  {
+    name: 'DapSource',
+    declaration: 'export interface DapSource {\n    name?: string;\n    path?: string;\n    sourceReference?: number;\n    presentationHint?: \'normal\' | \'emphasize\' | \'deemphasize\';\n    origin?: string;\n    adapterData?: unknown;\n}',
+  },
+  {
+    name: 'DapSpawner',
+    declaration: 'export interface DapSpawner {\n    (spec: SubprocessSpawnSpec): SubprocessHandle;\n}',
+  },
+  {
+    name: 'DapStackFrame',
+    declaration: 'export interface DapStackFrame {\n    id: number;\n    name: string;\n    source?: DapSource;\n    line: number;\n    column: number;\n    endLine?: number;\n    endColumn?: number;\n    instructionPointerReference?: string;\n    moduleId?: number | string;\n    presentationHint?: \'normal\' | \'label\' | \'subtle\';\n}',
+  },
+  {
+    name: 'DapThread',
+    declaration: 'export interface DapThread {\n    id: number;\n    name: string;\n}',
+  },
+  {
+    name: 'DapVariable',
+    declaration: 'export interface DapVariable {\n    name: string;\n    value: string;\n    type?: string;\n    presentationHint?: {\n        kind?: string;\n        attributes?: string[];\n        visibility?: string;\n        lazy?: boolean;\n    };\n    evaluateName?: string;\n    variablesReference: number;\n    namedVariables?: number;\n    indexedVariables?: number;\n    memoryReference?: string;\n}',
   },
   {
     name: 'DiffCallView',
@@ -3395,6 +3745,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'KvUnitDescriptor',
     declaration: 'export interface KvUnitDescriptor {\n    readonly name: string;\n    readonly version: number;\n    readonly tables: readonly string[];\n    readonly hasGlobal: boolean;\n}',
+  },
+  {
+    name: 'LaunchAdapterSelection',
+    declaration: 'export type LaunchAdapterSelection = {\n    kind: \'adapter\';\n    adapter: DapResolvedAdapter;\n} | {\n    kind: \'unavailable\';\n    adapterName: string;\n    command: string;\n} | {\n    kind: \'none\';\n};',
+  },
+  {
+    name: 'LaunchProgramKind',
+    declaration: 'export type LaunchProgramKind = \'file\' | \'directory\' | \'missing\';',
   },
   {
     name: 'LlmAdapter',

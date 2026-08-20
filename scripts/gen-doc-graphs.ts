@@ -548,6 +548,15 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents.',
   },
   {
+    key: 'dap',
+    pkg: 'debug',
+    title: 'Debug Adapter Protocol seam',
+    mode: 'seam',
+    implementations: ['dap'],
+    consumers: ['tool-debug'],
+    note: 'Adapter resolution plus a session manager that launches/attaches, sets breakpoints, steps, reads frames/scopes/variables, evaluates, accesses memory, and terminates sessions through local DAP adapter binaries.',
+  },
+  {
     key: 'lsp',
     pkg: 'lsp',
     title: 'Language-server navigation seam',

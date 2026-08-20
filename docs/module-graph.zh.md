@@ -186,6 +186,10 @@ flowchart TD
     pkg_credentials["credentials"]
     pkg_credentials_local["credentials-local"]
   end
+  subgraph group_debug["packages/debug"]
+    pkg_dap["dap"]
+    pkg_tool_debug["tool-debug"]
+  end
   subgraph group_e2b["packages/e2b"]
     pkg_e2b["e2b"]
     pkg_fs_e2b["fs-e2b"]
@@ -376,6 +380,9 @@ flowchart TD
   pkg_client_modules --> pkg_invariants
   pkg_credentials --> pkg_brand
   pkg_credentials --> pkg_invariants
+  pkg_dap --> pkg_invariants
+  pkg_dap --> pkg_subprocess
+  pkg_dap --> pkg_timeout
   pkg_subprocess_e2b --> pkg_e2b
   pkg_subprocess_e2b --> pkg_invariants
   pkg_subprocess_e2b --> pkg_subprocess
@@ -865,6 +872,12 @@ flowchart TD
   pkg_session_reference --> pkg_session
   pkg_session_reference --> pkg_session_query
   pkg_session_reference --> pkg_typert_protocol
+  pkg_tool_debug --> pkg_dap
+  pkg_tool_debug --> pkg_invariants
+  pkg_tool_debug --> pkg_llm
+  pkg_tool_debug --> pkg_system_prompt
+  pkg_tool_debug --> pkg_timeout
+  pkg_tool_debug --> pkg_tools
   pkg_tool_edit --> pkg_fs
   pkg_tool_edit --> pkg_hashline
   pkg_tool_edit --> pkg_invariants
@@ -1510,6 +1523,7 @@ flowchart TD
 | [`attachment`](../packages/attachment/attachment) | `attachment` | [`brand`](../packages/util/brand), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-modules`](../packages/client/modules) | `client` | [`host-webserver`](../packages/host/webserver), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`credentials`](../packages/credentials/credentials) | `credentials` | [`brand`](../packages/util/brand), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`dap`](../packages/debug/dap) | `debug` | [`invariants`](../packages/runtime-diagnostics/invariants), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
 | [`subprocess-e2b`](../packages/e2b/subprocess-e2b) | `e2b` | [`e2b`](../packages/e2b/e2b), [`invariants`](../packages/runtime-diagnostics/invariants), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
 | [`host-frontend-static`](../packages/host/frontend-static) | `host` | [`host-webserver`](../packages/host/webserver), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`host-plugin-inventory`](../packages/host/plugin-inventory) | `host` | [`brand`](../packages/util/brand), [`invariants`](../packages/runtime-diagnostics/invariants), [`typert-protocol`](../packages/typert/protocol) |
@@ -1614,6 +1628,7 @@ flowchart TD
 | [`agent-instructions`](../packages/context/agent-instructions) | `context` | [`agent`](../packages/core/agent), [`fs`](../packages/fs/fs), [`home-paths`](../packages/util/home-paths), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`tools`](../packages/core/tools) |
 | [`file-reference-local`](../packages/context/file-reference-local) | `context` | [`agent`](../packages/core/agent), [`file-reference`](../packages/context/file-reference), [`invariants`](../packages/runtime-diagnostics/invariants), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`session-reference`](../packages/context/session-reference) | `context` | [`agent`](../packages/core/agent), [`compaction`](../packages/compaction/compaction), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`output-retention`](../packages/util/output-retention), [`session`](../packages/core/session), [`session-query`](../packages/session-query/session-query), [`typert-protocol`](../packages/typert/protocol) |
+| [`tool-debug`](../packages/debug/tool-debug) | `debug` | [`dap`](../packages/debug/dap), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`system-prompt`](../packages/core/system-prompt), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
 | [`tool-edit`](../packages/edit/tool-edit) | `edit` | [`fs`](../packages/fs/fs), [`hashline`](../packages/edit/hashline), [`invariants`](../packages/runtime-diagnostics/invariants), [`lsp`](../packages/lsp/lsp), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`logseq-example`](../packages/examples/logseq-example) | `examples` | [`commands`](../packages/interaction/commands), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`tools`](../packages/core/tools) |
 | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | `extensions` | [`agent`](../packages/core/agent), [`brand`](../packages/util/brand), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`scope`](../packages/core/scope), [`session`](../packages/core/session), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol) |
