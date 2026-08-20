@@ -103,7 +103,7 @@ describe('web_search integration over the real public provider', () => {
       </body></html>`,
       { status: 200, headers: { 'content-type': 'text/html' } },
     )))
-    const out = await call('web_search', { query: 'deepseek-official' })
+    const out = await call('web_search', { queries: ['deepseek-official'] })
     expect(out.isError).toBe(false)
     expect(out.content.map(b => b.type === 'text' ? b.text : '').join('')).toContain('[Result](https://result.test)')
   })
@@ -113,10 +113,11 @@ describe('tool-call timeout policy over the migrated web tools', () => {
   it('neither model schema exposes a timeout parameter after the migration', () => {
     const byName = new Map(ctx.tools.schemas().map(s => [s.name, s]))
     const fetchParams = byName.get('web_fetch')!.parameters as { properties: Record<string, unknown> }
-    const searchParams = byName.get('web_search')!.parameters as { properties: Record<string, unknown> }
+    const searchParams = byName.get('web_search')!.parameters as { properties: Record<string, unknown>; required?: string[] }
     expect(Object.keys(fetchParams.properties)).toEqual(['url'])
     expect('timeout_ms' in fetchParams.properties).toBe(false)
-    expect(Object.keys(searchParams.properties)).toEqual(['query'])
+    expect(Object.keys(searchParams.properties)).toEqual(['queries'])
+    expect(searchParams.required).toEqual(['queries'])
   })
 })
 

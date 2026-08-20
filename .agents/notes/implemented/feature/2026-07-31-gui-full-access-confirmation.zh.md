@@ -1,6 +1,6 @@
 # Agent Note: GUI Full access 风险确认
 
-Status: implemented
+Status: implemented → 已被 [2026-08-18-gui-full-access-direct-switch.md](2026-08-18-gui-full-access-direct-switch.md) 取代（风险门禁已移除；Full access 直接切换）
 
 [English](2026-07-31-gui-full-access-confirmation.md) | 中文
 

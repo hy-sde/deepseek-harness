@@ -2,6 +2,8 @@
 
 Status: implemented
 
+English | [中文](2026-08-18-gui-full-access-direct-switch.zh.md)
+
 Supersedes [2026-07-31-gui-full-access-confirmation.md](2026-07-31-gui-full-access-confirmation.md) — the risk gate it introduced is removed.
 
 ## Problem
