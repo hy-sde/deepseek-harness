@@ -3200,12 +3200,16 @@ export interface Config {
 ```ts config-catalog
 /** Plugin config (all optional — `apply` fills constant defaults). */
 export interface Config {
-  /** Per-engine transport timeout (ms). Default: 10000. The chain's worst case is engines.length × timeoutMs. */
+  /** Per-engine transport timeout (ms). Default: 10000. Each engine also dies here even if it ignores aggregate cancellation. */
   timeoutMs?: number
-  /** Engine ids tried in order; unlisted engines stay disabled. Default: startpage, duckduckgo, ecosia, google, mojeek. */
+  /** Engine ids the fan-out races in this order (the tiebreak for consensus ties); unlisted engines stay disabled. Default: startpage, duckduckgo, ecosia, google, mojeek. */
   engines?: PublicEngineId[]
   /** User-Agent sent to the engines. Defaults to a browser-shaped constant. */
   userAgent?: string
+  /** Soft aggregate deadline (ms): return as soon as all engines settled or this passes with ≥1 success. Default: 5000. */
+  softDeadlineMs?: number
+  /** Hard aggregate deadline (ms): return whatever we have, even nothing. Default: 30000. */
+  hardDeadlineMs?: number
 }
 
 export type PublicEngineId = (typeof PUBLIC_ENGINE_IDS)[number]
