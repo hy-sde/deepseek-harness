@@ -395,6 +395,17 @@
         thresholds: [3, 5, 8]
         argumentsPreviewChars: 500
 
+    # Time-traveling stream rules: rules stay dormant until a regex matches the
+    # live token stream, then the turn is aborted, the rule injected as a
+    # system reminder, and the request retried from the same point — per-project
+    # `.dsh/rules/*.md` enforcement with zero per-turn context tax.
+    - id: stream-rules
+      name: '@deepseek-ai/dsh-stream-rules'
+      config:
+        contextMode: keep
+        interruptMode: always
+        repeatMode: once
+
     # Every mode enables the stable model-facing web_search tool over the
     # credential-free public chain (Startpage → DuckDuckGo → Ecosia → Google →
     # Mojeek, fanned out concurrently and merged by cross-engine consensus): it

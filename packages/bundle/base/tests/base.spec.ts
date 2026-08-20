@@ -32,6 +32,10 @@ describe('dsh-base bundle', () => {
     )
     expect(rows.length).toBeGreaterThan(50)
     expect(rows.some(row => row.id === 'agent-loop')).toBe(true)
+    // The stream-rules guard ships in the base layer (abort/inject/retry on
+    // live-stream rule matches), mounting right behind the repeat-tool guard.
+    const order = rows.map(row => row.id)
+    expect(order.indexOf('stream-rules') > order.indexOf('repeat-tool-reminder')).toBe(true)
     expect(rows.find(row => row.id === 'session-telemetry-otel')?.config?.['mode']).toEqual({
       __jsExpr: "process.env.DSH_TELEMETRY_MODE || 'DISABLED'",
     })
