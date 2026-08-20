@@ -1,7 +1,7 @@
 // Web e2e scenario for the shipped default search composition. A real browser
 // drives `web_search`; the model stream is replayed while the real public
 // provider searches through a deterministic engine HTML document served at the
-// network boundary — one stubbed fetch, no external search traffic.
+// network boundary — one stubbed fetch per query, no external search traffic.
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
@@ -19,8 +19,9 @@ const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/web-search-round', impor
 const FIXTURE = fileURLToPath(new URL('./snapshots/web-search-round/session.jsonl', import.meta.url))
 const UI_EXPECTED = fileURLToPath(new URL('./snapshots/web-search-round/ui.expected.md', import.meta.url))
 const MODE = webSnapshotMode()
-const QUERY = 'DeepSeek Harness snapshot search'
-const PROMPT = `Use web_search to search exactly "${QUERY}". Then reply exactly SEARCH_DONE and stop.`
+const QUERY_ONE = 'DeepSeek Harness snapshot search'
+const QUERY_TWO = 'DeepSeek Harness multi-query search'
+const PROMPT = `Use web_search once with queries ["${QUERY_ONE}","${QUERY_TWO}"]. Then reply exactly SEARCH_DONE and stop.`
 
 /** The single engine endpoint the scenario exercises through the stubbed network boundary. */
 const ENGINE_ENDPOINT = 'https://html.duckduckgo.com/html/'
@@ -137,11 +138,15 @@ describe('web e2e: shipped default web search', () => {
   }, 200_000)
 
   it.skipIf(MODE === 'record')('uses the real provider and persists the capped structured result', () => {
-    // The real public provider made exactly one engine request through the
-    // stubbed network boundary: the single configured engine's result page.
-    expect(engineFetches).toHaveLength(1)
+    // The real public provider made one engine request per recorded query
+    // through the stubbed network boundary: the two configured queries hit
+    // the single engine's result page in order, body-encoded as
+    // `application/x-www-form-urlencoded` (`+` for spaces, plus engine params).
+    expect(engineFetches).toHaveLength(2)
     expect(engineFetches[0]).toMatchObject({ url: ENGINE_ENDPOINT })
-    expect(engineFetches[0]?.body).toContain(`q=${encodeURIComponent(QUERY)}`)
+    expect(engineFetches[0]?.body).toContain(`q=${QUERY_ONE.replaceAll(' ', '+')}`)
+    expect(engineFetches[1]).toMatchObject({ url: ENGINE_ENDPOINT })
+    expect(engineFetches[1]?.body).toContain(`q=${QUERY_TWO.replaceAll(' ', '+')}`)
 
     const searchCall = sessionEvents.find(
       (event): event is Extract<SessionEvent, { type: 'tool/call' }> =>
@@ -156,18 +161,16 @@ describe('web e2e: shipped default web search', () => {
     const content = searchResult.data.message.content[0]
     expect(content.isError).toBe(false)
     const rendered = content.content.filter(block => block.type === 'text').map(block => block.text).join('')
-    // The seam caps the provider's list at the shipped searchMaxResults before
-    // the tool renders it, so the kept prefix is model-visible and the dropped
-    // suffix is not.
+    // The engine-parser already caps each query at `searchMaxResults`, and the
+    // seam's merge dedups the two identical stub pages, so the model-visible
+    // prefix is exactly the shipped bound and no truncation note is emitted.
     for (const ordinal of RESULT_ORDINALS.slice(0, WEB_SEARCH_MAX_RESULTS)) {
       expect(rendered).toContain(`[${resultTitle(ordinal)}](${resultUrl(ordinal)})`)
     }
     for (const ordinal of RESULT_ORDINALS.slice(WEB_SEARCH_MAX_RESULTS)) {
       expect(rendered).not.toContain(resultUrl(ordinal))
     }
-    expect(rendered).toContain(
-      `(Showing the first ${WEB_SEARCH_MAX_RESULTS} sources. Refine the query for more.)`,
-    )
+    expect(rendered).not.toContain('Refine the query for more.')
     expect(searchResult.data.meta).toMatchObject({
       sources: RESULT_ORDINALS.slice(0, WEB_SEARCH_MAX_RESULTS).map(ordinal => ({
         url: resultUrl(ordinal),
@@ -175,7 +178,7 @@ describe('web e2e: shipped default web search', () => {
         snippet: resultSnippet(ordinal),
         publishedAt: resultPageAge(ordinal),
       })),
-      truncated: true,
+      truncated: false,
     })
   })
 
@@ -197,12 +200,14 @@ describe('web e2e: shipped default web search', () => {
     const card = page.locator('[data-web="search"]')
     const sources = card.locator('ol')
     await sources.waitFor({ timeout: 10_000 })
-    // The card draws exactly the sources the model saw: the seam's cap, not the
-    // provider's list length.
+    // The card draws exactly the sources the model saw: the engine-capped bound
+    // (equal to the seam's `searchMaxResults`), not the possibility space.
     expect(await sources.locator('li').count()).toBe(WEB_SEARCH_MAX_RESULTS)
     // The list is complete in the DOM, so the card carries no expand control.
     expect(await card.locator('button').count()).toBe(0)
-    expect(await card.getByText('来源列表已截断').isVisible()).toBe(true)
+    // The engine already capped each query and the merge deduped identical
+    // results, so the seam did not cut the list and the truncation note stays off.
+    expect(await card.getByText('来源列表已截断').count()).toBe(0)
 
     const geometry = await sources.evaluate((element) => {
       const computed = getComputedStyle(element)
