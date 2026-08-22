@@ -29,6 +29,7 @@
 | `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (read_image registration)`、`ctx.llm + an image-capable route (read_image execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时 `read_image` 不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。 |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`、`ast_grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt`、`ctx.fs (ast_edit apply)` | `tool/call`、`fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`、`tool/result` | - | ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。 |
+| `@deepseek-ai/dsh-tool-memory` | `learn`、`memory_edit`、`recall`、`reflect`、`retain` | `ctx.tools`、`ctx.memory`、`ctx.systemPrompt` | `tool/call`、`project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`、`tool/result` | - | retain、recall、reflect、memory_edit 与 learn 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。 |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
@@ -723,7 +724,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
 
 ### `read_image`
 
-读取 PNG/JPEG/WebP/GIF 文件并返回图像本身。要求当前模型接受图像输入。
+读取 PNG/JPEG/WebP/GIF 文件并返回图像本身。Harness 会在下一次模型请求前对大尺寸支持的图像进行校验并降采样，因此请直接使用此工具，而不是仅为查看图像而安装图像库或创建缩略图。无关文件可少量批次并发读取。要求当前模型接受图像输入。
 
 ```json
 {
@@ -768,7 +769,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
-先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时 `read_image` 不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。
+先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时图像工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。
 
 <a id="deepseek-aidsh-tool-fs-search"></a>
 ## `@deepseek-ai/dsh-tool-fs-search`
@@ -812,7 +813,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
     },
     "path": {
       "type": "string",
-      "description": "File or directory to search. Defaults to the session workspace; a relative path resolves against it."
+      "description": "File, directory, or internal URL (e.g. conflict://3, pr://owner/repo/123/diff) to search. Defaults to the session workspace; a relative path resolves against it."
     },
     "include": {
       "type": "string",
@@ -933,6 +934,165 @@ glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn �
 来源：[`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
 
 ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。
+
+<a id="deepseek-aidsh-tool-memory"></a>
+
+## `@deepseek-ai/dsh-tool-memory`
+
+### `learn`
+
+在长期项目记忆中捕获一条可复用的教训；持久化的 `memory` 载荷应能独立成句（是什么、何时、为何）。在解决了一个很可能再次有回报的洞见后使用：一个不明显的修复、一条新发现的项目约定，或一个行之有效的工作流。克制而具体地捕获：一条强有力的可复用教训胜过几条含混的。教训保留在 `learned.md` 中，会在后续会话开始时再次呈现，并在存储前对提示注入标记进行中和。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "memory": {
+      "type": "string",
+      "description": "The durable, self-contained lesson to remember (what, when, why)"
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional source context for the lesson"
+    }
+  },
+  "required": [
+    "memory"
+  ]
+}
+```
+
+来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `memory_edit`
+
+按 id 编辑项目记忆（`recall`/`reflect` 返回的 id）。操作：`update` 替换内容与／或重要性；`forget` 永久删除；`invalidate` 软作废，可选指定 `replacement_id`。教训与摘要条目是只读事实。对历史可能仍有价值的过时记忆优先使用 `invalidate`；只有需要硬删除时才用 `forget`。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "op": {
+      "type": "string",
+      "description": "Memory edit operation",
+      "enum": [
+        "update",
+        "forget",
+        "invalidate"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "description": "Memory id from recall output"
+    },
+    "content": {
+      "type": "string",
+      "description": "Replacement content for update"
+    },
+    "importance": {
+      "type": "number",
+      "description": "Replacement importance for update (0–1)"
+    },
+    "replacement_id": {
+      "type": "string",
+      "description": "Replacement memory id for invalidate"
+    }
+  },
+  "required": [
+    "op",
+    "id"
+  ]
+}
+```
+
+来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `recall`
+
+搜索长期项目记忆；返回原始相关性排序的匹配条目。在回答过往对话、用户偏好、项目决策或先前上下文能提升准确度的话题之前主动使用。`recall` 返回具体事实与条目，`reflect` 返回跨多条记忆的综合答案。此处返回的记忆 id 可回传给 `memory_edit`。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Natural-language search query"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum entries to return (default 10)"
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
+```
+
+来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `reflect`
+
+从相关的长期项目记忆中综合出一个连贯的回答；与 recall 不同，它会混合多条记忆。用于横跨大量存储事实的开放式问题：“关于这位用户你知道什么？”、“总结项目决策。”、“我对 X 的偏好是什么？”。可选的 `context` 将综合聚焦于特定角度。回答仅以存储的记忆为依据——在依赖之前请先验证仓库事实。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Question to answer from memory"
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional focus context"
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
+```
+
+来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `retain`
+
+在长期项目记忆中为未来会话存储一条或多条事实。用于持久、可复用的知识：用户偏好、项目决策、架构选择——任何能改进未来回答的内容。不用于一次性任务状态。每条事实必须具体且自成一体（谁、什么、何时、为何）。每次调用批量保存相关事实；条目会去重并整合。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "description": "Memories to retain",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Information to remember"
+          },
+          "context": {
+            "type": "string",
+            "description": "Optional source context"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    }
+  }
+}
+```
+
+来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+retain、recall、reflect、memory_edit 与 learn 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 ## `@deepseek-ai/dsh-tool-terminal`

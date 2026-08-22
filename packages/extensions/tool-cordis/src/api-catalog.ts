@@ -1315,6 +1315,79 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'memory',
+    summary: 'The public `ctx.memory` service.',
+    description: 'The public `ctx.memory` service. Backends register into the registry; the service resolves the configured (or first) backend and delegates every operation. Mutations emit `memory/change` so in-process consumers (tool prompt caches) can invalidate without re-reading on every assembly.',
+    methods: [
+      {
+        signature: 'register(backend: MemoryBackend): () => void',
+        description: 'Register (or replace) a backend by id; the first registration also becomes the selection when none is configured.',
+        parameters: [{ name: 'backend', description: 'backend to register under {@link MemoryBackend.id backend.id}.' }],
+        returns: 'disposer that removes this backend and clears the selection if it was the selection.',
+      },
+      {
+        signature: 'unregister(id: string): boolean',
+        description: 'Remove the backend for `id`.',
+        parameters: [{ name: 'id', description: 'backend id to remove.' }],
+        returns: 'true when a backend was removed, false when none matched.',
+      },
+      {
+        signature: 'resolve(): MemoryBackend | undefined',
+        description: 'The selected backend (configured id when registered, else the first registered).',
+        parameters: [],
+        returns: 'the active backend, or undefined when none is registered.',
+      },
+      {
+        signature: 'backendIds(): string[]',
+        description: 'Every registered backend id.',
+        parameters: [],
+        returns: 'registered backend ids.',
+      },
+      {
+        signature: 'async status(context: MemoryContext): Promise<MemoryStatus>',
+        description: 'Backend availability and scope for the calling session\'s project.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) the status describes.' }],
+        returns: 'the resolved backend\'s status.',
+      },
+      {
+        signature: 'async save(context: MemoryContext, input: MemorySaveInput): Promise<MemorySaveResult>',
+        description: 'Store one memory entry (the `retain` tool\'s service path). Emits `memory/change` for the project after the write lands.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) whose project receives the entry.' }, { name: 'input', description: 'content, optional context, source, and importance.' }],
+        returns: 'whether something was stored plus a human result line.',
+      },
+      {
+        signature: 'async learn(context: MemoryContext, input: MemorySaveInput): Promise<MemorySaveResult>',
+        description: 'Append a durable lesson (the `learn` tool\'s service path). Emits `memory/change` for the project after the write lands.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) whose project receives the lesson.' }, { name: 'input', description: 'lesson content, optional context, source, importance.' }],
+        returns: 'whether something was stored plus a human result line.',
+      },
+      {
+        signature: 'async search(context: MemoryContext, query: string, options?: MemorySearchOptions): Promise<MemorySearchResult>',
+        description: 'Relevance-ranked search over the project\'s bank, lessons, and summary.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) whose project is searched.' }, { name: 'query', description: 'natural-language query.' }, { name: 'options', description: 'result cap override (`limit`) when provided.' }],
+        returns: 'ranked matching entries.',
+      },
+      {
+        signature: 'async edit(context: MemoryContext, op: MemoryEditOp, input: MemoryEditInput): Promise<MemoryEditResult>',
+        description: 'Apply a memory edit (`update`/`forget`/`invalidate` by recall id). Emits `memory/change` for the project after the write lands.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) whose project is edited.' }, { name: 'op', description: 'edit operation.' }, { name: 'input', description: 'target id plus operation fields.' }],
+        returns: 'the edit outcome status.',
+      },
+      {
+        signature: 'async summaries(context: MemoryContext): Promise<MemorySummaries>',
+        description: 'The project\'s injectable memory block plus its raw parts.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) whose project summaries are read.' }],
+        returns: 'summary/learned/bank text and the combined injection block.',
+      },
+      {
+        signature: 'async clear(context: MemoryContext): Promise<void>',
+        description: 'Wipe one project\'s memory root. Emits `memory/change` for the project.',
+        parameters: [{ name: 'context', description: 'session identity (cwd) whose project is cleared.' }],
+        returns: 'a promise that settles once the root is removed.',
+      },
+    ],
+  },
+  {
     key: 'messageFeedback',
     summary: 'Storage-domain sidecar service.',
     description: 'Storage-domain sidecar service. It inspects persisted Session history and never creates or resumes an Agent or Session.',
@@ -2884,6 +2957,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'options', description: 'the full request. A LOOP-built request carries the process-local {@link markAgentLoopRequest} identity and arrives deep-frozen (mutation throws): its content is a pure function of the session log (the reconstructability Agent Note), so listeners read it, never rewrite it. Hand-built calls do not carry that marker; their messages already obey the immutable creation contract.' }],
   },
   {
+    name: 'memory/change',
+    mode: 'emit',
+    signature: '\'memory/change\'(payload: { cwd: string }): void',
+    summary: 'A durable memory mutation (`save`/`learn`/`edit`/`clear`) committed for one project; `cwd` identifies the project whose files changed.',
+    description: 'A durable memory mutation (`save`/`learn`/`edit`/`clear`) committed for one project; `cwd` identifies the project whose files changed. In-process consumers (caches, watchers) refresh on this notification. Emitted after the write lands, so listeners never observe half-applied state.',
+    parameters: [{ name: 'payload', description: 'Project-root cwd whose memory changed.' }],
+  },
+  {
     name: 'session-telemetry/record',
     mode: 'waterfall',
     signature: '\'session-telemetry/record\'(record: SessionTelemetryRecord, next: () => SessionTelemetryRecord): SessionTelemetryRecord',
@@ -4094,6 +4175,54 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ManualCompactAgentContext',
     declaration: 'export interface ManualCompactAgentContext extends CompactionAgentContext {\n    runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T>;\n}',
+  },
+  {
+    name: 'MemoryBackend',
+    declaration: 'export interface MemoryBackend {\n    readonly id: string;\n    status(context: MemoryContext): Promise<MemoryStatus>;\n    save(context: MemoryContext, input: MemorySaveInput): Promise<MemorySaveResult>;\n    learn(context: MemoryContext, input: MemorySaveInput): Promise<MemorySaveResult>;\n    search(context: MemoryContext, query: string, options?: MemorySearchOptions): Promise<MemorySearchResult>;\n    edit(context: MemoryContext, op: MemoryEditOp, input: MemoryEditInput): Promise<MemoryEditResult>;\n    summaries(context: MemoryContext): Promise<MemorySummaries>;\n    clear(context: MemoryContext): Promise<void>;\n}',
+  },
+  {
+    name: 'MemoryContext',
+    declaration: 'export interface MemoryContext {\n    cwd: string;\n    signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'MemoryEditInput',
+    declaration: 'export interface MemoryEditInput {\n    id: string;\n    content?: string;\n    importance?: number;\n    replacementId?: string;\n}',
+  },
+  {
+    name: 'MemoryEditOp',
+    declaration: 'export type MemoryEditOp = \'update\' | \'forget\' | \'invalidate\';',
+  },
+  {
+    name: 'MemoryEditResult',
+    declaration: 'export interface MemoryEditResult {\n    status: \'updated\' | \'forgotten\' | \'invalidated\' | \'not_found\' | \'not_editable\';\n    message?: string;\n}',
+  },
+  {
+    name: 'MemorySaveInput',
+    declaration: 'export interface MemorySaveInput {\n    content: string;\n    context?: string;\n    source?: string;\n    importance?: number;\n}',
+  },
+  {
+    name: 'MemorySaveResult',
+    declaration: 'export interface MemorySaveResult {\n    id?: string;\n    stored: number;\n    message: string;\n}',
+  },
+  {
+    name: 'MemorySearchItem',
+    declaration: 'export interface MemorySearchItem {\n    id?: string;\n    content: string;\n    source?: string;\n    timestamp?: string;\n    score?: number;\n    readonly?: boolean;\n    importance?: number;\n}',
+  },
+  {
+    name: 'MemorySearchOptions',
+    declaration: 'export interface MemorySearchOptions {\n    limit?: number;\n    signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'MemorySearchResult',
+    declaration: 'export interface MemorySearchResult {\n    backend: string;\n    query: string;\n    count: number;\n    items: MemorySearchItem[];\n}',
+  },
+  {
+    name: 'MemoryStatus',
+    declaration: 'export interface MemoryStatus {\n    backend: string;\n    active: boolean;\n    writable: boolean;\n    searchable: boolean;\n    scope?: string;\n    workingCount?: number;\n    lessonCount?: number;\n    lastMemoryAt?: number;\n    message?: string;\n}',
+  },
+  {
+    name: 'MemorySummaries',
+    declaration: 'export interface MemorySummaries {\n    backend: string;\n    summary?: string;\n    learned?: string;\n    block: string;\n}',
   },
   {
     name: 'Message',

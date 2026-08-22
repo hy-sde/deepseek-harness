@@ -73,6 +73,15 @@
 - id: tool-ast
   name: '@deepseek-ai/dsh-tool-ast'
 
+# ── long-horizon memory ────────────────────────────────────────────────────
+
+# Agent-curated durable project memory (retain/recall/reflect/memory_edit/
+# learn + first-turn prompt injection). The `memory` SERVICE stays host-plane
+# (the store is durable project data); this row contributes only the
+# model-facing tools, which resolve that host instance — so no realm here.
+- id: tool-memory
+  name: '@deepseek-ai/dsh-tool-memory'
+
 # ── rich editor + LSP ────────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each

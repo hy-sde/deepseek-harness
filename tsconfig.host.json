@@ -236,6 +236,8 @@
     { "path": "./packages/fs/tool-fs" },
     { "path": "./packages/fs/tool-fs-search" },
     { "path": "./packages/ast/tool-ast" },
+    { "path": "./packages/memory/memory" },
+    { "path": "./packages/memory/tool-memory" },
     { "path": "./packages/edit/hashline" },
     { "path": "./packages/edit/tool-edit" },
     { "path": "./packages/compaction/compaction" },

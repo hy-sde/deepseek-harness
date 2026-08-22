@@ -50,6 +50,8 @@ import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
 import * as ToolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
 import * as ToolAst from '@deepseek-ai/dsh-tool-ast'
+import Memory from '@deepseek-ai/dsh-memory'
+import * as ToolMemory from '@deepseek-ai/dsh-tool-memory'
 import TerminalSessionService from '@deepseek-ai/dsh-terminal'
 import * as ToolPty from '@deepseek-ai/dsh-tool-terminal'
 import * as ToolGoal from '@deepseek-ai/dsh-tool-goal'
@@ -368,6 +370,28 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy).',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-memory',
+    dir: 'tool-memory',
+    source: 'packages/memory/tool-memory/src/index.ts',
+    requires: ['ctx.tools', 'ctx.memory', 'ctx.systemPrompt'],
+    writes: [
+      'tool/call',
+      'project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)',
+      'tool/result',
+    ],
+    async mount(ctx) {
+      // The tools inject `memory` (the host-plane store registered here),
+      // `tools`, and `systemPrompt` (the `memory:project` first-turn injection
+      // section) — the catalog harness already mounts SystemPrompt and
+      // ToolRuntime. Schema harvest only registers the five tools; nothing
+      // executes, so no disk writes occur here.
+      await ctx.plugin(Memory)
+      await ctx.plugin(ToolMemory)
+    },
+    note:
+      'retain, recall, reflect, memory_edit, and learn over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session\'s project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). Local-only in this port; the registry seam stays open for Hindsight/Mnemopi providers later.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-terminal',

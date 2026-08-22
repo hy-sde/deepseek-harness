@@ -79,6 +79,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   webServer: 'web-server.md',
   invariants: 'invariants.md',
   llm: 'llm-streaming.md',
+  memory: 'memory.md',
   lsp: 'lsp.md',
   dap: 'dap.md',
   messageFeedback: 'feedback.md',
@@ -135,6 +136,7 @@ export const SERVICE_PAGE: Record<string, string> = {
  * to a model as `cordis_runtime_inspect what:"client"`).
  */
 export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
+  internalUrls: 'not projected: InternalUrlsService reaches the catalog build graph but the rendering projection cannot see it — packages/bundle/base/cordis.patch.yml owns its host row and packages/fs/internal-urls/README.md owns its documentation',
   agent: 'not a service: the DX accessor field on Agent.ctx (root accessor defaulting to undefined) — docs/subsystems/core.md owns the Agent handle',
   appExit: 'not a service: launcher-provided bounded process-exit callback — packages/boot/cmdline/README.md owns the launcher contract',
   cmdlineArgs: 'not a service: launcher-provided immutable app argument accessor — packages/boot/cmdline/README.md owns the launcher contract',
@@ -184,6 +186,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'fs': 'filesystem.md',
   'goal': 'goal.md',
   'llm': 'llm-streaming.md',
+  'memory': 'memory.md',
   'session': 'session.md',
   'settings': 'settings.md',
   'skills': 'skills.md',
@@ -652,6 +655,17 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   WorkflowAgentEndInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',
   WorkflowAgentInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',
   WorkflowResultInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',
+  MemoryBackend: 'memory provider contract is owned by packages/memory/memory/src/types.ts',
+  MemoryContext: 'memory service input is owned by packages/memory/memory/src/types.ts',
+  MemorySaveInput: 'memory save input is owned by packages/memory/memory/src/types.ts',
+  MemorySaveResult: 'memory save result is owned by packages/memory/memory/src/types.ts',
+  MemorySearchOptions: 'memory search options are owned by packages/memory/memory/src/types.ts',
+  MemorySearchResult: 'memory search result is owned by packages/memory/memory/src/types.ts',
+  MemoryEditInput: 'memory edit input is owned by packages/memory/memory/src/types.ts',
+  MemoryEditOp: 'memory edit operation is owned by packages/memory/memory/src/types.ts',
+  MemoryEditResult: 'memory edit result is owned by packages/memory/memory/src/types.ts',
+  MemoryStatus: 'memory status record is owned by packages/memory/memory/src/types.ts',
+  MemorySummaries: 'memory summaries record is owned by packages/memory/memory/src/types.ts',
 }
 
 /** Repository data policy consumed by the Cordis catalog projector. */

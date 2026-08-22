@@ -1,0 +1,57 @@
+/**
+ * Model-facing long-horizon memory tools over the host `ctx.memory` service:
+ * `retain`, `recall`, `reflect`, `memory_edit`, and `learn`, plus a
+ * `memory:project` system-prompt section that reloads the session's project
+ * memory at the start of every session.
+ *
+ * Port of omp (oh-my-pi)'s memory surface for the DeepSeek Harness — see
+ * port_omp.md item 4. Agent-plane: this package mounts as a preset row and
+ * resolves the host `memory` service; it registers no service of its own.
+ * @module @deepseek-ai/dsh-tool-memory
+ */
+
+import { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-memory'
+import { buildMemoryPromptSection } from './prompt.ts'
+import type { MemoryPromptConfig } from './prompt.ts'
+import { applyLearnTool, applyMemoryEditTool, applyRecallTool, applyReflectTool, applyRetainTool } from './tools.ts'
+
+/** Plugin configuration. */
+export interface Config extends MemoryPromptConfig {
+  /** Result cap for one `recall` without an explicit `limit` (default 10). */
+  searchLimit?: number
+}
+
+export {
+  buildMemoryPromptSection,
+  readProjectMemoryBlock,
+  cwdFromAssemblyContext,
+} from './prompt.ts'
+export type { MemoryPromptConfig } from './prompt.ts'
+export { applyRetainTool, applyRecallTool, applyReflectTool, applyMemoryEditTool, applyLearnTool, sessionCwd, memoryContextOf } from './tools.ts'
+
+/** Cordis plugin name for loader diagnostics. */
+export const name = 'tool-memory'
+
+/** Services consumed by this plugin (all resolved from the host and preset scopes). */
+export const inject = ['tools', 'systemPrompt', 'memory']
+
+/**
+ * Register the five memory tools and the `memory:project` prompt section.
+ * @param ctx - the agent-plane plugin context (injects `tools`, `systemPrompt`, `memory`).
+ * @param config - resolved plugin configuration (schema-less; defaults only).
+ */
+export function apply(ctx: Context, config: Config = {}): void {
+  applyRetainTool(ctx)
+  applyRecallTool(ctx)
+  applyReflectTool(ctx)
+  applyMemoryEditTool(ctx)
+  applyLearnTool(ctx)
+  ctx.systemPrompt.section(buildMemoryPromptSection({
+    ...config.root !== undefined ? { root: config.root } : {},
+    ...config.injectionMaxChars !== undefined ? { injectionMaxChars: config.injectionMaxChars } : {},
+    ...config.enabled !== undefined ? { enabled: config.enabled } : {},
+  }))
+}
+
+export default apply

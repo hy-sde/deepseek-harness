@@ -236,6 +236,15 @@
     - id: internal-urls
       name: '@deepseek-ai/dsh-internal-urls'
 
+    # Agent-curated long-horizon memory (ctx.memory): durable, project-scoped
+    # memory banks with a backend registry and a shipped `local` provider
+    # (retain/recall/reflect/memory_edit/learn + first-turn prompt injection
+    # via the preset's tool-memory row). Host-plane — the store is durable
+    # project data that crosses sessions, complementing session-query and
+    # compaction rather than overlapping them (port_omp.md item 4).
+    - id: memory
+      name: '@deepseek-ai/dsh-memory'
+
     # AST structural search/rewrite over the packaged ast-grep binary, mountable
     # anywhere the subprocess + filesystem seams exist. ast_edit always PREVIEWS
     # first and only writes with apply: true, through the filesystem seam

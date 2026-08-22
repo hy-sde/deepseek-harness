@@ -24,9 +24,10 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description. |
 | `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `tool/result` | - | Four-mode `edit` (replace / patch / apply_patch / hashline) ported from @oh-my-pi. Mount alongside tool-fs with `enableEdit: false` so the rich editor owns the `edit` name. |
 | `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent pwsh tool, the Windows counterpart of the persistent bash tool; deployment composition supplies a pwsh-dialect PTY backend and may override the model-facing environment description. |
-| `@deepseek-ai/dsh-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (read_image registration)`, `ctx.llm + an image-capable route (read_image execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. `read_image` is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
+| `@deepseek-ai/dsh-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (image-tool registration)`, `ctx.llm + an image-capable route (image-tool execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`, `grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments. |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`, `ast_grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt`, `ctx.fs (ast_edit apply)` | `tool/call`, `fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`, `tool/result` | - | ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy). |
+| `@deepseek-ai/dsh-tool-memory` | `learn`, `memory_edit`, `recall`, `reflect`, `retain` | `ctx.tools`, `ctx.memory`, `ctx.systemPrompt` | `tool/call`, `project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`, `tool/result` | - | retain, recall, reflect, memory_edit, and learn over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). Local-only in this port; the registry seam stays open for Hindsight/Mnemopi providers later. |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`, `terminal_list`, `terminal_open`, `terminal_read`, `terminal_send`, `terminal_signal` | `ctx.tools`, `ctx.terminals`, `ctx.systemPrompt`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema. |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
@@ -735,7 +736,7 @@ Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts
 
 ### `read_image`
 
-Read a PNG/JPEG/WebP/GIF file and return the image itself. Requires the current model to accept image input.
+Read a PNG/JPEG/WebP/GIF file and return the image itself. Harness validates and downscales large supported images before the next model request, so use this tool directly instead of installing image libraries or creating thumbnails merely to inspect an image. Independent files may be read concurrently in small batches. Requires the current model to accept image input.
 
 ```json
 {
@@ -780,7 +781,7 @@ Create or fully replace a UTF-8 text file.
 
 Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
-The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. `read_image` is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input.
+The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input.
 
 <a id="deepseek-aidsh-tool-fs-search"></a>
 
@@ -825,7 +826,7 @@ Search file contents with a ripgrep regular expression. Returns matching lines w
     },
     "path": {
       "type": "string",
-      "description": "File or directory to search. Defaults to the session workspace; a relative path resolves against it."
+      "description": "File, directory, or internal URL (e.g. conflict://3, pr://owner/repo/123/diff) to search. Defaults to the session workspace; a relative path resolves against it."
     },
     "include": {
       "type": "string",
@@ -946,6 +947,165 @@ Structurally search source files by AST pattern. Returns matching nodes with lin
 Source: [`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
 
 ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy).
+
+<a id="deepseek-aidsh-tool-memory"></a>
+
+## `@deepseek-ai/dsh-tool-memory`
+
+### `learn`
+
+Capture a reusable lesson in long-term project memory; the durable `memory` payload should stand alone (what, when, why). Use after solving an insight likely to pay off again: a non-obvious fix, a discovered project convention, or a workflow that worked. Capture sparingly and specifically: one strong reusable lesson beats several vague ones. Lessons stay in `learned.md`, are surfaced again at the start of later sessions, and are neutralized against prompt-injection markers before storage.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "memory": {
+      "type": "string",
+      "description": "The durable, self-contained lesson to remember (what, when, why)"
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional source context for the lesson"
+    }
+  },
+  "required": [
+    "memory"
+  ]
+}
+```
+
+Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `memory_edit`
+
+Edit project memory by id (ids returned by `recall`/`reflect`). Operations: `update` replaces content and/or importance; `forget` permanently deletes; `invalidate` softly supersedes, optionally naming a `replacement_id`. Lesson and summary entries are read-only facts. Prefer `invalidate` for stale memory whose history may still be useful; use `forget` only for hard deletion.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "op": {
+      "type": "string",
+      "description": "Memory edit operation",
+      "enum": [
+        "update",
+        "forget",
+        "invalidate"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "description": "Memory id from recall output"
+    },
+    "content": {
+      "type": "string",
+      "description": "Replacement content for update"
+    },
+    "importance": {
+      "type": "number",
+      "description": "Replacement importance for update (0–1)"
+    },
+    "replacement_id": {
+      "type": "string",
+      "description": "Replacement memory id for invalidate"
+    }
+  },
+  "required": [
+    "op",
+    "id"
+  ]
+}
+```
+
+Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `recall`
+
+Search long-term project memory; return raw relevance-ranked matching entries. Use proactively before questions about past conversations, user preferences, project decisions, or topics where prior context improves accuracy. `recall` returns specific facts and entries, `reflect` a synthesized answer across many memories. Memory ids returned here round-trip through `memory_edit`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Natural-language search query"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum entries to return (default 10)"
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
+```
+
+Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `reflect`
+
+Synthesize a coherent response from relevant long-term project memories; unlike recall it blends them. Use for open-ended questions spanning many stored facts: "What do you know about this user?", "Summarize project decisions.", "What are my preferences for X?". The optional `context` focuses synthesis on a specific angle. Answer is grounded only in stored memory — verify repository facts before relying on them.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Question to answer from memory"
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional focus context"
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
+```
+
+Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+### `retain`
+
+Store one or more facts in long-term project memory for future sessions. Use for durable, reusable knowledge: user preferences, project decisions, architectural choices — anything that improves future responses. Not for ephemeral task state. Each item must be specific and self-contained (who, what, when, why). Batch related facts per call; entries are deduplicated and consolidated.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "description": "Memories to retain",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Information to remember"
+          },
+          "context": {
+            "type": "string",
+            "description": "Optional source context"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
+retain, recall, reflect, memory_edit, and learn over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). Local-only in this port; the registry seam stays open for Hindsight/Mnemopi providers later.
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 
