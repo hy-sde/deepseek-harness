@@ -11,8 +11,10 @@ import type { DiffCallView, DiffResultView, ToolResult } from '@deepseek-ai/dsh-
 import type { FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-internal-urls'
 import { computeHunkDiffs, diffsFromMeta } from './diff.ts'
 import { remediateFsError } from './error.ts'
+import { resolveContextOf } from './internal-routing.ts'
 import { sessionResolveOptions } from './session-cwd.ts'
 import type { FsSandboxController } from './sandbox.ts'
 
@@ -101,6 +103,27 @@ export function applyWriteTool(ctx: Context, sandbox: FsSandboxController): void
     },
     async execute(args: WriteToolArgs, exec) {
       const input = parseWriteArgs(args)
+      // Internal-URL writes (e.g. `conflict://<N>` resolution) dispatch to the
+      // registered handler, carrying the session context and the resolved
+      // sandbox policy so the handler's backing-file mutation stays fenced.
+      const iu = ctx.get('internalUrls')
+      if (iu !== undefined && iu.canHandle(input.filePath)) {
+        const sandboxPolicy = await sandbox.resolvePolicy('write', args, exec)
+        const context = resolveContextOf(exec, input.filePath)
+        await iu.write(input.filePath, input.content, {
+          ...context,
+          ...sandboxPolicy !== undefined ? { sandboxPolicy } : {},
+        })
+        return {
+          path: input.filePath,
+          // A routed write mutates an existing backing surface (e.g. splicing
+          // a conflict region out of a file), so the operation is an update.
+          operation: 'update' as const,
+          before: null,
+          after: input.content,
+        }
+      }
+
       // Resolve the per-call sandbox policy (approved mode > session override
       // > backend default, plus the session cwd root) BEFORE anything executes;
       // an escalating call throws its distinct text on any non-grant.

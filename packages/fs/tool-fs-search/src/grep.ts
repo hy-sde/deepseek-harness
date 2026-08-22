@@ -12,11 +12,17 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, SearchResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type { RetainedItems } from '@deepseek-ai/dsh-output-retention'
 import type { SpillRef } from '@deepseek-ai/dsh-spill'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-internal-urls'
+import type { InternalResource } from '@deepseek-ai/dsh-internal-urls'
+import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { GrepMatch } from './search-core.ts'
 import { SearchError, previewLine, retainGrepMatches, runRipgrep, toWorkdirRelative, trySaveFormattedResult } from './search-core.ts'
 import { grepSearchMeta, searchViewFromMeta } from './presentation.ts'
@@ -266,6 +272,43 @@ export function presentGrepResult(
 }
 
 /**
+ * Search one internal-URL resource (`conflict://`, `pr://`, …) with the same
+ * ripgrep semantics as a filesystem grep. A `sourcePath`-backed resource is
+ * searched on disk; a purely virtual resource is materialized to a per-call
+ * temp file, searched, and removed — the reported path is always the URL.
+ */
+async function grepInternalUrl(
+  ctx: Context,
+  exec: ToolExecution,
+  resource: InternalResource,
+  input: GrepInput,
+  caps: GrepToolCaps,
+): Promise<GrepMatch[]> {
+  if (resource.isDirectory === true) {
+    throw new SearchError(`grep cannot search directory resource "${resource.url}"; read it instead`, 'SEARCH_FAILED')
+  }
+  const targetPath = resource.sourcePath
+  if (targetPath !== undefined) {
+    const run = await runRipgrep(ctx, exec, 'grep', buildGrepCommand({ ...input, path: targetPath }), caps.rawOutputMaxBytes, caps.graceMs, caps.stderrMaxBytes)
+    if (run.noMatches) return []
+    return parseGrepMatches(run.stdout).map(match => ({ path: resource.url, lineNumber: match.lineNumber, line: match.line }))
+  }
+  // Virtual resource: feed ripgrep the same content through a temp file so the
+  // regex dialect, --glob, and preview caps are unchanged; only the reported
+  // path is the URL. The file lives for exactly one call.
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-grep-'))
+  const file = join(dir, 'resource.txt')
+  try {
+    writeFileSync(file, resource.content, 'utf8')
+    const run = await runRipgrep(ctx, exec, 'grep', buildGrepCommand({ ...input, path: file }), caps.rawOutputMaxBytes, caps.graceMs, caps.stderrMaxBytes)
+    if (run.noMatches) return []
+    return parseGrepMatches(run.stdout).map(match => ({ path: resource.url, lineNumber: match.lineNumber, line: match.line }))
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+/**
  * Register the `grep` tool and its system-prompt guidance.
  *
  * @param ctx - the plugin context; registrations are effects scoped to it, and
@@ -286,7 +329,7 @@ export function applyGrepTool(ctx: Context, caps: GrepToolCaps): void {
       + 'Use read on a matched file for surrounding context.',
     parameters: {
       pattern: { type: 'string', required: true, description: 'Regular expression to search for (ripgrep syntax).' },
-      path: { type: 'string', description: 'File or directory to search. Defaults to the session workspace; a relative path resolves against it.' },
+      path: { type: 'string', description: 'File, directory, or internal URL (e.g. conflict://3, pr://owner/repo/123/diff) to search. Defaults to the session workspace; a relative path resolves against it.' },
       include: { type: 'string', description: 'One glob filter for which files to search (e.g. "*.ts", "*.{js,jsx}"). Not a list; negation is not supported.' },
     },
     timeoutMs: caps.timeoutMs,
@@ -319,6 +362,20 @@ export function applyGrepTool(ctx: Context, caps: GrepToolCaps): void {
     },
     async execute(args, exec) {
       const input = parseGrepArgs(args)
+      // Internal-URL routing (conflict://, pr:// diff, …): resolve the resource
+      // and grep its content through the same ripgrep pipeline.
+      const iu = ctx.get('internalUrls')
+      if (iu !== undefined && input.path !== undefined && iu.canHandle(input.path)) {
+        const cwd = exec.agent?.session.header.cwd
+        const sessionKey = exec.agent?.session.header.id
+        const resource = await iu.resolve(input.path, {
+          ...cwd !== undefined ? { cwd } : {},
+          signal: exec.signal,
+          ...sessionKey !== undefined ? { sessionKey } : {},
+          pathOnly: true,
+        })
+        return { matches: await grepInternalUrl(ctx, exec, resource, input, caps) }
+      }
       const run = await runRipgrep(ctx, exec, 'grep', buildGrepCommand(input), caps.rawOutputMaxBytes, caps.graceMs, caps.stderrMaxBytes)
       if (run.noMatches) return { matches: [] }
 

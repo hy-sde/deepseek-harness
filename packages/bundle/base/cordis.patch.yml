@@ -229,6 +229,13 @@
       config:
         sampleOverCapGlobResults: false
 
+    # FS-shaped internal URL registry (ctx.internalUrls): resolves conflict://,
+    # pr://, issue:// reads/writes for the read/grep/write tools. Host-plane —
+    # the service crosses sessions; per-session state (conflict history) is
+    # keyed by session inside the service.
+    - id: internal-urls
+      name: '@deepseek-ai/dsh-internal-urls'
+
     # AST structural search/rewrite over the packaged ast-grep binary, mountable
     # anywhere the subprocess + filesystem seams exist. ast_edit always PREVIEWS
     # first and only writes with apply: true, through the filesystem seam

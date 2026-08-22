@@ -53,6 +53,11 @@ export interface FileReadOutcome {
   totalLines: number
   /** Whether selected output hit the byte cap. */
   truncatedByBytes?: true
+  /**
+   * Optional model-facing footer block appended after the file body (e.g. the
+   * conflict-resolution notice produced by scanning this read's lines).
+   */
+  notice?: string
 }
 
 interface WindowAccumulator {
@@ -162,10 +167,11 @@ export function formatReadOutput(displayPath: string, outcome: FileReadOutcome):
   const body = outcome.lines.length > 0
     ? `${outcome.lines.map(line => `${line.number}: ${line.text}`).join('\n')}\n\n${footer}`
     : footer
+  const notice = outcome.notice !== undefined ? `\n${outcome.notice}` : ''
   return `<path>${displayPath}</path>
 <type>file</type>
 <content>
-${body}
+${body}${notice}
 </content>`
 }
 

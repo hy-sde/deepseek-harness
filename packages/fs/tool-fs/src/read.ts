@@ -9,7 +9,9 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ReadResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-internal-urls'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
+import { conflictNoticeForRead, tryReadInternal } from './internal-routing.ts'
 import { resolveRegularReadTarget } from './read-target.ts'
 
 /** Default and maximum number of lines returned by one `read` call (the `readLimit` config). */
@@ -101,6 +103,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
             },
           },
           totalLines: { type: 'integer', required: true },
+          notice: { type: 'string', description: 'Optional model-facing footer appended after the file body (e.g. a conflict-resolution notice).' },
         },
       },
       render: (args, value) => {
@@ -114,6 +117,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
             lines: value.lines,
             totalLines: value.totalLines,
             ...truncatedByBytes ? { truncatedByBytes: true } : {},
+            ...value.notice !== undefined ? { notice: value.notice } : {},
           }),
         }]
       },
@@ -135,6 +139,17 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
     isConcurrencySafe: () => true,
     async execute(args, exec) {
       const input = parseReadArgs(args, caps.limit)
+      // Internal-URL routing (conflict://, pr://, issue://, …) is opt-in via a
+      // mounted `ctx.internalUrls` registry; without one, read stays
+      // filesystem-only.
+      const iu = ctx.get('internalUrls')
+      if (iu !== undefined) {
+        const internal = await tryReadInternal(ctx, iu, exec, input, caps)
+        if (internal !== undefined) {
+          return internal.notice !== undefined ? { ...internal, notice: internal.notice } : internal
+        }
+      }
+
       // One stat: absence observation OR type check + size routing + present version.
       // A concurrent write can only make a later guarded mutation fail stale and require reread.
       const { target, info } = await resolveRegularReadTarget(ctx, exec, input.filePath)
@@ -155,6 +170,18 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         offset: input.offset,
         lines: window.lines,
         totalLines: window.totalLines,
+      }
+      // Conflict surfacing: register any conflict block inside this read's
+      // window with the session history so `write({ path: "conflict://<N>" })`
+      // can resolve it, and append the resolution notice to the model text.
+      if (iu !== undefined) {
+        const notice = conflictNoticeForRead(ctx, iu, exec, target, outcome)
+        if (notice !== undefined) {
+          // Record the present observation too: the read succeeded and the
+          // model now holds a version it can splice against.
+          ctx.emit('fs/observed', target, { kind: 'present', version: info.version }, exec)
+          return { ...outcome, notice }
+        }
       }
       // Record the present observation (a no-op when no policy plugin listens). The
       // read already succeeded; an fs/observed listener is contractually a

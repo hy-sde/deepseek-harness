@@ -13,16 +13,7 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../../vendor/schemastery"
-    },
-    {
-      "path": "../../util/output-retention"
-    },
-    {
       "path": "../../llm/llm"
-    },
-    {
-      "path": "../../core/session"
     },
     {
       "path": "../../core/tools"
@@ -31,19 +22,22 @@
       "path": "../../core/system-prompt"
     },
     {
-      "path": "../../shell/shell"
+      "path": "../fs"
     },
     {
-      "path": "../../spill/spill"
+      "path": "../fs-observation-policy"
     },
     {
-      "path": "../../util/timeout"
+      "path": "../../sandbox/sandbox"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
+      "path": "../../sandbox/sandbox-policy"
     },
     {
-      "path": "../internal-urls"
+      "path": "../../subprocess/subprocess"
+    },
+    {
+      "path": "../../interaction/user-approval"
     }
   ]
 }
