@@ -32,6 +32,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
 | `@deepseek-ai/dsh-tool-debug` | `debug` | `ctx.tools`, `ctx.dap`, `ctx.systemPrompt`, `a session workspace cwd` | `tool/call`, `tool/result`, `the composed debuggee process state via the mounted DAP adapter` | - | debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter. |
+| `@deepseek-ai/dsh-code-runtime-kernels` | `run_kernel_code` | `ctx.tools`, `ctx.systemPrompt`, `python3 and node binaries on PATH (or config pythonPath/nodePath) at call time` | `tool/call`, `kernel subprocess session state (per session id, reset on reset: true)`, `tool/result` | - | run_kernel_code executes model code in a persistent kernel (python3 subprocess or node subprocess, standard library / builtins only) sharing one host driver: per-session id kernel state with reset, wall-clock budgets, SIGINT→SIGTERM→SIGKILL escalation, and hostile-peer parsing. Process confinement, not a security boundary — the same trust as the harness process backends (port_omp.md item 1). |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
@@ -1670,6 +1671,50 @@ Attach a real debugger to a running or launched process through the Debug Adapte
 Source: [`packages/debug/tool-debug/src/index.ts`](../packages/debug/tool-debug/src/index.ts)
 
 debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter.
+
+<a id="deepseek-aidsh-code-runtime-kernels"></a>
+
+## `@deepseek-ai/dsh-code-runtime-kernels`
+
+### `run_kernel_code`
+
+Execute model code in a persistent kernel and return its JSON completion and printed output. `language` picks the runtime: `python` or `typescript`. For `typescript` every cell runs as an async function body, so top-level `await` and `return` work. For `python` a cell runs as a module: top-level `await` works, statements persist into the session namespace, and the LAST expression is the completion value (a top-level `return` is invalid Python). Carry the same non-empty `session` across calls to keep kernel state (variables, imports, working data); omit it for a one-shot run in fresh state. Pass `reset: true` to discard the session's prior kernel state before this run (one reset instead of endless retries after state corruption).
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "language": {
+      "type": "string",
+      "description": "Which runtime executes the code.",
+      "enum": [
+        "python",
+        "typescript"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "description": "The program source. Runs as the body of an async function: top-level `await` and `return` are available; return a JSON value to surface it as the result value."
+    },
+    "session": {
+      "type": "string",
+      "description": "Optional persistent-kernel identity: runs sharing a session id keep kernel state. Omit for one-shot."
+    },
+    "reset": {
+      "type": "boolean",
+      "description": "Discard the session's prior kernel state (variables, imports) before this run. Costs one reset instead of many retries; requires `session` to be meaningful."
+    }
+  },
+  "required": [
+    "language",
+    "code"
+  ]
+}
+```
+
+Source: [`packages/code-runtime/code-runtime-kernels/src/index.ts`](../packages/code-runtime/code-runtime-kernels/src/index.ts)
+
+run_kernel_code executes model code in a persistent kernel (python3 subprocess or node subprocess, standard library / builtins only) sharing one host driver: per-session id kernel state with reset, wall-clock budgets, SIGINT→SIGTERM→SIGKILL escalation, and hostile-peer parsing. Process confinement, not a security boundary — the same trust as the harness process backends (port_omp.md item 1).
 
 <a id="deepseek-aidsh-tool-lsp"></a>
 

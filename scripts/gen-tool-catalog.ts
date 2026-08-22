@@ -52,6 +52,7 @@ import * as ToolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
 import * as ToolAst from '@deepseek-ai/dsh-tool-ast'
 import Memory from '@deepseek-ai/dsh-memory'
 import * as ToolMemory from '@deepseek-ai/dsh-tool-memory'
+import * as KernelTools from '@deepseek-ai/dsh-code-runtime-kernels'
 import TerminalSessionService from '@deepseek-ai/dsh-terminal'
 import * as ToolPty from '@deepseek-ai/dsh-tool-terminal'
 import * as ToolGoal from '@deepseek-ai/dsh-tool-goal'
@@ -458,6 +459,21 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-code-runtime-kernels',
+    dir: 'code-runtime-kernels',
+    source: 'packages/code-runtime/code-runtime-kernels/src/index.ts',
+    requires: ['ctx.tools', 'ctx.systemPrompt', 'python3 and node binaries on PATH (or config pythonPath/nodePath) at call time'],
+    writes: ['tool/call', 'kernel subprocess session state (per session id, reset on reset: true)', 'tool/result'],
+    async mount(ctx) {
+      // Registration only registers the tool schema and the system-prompt
+      // guide; kernels spawn lazily per run through node:child_process, so
+      // nothing executes in the catalog harness.
+      await ctx.plugin(KernelTools)
+    },
+    note:
+      'run_kernel_code executes model code in a persistent kernel (python3 subprocess or node subprocess, standard library / builtins only) sharing one host driver: per-session id kernel state with reset, wall-clock budgets, SIGINT→SIGTERM→SIGKILL escalation, and hostile-peer parsing. Process confinement, not a security boundary — the same trust as the harness process backends (port_omp.md item 1).',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-lsp',
