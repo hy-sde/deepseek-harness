@@ -8,9 +8,8 @@
 |---|---|---|
 | [`code-runtime/`](code-runtime/README.zh.md) | Service Definition 与共享词汇 | `ctx.codeRuntime` |
 | [`code-runtime-worker/`](code-runtime-worker-thread/README.zh.md) | Worker 线程后端（`typescript`） | 注册 `ctx.codeRuntime` |
-| [`code-runtime-python/`](code-runtime-python/README.zh.md) | 持久化 Python 后端（`python`，`persistent: true`） | 注册 `ctx.codeRuntime` |
-| [`code-runtime-nodejs/`](code-runtime-nodejs/README.zh.md) | 持久化 JavaScript 后端（`typescript`，`persistent: true`） | 注册 `ctx.codeRuntime` |
+| [`code-runtime-kernels/`](code-runtime-kernels/README.zh.md) | 面向模型的持久化 Python/JavaScript kernels（`run_kernel_code` 工具） | `ctx.tools` + `ctx.systemPrompt` |
 
-提供方在不改变Consumer的情况下注册该服务。子 README 负责语言、隔离和执行预算细节。
+提供方在不改变Consumer的情况下注册该服务。子 README 负责语言、隔离和执行预算细节。`code-runtime-kernels`（移植自 oh-my-pi——`port_omp.md` 一级第 1 项）不扩展该 seam：它自行 spawn 长寿命 python3/node 子进程 kernel 并暴露一个工具，完全自包含。
 
 子系统参考——运行请求/结果、绑定命名空间、失败分类体系——见 [docs/subsystems/code-runtime.md](../../docs/subsystems/code-runtime.zh.md)。

@@ -38,7 +38,7 @@ import { PYTHON_RUNNER } from './python/runner.ts'
 export const name = 'code-runtime-kernels'
 
 /** Services this plugin requires: the tool registry and the system-prompt builder. */
-export const inject = ['tools', 'systemPrompt'] as const
+export const inject = ['tools', 'systemPrompt']
 
 /**
  * Plugin config: which languages are enabled, and every execution cap
@@ -331,7 +331,7 @@ export class KernelManager {
         PYTHONDONTWRITEBYTECODE: '1',
         DSH_KERNEL_CWD: process.cwd(),
       },
-      prefix: 'dsh-code-runtime-python',
+      prefix: 'dsh-code-runtime-kernels-python',
       idPrefix: 'py-',
       label: 'python kernel',
     }

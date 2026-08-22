@@ -153,6 +153,9 @@ flowchart LR
   svc_fs["ctx.fs<br/>Filesystem provider seam"]
   pkg_fs_local["fs-local"]
   pkg_fs_observation_policy["fs-observation-policy"]
+  pkg_memory["memory"]
+  svc_memory["ctx.memory<br/>Long-horizon project memory"]
+  pkg_tool_memory["tool-memory"]
   pkg_compaction["compaction"]
   svc_compaction["ctx.compaction<br/>Compaction seam"]
   pkg_subagent["subagent"]
@@ -249,6 +252,7 @@ flowchart LR
   pkg_llm_replay --> svc_llm
   pkg_lsp --> svc_lsp
   pkg_lsp_local --> svc_lsp
+  pkg_memory --> svc_memory
   pkg_message_feedback --> svc_messageFeedback
   pkg_modules --> svc_clientModules
   pkg_permission_presets --> svc_permissionPresets
@@ -345,6 +349,7 @@ flowchart LR
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
+  svc_memory --> pkg_tool_memory
   svc_sandbox --> pkg_bash_sandbox
   svc_sandbox --> pkg_terminal_bash
   svc_sandboxPolicy --> pkg_bash_sandbox
@@ -473,6 +478,7 @@ flowchart LR
 | `ctx.permissionPresets` | `core` | [`permission-presets`](../packages/interaction/permission-presets) | - | - | - | User-facing preset table (`workspace-write`/`danger-full-access`) bundling the sandbox-mode and approval-policy knobs; a switch writes one `permission/preset` event through to both knob events. |
 | `ctx.codeRuntime` | `seam` | [`code-runtime`](../packages/code-runtime/code-runtime) | `code-runtime-worker` | [`tools`](../packages/core/tools) | - | Runs one model-written program against host-provided async bindings; backends differ by substrate and language (the tool registry consumes it for Code Mode). |
 | `ctx.fs` | `seam` | [`fs`](../packages/fs/fs) | [`fs-local`](../packages/fs/fs-local), [`fs-sandbox`](../packages/fs/fs-sandbox), [`fs-e2b`](../packages/e2b/fs-e2b) | [`tool-fs`](../packages/fs/tool-fs) | [`fs-observation-policy`](../packages/fs/fs-observation-policy) | tool-fs executes read/write/edit through ctx.fs; fs-sandbox fences mutations by the shared sandbox mode; fs-observation-policy contributes observed-state checks through the fs/* event gate. |
+| `ctx.memory` | `core` | [`memory`](../packages/memory/memory) | - | [`tool-memory`](../packages/memory/tool-memory) | - | Host-owned durable store of project memories (decisions, preferences, facts, lessons) keyed by project; the ported retain/recall/reflect/memory_edit/learn tools consume it, and the registry seam stays open for future providers (port_omp.md item 4). |
 | `ctx.compaction` | `seam` | [`compaction`](../packages/compaction/compaction) | [`compaction-basic`](../packages/compaction/compaction-basic) | [`compaction-basic`](../packages/compaction/compaction-basic) | - | The basic backend consumes post-step pressure and request-error recovery events; there is no model-facing compact tool. |
 | `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-codex`](../packages/subagent/subagent-codex), [`subagent-claude-code`](../packages/subagent/subagent-claude-code), [`subagent-dsh-sdk`](../packages/subagent/subagent-dsh-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/workflow/tool-ralph) | - | Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route. |
 | `ctx.agentTeams` | `core` | `agent-team` | - | `tool-agent-team` | - | Owns the implicit-root roster, durable peer mailbox, shared task DAG, and continuable-child lifecycle; tool-agent-team contributes the scoped model policy and controls. |

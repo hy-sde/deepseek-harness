@@ -80,6 +80,10 @@ flowchart LR
   cfg --> plugin_dsh_base_tool_fs
   plugin_dsh_base_tool_fs_search["tool-fs-search<br/>@deepseek-ai/dsh-tool-fs-search"]
   cfg --> plugin_dsh_base_tool_fs_search
+  plugin_dsh_base_internal_urls["internal-urls<br/>@deepseek-ai/dsh-internal-urls"]
+  cfg --> plugin_dsh_base_internal_urls
+  plugin_dsh_base_memory["memory<br/>@deepseek-ai/dsh-memory"]
+  cfg --> plugin_dsh_base_memory
   plugin_dsh_base_tool_ast["tool-ast<br/>@deepseek-ai/dsh-tool-ast"]
   cfg --> plugin_dsh_base_tool_ast
   plugin_dsh_base_agent_instructions["agent-instructions<br/>@deepseek-ai/dsh-agent-instructions"]
@@ -148,6 +152,8 @@ flowchart LR
   cfg --> plugin_dsh_base_tool_ralph
   plugin_dsh_base_repeat_tool_reminder["repeat-tool-reminder<br/>@deepseek-ai/dsh-repeat-tool-reminder"]
   cfg --> plugin_dsh_base_repeat_tool_reminder
+  plugin_dsh_base_stream_rules["stream-rules<br/>@deepseek-ai/dsh-stream-rules"]
+  cfg --> plugin_dsh_base_stream_rules
   plugin_dsh_base_web["web<br/>@deepseek-ai/dsh-web"]
   cfg --> plugin_dsh_base_web
   plugin_dsh_base_web_search_public["web-search-public<br/>@deepseek-ai/dsh-web-search-public"]
@@ -204,6 +210,8 @@ flowchart LR
 | `fs-observation-policy` | `@deepseek-ai/dsh-fs-observation-policy` |
 | `tool-fs` | `@deepseek-ai/dsh-tool-fs` |
 | `tool-fs-search` | `@deepseek-ai/dsh-tool-fs-search` |
+| `internal-urls` | `@deepseek-ai/dsh-internal-urls` |
+| `memory` | `@deepseek-ai/dsh-memory` |
 | `tool-ast` | `@deepseek-ai/dsh-tool-ast` |
 | `agent-instructions` | `@deepseek-ai/dsh-agent-instructions` |
 | `skill` | `@deepseek-ai/dsh-skill` |
@@ -238,6 +246,7 @@ flowchart LR
 | `tool-goal` | `@deepseek-ai/dsh-tool-goal` |
 | `tool-ralph` | `@deepseek-ai/dsh-tool-ralph` |
 | `repeat-tool-reminder` | `@deepseek-ai/dsh-repeat-tool-reminder` |
+| `stream-rules` | `@deepseek-ai/dsh-stream-rules` |
 | `web` | `@deepseek-ai/dsh-web` |
 | `web-search-public` | `@deepseek-ai/dsh-web-search-public` |
 | `tool-web` | `@deepseek-ai/dsh-tool-web` |

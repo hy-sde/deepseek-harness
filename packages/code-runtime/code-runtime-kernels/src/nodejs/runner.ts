@@ -20,7 +20,7 @@
  *    scoped to that cell (async-function body), exactly like a Node REPL
  *    line that uses top-level `await` — use `state` or the global object to
  *    persist values.
- * @module @deepseek-ai/dsh-code-runtime-nodejs/src/runner
+ * @module @deepseek-ai/dsh-code-runtime-kernels/src/nodejs/runner
  */
 
 /** Host -> kernel messages this runner honors (see protocol.ts for the full contract). */

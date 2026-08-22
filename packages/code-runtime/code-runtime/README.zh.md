@@ -36,6 +36,6 @@ binding-global 与 error-class 名称是**语言可移植**的：必须匹配标
 ## 已知限制与暂缓事项
 
 - **`run()` 把日志收集到已 resolve 的结果**：`logs` 只在 `CodeRunResult` resolve 后可得；seam 不提供正在运行程序输出的流式日志或进度接口。持久内核后端可能发出比结果能承载的更细粒度 frame，Consumer 仍只渲染外层 `logs`/`value`/`error`。
-- **持久化是后端可选项，并非普遍能力**：worker-thread 后端保持一次性并忽略 `sessionId`/`reset`；持久化的 `process` 后端兑现它们——Python 用 `@deepseek-ai/dsh-code-runtime-python`，JavaScript 用 `@deepseek-ai/dsh-code-runtime-nodejs`。每个新增持久化的后端都自带其日志方案，详见 [Code Mode Agent Note](../../../.agents/notes/implemented/feature/2026-06-15-code-mode.zh.md)。
+- **持久化是后端可选项，并非普遍能力**：worker-thread 后端保持一次性并忽略 `sessionId`/`reset`；持久化 kernel 是移植的 [`@deepseek-ai/dsh-code-runtime-kernels`](../code-runtime-kernels/README.zh.md) 包，它按会话自持子进程 kernel 而不挂载本 seam。每个新增持久化的后端都自带其日志方案，详见 [Code Mode Agent Note](../../../.agents/notes/implemented/feature/2026-06-15-code-mode.zh.md)。
 - **目前只提供 worker 线程与 Python 后端**：`'container'` 是已经声明但没有实现的已知 `isolation` 值；强安全边界需要等待容器后端。
 - **中间绑定值没有字节上限**：实现仍受 structured-clone 成本与进程内存约束，而提供方或执行器可能已经应用自己的获取上限。

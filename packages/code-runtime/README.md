@@ -8,9 +8,8 @@ The code-execution capability seam (see [capability seams](../../.agents/notes/i
 |---|---|---|
 | [`code-runtime/`](code-runtime/README.md) | Service Definition and shared vocabulary | `ctx.codeRuntime` |
 | [`code-runtime-worker/`](code-runtime-worker-thread/README.md) | Worker-thread backend (`typescript`) | registers `ctx.codeRuntime` |
-| [`code-runtime-python/`](code-runtime-python/README.md) | Persistent Python backend (`python`, `persistent: true`) | registers `ctx.codeRuntime` |
-| [`code-runtime-nodejs/`](code-runtime-nodejs/README.md) | Persistent JavaScript backend (`typescript`, `persistent: true`) | registers `ctx.codeRuntime` |
+| [`code-runtime-kernels/`](code-runtime-kernels/README.md) | Model-facing persistent Python/JavaScript kernels (`run_kernel_code` tool) | `ctx.tools` + `ctx.systemPrompt` |
 
-Providers register the service without changing its Consumer. The child READMEs own language, isolation, and execution-budget details.
+Providers register the service without changing its Consumer. The child READMEs own language, isolation, and execution-budget details. `code-runtime-kernels` (ported from oh-my-pi — `port_omp.md` tier-1 item 1) does not extend the seam: it spawns its own long-lived python3/node subprocess kernels and exposes one tool, self-contained.
 
 The subsystem reference — run requests/results, binding namespaces, the failure taxonomy — is [docs/subsystems/code-runtime.md](../../docs/subsystems/code-runtime.md).

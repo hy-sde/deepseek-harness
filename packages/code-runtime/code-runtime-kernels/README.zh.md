@@ -69,17 +69,49 @@
 - **持久化**。Python：模块级变量与循环状态跨 cell 保留。JavaScript：`state`（长寿命共享对象）与 sloppy 全局赋值跨 cell 保留；cell 顶层的 `const`/`let`/`function`/`class` 是每 cell 作用域（async 函数体），持久定义请放 `state`。cell 以 `return <json>` 携带完成值，或以无 `return` 结束为无值运行；非 lossless JSON 完成值（环、`BigInt`、集合）判为 `'invalid-output'`。
 - **预算与失败种类**。墙钟超时 → `'timeout'`；取消或被迫终止 → `'abort'`；抛异常 → `'exception'`；非 JSON 完成 → `'invalid-output'`；合并输出溢出 → `'output-limit'`；kernel 死亡 → 会话注册表替换 kernel 并重试一次。全部是结果字段，绝不会 reject 工具调用。
 
-## 模型体验
-
-系统提示引导模型：计算且含中间结果时优先 `run_kernel_code` 而非读写草稿文件；一次性计算省略 `session`；相关调用复用同一 `session` id；会话状态损坏或不需要时传 `reset: true`。终端卡片展示每次调用的语言 + 会话，以及完成后的捕获输出与失败行。
-
-## 已知限制
-
-- **同步忙循环抗拒 SIGINT**。`while (true) {}` / `while True:` 永不交还事件循环，中断处理器无法运行，实际由升级梯（SIGTERM 再 SIGKILL）终止——代价是会话状态与 kernel。会让出事件循环的 cell（对定时器/IO/工具调用的 `await`）可被干净取消，kernel 存活（墙钟/中止测试即覆盖这一分界）。
-- **状态可能被污染**。错误程序随时可能弄坏会话状态；`reset: true` 是设计的恢复原语。
-- **无安全边界**。kernel 代码拥有与内置 process 后端相同的 bash 级信任。
-- **空闲 kernel 占用进程**。默认 `sessionIdleMs: 0` 下，会话 kernel 会存活到 reset 或插件卸载；长任务应尽快续跑或落盘。
-
 ## 开发
 
-`pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、`pnpm build`（tsc → `dist/` 下的 ESM）、`pnpm pack` 冒烟。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码，每次 spawn 落地为临时 `.py`）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
+`pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、根 `tsdown` 导出（lib/）。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码，每次 spawn 落地为临时 `.py`）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
+
+## 模型体验
+
+### 系统提示
+
+#### 模型所见
+
+本插件注册一个系统提示区块 `tool:code-runtime-kernels`（order 106）：计算且含中间结果时优先 `run_kernel_code` 而非读写草稿文件；复用同一 `session` id 携带状态；一次性计算省略 `session`；会话状态损坏或不需要时传 `reset: true`。
+
+##### run_kernel_code 指南
+
+```markdown
+Prefer run_kernel_code to reading/writing scratch files when the work is computation with intermediate results — sessions keep kernel state (variables, imports, working data) across calls. Omit `session` for one-off computations; give related calls the same `session` id to carry state forward, and pass `reset: true` when the session's state is corrupted or unwanted. Python programs persist module-level variables; JavaScript programs persist via `state` and top-level assignments. A session reaps idle kernels after the configured timeout, so long-lived work should resume promptly or persist to disk.
+```
+
+#### Token 影响
+
+插件激活期间每次请求的固定引导成本。
+
+#### KV Cache 影响
+
+插件作用域与引导文本不变时前缀稳定；激活或销毁可能使本区块的复用失效。
+
+### 工具 schema
+
+#### 模型所见
+
+生成的 [`run_kernel_code` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-code-runtime-kernels)。`language` 与 `code` 必填；`session`（非空 id）跨调用携带状态；`reset` 在本次运行前丢弃该会话的旧 kernel 状态。
+
+#### Token 影响
+
+启用期间每次请求的固定 schema 成本；`toolTimeoutMs` 预算不会发送给模型。
+
+#### KV Cache 影响
+
+可见工具定义与顺序不变时前缀稳定；注册生命周期变化可能使自首个变更 schema token 起的复用失效。
+
+## 已知限制与待办
+
+- **繁忙的同步 cell 对 SIGINT 无响应。** `while (true) {}`/`while True:` 循环永不把控制权交还事件循环，因此中断处理器无法运行，真正停住它的是升级阶梯（SIGTERM 再 SIGKILL）——代价是 kernel 状态，因而也是会话。能让出控制权的 cell（对定时器／I/O／工具调用的异步 `await`）可干净取消，kernel 得以存活（墙钟/超时测试覆盖了这一分化）。
+- **状态可能被污染。** 有缺陷的程序随时可能破坏会话状态；`reset: true` 是预期的恢复原语。
+- **不是安全边界。** kernel 代码拥有与 bash 同等的信任，与该 harness 自身的进程后端一致。
+- **空闲 kernel 占用一个进程。** 在 `sessionIdleMs: 0`（默认）下，会话 kernel 会一直存活到 reset 或插件销毁，因此长任务应尽快续跑或落盘。

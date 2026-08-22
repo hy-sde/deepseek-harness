@@ -69,17 +69,49 @@ It resolves the seam's result envelope — `value` (JSON completion), `logs`, `e
 - **Persistence.** Python: module-level variables and loop state survive across cells. JavaScript: `state` (a long-lived shared object) and sloppy-mode global assignments survive; `const`/`let`/`function`/`class` at cell top level are per-cell (async body), so persistent definitions go on `state`. A cell completes `return <json>` for a completion value, or with no `return` for a no-value run; non-lossless completions (cycles, `BigInt`, sets) are `'invalid-output'`.
 - **Budgets and failure kinds.** Wall-clock expiry → `'timeout'`; cancellation or a kernel that had to die → `'abort'`; thrown exceptions → `'exception'`; non-JSON completions → `'invalid-output'`; combined output overflow → `'output-limit'`; kernel death → the session registry replaces the kernel and retries once. All are result FIELDS, never rejections of the tool.
 
-## Model experience
+## Development
 
-The system-prompt guide tells the model to prefer `run_kernel_code` over scratch files for computation with intermediate results, to omit `session` for one-offs, to reuse a `session` id for related calls, and to pass `reset: true` when a session's state is corrupted or unwanted. The terminal card presentation shows language + session on each call and the captured output + failure line on completion.
+`pnpm check` (tsc), `pnpm test` (vitest; real `python3`/`node` subprocesses), and the root `tsdown` export (lib/). Layout: shared host driver in [`src/core/`](./src/core/) (protocol, kernel host, session registry, ledger), languages in [`src/python/runner.ts`](./src/python/runner.ts) (embedded source, staged per spawn) and [`src/nodejs/runner.ts`](./src/nodejs/runner.ts) (compiled file, spawned with `node --no-warnings`), the plugin/tool in [`src/index.ts`](./src/index.ts). Tests: [`tests/kernels.spec.ts`](./tests/kernels.spec.ts) drives both kernels through `KernelManager`; [`tests/tool.spec.ts`](./tests/tool.spec.ts) mounts the plugin on a real Cordis context and executes `run_kernel_code` through `ctx.tools.execute`.
 
-## Known limitations
+## Model Experience
+
+### System prompt
+
+#### What the model sees
+
+One system-prompt section registered by this plugin — `tool:code-runtime-kernels` (order 106) — positions the tool: prefer `run_kernel_code` over scratch files for computation with intermediate results, reuse a `session` id for related calls, omit `session` for one-offs, and pass `reset: true` when a session's state is corrupted or unwanted.
+
+##### run_kernel_code guidance
+
+```markdown
+Prefer run_kernel_code to reading/writing scratch files when the work is computation with intermediate results — sessions keep kernel state (variables, imports, working data) across calls. Omit `session` for one-off computations; give related calls the same `session` id to carry state forward, and pass `reset: true` when the session's state is corrupted or unwanted. Python programs persist module-level variables; JavaScript programs persist via `state` and top-level assignments. A session reaps idle kernels after the configured timeout, so long-lived work should resume promptly or persist to disk.
+```
+
+#### Token effect
+
+Fixed guidance cost per request while the plugin is active.
+
+#### KV Cache effect
+
+Prefix-stable while the plugin scope and guidance text are unchanged; activation or disposal may invalidate reuse from this section.
+
+### Tool schemas
+
+#### What the model sees
+
+The generated [`run_kernel_code` schema](../../../docs/tool-catalog.md#deepseek-aidsh-code-runtime-kernels). `language` and `code` are required; `session` (non-empty id) carries state across calls; `reset` discards the session's prior kernel state before the run.
+
+#### Token effect
+
+Fixed schema cost on every request while enabled; the `toolTimeoutMs` budget is never sent to the model.
+
+#### KV Cache effect
+
+Prefix-stable while the visible tool definition and order are unchanged; registration lifecycle may invalidate reuse from the first changed schema token.
+
+## Known Limitations and Deferred Work
 
 - **A busy synchronous cell resists SIGINT.** A `while (true) {}`/`while True:` loop never yields to the event loop, so the interrupt handler cannot run and the escalation ladder (SIGTERM then SIGKILL) is what actually stops it — costing the kernel's state, hence the session. Cells that yield (async `await` on timers/I/O/tool calls) cancel cleanly and the kernel survives (the wall-clock/timeout tests cover this split).
 - **State can be poisoned.** A buggy program can corrupt the session's state at any time; `reset: true` is the intended recovery primitive.
 - **No security boundary.** Kernel code has bash-equivalent trust, matching the harness's own process backends.
 - **Idle kernels hold a process.** With `sessionIdleMs: 0` (default), session kernels stay alive until reset or plugin teardown, so long-lived work should resume promptly or persist to disk.
-
-## Development
-
-`pnpm check` (tsc), `pnpm test` (vitest; real `python3`/`node` subprocesses), `pnpm build` (tsc → ESModules under `dist/`), `pnpm pack` smoke. Layout: shared host driver in [`src/core/`](./src/core/) (protocol, kernel host, session registry, ledger), languages in [`src/python/runner.ts`](./src/python/runner.ts) (embedded source, staged per spawn) and [`src/nodejs/runner.ts`](./src/nodejs/runner.ts) (compiled file, spawned with `node --no-warnings`), the plugin/tool in [`src/index.ts`](./src/index.ts). Tests: [`tests/kernels.spec.ts`](./tests/kernels.spec.ts) drives both kernels through `KernelManager`; [`tests/tool.spec.ts`](./tests/tool.spec.ts) mounts the plugin on a real Cordis context and executes `run_kernel_code` through `ctx.tools.execute`.

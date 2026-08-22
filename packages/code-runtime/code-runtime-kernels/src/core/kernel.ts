@@ -107,7 +107,7 @@ export function nodejsKernelProfile(command: string): KernelRuntimeProfile {
     command,
     argvPrefix: ['--no-warnings'],
     runnerPath: RUNNER_PATH,
-    prefix: 'dsh-code-runtime-nodejs',
+    prefix: 'dsh-code-runtime-kernels-nodejs',
     idPrefix: 'js-',
     label: 'nodejs kernel',
   }

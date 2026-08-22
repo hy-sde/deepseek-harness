@@ -470,6 +470,15 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'tool-fs executes read/write/edit through ctx.fs; fs-sandbox fences mutations by the shared sandbox mode; fs-observation-policy contributes observed-state checks through the fs/* event gate.',
   },
   {
+    key: 'memory',
+    pkg: 'memory',
+    title: 'Long-horizon project memory',
+    mode: 'core',
+    implementations: [],
+    consumers: ['tool-memory'],
+    note: 'Host-owned durable store of project memories (decisions, preferences, facts, lessons) keyed by project; the ported retain/recall/reflect/memory_edit/learn tools consume it, and the registry seam stays open for future providers (port_omp.md item 4).',
+  },
+  {
     key: 'compaction',
     pkg: 'compaction',
     title: 'Compaction seam',
