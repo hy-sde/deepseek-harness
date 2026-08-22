@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/code-runtime/code-runtime-nodejs/README.md
 README.md: cad9460c70d6d10737c109ee89a17a90b390aade
-README.zh.md: 31988892029f9c62c10a6b1cc27821f45af5c4a4
+README.zh.md: 9ef7e4c520d2c5779b00a2e16cae5015fb2a2e28

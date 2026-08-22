@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/dap.md
 dap.md: c6abeb4610234126e739309999173058b0ab3dd5
-dap.zh.md: 2b773922f60cbbed6c6f15ac92bb049768b31e76
+dap.zh.md: e402fba5045508de9bca692ea2f04f2b980c49a9

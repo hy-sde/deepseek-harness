@@ -1,5 +1,7 @@
 # stream-rules — time-traveling stream rules
 
+English | [中文](README.zh.md)
+
 A behavioral guard plugin for the harness: project rules stay dormant until a
 regex matches the **live token stream**, then the guard aborts the request,
 injects the rule as a system reminder, and retries from the same point. This is

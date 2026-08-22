@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-DeepSeek Harness [代码执行 seam](../code-runtime/README.md) 的一个持久化 Python 后端：`ctx.codeRuntime`，`language: 'python'`、`isolation: 'process'`、**`persistent: true`**。它是让 seam 的 `sessionId`/`reset` 字段与 `executionCount` 变为现实的后端。
+DeepSeek Harness [代码执行 seam](../code-runtime/README.zh.md) 的一个持久化 Python 后端：`ctx.codeRuntime`，`language: 'python'`、`isolation: 'process'`、**`persistent: true`**。它是让 seam 的 `sessionId`/`reset` 字段与 `executionCount` 变为现实的后端。
 
 每个会话语义由一条常驻的 `python3` 子进程运行[内嵌、自包含的内核](./src/python-runner.ts)（仅标准库——无需虚拟环境或额外依赖）。内核保有一个持久的命名空间与一个 asyncio 事件循环，因此一个程序中赋的值会在下一个程序中保留，且每个 cell 都支持顶层 `await`。工具绑定（`tools.*`）经 NDJSON 线路桥接，与 worker-thread 后端的传输语义一致：程序是 hostile peer，每条入站 frame 都被重新校验，且只做自有属性查找，防止伪造的成员名沿原型链访问到未声明的可调用对象。
 

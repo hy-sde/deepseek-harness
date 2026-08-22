@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-DeepSeek Harness [代码执行 seam](../code-runtime/README.md) 的一个持久化 JavaScript 后端：`ctx.codeRuntime`，`language: 'typescript'`、`isolation: 'process'`、**`persistent: true`**。它是让 seam 的 `sessionId`/`reset` 字段与 `executionCount` 对 JavaScript 程序变为现实的后端。
+DeepSeek Harness [代码执行 seam](../code-runtime/README.zh.md) 的一个持久化 JavaScript 后端：`ctx.codeRuntime`，`language: 'typescript'`、`isolation: 'process'`、**`persistent: true`**。它是让 seam 的 `sessionId`/`reset` 字段与 `executionCount` 对 JavaScript 程序变为现实的后端。
 
 每个会话语义由一条常驻的 `node` 子进程运行[自包含内核](./src/runner.ts)（仅 Node 内置模块——无需任何依赖；构建产物中内核位于 `lib/runner.cjs`）。内核保有一个持久的 `state` 对象与进程全局对象，因此一个程序中的值会在下一个程序中保留；每个 cell 以异步函数体运行，顶层 `await` 与 `return` 与 worker-thread 后端如出一辙。工具绑定（`tools.*`）经 NDJSON 线路桥接：程序是 hostile peer，每条入站 frame 都被重新校验，且只做自有属性查找，防止伪造的成员名沿原型链访问未声明的可调用对象。线路契约与 Python 后端逐字节同构，两端宿主驱动保持对称。
 

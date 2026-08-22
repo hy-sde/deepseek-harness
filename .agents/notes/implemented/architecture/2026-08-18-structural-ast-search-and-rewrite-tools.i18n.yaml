@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-18-structural-ast-search-and-rewrite-tools.md
 2026-08-18-structural-ast-search-and-rewrite-tools.md: 57481f378aa232b8b4cd58331409e1e0585e0974
-2026-08-18-structural-ast-search-and-rewrite-tools.zh.md: e35d2db6f36108506b659dad59e5b89f9b934362
+2026-08-18-structural-ast-search-and-rewrite-tools.zh.md: 07f5a0a84e049b60035e49de8c5dc4c76a51effb

@@ -10,4 +10,4 @@
 dsh web --patch examples/logseq/cordis.yml
 ```
 
-工具完全通过 JSON 模式下的 `logseq` CLI（`logseq <args> -o json`）访问 graph，因此二进制必须位于 `PATH` 上。日记工具会先针对 graph 解析提到的每个实体，并链接现有页面或把该名称记录为待创建页面；两个工具都保持 `page`/`graph` 可覆盖，并跳过已存在于当天块下的行。面向用户的约定详见 [`examples/logseq/README.md`](../../../examples/logseq/README.md)。
+工具完全通过 JSON 模式下的 `logseq` CLI（`logseq <args> -o json`）访问 graph，因此二进制必须位于 `PATH` 上。日记工具会先针对 graph 解析提到的每个实体，并链接现有页面或把该名称记录为待创建页面；两个工具都保持 `page`/`graph` 可覆盖，并跳过已存在于当天块下的行。面向用户的约定详见 [`examples/logseq/README.md`](../../../examples/logseq/README.zh.md)。

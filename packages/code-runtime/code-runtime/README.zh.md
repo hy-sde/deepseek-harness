@@ -4,7 +4,7 @@
 
 **`CodeRuntime`**（`ctx.codeRuntime`）定义代码运行时做什么，即针对宿主提供的一组异步绑定运行一段模型编写的程序，并报告 `{ value, logs, error? }`，而不规定如何实现。
 
-此包承担该能力的 Service Definition 角色（以 bash 三包结构为模板，参见[能力 seam](../../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md)）：提供方通过继承 `CodeRuntime` 并注册服务接入；Consumer 是工具注册表的 Code Mode，它生成面向模型的 SDK，并桥接工具分发。这两项职责均由 [Code Mode Agent Note](../../../.agents/notes/implemented/feature/2026-06-15-code-mode.md) 规定，首个提供方是 Node worker 线程后端。运行时不了解工具或会话：调用方只向它提供具名异步函数与程序字符串；所有与工具有关的内容都留在 Consumer。
+此包承担该能力的 Service Definition 角色（以 bash 三包结构为模板，参见[能力 seam](../../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md)）：提供方通过继承 `CodeRuntime` 并注册服务接入；Consumer 是工具注册表的 Code Mode，它生成面向模型的 SDK，并桥接工具分发。这两项职责均由 [Code Mode Agent Note](../../../.agents/notes/implemented/feature/2026-06-15-code-mode.zh.md) 规定，首个提供方是 Node worker 线程后端。运行时不了解工具或会话：调用方只向它提供具名异步函数与程序字符串；所有与工具有关的内容都留在 Consumer。
 
 ## 服务 API（`ctx.codeRuntime`）
 
@@ -36,6 +36,6 @@ binding-global 与 error-class 名称是**语言可移植**的：必须匹配标
 ## 已知限制与暂缓事项
 
 - **`run()` 把日志收集到已 resolve 的结果**：`logs` 只在 `CodeRunResult` resolve 后可得；seam 不提供正在运行程序输出的流式日志或进度接口。持久内核后端可能发出比结果能承载的更细粒度 frame，Consumer 仍只渲染外层 `logs`/`value`/`error`。
-- **持久化是后端可选项，并非普遍能力**：worker-thread 后端保持一次性并忽略 `sessionId`/`reset`；持久化的 `process` 后端兑现它们——Python 用 `@deepseek-ai/dsh-code-runtime-python`，JavaScript 用 `@deepseek-ai/dsh-code-runtime-nodejs`。每个新增持久化的后端都自带其日志方案，详见 [Code Mode Agent Note](../../../.agents/notes/implemented/feature/2026-06-15-code-mode.md)。
+- **持久化是后端可选项，并非普遍能力**：worker-thread 后端保持一次性并忽略 `sessionId`/`reset`；持久化的 `process` 后端兑现它们——Python 用 `@deepseek-ai/dsh-code-runtime-python`，JavaScript 用 `@deepseek-ai/dsh-code-runtime-nodejs`。每个新增持久化的后端都自带其日志方案，详见 [Code Mode Agent Note](../../../.agents/notes/implemented/feature/2026-06-15-code-mode.zh.md)。
 - **目前只提供 worker 线程与 Python 后端**：`'container'` 是已经声明但没有实现的已知 `isolation` 值；强安全边界需要等待容器后端。
 - **中间绑定值没有字节上限**：实现仍受 structured-clone 成本与进程内存约束，而提供方或执行器可能已经应用自己的获取上限。

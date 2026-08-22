@@ -14,7 +14,7 @@ Status: implemented
 - 彻底删除 `packages/fs/tool-str-replace-editor` 与 `str_replace_editor` schema：包目录、bundle 行（base 与 web-app）、workspace 依赖、`tsconfig.host.json` 项目引用、benchmark／smoke 脚本特例、生成的 tool/config 目录及其中文镜像，以及把独立编辑器描述为随附能力的文档。
 - 完全不随附字符串替换编辑器。`tool-fs` + `tool-edit` 提供的 read、write 与 `edit` 是仅有的面向模型变更表面。
 
-本决策取代更早的 [单一编辑器决策](2026-08-10-default-presets-single-editor.md)，后者曾让 `minimal` 在持久 `bash` 之外使用 `str_replace_editor`；由于该插件已被删除而非仅仅未挂载，那条例外不再适用。
+本决策取代更早的 [单一编辑器决策](2026-08-10-default-presets-single-editor.zh.md)，后者曾让 `minimal` 在持久 `bash` 之外使用 `str_replace_editor`；由于该插件已被删除而非仅仅未挂载，那条例外不再适用。
 
 ## 备选方案
 
@@ -28,4 +28,4 @@ Status: implemented
 - `examples/jsonrpc-agent/minimal.cordis.yml`（独立的 SDK 孪生）使用相同的 rich 编辑器行；Python SDK model-visible 快照与 SDK smoke 的模型跟进行现在驱动 `write` 而非 `str_replace_editor` 的 `create`。
 - tool-catalog、config-catalog、module-graph、event-producer-consumer 与 subsystem 页面不再以任何语言列出 `str_replace_editor`。
 - oh-my-pi edit-benchmark 驱动已移出 harness：独立字符串替换编辑器删除后，`scripts/run-edit-benchmark.ts` 与 `scripts/summarize-edit-benchmark.ts` 被删除（benchmark 现已位于独立的插件仓库），仓库内无任何引用。
-- 预设组合测试把 minimal 名册固定为 `bash`、`edit`、`read`、`read_image`、`write`，并断言不出现 search/ask/todo 行；web minimal 快照与预设创作 golden 均已同步更新。2026-08-10 的 [单一编辑器笔记](2026-08-10-default-presets-single-editor.md) 保留其论据，但其 minimal 例外被本笔记取代；两者互相交叉链接。
+- 预设组合测试把 minimal 名册固定为 `bash`、`edit`、`read`、`read_image`、`write`，并断言不出现 search/ask/todo 行；web minimal 快照与预设创作 golden 均已同步更新。2026-08-10 的 [单一编辑器笔记](2026-08-10-default-presets-single-editor.zh.md) 保留其论据，但其 minimal 例外被本笔记取代；两者互相交叉链接。

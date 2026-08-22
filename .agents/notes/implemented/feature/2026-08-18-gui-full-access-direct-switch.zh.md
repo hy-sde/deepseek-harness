@@ -4,7 +4,7 @@ Status: implemented
 
 [English](2026-08-18-gui-full-access-direct-switch.md) | 中文
 
-Supersedes [2026-07-31-gui-full-access-confirmation.md](2026-07-31-gui-full-access-confirmation.md) —— 它所引入的风险门禁已被移除。
+Supersedes [2026-07-31-gui-full-access-confirmation.md](2026-07-31-gui-full-access-confirmation.zh.md) —— 它所引入的风险门禁已被移除。
 
 ## 问题
 

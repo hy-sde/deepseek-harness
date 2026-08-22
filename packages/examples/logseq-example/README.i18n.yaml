@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/examples/logseq-example/README.md
 README.md: 7e468ba440d6120cff53a09115cda757a047fa62
-README.zh.md: 635977eb6782c94327db29d1ccfcb6c76a3568e0
+README.zh.md: d95e9b953ef6003fe42bcc49bca45250b0a6df84

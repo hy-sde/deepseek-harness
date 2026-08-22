@@ -35,7 +35,7 @@ seam 以 `--json=stream` 输出启动 `ast-grep` CLI；包负责 argv 构造、J
 
 ## 变更保留在文件系统 seam 内
 
-`ast_edit` 的应用模式不会让 ast-grep 自行写文件。它按字节偏移降序应用重写变更块来重建新文件文本，再通过 `ctx.fs` 变更：先发出 `fs/observed` 再发出 `fs/edit-intent`（观察水位线，因此“未观察即写”的失败不可能发生），并在部署的沙盒策略下以 `replaceIfVersion` 写入。引擎的 `-U/--update-all` 标志从不使用（它也与会 `--json` 冲突）。这沿用了[文件系统能力 seam](2026-06-17-filesystem-capability-seam.md) 的决策：结构化编辑继承与普通编辑完全相同的观察／版本／沙盒保证。
+`ast_edit` 的应用模式不会让 ast-grep 自行写文件。它按字节偏移降序应用重写变更块来重建新文件文本，再通过 `ctx.fs` 变更：先发出 `fs/observed` 再发出 `fs/edit-intent`（观察水位线，因此“未观察即写”的失败不可能发生），并在部署的沙盒策略下以 `replaceIfVersion` 写入。引擎的 `-U/--update-all` 标志从不使用（它也与会 `--json` 冲突）。这沿用了[文件系统能力 seam](2026-06-17-filesystem-capability-seam.zh.md) 的决策：结构化编辑继承与普通编辑完全相同的观察／版本／沙盒保证。
 
 ## 配置与上限
 

@@ -86,7 +86,7 @@ Use ast_edit for STRUCTURAL rewrite: replace every node matching an AST pattern 
 
 #### 模型看到的内容
 
-模型会看到生成的 [`ast_grep` 与 `ast_edit` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-ast)。`ast_grep` 需要 `pat`；`ast_edit` 需要 `pat` 与 `rewrite`，并暴露先预览的 `apply` 开关。
+模型会看到生成的 [`ast_grep` 与 `ast_edit` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-ast)。`ast_grep` 需要 `pat`；`ast_edit` 需要 `pat` 与 `rewrite`，并暴露先预览的 `apply` 开关。
 
 #### Token 影响
 

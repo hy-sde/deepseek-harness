@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-一个无需凭据的 `WebSearchProvider`，用于 harness [web 能力 seam](../web/README.md)（`ctx.web`）。无需 API 密钥或环境变量，它将一个查询并发散开到五个公共搜索引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。这是对 oh-my-pi `searchPublicWeb` 聚合的忠实移植。
+一个无需凭据的 `WebSearchProvider`，用于 harness [web 能力 seam](../web/README.zh.md)（`ctx.web`）。无需 API 密钥或环境变量，它将一个查询并发散开到五个公共搜索引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。这是对 oh-my-pi `searchPublicWeb` 聚合的忠实移植。
 
 这是一个**实现**包：它向 `ctx.web` 注册提供方，不拥有 `ctx.web` 键，也不注册面向模型的工具（后者属于 `@deepseek-ai/dsh-tool-web`）。它是函数／命名空间插件（`inject: ['web']`），负责注册后端，而非默认导出服务。
 
@@ -33,7 +33,7 @@
 
 ## 模型体验
 
-通过 [`dsh-tool-web`](../tool-web/README.md) 间接影响；该工具保留此提供方经共识合并、`maxResults` 限制的 URL、标题、摘要与发布日期，或将聚合错误 `all public search engines failed: ...` 置于消费方的错误包装层内；生成答案与提供方私有字段不进入上下文。
+通过 [`dsh-tool-web`](../tool-web/README.zh.md) 间接影响；该工具保留此提供方经共识合并、`maxResults` 限制的 URL、标题、摘要与发布日期，或将聚合错误 `all public search engines failed: ...` 置于消费方的错误包装层内；生成答案与提供方私有字段不进入上下文。
 
 #### KV Cache 影响
 

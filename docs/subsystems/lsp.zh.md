@@ -2,23 +2,21 @@
 
 [English](lsp.md) | 中文
 
-LSP seam 是一个[能力 seam](../../.agents/notes/implemented/architecture/2026-07-15-lsp-capability-seam.md)：它在单一 `ctx.lsp` 服务上公开语义代码导航，并拆分到多个包：Service Definition（[dsh-lsp](../../packages/lsp/lsp)，`ctx.lsp` + 提供方注册表）、通用 Service Provider（[dsh-lsp-stdio](../../packages/lsp/lsp-stdio)，经过配置的 stdio 语言服务器宿主）和 Consumer（[dsh-tool-lsp](../../packages/lsp/tool-lsp)，即 `lsp` 工具 schema）。LSP 是**一项可选能力**，不属于 agent loop（智能体循环）主干，因此其词汇定义在此而非 [core.md](core.md) 中。更换提供方不会改变模型请求导航的方式。
+LSP seam 是一个[能力 seam](../../.agents/notes/implemented/architecture/2026-07-15-lsp-capability-seam.zh.md)：它在单一 `ctx.lsp` 服务上公开语义代码导航，并拆分到多个包：Service Definition（[dsh-lsp](../../packages/lsp/lsp)，`ctx.lsp` + 提供方注册表）、通用 Service Provider（[dsh-lsp-stdio](../../packages/lsp/lsp-stdio)，经过配置的 stdio 语言服务器宿主）和 Consumer（[dsh-tool-lsp](../../packages/lsp/tool-lsp)，即 `lsp` 工具 schema）。LSP 是**一项可选能力**，不属于 agent loop（智能体循环）主干，因此其词汇定义在此而非 [core.md](core.zh.md) 中。更换提供方不会改变模型请求导航的方式。
 
 源文件：[`packages/lsp/lsp/src/types.ts`](../../packages/lsp/lsp/src/types.ts)
 
 ## 操作与坐标
 
-seam 与模型恰好公开 9 项文件级操作；该联合是闭合的，因此新增一项操作会通过编译强制要求同步修改 seam、提供方和工具。`documentSymbols` 以及 `codeActions`／`rename`／`diagnostics` 拥有各自的结果形态；导航操作规范化为 `locations`。`rename` 与 `codeActions` 只是只读预览——seam 从不写入。位置与范围采用从零开始的 UTF-16 坐标，与协议一致；面向模型的工具采用从 1 开始的光标约定，并在输入和输出时进行转换。
+seam 与模型恰好公开 4 项语义查询；该联合是闭合的，因此新增一项查询会通过编译强制要求同步修改 seam、提供方和工具。位置与范围采用从零开始的 UTF-16 坐标，与协议一致；面向模型的工具采用从 1 开始的光标约定，并在输入和输出时进行转换。
 
 ```ts type-equiv
 /**
- * The model-exposed operations the seam and tool share. A closed union: adding an operation is a
- * compile-enforced change across the seam, providers, and the tool. `documentSymbols`, `codeActions`,
- * and `rename` produce their own result shapes; navigation operations normalize to locations.
+ * The four semantic queries the seam and model expose. A closed union: adding an operation is a
+ * compile-enforced change across the seam, providers, and the tool. Symbols and call hierarchy are
+ * not operations here; they need different schemas.
  */
-type LspOperation =
-  | 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover' | 'goToTypeDefinition'
-  | 'documentSymbols' | 'codeActions' | 'rename' | 'diagnostics'
+type LspOperation = 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
 ```
 
 ```ts type-equiv
@@ -41,27 +39,23 @@ interface LspRange {
 
 ## 请求
 
-每个字段都是必填项：`workspaceRoot` 由调用方提供，`languageId` 来自提供方注册而非请求，超时与结果上限由消费方决定。因此没有字段需要由实现提供默认值，也不存在 `resolve()` 步骤。`newName` 仅用于 `rename`（请求符号的新名称）；其他操作将其保留为 `undefined`。提供方收到调用方请求和派生的 `languageId`；后者只用于同步瞬态文档，从不参与选择。
+每个字段都是必填项：`workspaceRoot` 由调用方提供，`languageId` 来自提供方注册而非请求，超时与结果上限由消费方决定。因此没有字段需要由实现提供默认值，也不存在 `resolve()` 步骤。提供方收到调用方请求和派生的 `languageId`；后者只用于同步瞬态文档，从不参与选择。
 
 ```ts type-equiv
 /**
  * A caller's normalized query. Every field is required: `workspaceRoot` is caller-supplied,
  * `languageId` comes from the provider registration (not here), and consumers own timeouts and
  * result limits — so no field needs implementation defaulting and there is no `resolve()` step.
- * `newName` is present only for `rename` (the requested symbol's new name); other operations leave
- * it undefined.
  */
 interface LspQueryRequest {
   /** Which semantic query to run. */
   readonly operation: LspOperation
   /** The source file to query (relative to `workspaceRoot` or absolute; the provider canonicalizes). */
   readonly filePath: string
-  /** The zero-based UTF-16 cursor position to query at; `documentSymbols` ignores it. */
+  /** The zero-based UTF-16 cursor position to query at. */
   readonly position: LspPosition
   /** The workspace root the provider resolves against and indexes; required, never defaulted. */
   readonly workspaceRoot: string
-  /** The new symbol name for `rename`; ignored by every other operation. */
-  readonly newName?: string
 }
 ```
 
@@ -79,7 +73,7 @@ interface LspProviderQuery extends LspQueryRequest {
 
 ## 结果
 
-这是一个针对六种结果形态的闭合可辨识联合：导航操作规范化为 `locations`，`hover` 规范化为内容或 `null`，`documentSymbols` 规范化为扁平符号树，`codeActions` 规范化为列表（并附带其关联诊断），`rename` 规范化为每个文件的编辑预览，`diagnostics` 规范化为累积报告。消费方使用 `switch` 对 `kind` 做穷尽处理，因此新增分支会使编译失败，直到完成处理。`findReferences` 始终包含声明；提供方在内部强制保证这一点，因此调用方没有对应 flag。`locations` 变体携带 `resolvedWorkspaceUri`，即提供方的规范工作区 `file:` URI。调用方相对化位置 URI 时应使用这一坐标，而不是对可能经过符号链接的请求根目录应用宿主平台路径规则。
+这是一个闭合的可辨识联合：导航操作规范化为 `locations`，`hover` 规范化为内容或 `null`。消费方使用 `switch` 对 `kind` 做穷尽处理，因此新增分支会使编译失败，直到完成处理。`findReferences` 始终包含声明；提供方在内部强制保证这一点，因此调用方没有对应 flag。`locations` 变体携带 `resolvedWorkspaceUri`，即提供方的规范工作区 `file:` URI。调用方相对化位置 URI 时应使用这一坐标，而不是对可能经过符号链接的请求根目录应用宿主平台路径规则。
 
 ```ts type-equiv
 /** One resolved location: a document URI and the range within it. */
@@ -104,10 +98,8 @@ interface LspHover {
 ```ts type-equiv
 /**
  * The closed result union. Navigation operations (`goToDefinition`, `findReferences`,
- * `goToImplementation`, `goToTypeDefinition`) normalize to `locations`; `hover` normalizes to
- * content or `null`. `documentSymbols`, `codeActions`, and `rename` normalize to their own shapes;
- * `diagnostics` reuses the normalized diagnostic list. Consumers `switch` on `kind` to
- * exhaustiveness so a new arm breaks compilation until handled.
+ * `goToImplementation`) normalize to `locations`; `hover` normalizes to content or `null`.
+ * Consumers `switch` on `kind` to exhaustiveness so a new arm breaks compilation until handled.
  *
  * The `locations` variant carries `resolvedWorkspaceUri`: the provider's canonical `file:` URI for
  * the request's workspace root. A caller that relativizes location URIs MUST use this, not parse the
@@ -117,88 +109,18 @@ interface LspHover {
 type LspQueryResult =
   | { readonly kind: 'locations'; readonly locations: readonly LspLocation[]; readonly resolvedWorkspaceUri: string }
   | { readonly kind: 'hover'; readonly hover: LspHover | null }
-  | { readonly kind: 'documentSymbols'; readonly symbols: readonly LspDocumentSymbol[]; readonly resolvedWorkspaceUri: string }
-  | { readonly kind: 'codeActions'; readonly actions: readonly LspCodeAction[]; readonly resolvedWorkspaceUri: string }
-  | { readonly kind: 'rename'; readonly files: readonly LspRenameFile[]; readonly resolvedWorkspaceUri: string }
-  | { readonly kind: 'diagnostics'; readonly diagnostics: readonly LspDiagnostic[]; readonly resolvedWorkspaceUri: string }
-```
-
-```ts type-equiv
-/**
- * One normalized document symbol, flattened from the server's nested `DocumentSymbol` tree so the
- * seam never serializes recursive shapes. Depth starts at `0` for top-level symbols; children follow
- * their parent at `depth + 1` in document order.
- */
-interface LspDocumentSymbol {
-  /** The symbol name. */
-  readonly name: string
-  /** LSP `SymbolKind` (e.g. `2` Function, `5` Class, `6` Method, `13` Variable). */
-  readonly kind: number
-  /** The symbol's full range (e.g. a function body). */
-  readonly range: LspRange
-  /** The range of the symbol's name/identifier. */
-  readonly selectionRange: LspRange
-  /** Nesting depth (`0` top-level); the rows are already in document order. */
-  readonly depth: number
-  /** Optional detail line (signature / type parameters), when the server supplied it. */
-  readonly detail?: string
-}
-```
-
-```ts type-equiv
-/** One normalized code action (a quick fix / refactoring offered by the server). */
-interface LspCodeAction {
-  /** The action title, e.g. "Extract to function" or "Fix typo". */
-  readonly title: string
-  /** The LSP `CodeActionKind` (e.g. `quickfix`, `refactor.extract`). */
-  readonly kind?: string
-  /** Whether this action is marked preferred by the server. */
-  readonly isPreferred?: boolean
-  /** The diagnostics this action addresses (usually quick fixes), when the server supplied them. */
-  readonly diagnostics: readonly LspDiagnostic[]
-}
-```
-
-```ts type-equiv
-/** A single text edit inside a rename result, on one document. */
-interface LspRenameFile {
-  /** The target document URI for `edits`. */
-  readonly uri: string
-  /** The replacement edits, sorted for ascending application (apply in descending order). */
-  readonly edits: readonly {
-    /** The range to replace. */
-    readonly range: LspRange
-    /** The replacement text. */
-    readonly newText: string
-  }[]
-}
-```
-
-```ts type-equiv
-/** One normalized diagnostic, derived from the server's `Diagnostic` (range always present). */
-interface LspDiagnostic {
-  /** The range the diagnostic applies to. */
-  readonly range: LspRange
-  /** LSP severity: `1` Error, `2` Warning, `3` Information, `4` Hint. */
-  readonly severity?: 1 | 2 | 3 | 4
-  /** The reporting source (e.g. `typescript`), when the server supplied one. */
-  readonly source?: string
-  /** The diagnostic message. */
-  readonly message: string
-}
 ```
 
 ## 提供方与服务
 
-每个提供方拥有一个稳定的品牌化 `id`，以及一份互斥的、小写且以点开头的扩展名映射。`registerProvider` 会原子预留 id 和每个扩展名：注册无效或冲突时不发布任何内容；其 disposer 会释放所有保留项。每次查询独立选择提供方，且选择与顺序无关；没有匹配项时抛出 `LspError` `LSP_UNAVAILABLE`。该 seam 不公开协议类型、进程或文档控制，也不提供通用 JSON-RPC 逃生口。写入路径方法接收调用方提供的内存中内容，绝不读取文件；它们自行解析路径并加以限制。
+每个提供方拥有一个稳定的品牌化 `id`，以及一份互斥的、小写且以点开头的扩展名映射。`registerProvider` 会原子预留 id 和每个扩展名：注册无效或冲突时不发布任何内容；其 disposer 会释放所有保留项。每次查询独立选择提供方，且选择与顺序无关；没有匹配项时抛出 `LspError` `LSP_UNAVAILABLE`。该 seam 不公开协议类型、进程或文档控制，也不提供通用 JSON-RPC 逃生口。
 
 ```ts type-equiv
 /**
  * A language-server backend registered on `ctx.lsp`. Each provider owns a stable {@link
  * LspProviderId} and an extension-to-language-id map (lowercase, leading-dot keys).
  * `findReferences` always includes declarations — the provider enforces this internally; callers
- * get no flag. The write-path methods receive caller-supplied in-memory content and never read the
- * file; they resolve and contain the path themselves.
+ * get no flag.
  */
 interface LspProvider {
   /** Stable provider identity, reserved atomically with the extension mappings. */
@@ -212,33 +134,13 @@ interface LspProvider {
    * @returns the normalized, closed-union result.
    */
   query(request: LspProviderQuery, signal?: AbortSignal): Promise<LspQueryResult>
-  /**
-   * Format a document's text. The caller supplies authoritative in-memory content; the provider
-   * opens a transient document with it, calls `textDocument/formatting`, and applies the returned
-   * edits to the caller's text.
-   * @param request - the write-path format request.
-   * @param signal - optional cancellation; the provider stops its own work when it aborts.
-   * @returns the formatted text, or `null` when the server has no formatting provider or returned no edits.
-   */
-  format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>
-  /**
-   * Collect diagnostics for a document. The caller asserts the content/version; the provider opens a
-   * transient document with exactly that text+version and returns the diagnostics the server
-   * publishes for it (filtered to the uri and version, sorted). A server that never publishes yields
-   * an empty result after the provider's bounded wait.
-   * @param request - the write-path diagnostics request.
-   * @param signal - optional cancellation; the provider stops its own work when it aborts.
-   * @returns the normalized diagnostics (empty when none are published).
-   */
-  collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>
 }
 ```
 
 ```ts type-equiv
 /**
  * The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query
- * execution; exposes exactly the four operations and the two write-path operations, and no protocol
- * escape hatch.
+ * execution; exposes exactly the four operations and no protocol escape hatch.
  */
 interface LspService {
   /**
@@ -257,26 +159,10 @@ interface LspService {
    * @returns the normalized, closed-union result.
    */
   query(request: LspQueryRequest, signal?: AbortSignal): Promise<LspQueryResult>
-  /**
-   * Select a provider by the file's extension and run one format. Selection mirrors `query`;
-   * no match throws `LspError` `LSP_UNAVAILABLE`.
-   * @param request - the write-path format request.
-   * @param signal - optional cancellation forwarded to the selected provider.
-   * @returns the formatted text, or `null` when the provider/server had nothing to format.
-   */
-  format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>
-  /**
-   * Select a provider by the file's extension and collect diagnostics. Selection mirrors `query`;
-   * no match throws `LspError` `LSP_UNAVAILABLE`.
-   * @param request - the write-path diagnostics request.
-   * @param signal - optional cancellation forwarded to the selected provider.
-   * @returns the normalized diagnostics (empty when none were published).
-   */
-  collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>
 }
 ```
 
-`LspProviderId` 是 seam 的品牌化 id（`Branded<'LspProviderId'>`，来自 [dsh-brand](../../packages/util/brand)）；`LspError` 扩展 `HarnessError`，带有稳定的错误码，如 `LSP_INVALID_PROVIDER`、`LSP_CONFLICT`、`LSP_UNAVAILABLE`、`LSP_DISPOSED`、`LSP_UNSUPPORTED_OPERATION` 与 `LSP_MALFORMED_RESPONSE`，调用方据此路由而非解析 `message`。
+`LspProviderId` 是该 seam 的品牌化 id（来自 [dsh-brand](../../packages/util/brand) 的 `Branded<'LspProviderId'>`）；`LspError` 扩展 `HarnessError`，提供 `LSP_INVALID_PROVIDER`、`LSP_CONFLICT`、`LSP_UNAVAILABLE`、`LSP_DISPOSED`、`LSP_UNSUPPORTED_OPERATION` 和 `LSP_MALFORMED_RESPONSE` 等稳定错误码，调用方应按错误码路由，而不是解析 `message`。
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -284,13 +170,13 @@ interface LspService {
 
 ## Cordis API
 
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
 <a id="ctxlsp--lspservice"></a>
 
 ### `ctx.lsp` — `LspService`
 
-The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query execution; exposes exactly the four operations and the two write-path operations, and no protocol escape hatch.
+The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query execution; exposes exactly the four operations and no protocol escape hatch.
 
 ```ts cordis-catalog
 /**
@@ -310,25 +196,7 @@ registerProvider(provider: LspProvider): () => void
  * @returns the normalized, closed-union result.
  */
 query(request: LspQueryRequest, signal?: AbortSignal): Promise<LspQueryResult>
-
-/**
- * Select a provider by the file's extension and run one format. Selection mirrors `query`;
- * no match throws `LspError` `LSP_UNAVAILABLE`.
- * @param request - the write-path format request.
- * @param signal - optional cancellation forwarded to the selected provider.
- * @returns the formatted text, or `null` when the provider/server had nothing to format.
- */
-format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>
-
-/**
- * Select a provider by the file's extension and collect diagnostics. Selection mirrors `query`;
- * no match throws `LspError` `LSP_UNAVAILABLE`.
- * @param request - the write-path diagnostics request.
- * @param signal - optional cancellation forwarded to the selected provider.
- * @returns the normalized diagnostics (empty when none were published).
- */
-collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>
 ```
 
-Source: [`packages/lsp/lsp/src/types.ts:257`](../../packages/lsp/lsp/src/types.ts)
+Source: [`packages/lsp/lsp/src/types.ts`](../../packages/lsp/lsp/src/types.ts)
 <!-- END GENERATED cordis-surface -->

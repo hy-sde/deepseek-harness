@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/code-runtime/code-runtime-python/README.md
 README.md: e4989dc8ce80c7f95e0d1262b08eb59e93f5c960
-README.zh.md: 42522ca530f2e42a98aa5a73d28a70fda970f3cf
+README.zh.md: 2b01aaa02e2b817dd0bdd4dd4146f9bea87dc00f

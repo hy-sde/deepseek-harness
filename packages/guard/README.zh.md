@@ -6,7 +6,8 @@
 
 | 包 | 职责 | ctx key |
 |---|---|---|
-| [`repeat-tool-reminder/`](repeat-tool-reminder/README.md) | 针对重复工具调用的建议性提醒 | 监听工具和 agent 事件 |
-| [`timeout-policy/`](timeout-policy/README.md) | 以部署策略形式设置单次工具调用截止时间 | 注册 `tools/execute` 监听器 |
+| [`repeat-tool-reminder/`](repeat-tool-reminder/README.zh.md) | 针对重复工具调用的建议性提醒 | 监听工具和 agent 事件 |
+| [`timeout-policy/`](timeout-policy/README.zh.md) | 以部署策略形式设置单次工具调用截止时间 | 注册 `tools/execute` 监听器 |
+| [`stream-rules/`](stream-rules/README.zh.md) | 时间旅行流规则：依据实时流正则匹配进行中止、注入与重试 | 监听 session、agent 和工具事件 |
 
-提醒作为 `additionalContexts` 随 `tools/post-execute` 决策传递，并作为来源于插件的 `user/message` 事件追加记录（[工具](../../docs/subsystems/tools.md)）；跨 `dsh-timeout`、能力终止与本策略层的超时拆分记录在[超时库 Agent Note](../../.agents/notes/implemented/architecture/2026-07-06-timeout-deadline-library.md)。
+提醒作为 `additionalContexts` 随 `tools/post-execute` 决策传递，并作为来源于插件的 `user/message` 事件追加记录（[工具](../../docs/subsystems/tools.zh.md)）；跨 `dsh-timeout`、能力终止与本策略层的超时拆分记录在[超时库 Agent Note](../../.agents/notes/implemented/architecture/2026-07-06-timeout-deadline-library.zh.md)。
