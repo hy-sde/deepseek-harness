@@ -1121,7 +1121,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'one parsed section per changed file.',
       },
       {
-        signature: 'async stageHunks(cwd: string, selections: readonly FileChange[], options: { rawDiff?: string; signal?: AbortSignal } = {}): Promise<void>',
+        signature: 'async stageHunks( cwd: string, selections: readonly FileChange[], options: { rawDiff?: string; signal?: AbortSignal } = {}, ): Promise<void>',
         description: 'Selectively stage whole files or hunks from a diff that is already in the index (the `--cached` view). Direct port of omp `stage.hunks`: rebuilds a patch from the recorded diff and applies it to the index.',
         parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'selections', description: 'file/hunk selections to stage.' }, { name: 'options', description: 'the raw cached diff to slice from (defaults to `git diff --cached`).' }],
       },

@@ -127,7 +127,7 @@ async fileDiffs( cwd: string, options: { cached?: boolean; files?: readonly stri
  * @param selections - file/hunk selections to stage.
  * @param options - the raw cached diff to slice from (defaults to `git diff --cached`).
  */
-async stageHunks(cwd: string, selections: readonly FileChange[], options: { rawDiff?: string; signal?: AbortSignal } = {}): Promise<void>
+async stageHunks( cwd: string, selections: readonly FileChange[], options: { rawDiff?: string; signal?: AbortSignal } = {}, ): Promise<void>
 
 /**
  * Apply a patch string (to the index with `cached: true`, as split staging needs).
