@@ -47,6 +47,9 @@
     },
     {
       "path": "../internal-urls"
+    },
+    {
+      "path": "../fs-archive"
     }
   ]
 }

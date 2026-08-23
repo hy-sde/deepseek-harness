@@ -710,7 +710,7 @@ Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts
 
 ### `read`
 
-Read a UTF-8 text file and return line-numbered content.
+Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine.
 
 ```json
 {

@@ -300,6 +300,23 @@
       ]
     },
     {
+      // Vendored-style port kept as upstream source (see packages/fs/fs-archive/README.md).
+      // Format codecs/encoders return Promises uniformly (some members genuinely await,
+      // e.g. zstd/zlib sync-adapters), and decode hot-loops keep defensive guards against
+      // truncated/malformed archives that the relaxed index typing can't see — so the
+      // equivalent-to-vendor rules relax here, everything else stays strict.
+      "files": [
+        "packages/fs/fs-archive/src/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "typescript/require-await": "off",
+        "typescript/no-unnecessary-condition": "off"
+      },
+      "plugins": [
+        "typescript"
+      ]
+    },
+    {
       // The project-free staged profile re-includes this syntax-coverage fixture.
       "files": [
         "packages/typert/generator/tests/fixtures/type-model/**/*.{ts,tsx}"

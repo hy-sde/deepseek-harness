@@ -11,6 +11,7 @@ import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-internal-urls'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
+import { tryReadArchive } from './read-archive.ts'
 import { conflictNoticeForRead, tryReadInternal } from './internal-routing.ts'
 import { resolveRegularReadTarget } from './read-target.ts'
 
@@ -23,6 +24,9 @@ export const READ_LIMIT = 2000
  */
 export const STREAM_MIN_SIZE = 10 * 1024 * 1024
 
+/** Maximum bytes of an archive file loaded for member reads (the `readMaxArchiveBytes` config). */
+export const READ_MAX_ARCHIVE_BYTES = 256 * 1024 * 1024
+
 /** Resolved read-tool caps — plugin config after defaulting (see `Config` in index.ts). */
 export interface ReadToolCaps {
   /** Default and maximum number of lines returned by one call. */
@@ -33,6 +37,8 @@ export interface ReadToolCaps {
   maxBytes: number
   /** Files at or above this size stream; smaller files read whole into memory. */
   streamMinSize: number
+  /** Maximum bytes of an archive file loaded into memory for member reads. */
+  maxArchiveBytes: number
 }
 
 /** Validated `read` arguments after defaulting. */
@@ -72,12 +78,14 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
   ctx.systemPrompt.section({
     name: 'tool:read',
     order: 100,
-    text: 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.',
+    text:
+      'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text.',
   })
 
   ctx.tools.register(defineTool({
     name: 'read',
-    description: 'Read a UTF-8 text file and return line-numbered content.',
+    description:
+      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine.',
     parameters: {
       file_path: { type: 'string', required: true, description: 'Path to read, resolved by the filesystem backend.' },
       offset: { type: 'number', description: '1-based first line to return. Defaults to 1.' },
@@ -147,6 +155,20 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         const internal = await tryReadInternal(ctx, iu, exec, input, caps)
         if (internal !== undefined) {
           return internal.notice !== undefined ? { ...internal, notice: internal.notice } : internal
+        }
+      }
+
+      // Archive routing (`foo.zip`, `foo.zip:dir`, `foo.zip:dir/file.txt`):
+      // when the path names a real archive, serve member text or a directory
+      // listing through the engine instead of failing as a non-text file.
+      // Falls through to the regular read when the path isn't an archive.
+      const archiveRead = await tryReadArchive(ctx, exec, input.filePath, caps)
+      if (archiveRead !== undefined) {
+        return {
+          path: archiveRead.displayPath,
+          offset: 1,
+          lines: archiveRead.lines,
+          totalLines: archiveRead.totalLines,
         }
       }
 

@@ -180,6 +180,9 @@ importers:
       '@deepseek-ai/dsh-dap':
         specifier: workspace:^
         version: link:../../packages/debug/dap
+      '@deepseek-ai/dsh-fs-archive':
+        specifier: workspace:^
+        version: link:../../packages/fs/fs-archive
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:^
         version: link:../../packages/fs/fs-local
@@ -1192,6 +1195,9 @@ importers:
       '@deepseek-ai/dsh-credentials-local':
         specifier: workspace:^
         version: link:../../credentials/credentials-local
+      '@deepseek-ai/dsh-fs-archive':
+        specifier: workspace:^
+        version: link:../../fs/fs-archive
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:^
         version: link:../../fs/fs-local
@@ -4784,6 +4790,21 @@ importers:
         specifier: workspace:^
         version: link:../../sandbox/sandbox
 
+  packages/fs/fs-archive:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      vitest:
+        specifier: ^4.1.8
+        version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@22.20.0)(@vitest/coverage-v8@4.1.8)(jsdom@29.1.1)(vite@8.0.16(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+
   packages/fs/fs-local:
     dependencies:
       '@deepseek-ai/schemastery':
@@ -4924,6 +4945,9 @@ importers:
       '@deepseek-ai/dsh-fs':
         specifier: workspace:^
         version: link:../fs
+      '@deepseek-ai/dsh-fs-archive':
+        specifier: workspace:^
+        version: link:../fs-archive
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:^
         version: link:../fs-local
@@ -9164,6 +9188,9 @@ importers:
       '@deepseek-ai/dsh-fs':
         specifier: workspace:^
         version: link:../../packages/fs/fs
+      '@deepseek-ai/dsh-fs-archive':
+        specifier: workspace:^
+        version: link:../../packages/fs/fs-archive
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:^
         version: link:../../packages/fs/fs-local

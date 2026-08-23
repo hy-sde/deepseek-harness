@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    // The archive engine is a vendored-style port kept as upstream source for
+    // syncs (see packages/fs/fs-archive/README.md). It follows the same
+    // type-checking policy as vendor/*: upstream idioms assume unchecked
+    // indexing and plain optional properties, so those strictness flags are
+    // relaxed here — everything else (strict, unsafe rules) still applies.
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    }
+  ]
+}
