@@ -82,6 +82,20 @@
 - id: tool-memory
   name: '@deepseek-ai/dsh-tool-memory'
 
+# ── agentic git (commit + review) ───────────────────────────────────────────
+
+# Port of omp's agentic git commit + review. The `git` SERVICE stays host-plane
+# (stateless shell-out wrapper); this row contributes the model-facing tools
+# `commit` (analyze + suggest a split plan), `commit_apply` (validate and
+# execute a plan with dependency order/cycle rejection), and `review` (parallel
+# P0-P3 reviewers via the subagent provider named in the config). No realm —
+# the tools only consume host instances.
+- id: tool-git
+  name: '@deepseek-ai/dsh-tool-git'
+  config:
+    reviewProvider: spawn
+    maxReviewers: 4
+
 # ── rich editor + LSP ────────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each

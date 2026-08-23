@@ -1063,6 +1063,103 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'git',
+    summary: 'The `ctx.git` service.',
+    description: 'The `ctx.git` service.',
+    methods: [
+      {
+        signature: 'async run( argv: readonly string[], options: { cwd: string; signal?: AbortSignal | undefined; stdin?: string | undefined; timeoutMs?: number }, ): Promise<CommandRun>',
+        description: 'Run one `git` command against `cwd`. A non-zero exit code is returned as data on the run (callers decide whether it is an error); only a launch failure, a signal kill, or a timeout throws GitCommandError.',
+        parameters: [{ name: 'argv', description: 'git arguments (never shell-interpreted).' }, { name: 'options', description: 'cwd (required), abort signal, stdin text, timeout override.' }],
+        returns: 'exit code, stdout, stderr; throws {@link GitCommandError} only for launch/timeout/signal failures.',
+      },
+      {
+        signature: 'async isRepo(cwd: string, signal?: AbortSignal): Promise<boolean>',
+        description: 'True when `cwd` is inside a git working tree.',
+        parameters: [{ name: 'cwd', description: 'working directory to probe.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'whether `cwd` is a git working tree (never throws).',
+      },
+      {
+        signature: 'async root(cwd: string, signal?: AbortSignal): Promise<string>',
+        description: 'The repository root (`git rev-parse --show-toplevel`).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'the absolute repository root.',
+      },
+      {
+        signature: 'async branch(cwd: string, signal?: AbortSignal): Promise<string | undefined>',
+        description: 'The current branch name, or undefined when detached.',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'the branch name, or undefined on a detached HEAD.',
+      },
+      {
+        signature: 'async status(cwd: string, signal?: AbortSignal): Promise<GitStatusSummary>',
+        description: 'Plain status summary: staged/unstaged/untracked counts.',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'counts of staged, unstaged and untracked entries.',
+      },
+      {
+        signature: 'async hasStaged(cwd: string, signal?: AbortSignal): Promise<boolean>',
+        description: 'True when the index differs from HEAD (something is staged).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'whether there is anything staged.',
+      },
+      {
+        signature: 'async diffText(cwd: string, options: DiffOptions & { allowFailure?: boolean } = {}, signal?: AbortSignal): Promise<string>',
+        description: 'Whole raw diff text; non-zero exit is an error unless `allowFailure`.',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'options', description: 'cached vs worktree, pathspec files, binary, name-only, numstat, allowFailure.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'the diff text.',
+      },
+      {
+        signature: 'readonly diff: GitDiffNamespace = { changedFiles: (cwd: string, options: { cached?: boolean; files?: readonly string[]; signal?: AbortSignal } = {}): Promise<string[]> => this.diffText(cwd, { ...options, nameOnly: true }, options.signal).then(splitLines), numstat: (cwd: string, options: { cached?: boolean; signal?: AbortSignal } = {}): Promise<NumstatEntry[]> => this.diffText(cwd, { ...options, numstat: true }, options.signal).then(parseNumstat), has: async (cwd: string, options: { cached?: boolean; files?: readonly string[]; signal?: AbortSignal } = {}): Promise<boolean> => { const args = [\'diff\'] if (options.cached) args.push(\'--cached\') args.push(\'--quiet\') if (options.files?.length) args.push(\'--\', ...options.files) const run = await this.run(args, { cwd, signal: options.signal }) return run.exitCode !== 0 }, }',
+        description: 'Diff namespace (mirrors omp\'s `diff.*`) for the derived read shapes.',
+        parameters: [],
+      },
+      {
+        signature: 'async fileDiffs( cwd: string, options: { cached?: boolean; files?: readonly string[]; signal?: AbortSignal } = {}, ): Promise<FileDiff[]>',
+        description: 'Parsed file diff sections for `pathSpec` (defaults to the whole cached diff).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'options', description: 'cached vs worktree and pathspec filter.' }],
+        returns: 'one parsed section per changed file.',
+      },
+      {
+        signature: 'async stageHunks(cwd: string, selections: readonly FileChange[], options: { rawDiff?: string; signal?: AbortSignal } = {}): Promise<void>',
+        description: 'Selectively stage whole files or hunks from a diff that is already in the index (the `--cached` view). Direct port of omp `stage.hunks`: rebuilds a patch from the recorded diff and applies it to the index.',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'selections', description: 'file/hunk selections to stage.' }, { name: 'options', description: 'the raw cached diff to slice from (defaults to `git diff --cached`).' }],
+      },
+      {
+        signature: 'async applyPatchText( cwd: string, patchText: string, options: { cached?: boolean; reverse?: boolean; signal?: AbortSignal | undefined } = {}, ): Promise<void>',
+        description: 'Apply a patch string (to the index with `cached: true`, as split staging needs).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'patchText', description: 'unified diff text piped to `git apply`.' }, { name: 'options', description: 'cached vs worktree, reverse direction, abort signal.' }],
+      },
+      {
+        signature: 'async addAll(cwd: string, files: readonly string[] = [], signal?: AbortSignal): Promise<void>',
+        description: 'Stage files; empty list stages everything (`git add -A`).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'files', description: 'paths to stage; empty stages everything.' }, { name: 'signal', description: 'optional abort.' }],
+      },
+      {
+        signature: 'async resetIndex(cwd: string, files: readonly string[] = [], signal?: AbortSignal): Promise<void>',
+        description: 'Unstage files; empty list unstages everything (`git reset`).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'files', description: 'paths to unstage; empty unstages everything.' }, { name: 'signal', description: 'optional abort.' }],
+      },
+      {
+        signature: 'async commit(cwd: string, message: string, options: { signal?: AbortSignal; allowEmpty?: boolean } = {}): Promise<CommandRun>',
+        description: 'Create a commit from `message` (passed via stdin).',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'message', description: 'commit message (subject/body).' }, { name: 'options', description: 'allow-empty and abort signal.' }],
+        returns: 'the underlying command run.',
+      },
+      {
+        signature: 'async push(cwd: string, options: { signal?: AbortSignal; forceWithLease?: boolean } = {}): Promise<void>',
+        description: 'Push the current branch. `--no-follow-tags` so only the branch moves.',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'options', description: 'optional force-with-lease and abort signal.' }],
+      },
+      {
+        signature: 'async log(cwd: string, options: { max?: number; signal?: AbortSignal; color?: \'never\' } = {}): Promise<GitLogEntry[]>',
+        description: 'Recent commits (default 20), parseable fields only.',
+        parameters: [{ name: 'cwd', description: 'working directory inside the repository.' }, { name: 'options', description: 'max count, abort signal.' }],
+        returns: 'newest-first commit entries with hash/author/date/subject.',
+      },
+    ],
+  },
+  {
     key: 'goals',
     summary: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
     description: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
@@ -3433,6 +3530,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CommandResult = {\n    readonly kind: \'success\';\n    readonly text?: string;\n    readonly sourceEventSeq?: number;\n} | {\n    readonly kind: \'error\';\n    readonly text: string;\n};',
   },
   {
+    name: 'CommandRun',
+    declaration: 'export interface CommandRun {\n    stdout: string;\n    exitCode: number;\n    killed: boolean;\n    stderr: string;\n}',
+  },
+  {
     name: 'CompactionAgentContext',
     declaration: 'export interface CompactionAgentContext {\n    session: Session;\n    options: {\n        provider?: string;\n        model?: string;\n    };\n}',
   },
@@ -3785,6 +3886,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface EpochHeader {\n    config: LlmCallConfig;\n    adapterDefaults?: LlmCallConfigAdapterDefaults;\n    system?: string;\n    tools?: ToolSchema[];\n}',
   },
   {
+    name: 'FileChange',
+    declaration: 'export interface FileChange {\n    path: string;\n    hunks: HunkSelector;\n}',
+  },
+  {
     name: 'FileLocation',
     declaration: 'export interface FileLocation {\n    path: string;\n    line?: number;\n}',
   },
@@ -3857,6 +3962,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface GenericResultView {\n    card: \'generic\';\n    title?: string;\n    content?: ContentBlock[];\n}',
   },
   {
+    name: 'GitDiffNamespace',
+    declaration: 'export interface GitDiffNamespace {\n    changedFiles(cwd: string, options?: {\n        cached?: boolean;\n        files?: readonly string[];\n        signal?: AbortSignal;\n    }): Promise<string[]>;\n    numstat(cwd: string, options?: {\n        cached?: boolean;\n        signal?: AbortSignal;\n    }): Promise<NumstatEntry[]>;\n    has(cwd: string, options?: {\n        cached?: boolean;\n        files?: readonly string[];\n        signal?: AbortSignal;\n    }): Promise<boolean>;\n}',
+  },
+  {
+    name: 'GitLogEntry',
+    declaration: 'export interface GitLogEntry {\n    hash: string;\n    shortHash: string;\n    subject: string;\n    authorName: string;\n    authorEmail: string;\n    date: string;\n}',
+  },
+  {
+    name: 'GitStatusSummary',
+    declaration: 'export interface GitStatusSummary {\n    staged: number;\n    unstaged: number;\n    untracked: number;\n}',
+  },
+  {
     name: 'GoalActivation',
     declaration: 'export type GoalActivation = \'armed\' | \'disarmed\';',
   },
@@ -3887,6 +4004,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GrantRecord',
     declaration: 'export interface GrantRecord {\n    readonly kind: \'grant\';\n    readonly payload: unknown;\n}',
+  },
+  {
+    name: 'HunkSelector',
+    declaration: 'export type HunkSelector = {\n    type: \'all\';\n} | {\n    type: \'indices\';\n    indices: number[];\n} | {\n    type: \'lines\';\n    start: number;\n    end: number;\n};',
   },
   {
     name: 'ImageAttachmentLimits',
@@ -4327,6 +4448,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ModelModalityMap',
     declaration: 'export interface ModelModalityMap {\n    text: \'text\';\n    image: \'image\';\n}',
+  },
+  {
+    name: 'NumstatEntry',
+    declaration: 'export interface NumstatEntry {\n    path: string;\n    additions: number;\n    deletions: number;\n}',
   },
   {
     name: 'ObjectJsonSchema',

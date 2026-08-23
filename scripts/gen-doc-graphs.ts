@@ -470,6 +470,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'tool-fs executes read/write/edit through ctx.fs; fs-sandbox fences mutations by the shared sandbox mode; fs-observation-policy contributes observed-state checks through the fs/* event gate.',
   },
   {
+    key: 'git',
+    pkg: 'git',
+    title: 'Git commit + review seam',
+    mode: 'seam',
+    implementations: [],
+    consumers: ['tool-git'],
+    companions: ['subprocess', 'tool-subagent'],
+    note: 'A host-owned stateless wrapper over the git CLI through ctx.subprocess (commit/review subset); the model-facing commit/commit_apply/review tools consume it, and review fans out through the subagent seam (port_omp.md item: commit).',
+  },
+  {
     key: 'memory',
     pkg: 'memory',
     title: 'Long-horizon project memory',

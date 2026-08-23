@@ -236,6 +236,8 @@
     { "path": "./packages/ast/tool-ast" },
     { "path": "./packages/memory/memory" },
     { "path": "./packages/memory/tool-memory" },
+    { "path": "./packages/git/git" },
+    { "path": "./packages/git/tool-git" },
     { "path": "./packages/edit/hashline" },
     { "path": "./packages/edit/tool-edit" },
     { "path": "./packages/compaction/compaction" },

@@ -245,6 +245,14 @@
     - id: memory
       name: '@deepseek-ai/dsh-memory'
 
+    # Agentic git plumbing (ctx.git): diff capture/parsing, hunk staging,
+    # commit/push/log over the subprocess seam, backing the commit/review tools
+    # (dsh-tool-git preset row). Host-plane — the service shells out per call
+    # and holds no durable state, so one instance serves every session
+    # (port_omp.md item: commit/review).
+    - id: git
+      name: '@deepseek-ai/dsh-git'
+
     # AST structural search/rewrite over the packaged ast-grep binary, mountable
     # anywhere the subprocess + filesystem seams exist. ast_edit always PREVIEWS
     # first and only writes with apply: true, through the filesystem seam

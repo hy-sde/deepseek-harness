@@ -1,0 +1,67 @@
+{
+  "name": "@deepseek-ai/dsh-git",
+  "description": "Agentic git plumbing: the host ctx.git service (diff capture/parsing, hunk staging, commit/push/log over the subprocess seam) backing the commit and review tools in @deepseek-ai/dsh-tool-git",
+  "version": "0.1.0-rc.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/git/git"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./types": {
+      "types": "./lib/types/types.d.ts",
+      "default": "./lib/types/types.js"
+    },
+    "./service": {
+      "types": "./lib/types/service.d.ts",
+      "default": "./lib/types/service.js"
+    },
+    "./diff": {
+      "types": "./lib/types/diff.d.ts",
+      "default": "./lib/types/diff.js"
+    },
+    "./topo-sort": {
+      "types": "./lib/types/topo-sort.d.ts",
+      "default": "./lib/types/topo-sort.js"
+    },
+    "./lock-files": {
+      "types": "./lib/types/lock-files.d.ts",
+      "default": "./lib/types/lock-files.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:^"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/dsh-subprocess": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/dsh-subprocess": "workspace:^"
+  }
+}

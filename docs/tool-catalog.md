@@ -45,6 +45,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
+| `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -2786,3 +2787,221 @@ Search the web for current information. Provide 1–4 queries in the required qu
 Source: [`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
 web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps.
+
+<a id="deepseek-aidsh-tool-git"></a>
+
+## `@deepseek-ai/dsh-tool-git`
+
+### `commit`
+
+Analyze the current git changes and produce a conventional-commit split proposal. Reads the staged (or auto-staged working) tree, returns per-file add/delete counts, the bounded diff text, lock-file hints, and a suggested plan skeleton. After reading the analysis, author a precise `SplitCommitPlan` (types, scopes, summaries, dependencies) and pass it to `commit_apply` to execute. Never edit files here: this tool is read-only and never writes to the repository.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "stagedOnly": {
+      "type": "boolean",
+      "description": "Analyze only what is already staged; when false and nothing is staged, stage all changes first (default false)."
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional user context for planning: intent, headline change, reviewers, issue refs."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    }
+  }
+}
+```
+
+Source: [`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+### `commit_apply`
+
+Execute a validated split-commit plan on the staged changes. Requires the plan produced with `commit`: every staged file must be covered exactly once, lock files are placed automatically, hunk selectors are validated against the real diff, dependencies are resolved topologically (cycles rejected before anything is written), and each commit is created atomically in dependency order. Use `dryRun: true` to preview exact messages before writing anything.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "commits": {
+      "type": "array",
+      "description": "Commit groups of the split plan (see commit_apply contract): each has changes [{path, hunks}], type, scope, summary, details, dependencies.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "type": "array",
+            "description": "Files (and optional hunk selectors) this commit covers; paths must name staged files.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "hunks": {
+                  "type": "object",
+                  "description": "Which part of the file to commit: all (default), indices (1-based hunk numbers), or lines (new-file line range).",
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "all",
+                        "indices",
+                        "lines"
+                      ]
+                    },
+                    "indices": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "start": {
+                      "type": "integer"
+                    },
+                    "end": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          },
+          "type": {
+            "type": "string",
+            "description": "Conventional-commit type.",
+            "enum": [
+              "feat",
+              "fix",
+              "refactor",
+              "perf",
+              "docs",
+              "test",
+              "build",
+              "ci",
+              "chore",
+              "style",
+              "revert"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "description": "Optional conventional scope."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Imperative summary line, ≤72 chars."
+          },
+          "details": {
+            "type": "array",
+            "description": "Optional body bullet lines.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "userVisible": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          },
+          "issueRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "description": "Zero-based indices of groups that must commit first.",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "changes",
+          "type",
+          "summary"
+        ]
+      }
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Validate and print the exact commit messages without writing anything (default false)."
+    },
+    "push": {
+      "type": "boolean",
+      "description": "Push the branch after committing (default false)."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    }
+  }
+}
+```
+
+Source: [`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+### `review`
+
+Run a parallel code review over git changes (working tree, staged, or a commit range) with dedicated reviewer subagents. Every finding is ranked P0–P3 with a confidence score; the tool returns all findings sorted by severity and a ship/reject verdict with explanation. Reviewers are read-only (git diff/log/show, read, grep, ast_grep) and never edit files or run builds. Use the focus filter to review only the paths that matter.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "What to review: working-tree changes vs HEAD (default, includes staged + unstaged), only staged, or a commit range.",
+      "enum": [
+        "worktree",
+        "staged",
+        "commits"
+      ]
+    },
+    "range": {
+      "type": "string",
+      "description": "Commit range like HEAD~3..HEAD when target is commits (both endpoints resolved by git)."
+    },
+    "focus": {
+      "type": "array",
+      "description": "Optional subset of paths/prefixes to restrict the review to; other files are skipped.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxReviewers": {
+      "type": "integer",
+      "description": "Cap on parallel reviewers (default 4); the diff is split into at most this many slices."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    }
+  }
+}
+```
+
+Source: [`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict.

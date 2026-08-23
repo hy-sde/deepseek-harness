@@ -47,6 +47,7 @@
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
+| `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -2771,3 +2772,223 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 来源：[`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
 web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。
+<a id="deepseek-aidsh-tool-git"></a>
+
+## `@deepseek-ai/dsh-tool-git`
+
+### `commit`
+
+分析当前的 git 变更，并产出一个 conventional-commit 拆分子建议。读取已暂存（或在无暂存内容时自动暂存工作区）的树，返回按文件的增删计数、有界 diff 文本、锁文件提示和一个建议计划骨架。阅读分析后，编写精确的 `SplitCommitPlan`（类型、作用域、摘要、依赖），并将其交给 `commit_apply` 执行。这里绝不编辑文件：本工具只读，从不写入仓库。
+
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "stagedOnly": {
+      "type": "boolean",
+      "description": "Analyze only what is already staged; when false and nothing is staged, stage all changes first (default false)."
+    },
+    "context": {
+      "type": "string",
+      "description": "Optional user context for planning: intent, headline change, reviewers, issue refs."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    }
+  }
+}
+```
+
+来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+### `commit_apply`
+
+对已暂存变更执行一个通过校验的拆分提交计划。要求使用 `commit` 产出的计划：每个已暂存文件必须恰好被覆盖一次，锁文件自动归位，hunk 选择对照真实 diff 校验，依赖按拓扑解析（环在任何写入前被拒绝），每个提交按依赖顺序原子创建。在写入任何内容前，可用 `dryRun: true` 预览确切的提交消息。
+
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "commits": {
+      "type": "array",
+      "description": "Commit groups of the split plan (see commit_apply contract): each has changes [{path, hunks}], type, scope, summary, details, dependencies.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "type": "array",
+            "description": "Files (and optional hunk selectors) this commit covers; paths must name staged files.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "hunks": {
+                  "type": "object",
+                  "description": "Which part of the file to commit: all (default), indices (1-based hunk numbers), or lines (new-file line range).",
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "all",
+                        "indices",
+                        "lines"
+                      ]
+                    },
+                    "indices": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    "start": {
+                      "type": "integer"
+                    },
+                    "end": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          },
+          "type": {
+            "type": "string",
+            "description": "Conventional-commit type.",
+            "enum": [
+              "feat",
+              "fix",
+              "refactor",
+              "perf",
+              "docs",
+              "test",
+              "build",
+              "ci",
+              "chore",
+              "style",
+              "revert"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "description": "Optional conventional scope."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Imperative summary line, ≤72 chars."
+          },
+          "details": {
+            "type": "array",
+            "description": "Optional body bullet lines.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "userVisible": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "text"
+              ]
+            }
+          },
+          "issueRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "description": "Zero-based indices of groups that must commit first.",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "changes",
+          "type",
+          "summary"
+        ]
+      }
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Validate and print the exact commit messages without writing anything (default false)."
+    },
+    "push": {
+      "type": "boolean",
+      "description": "Push the branch after committing (default false)."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    }
+  }
+}
+```
+
+来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+### `review`
+
+用专门的评审者 subagent 对 git 变更（工作区、已暂存区或一个提交区间）执行并行代码评审。每条发现按 P0–P3 分级并带置信度分数；工具返回按严重度排序的全部发现，以及带解释的 ship/reject 结论。评审者只读（git diff/log/show、read、grep、ast_grep），从不编辑文件或运行构建。可用 focus 过滤器只评审相关路径。
+
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "What to review: working-tree changes vs HEAD (default, includes staged + unstaged), only staged, or a commit range.",
+      "enum": [
+        "worktree",
+        "staged",
+        "commits"
+      ]
+    },
+    "range": {
+      "type": "string",
+      "description": "Commit range like HEAD~3..HEAD when target is commits (both endpoints resolved by git)."
+    },
+    "focus": {
+      "type": "array",
+      "description": "Optional subset of paths/prefixes to restrict the review to; other files are skipped.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxReviewers": {
+      "type": "integer",
+      "description": "Cap on parallel reviewers (default 4); the diff is split into at most this many slices."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    }
+  }
+}
+```
+
+来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。

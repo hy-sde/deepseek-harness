@@ -84,6 +84,8 @@ flowchart LR
   cfg --> plugin_dsh_base_internal_urls
   plugin_dsh_base_memory["memory<br/>@deepseek-ai/dsh-memory"]
   cfg --> plugin_dsh_base_memory
+  plugin_dsh_base_git["git<br/>@deepseek-ai/dsh-git"]
+  cfg --> plugin_dsh_base_git
   plugin_dsh_base_tool_ast["tool-ast<br/>@deepseek-ai/dsh-tool-ast"]
   cfg --> plugin_dsh_base_tool_ast
   plugin_dsh_base_agent_instructions["agent-instructions<br/>@deepseek-ai/dsh-agent-instructions"]
@@ -212,6 +214,7 @@ flowchart LR
 | `tool-fs-search` | `@deepseek-ai/dsh-tool-fs-search` |
 | `internal-urls` | `@deepseek-ai/dsh-internal-urls` |
 | `memory` | `@deepseek-ai/dsh-memory` |
+| `git` | `@deepseek-ai/dsh-git` |
 | `tool-ast` | `@deepseek-ai/dsh-tool-ast` |
 | `agent-instructions` | `@deepseek-ai/dsh-agent-instructions` |
 | `skill` | `@deepseek-ai/dsh-skill` |
