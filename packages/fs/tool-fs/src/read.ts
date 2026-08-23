@@ -12,6 +12,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-internal-urls'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
 import { tryReadArchive } from './read-archive.ts'
+import { tryReadNative } from './read-native.ts'
 import { conflictNoticeForRead, tryReadInternal } from './internal-routing.ts'
 import { resolveRegularReadTarget } from './read-target.ts'
 
@@ -169,6 +170,20 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
           offset: 1,
           lines: archiveRead.lines,
           totalLines: archiveRead.totalLines,
+        }
+      }
+
+      // Native-sidecar routing (`dsh-omp-native`): PDFs and SQLite databases
+      // are read through the extracted Rust sidecar (rasterization / table
+      // query) when the binary is present. Falls through to the regular read
+      // when the sidecar is absent or the path is not PDF/SQLite.
+      const nativeRead = await tryReadNative(ctx, exec, input.filePath, caps)
+      if (nativeRead !== undefined) {
+        return {
+          path: nativeRead.displayPath,
+          offset: 1,
+          lines: nativeRead.lines,
+          totalLines: nativeRead.totalLines,
         }
       }
 
