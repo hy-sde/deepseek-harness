@@ -480,6 +480,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'A host-owned stateless wrapper over the git CLI through ctx.subprocess (commit/review subset); the model-facing commit/commit_apply/review tools consume it, and review fans out through the subagent seam (port_omp.md item: commit).',
   },
   {
+    key: 'browser',
+    pkg: 'browser',
+    title: 'Agentic browser (launch / CDP-attach / relay)',
+    mode: 'seam',
+    implementations: [],
+    consumers: ['tool-browser'],
+    companions: ['tool-web'],
+    note: 'Host-owned browser connections driven over Chrome DevTools Protocol by playwright-core: stealth-patched launch (app.path), attach to an existing CDP endpoint (app.cdp_url), or the in-process relay + companion Chrome extension that drives the user’s own tabs (app.relay). Tabs are namespaced per session by the tool (port_omp.md item: browser tool with stealth + relay/CDP-attach).',
+  },
+  {
     key: 'memory',
     pkg: 'memory',
     title: 'Long-horizon project memory',

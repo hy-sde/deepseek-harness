@@ -71,6 +71,8 @@ import * as ToolSubagent from '@deepseek-ai/dsh-tool-subagent'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import Git from '@deepseek-ai/dsh-git'
 import * as ToolGit from '@deepseek-ai/dsh-tool-git'
+import Browser from '@deepseek-ai/dsh-browser'
+import * as ToolBrowser from '@deepseek-ai/dsh-tool-browser'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
@@ -705,6 +707,22 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-browser',
+    dir: 'tool-browser',
+    source: 'packages/browser/tool-browser/src/index.ts',
+    requires: ['ctx.tools', 'ctx.browser', 'ctx.systemPrompt'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // Schema harvest only registers tools; the browser service will not
+      // connect anything until a tool call executes, so mounting it with the
+      // default config is safe for schema collection.
+      await ctx.plugin(Browser)
+      await ctx.plugin(ToolBrowser)
+    },
+    note:
+      'Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.',
   },
 ]
 

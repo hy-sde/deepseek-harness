@@ -502,6 +502,78 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'browser',
+    summary: 'One browser connection per (cwd + kind), one tab per name.',
+    description: 'One browser connection per (cwd + kind), one tab per name.',
+    methods: [
+      {
+        signature: 'relayEndpoint(): string',
+        description: 'The relay endpoint this instance serves (created lazily in relay kind).',
+        parameters: [],
+        returns: 'the relay base URL this instance binds or resolves.',
+      },
+      {
+        signature: 'resolveKind(input: { path?: string; cdpUrl?: string; relay?: boolean }): BrowserKind',
+        description: 'Resolve the browser kind for a session (attach/launch/relay), like omp.',
+        parameters: [{ name: 'input', description: 'optional app-path, cdp URL, or explicit relay opt-in.' }],
+        returns: 'the resolved {@link BrowserKind} to drive.',
+      },
+      {
+        signature: 'async ensureRelay(): Promise<string>',
+        description: 'Ensure the relay server is running for this instance (idempotent).',
+        parameters: [],
+        returns: 'the relay base URL the in-process server is bound to.',
+      },
+      {
+        signature: 'async open( name: string, url: string, opts: { kind: BrowserKind cwd: string waitUntil?: WaitUntil timeoutMs?: number }, ): Promise<PageObservation>',
+        description: 'Open (or navigate) a named tab to `url`; returns the page observation.',
+        parameters: [{ name: 'name', description: 'tab id; one tab per name, one browser per cwd+kind.' }, { name: 'url', description: 'the URL to navigate to.' }, { name: 'opts', description: 'backend kind, working directory, wait condition, timeout.' }],
+        returns: 'the page observation (title, url, ARIA snapshot, size).',
+      },
+      {
+        signature: 'async run( name: string, code: string, opts: { kind: BrowserKind; cwd: string; timeoutMs?: number }, ): Promise<unknown>',
+        description: 'Evaluate `code` in the named tab and return the JSON-serializable value.',
+        parameters: [{ name: 'name', description: 'tab id.' }, { name: 'code', description: 'JavaScript body/expression evaluated in the tab\'s page.' }, { name: 'opts', description: 'backend kind, working directory, timeout.' }],
+        returns: 'the evaluated value (JSON-serializable).',
+      },
+      {
+        signature: 'async click( name: string, selector: string, opts: { kind: BrowserKind; cwd: string }, ): Promise<PageObservation>',
+        description: 'Click an ARIA-ref (`aria-ref=e5`) or CSS selector in the named tab.',
+        parameters: [{ name: 'name', description: 'tab id.' }, { name: 'selector', description: 'ARIA ref selector or CSS selector.' }, { name: 'opts', description: 'backend kind, working directory.' }],
+        returns: 'the re-observed page after the click.',
+      },
+      {
+        signature: 'async type( name: string, selector: string, text: string, opts: { kind: BrowserKind; cwd: string }, ): Promise<PageObservation>',
+        description: 'Type text into an ARIA-ref or CSS selector in the named tab.',
+        parameters: [{ name: 'name', description: 'tab id.' }, { name: 'selector', description: 'ARIA ref selector or CSS selector.' }, { name: 'text', description: 'the text to fill.' }, { name: 'opts', description: 'backend kind, working directory.' }],
+        returns: 'the re-observed page after the fill.',
+      },
+      {
+        signature: 'async close(name: string, opts: { kind: BrowserKind; cwd: string; all?: boolean; kill?: boolean }): Promise<void>',
+        description: 'Close named tabs; `all` closes every tab, `kill` also closes browsers.',
+        parameters: [{ name: 'name', description: 'tab id.' }, { name: 'opts', description: 'backend kind, working directory, close-all and kill flags.' }],
+        returns: 'a promise resolving once the close is initiated.',
+      },
+      {
+        signature: 'async screenshot( name: string, destination: string, opts: { kind: BrowserKind; cwd: string; fullPage?: boolean }, ): Promise<ScreenshotResult>',
+        description: 'Screenshot the named tab to a PNG file; returns the written path.',
+        parameters: [{ name: 'name', description: 'tab id.' }, { name: 'destination', description: 'the PNG file path to write.' }, { name: 'opts', description: 'backend kind, working directory, full-page flag.' }],
+        returns: 'the written screenshot path.',
+      },
+      {
+        signature: 'async observe(name: string, opts: { kind: BrowserKind; cwd: string }): Promise<PageObservation>',
+        description: 'Observe the named tab (title, url, size, ARIA snapshot) without navigating.',
+        parameters: [{ name: 'name', description: 'tab id.' }, { name: 'opts', description: 'backend kind, working directory.' }],
+        returns: 'the page observation.',
+      },
+      {
+        signature: 'stop(): void',
+        description: 'Close every browser connection and stop the relay (cleanup on ctx dispose).',
+        parameters: [],
+      },
+    ],
+  },
+  {
     key: 'clientModules',
     summary: 'The web plugin table service: incremental `dsh.client` scan + wire composition + bundle route + index injection rows.',
     description: 'The web plugin table service: incremental `dsh.client` scan + wire composition + bundle route + index injection rows. Construction runs the activation scan synchronously — a malformed declaration or missing bundle among the already-loaded entries aggregates into one loud throw (FAILED fiber; the boot activation audit reports it).',
@@ -3458,6 +3530,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type Branded<B extends string> = string & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BrowserKind',
+    declaration: 'export type BrowserKind = {\n    kind: \'launch\';\n    path?: string;\n} | {\n    kind: \'attach\';\n    cdpUrl: string;\n} | {\n    kind: \'relay\';\n    cdpUrl: string;\n};',
+  },
+  {
     name: 'CancelOptions',
     declaration: 'export interface CancelOptions {\n    keepInbox?: boolean | undefined;\n}',
   },
@@ -4462,6 +4538,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface OneShotSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: \'one-shot\';\n    readonly label?: string;\n}',
   },
   {
+    name: 'PageObservation',
+    declaration: 'export interface PageObservation {\n    title: string;\n    url: string;\n    aria: string;\n    width: number;\n    height: number;\n}',
+  },
+  {
     name: 'PermissionSelect',
     declaration: 'export interface PermissionSelect {\n    options: PresetOption[];\n    currentValue: string;\n}',
   },
@@ -4696,6 +4776,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ScopeKey',
     declaration: 'export type ScopeKey = object;',
+  },
+  {
+    name: 'ScreenshotResult',
+    declaration: 'export interface ScreenshotResult {\n    path: string;\n    width?: number;\n    height?: number;\n}',
   },
   {
     name: 'SearchFileMatches',
@@ -5596,6 +5680,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'UserQuestionProvider',
     declaration: 'export interface UserQuestionProvider {\n    ask(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer>;\n}',
+  },
+  {
+    name: 'WaitUntil',
+    declaration: 'export type WaitUntil = \'load\' | \'domcontentloaded\' | \'networkidle\' | \'commit\';',
   },
   {
     name: 'WebBootEntry',

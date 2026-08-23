@@ -238,6 +238,8 @@
     { "path": "./packages/memory/tool-memory" },
     { "path": "./packages/git/git" },
     { "path": "./packages/git/tool-git" },
+    { "path": "./packages/browser/browser" },
+    { "path": "./packages/browser/tool-browser" },
     { "path": "./packages/edit/hashline" },
     { "path": "./packages/edit/tool-edit" },
     { "path": "./packages/compaction/compaction" },

@@ -48,6 +48,7 @@
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
 | `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
+| `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`、`ctx.browser`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 浏览器工具（omp 移植）：open/close/run/state 覆盖 launch（stealth 补丁）、CDP-attach 或本地 relay＋扩展；观察为带 click-by-selector 的 ARIA ref 树，截图写 PNG 路径。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -2992,3 +2993,97 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
 
 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。
+
+<a id="deepseek-aidsh-tool-browser"></a>
+
+## `@deepseek-ai/dsh-tool-browser`
+
+### `browser`
+
+通过 Chrome DevTools Protocol 驱动真实浏览器：打开 URL、在标签页内求值 JS、把页面快照为 ARIA ref 树并关闭标签页。三种后端：派生一个带 stealth 补丁的浏览器二进制（app.path）、接入既有 CDP 端点（app.cdp_url）、或经本地 dsh browser relay＋配套扩展驱动用户自己的 Chrome 标签页（app.relay）。ARIA 快照携带 [ref=eN] id，在下一次快照前保持有效；click/type 经由 CSS 选择器仍然可用。截图写为 PNG 路径供模型再读。返回的观察为当前 title、url 与 ref 树，无需截图时优先读取它而非重读页面。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "open navigates, run evaluates `code` in the tab, state returns the current observation, close closes tab(s).",
+      "enum": [
+        "open",
+        "close",
+        "run",
+        "state"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "description": "tab id (default 'main') — several tabs can stay open at once"
+    },
+    "url": {
+      "type": "string",
+      "description": "URL to open and navigate to (action=open only)"
+    },
+    "app": {
+      "type": "object",
+      "description": "Which backend to use; defaults to spawning a stealth-patched browser.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "browser binary path to spawn (default resolves a system Chrome/Edge"
+        },
+        "cdp_url": {
+          "type": "string",
+          "description": "existing CDP endpoint (http://127.0.0.1:9222) to attach to"
+        },
+        "relay": {
+          "type": "boolean",
+          "description": "drive the user's own tabs via the local relay + extension"
+        }
+      }
+    },
+    "wait_until": {
+      "type": "string",
+      "description": "Navigation wait condition (default load).",
+      "enum": [
+        "load",
+        "domcontentloaded",
+        "networkidle0",
+        "networkidle2"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "description": "JavaScript expression or IIFE body to evaluate in the tab (action=run only)"
+    },
+    "timeout": {
+      "type": "integer",
+      "description": "Per-call timeout in seconds (default 30)."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "close every tab (action=close only)"
+    },
+    "kill": {
+      "type": "boolean",
+      "description": "also kill spawned-app browsers (action=close only)"
+    },
+    "screenshot": {
+      "type": "boolean",
+      "description": "write a PNG of the tab to disk and return its path (open/run; uses screenshot_path or a temp file)"
+    },
+    "screenshot_path": {
+      "type": "string",
+      "description": "target PNG file for screenshot=yes"
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+来源：[`packages/browser/tool-browser/src/index.ts`](../packages/browser/tool-browser/src/index.ts)
+
+Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.

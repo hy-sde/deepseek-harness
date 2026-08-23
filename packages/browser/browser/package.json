@@ -1,0 +1,67 @@
+{
+  "name": "@deepseek-ai/dsh-browser",
+  "description": "Agentic browser plumbing: the host ctx.browser service (launch / CDP-attach / relay backends, tab registry, navigation, ARIA snapshot, screenshot, JS eval) backing the browser tool in @deepseek-ai/dsh-tool-browser",
+  "version": "0.1.0-rc.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/browser/browser"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./types": {
+      "types": "./lib/types/types.d.ts",
+      "default": "./lib/types/types.js"
+    },
+    "./stealth": {
+      "types": "./lib/types/stealth.d.ts",
+      "default": "./lib/types/stealth.js"
+    },
+    "./aria": {
+      "types": "./lib/types/aria.d.ts",
+      "default": "./lib/types/aria.js"
+    },
+    "./relay": {
+      "types": "./lib/types/relay/index.d.ts",
+      "default": "./lib/types/relay/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "playwright-core": "^1.61.1",
+    "ws": "^8.21.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@types/node": "^22.0.0",
+    "playwright-core": "^1.61.1",
+    "ws": "^8.21.0",
+    "@types/ws": "^8.5.0"
+  }
+}

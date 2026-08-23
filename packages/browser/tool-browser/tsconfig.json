@@ -1,0 +1,27 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../packages/runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../../packages/browser/browser"
+    },
+    {
+      "path": "../../../packages/core/system-prompt"
+    },
+    {
+      "path": "../../../packages/core/tools"
+    }
+  ]
+}

@@ -76,6 +76,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   fileReferences: 'session-reference.md',
   fs: 'filesystem.md',
   git: 'git.md',
+  browser: 'browser.md',
   goals: 'goal.md',
   webServer: 'web-server.md',
   invariants: 'invariants.md',
@@ -566,6 +567,13 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   TypertPackageRecord: 'invariants.md',
   TypertSchemaFilter: 'invariants.md',
   TypertSchemaRecord: 'invariants.md',
+  BrowserKind: 'browser.md',
+  BrowserKindTag: 'browser.md',
+  BrowserConfig: 'browser.md',
+  PageObservation: 'browser.md',
+  ScreenshotResult: 'browser.md',
+  WaitUntil: 'browser.md',
+  CloseMode: 'browser.md',
 }
 
 /** TypeScript lib and pinned framework types with no repository-owned data page. */

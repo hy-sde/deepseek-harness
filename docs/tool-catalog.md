@@ -46,6 +46,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
 | `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
+| `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3005,3 +3006,97 @@ Run a parallel code review over git changes (working tree, staged, or a commit r
 Source: [`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
 
 Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict.
+
+<a id="deepseek-aidsh-tool-browser"></a>
+
+## `@deepseek-ai/dsh-tool-browser`
+
+### `browser`
+
+Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a tab, snapshot the page as an ARIA ref tree, and close tabs. Three backends: launch a stealth-patched browser binary (app.path), attach to an existing CDP endpoint (app.cdp_url), or relay into the user's own Chrome tabs via the local dsh browser relay + companion extension (app.relay). ARIA snapshots carry [ref=eN] ids that stay valid until the next snapshot; click/type via CSS selectors keep working. Screenshots are written to disk as PNG paths the model can re-read. Returned observation is the current title, url and ref tree, so prefer it over re-reading when no screenshot is needed.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "open navigates, run evaluates `code` in the tab, state returns the current observation, close closes tab(s).",
+      "enum": [
+        "open",
+        "close",
+        "run",
+        "state"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "description": "tab id (default 'main') — several tabs can stay open at once"
+    },
+    "url": {
+      "type": "string",
+      "description": "URL to open and navigate to (action=open only)"
+    },
+    "app": {
+      "type": "object",
+      "description": "Which backend to use; defaults to spawning a stealth-patched browser.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "browser binary path to spawn (default resolves a system Chrome/Edge"
+        },
+        "cdp_url": {
+          "type": "string",
+          "description": "existing CDP endpoint (http://127.0.0.1:9222) to attach to"
+        },
+        "relay": {
+          "type": "boolean",
+          "description": "drive the user's own tabs via the local relay + extension"
+        }
+      }
+    },
+    "wait_until": {
+      "type": "string",
+      "description": "Navigation wait condition (default load).",
+      "enum": [
+        "load",
+        "domcontentloaded",
+        "networkidle0",
+        "networkidle2"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "description": "JavaScript expression or IIFE body to evaluate in the tab (action=run only)"
+    },
+    "timeout": {
+      "type": "integer",
+      "description": "Per-call timeout in seconds (default 30)."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "close every tab (action=close only)"
+    },
+    "kill": {
+      "type": "boolean",
+      "description": "also kill spawned-app browsers (action=close only)"
+    },
+    "screenshot": {
+      "type": "boolean",
+      "description": "write a PNG of the tab to disk and return its path (open/run; uses screenshot_path or a temp file)"
+    },
+    "screenshot_path": {
+      "type": "string",
+      "description": "target PNG file for screenshot=yes"
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/browser/tool-browser/src/index.ts`](../packages/browser/tool-browser/src/index.ts)
+
+Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.

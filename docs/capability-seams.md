@@ -156,6 +156,9 @@ flowchart LR
   pkg_git["git"]
   svc_git["ctx.git<br/>Git commit + review seam"]
   pkg_tool_git["tool-git"]
+  pkg_browser["browser"]
+  svc_browser["ctx.browser<br/>Agentic browser (launch / CDP-attach / relay)"]
+  pkg_tool_browser["tool-browser"]
   pkg_memory["memory"]
   svc_memory["ctx.memory<br/>Long-horizon project memory"]
   pkg_tool_memory["tool-memory"]
@@ -223,6 +226,7 @@ flowchart LR
   pkg_authorization --> svc_authorization
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
+  pkg_browser --> svc_browser
   pkg_code_runtime --> svc_codeRuntime
   pkg_code_runtime_worker --> svc_codeRuntime
   pkg_commands --> svc_commands
@@ -329,6 +333,7 @@ flowchart LR
   svc_attachments --> pkg_host_runtime
   svc_attachments --> pkg_llm_pi_ai
   svc_authorization --> pkg_llm_pi_ai
+  svc_browser --> pkg_tool_browser
   svc_clientModules --> pkg_hmr
   svc_codeRuntime --> pkg_tools
   svc_compaction --> pkg_compaction_basic
@@ -433,6 +438,7 @@ flowchart LR
   svc_workflowEngine --> pkg_tool_ralph
   svc_workflowEngine --> pkg_tool_workflow
   svc_workspaceRegistry --> pkg_apiproxy
+  svc_browser -. event gate .-> pkg_tool_web
   svc_fs -. event gate .-> pkg_fs_observation_policy
   svc_git -. event gate .-> pkg_subprocess
   svc_git -. event gate .-> pkg_tool_subagent
@@ -486,6 +492,7 @@ flowchart LR
 | `ctx.codeRuntime` | `seam` | [`code-runtime`](../packages/code-runtime/code-runtime) | `code-runtime-worker` | [`tools`](../packages/core/tools) | - | Runs one model-written program against host-provided async bindings; backends differ by substrate and language (the tool registry consumes it for Code Mode). |
 | `ctx.fs` | `seam` | [`fs`](../packages/fs/fs) | [`fs-local`](../packages/fs/fs-local), [`fs-sandbox`](../packages/fs/fs-sandbox), [`fs-e2b`](../packages/e2b/fs-e2b) | [`tool-fs`](../packages/fs/tool-fs) | [`fs-observation-policy`](../packages/fs/fs-observation-policy) | tool-fs executes read/write/edit through ctx.fs; fs-sandbox fences mutations by the shared sandbox mode; fs-observation-policy contributes observed-state checks through the fs/* event gate. |
 | `ctx.git` | `seam` | [`git`](../packages/git/git) | - | [`tool-git`](../packages/git/tool-git) | [`subprocess`](../packages/subprocess/subprocess), [`tool-subagent`](../packages/subagent/tool-subagent) | A host-owned stateless wrapper over the git CLI through ctx.subprocess (commit/review subset); the model-facing commit/commit_apply/review tools consume it, and review fans out through the subagent seam (port_omp.md item: commit). |
+| `ctx.browser` | `seam` | [`browser`](../packages/browser/browser) | - | [`tool-browser`](../packages/browser/tool-browser) | [`tool-web`](../packages/web/tool-web) | Host-owned browser connections driven over Chrome DevTools Protocol by playwright-core: stealth-patched launch (app.path), attach to an existing CDP endpoint (app.cdp_url), or the in-process relay + companion Chrome extension that drives the user’s own tabs (app.relay). Tabs are namespaced per session by the tool (port_omp.md item: browser tool with stealth + relay/CDP-attach). |
 | `ctx.memory` | `core` | [`memory`](../packages/memory/memory) | - | [`tool-memory`](../packages/memory/tool-memory) | - | Host-owned durable store of project memories (decisions, preferences, facts, lessons) keyed by project; the ported retain/recall/reflect/memory_edit/learn tools consume it, and the registry seam stays open for future providers (port_omp.md item 4). |
 | `ctx.compaction` | `seam` | [`compaction`](../packages/compaction/compaction) | [`compaction-basic`](../packages/compaction/compaction-basic) | [`compaction-basic`](../packages/compaction/compaction-basic) | - | The basic backend consumes post-step pressure and request-error recovery events; there is no model-facing compact tool. |
 | `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-codex`](../packages/subagent/subagent-codex), [`subagent-claude-code`](../packages/subagent/subagent-claude-code), [`subagent-dsh-sdk`](../packages/subagent/subagent-dsh-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/workflow/tool-ralph) | - | Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route. |

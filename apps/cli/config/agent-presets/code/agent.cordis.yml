@@ -103,6 +103,15 @@
     reviewProvider: spawn
     maxReviewers: 4
 
+# Port of omp's browser tool (stealth + relay/CDP-attach). The `browser` SERVICE
+# stays host-plane (one browser-process group per host); this row contributes the
+# model-facing `browser` tool (open/close/run/state over launch/cdp_url/relay
+# backends, ARIA-snapshot observations, optional screenshots) plus the
+# `browser:tools` prompt section. No realm — the tool only consumes the host
+# instance, and browser tabs are namespaced per session by the tool itself.
+- id: tool-browser
+  name: '@deepseek-ai/dsh-tool-browser'
+
 # ── rich editor + LSP ────────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each
