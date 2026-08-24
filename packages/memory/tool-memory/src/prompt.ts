@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs'
 import { isAbsolute } from 'node:path'
 import {
   BANK_FILE,
+  LEGACY_BANK_FILE,
   LEARNED_FILE,
   MAX_INJECTED_BANK_ENTRIES,
   SUMMARY_FILE,
@@ -71,6 +72,16 @@ function readBankText(raw: Buffer): string {
   }
 }
 
+/** Read the canonical bank, falling back to a pre-rename plaintext `bank.jsonl`. */
+function readBankOf(root: string): Buffer {
+  try {
+    return readFileSync(`${root}/${BANK_FILE}`)
+  } catch {
+    // Legacy plaintext bank from before the `.zstd` rename — migrated on write.
+    return readFileSync(`${root}/${LEGACY_BANK_FILE}`)
+  }
+}
+
 /** Synchronously read the project memory block ('' when absent). */
 export function readProjectMemoryBlock(root: string, maxChars: number): string {
   let summary = ''
@@ -88,7 +99,7 @@ export function readProjectMemoryBlock(root: string, maxChars: number): string {
   }
   try {
     const rows = parseBankText(
-      readBankText(readFileSync(`${root}/${BANK_FILE}`)),
+      readBankText(readBankOf(root)),
       // Default importance only matters when the plaintext omits it; modern
       // banks carry it per row. Fall back to parseBankText's default.
     )

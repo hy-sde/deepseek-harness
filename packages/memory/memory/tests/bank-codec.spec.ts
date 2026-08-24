@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import {
   compressZstdFrame, decompressZstdFrame, scanZstdFrames,
 } from '@deepseek-ai/dsh-zstd-frame'
-import { LocalMemoryBackend, BANK_FILE, isZstdData, projectRootOf } from '../src/local.ts'
+import { LocalMemoryBackend, BANK_FILE, LEGACY_BANK_FILE, isZstdData, projectRootOf } from '../src/local.ts'
 
 const CWD = '/project/a'
 
@@ -58,7 +58,7 @@ describe('bank codec', () => {
       id: 'm_legacy', content: 'legacy row', source: 'retain', importance: 0.7,
       createdAt: 1, updatedAt: 1, active: true,
     })
-    await writeFile(join(project, BANK_FILE), `${legacyLine}\n`, 'utf8')
+    await writeFile(join(project, LEGACY_BANK_FILE), `${legacyLine}\n`, 'utf8')
 
     // Read path is encoding-agnostic: the plaintext row is visible.
     const before = await backendFor(root).search({ cwd: CWD }, 'legacy row')
@@ -72,6 +72,22 @@ describe('bank codec', () => {
     expect(isZstdData(bytes)).toBe(true)
     const migrated = await backendFor(root).search({ cwd: CWD }, 'legacy row')
     expect(migrated.count).toBeGreaterThan(0)
+    // The pre-rename plaintext file is gone after migration (no double sources).
+    await expect((await import('node:fs')).promises.stat(join(project, LEGACY_BANK_FILE))).rejects.toThrow()
+  })
+
+  it('reads a legacy plaintext bank even before any write happens', async () => {
+    const root = await tempRoot()
+    const project = projectRootOf(root, CWD)
+    await (await import('node:fs')).promises.mkdir(project, { recursive: true })
+    await writeFile(join(project, LEGACY_BANK_FILE), `${JSON.stringify({
+      id: 'm_only', content: 'the only row', source: 'retain', importance: 0.7,
+      createdAt: 1, updatedAt: 1, active: true,
+    })}\n`, 'utf8')
+    const found = await backendFor(root).search({ cwd: CWD }, 'only row')
+    expect(found.items[0]?.content).toContain('the only row')
+    // Still no canonical bank file yet — nothing has written since the rename.
+    await expect(bankBytes(root)).rejects.toThrow()
   })
 
   it('honors compression: none with the plaintext line-append format', async () => {

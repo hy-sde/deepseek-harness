@@ -29,8 +29,13 @@ Hindsight/Mnemopi-style providers later, and any new provider registers one
 
 Each project (encoded absolute cwd) gets one memory root with three artifacts:
 
-- `bank.jsonl` — editable working entries written by `retain` (id, content,
-  context, source, importance, timestamps, active flag). Backs `memory_edit`.
+- `bank.jsonl.zstd` — editable working entries written by `retain` (id,
+  content, context, source, importance, timestamps, active flag). Backs
+  `memory_edit`. By default the on-disk format is the same zstd frame
+  container as session logs: each save batch is one checksummed frame,
+  append-only and self-healing. The pre-rename plaintext `bank.jsonl` is
+  still read and is migrated on the first write; set `compression: 'none'`
+  in `LocalMemoryConfig` for the original line-append format.
 - `learned.md` — newest-first, deduped, capped (100) lesson bullets written by
   `learn`; the same format and normalization omp keeps.
 - `memory_summary.md` — optional consolidated summary (hand- or tool-maintained)

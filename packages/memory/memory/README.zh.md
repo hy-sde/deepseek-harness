@@ -22,8 +22,11 @@
 
 每个项目根包含三个工件：
 
-- `bank.jsonl` — 由 `retain` 写入的可编辑工作条目（id、内容、上下文、来源、
-  重要性、时间戳、活跃标志）。支撑 `memory_edit`。
+- `bank.jsonl.zstd` — 由 `retain` 写入的可编辑工作条目（id、内容、上下文、来源、
+  重要性、时间戳、活跃标志）。支撑 `memory_edit`。默认磁盘格式与会话日志相同的
+  zstd 帧容器：每次保存批次是一帧带校验的帧，追加友好且可自愈。更名前的纯文本
+  `bank.jsonl` 仍会被读取，并在首次写入时迁移；在 `LocalMemoryConfig` 中设置
+  `compression: 'none'` 可恢复原逐行追加格式。
 - `learned.md` — 由 `learn` 写入的、新在前、去重、限容（100 条）的教训列表；
   与 omp 保持相同的格式和归一化。可经受整合；`learn` 写入会做注入中和与密钥脱敏。
 - `memory_summary.md` — 可选的整合摘要（手工或工具维护），`recall`、`reflect`

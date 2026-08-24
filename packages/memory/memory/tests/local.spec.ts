@@ -1,7 +1,7 @@
 /**
- * The local backend: durable project-scoped files (bank.jsonl / learned.md /
- * memory_summary.md), normalization, dedupe, caps, search scoring, and edit
- * semantics — each against a temp memory root.
+ * The local backend: durable project-scoped files (bank.jsonl.zstd /
+ * learned.md / memory_summary.md), normalization, dedupe, caps, search
+ * scoring, and edit semantics — each against a temp memory root.
  */
 
 import { mkdtemp, readFile } from 'node:fs/promises'

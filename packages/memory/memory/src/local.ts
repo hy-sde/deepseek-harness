@@ -2,19 +2,20 @@
  * The local memory backend: durable, project-scoped memory under
  * `<harness home>/memories/<project>/`. Three artifacts per project:
  *
- * - `bank.jsonl` — editable working entries written by `retain` (id, content,
- *   context, source, importance, timestamps, active flag). Backs `retain` and
- *   `memory_edit`.
+ * - `bank.jsonl.zstd` — editable working entries written by `retain` (id,
+ *   content, context, source, importance, timestamps, active flag). Backs
+ *   `retain` and `memory_edit`.
  * - `learned.md` — newest-first, deduped, capped lesson bullets written by
  *   `learn` (survives consolidation; the same format omp keeps).
  * - `memory_summary.md` — optional consolidated long-term summary (hand or
  *   tool maintained) that recall and prompt injection surface.
  *
- * The working bank (`bank.jsonl`) defaults to the same on-disk container as
+ * The working bank (`bank.jsonl.zstd`) uses the same on-disk container as
  * the session persistence backend: each save batch is one checksummed
  * Zstandard frame, so memory reuses the shared `@deepseek-ai/dsh-zstd-frame`
- * codec, stays append-friendly and self-healing, and migrates plaintext banks
- * transparently on first write (reads are encoding-agnostic). `learned.md`
+ * codec, stays append-friendly and self-healing, and migrates the
+ * pre-rename plaintext `bank.jsonl` transparently on first write (reads are
+ * encoding-agnostic; the filename advertises the container). `learned.md`
  * stays plaintext markdown for human/tool readability.
  *
  * Everything is plain files plus an in-process write-chain so concurrent
@@ -47,8 +48,10 @@ import type {
   MemorySummaries,
 } from './types.ts'
 
-/** Name of the working-memory bank file under a project root. */
-export const BANK_FILE = 'bank.jsonl'
+/** Name of the working-memory bank file under a project root (zstd framed by default). */
+export const BANK_FILE = 'bank.jsonl.zstd'
+/** Pre-rename plaintext bank file, migrated to {@link BANK_FILE} on first write. */
+export const LEGACY_BANK_FILE = 'bank.jsonl'
 /** Name of the captured-lessons file. */
 export const LEARNED_FILE = 'learned.md'
 /** Name of the optional consolidated summary file. */
@@ -62,7 +65,7 @@ export const MAX_LEARNED_CONTEXT_CHARS = 400
 export const MAX_BANK_CONTENT_CHARS = 4000
 export const MAX_BANK_CONTEXT_CHARS = 800
 
-/** One persisted working-memory row in `bank.jsonl`. */
+/** One persisted working-memory row in `bank.jsonl.zstd`. */
 export interface BankRow {
   id: string
   content: string
@@ -461,7 +464,13 @@ export class LocalMemoryBackend implements MemoryBackend {
   }
 
   private async readBank(root: string): Promise<BankRow[]> {
+    // Prefer the current bank; fall back to a pre-rename plaintext
+    // `bank.jsonl` (prompt injection and any read-only path see it too).
     const bytes = await readMaybeBytes(join(root, BANK_FILE))
+    if (bytes.length === 0) {
+      const legacy = await readMaybeBytes(join(root, LEGACY_BANK_FILE))
+      if (legacy.length > 0) return parseBankText(legacy.toString('utf8'), this.defaultImportance)
+    }
     let text: string
     if (isZstdData(bytes)) {
       try {
@@ -586,14 +595,27 @@ async function appendBankEntry(
     await appendLines(file, [line])
     return
   }
+  const root = resolve(file, '..')
   const existing = await readMaybeBytes(file)
-  if (existing.length > 0 && isZstdData(existing)) {
+  if (existing.length === 0) {
+    // Absent bank → first frame. Also fold in a pre-rename plaintext
+    // `bank.jsonl` so the rename migrates existing projects transparently.
+    const legacyText = await readMaybe(join(root, LEGACY_BANK_FILE))
+    const previous = legacyText.length > 0 ? parseBankText(legacyText, fallbackImportance) : []
+    const payload = Buffer.from(await encodeBankFrames([
+      ...previous.map(row => JSON.stringify(row)),
+      line,
+    ]))
+    await writeFile(file, payload)
+    if (legacyText.length > 0) await rm(join(root, LEGACY_BANK_FILE), { force: true }).catch(() => {})
+    return
+  }
+  if (isZstdData(existing)) {
     await appendFile(file, Buffer.from(await compressZstdFrame(`${line}\n`)))
     return
   }
-  const plaintext = existing.length === 0 ? '' : existing.toString('utf8')
-  // empty file → first frame; plaintext → migrate rows to frames first.
-  const rows = plaintext.length > 0 ? parseBankText(plaintext, fallbackImportance) : []
+  // plaintext new file (e.g. 'none'-mode leftovers): migrate rows to frames first.
+  const rows = parseBankText(existing.toString('utf8'), fallbackImportance)
   const head = rows.map(row => JSON.stringify(row))
   const payload = Buffer.from(await encodeBankFrames([...head, line]))
   await writeFile(file, payload)
@@ -608,13 +630,13 @@ async function writeBank(file: string, rows: BankRow[], compression: BankCompres
   const lines = rows.map(row => JSON.stringify(row))
   if (lines.length === 0) {
     await writeFile(file, '', 'utf8')
-    return
-  }
-  if (compression === 'zstd') {
+  } else if (compression === 'zstd') {
     await writeFile(file, Buffer.from(await encodeBankFrames(lines)))
-    return
+  } else {
+    await writeFile(file, `${lines.join('\n')}\n`, 'utf8')
   }
-  await writeFile(file, `${lines.join('\n')}\n`, 'utf8')
+  // A rewrite under the canonical name supersedes any pre-rename plaintext bank.
+  await rm(join(resolve(file, '..'), LEGACY_BANK_FILE), { force: true }).catch(() => {})
 }
 
 /**
@@ -655,7 +677,7 @@ export function formatBankRows(rows: readonly BankRow[], cap: number): string[] 
   return active.map(row => neutralizeInjection(row.content))
 }
 
-/** Parse `bank.jsonl` text into rows, skipping malformed lines (self-healing). */
+/** Parse `bank.jsonl.zstd` text into rows, skipping malformed lines (self-healing). */
 export function parseBankText(text: string, fallbackImportance = 0.7): BankRow[] {
   const rows: BankRow[] = []
   for (const raw of text.split('\n')) {
