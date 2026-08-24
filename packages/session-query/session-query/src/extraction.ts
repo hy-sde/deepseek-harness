@@ -1,6 +1,7 @@
 /** First-party semantic text extraction for session-query consumers. */
 
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { CompactionResult } from '@deepseek-ai/dsh-compaction'
 
 /**
  * Extract searchable semantic text from one first-party session event.
@@ -28,6 +29,15 @@ export function extractSessionEventText(event: SessionEvent): string {
       return joinText(event.data.todos.flatMap(todo => [todo.status, todo.content]))
     case 'turn/end':
       return turnEndText(event.data.reason)
+    case 'compaction/summary': {
+      // The conversation's own compacted digest is durable summary text: it
+      // is exactly what an LLM miner (3b) or a transcript reader (4a) wants
+      // to find. The pair's log-only nature keeps it out of the surface, but
+      // search is the right home for it. The merge types `data.summary`;
+      // `CompactionResult` is our namespace for the digest payload.
+      const summary: CompactionResult['summary'] = event.data.summary
+      return contentText(summary)
+    }
     case 'turn/start':
     case 'step/start':
     case 'step/end':

@@ -19,6 +19,7 @@ import {
 } from '@deepseek-ai/dsh-zstd-frame'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { buildWindow, type FileTextLine } from './read-render.ts'
+import { tryRenderSessionTranscript } from './read-session.ts'
 import { sessionResolveOptions } from './session-cwd.ts'
 import type { ReadToolCaps } from './read.ts'
 
@@ -92,8 +93,15 @@ export async function tryReadZstd(
   const decoded = await decodeZstdText(data, target.displayPath)
   if (decoded === undefined) return undefined // not valid UTF-8 text → fall through
 
+  // Upgrade: a decoded stream that parses as a session log renders as a
+  // readable transcript (current-surface projection + compaction digests)
+  // instead of the raw JSONL window. Any parse/fold problem falls back to
+  // the generic decoded-plaintext window below.
+  const transcript = tryRenderSessionTranscript(decoded)
+  const rendered = transcript ?? decoded
+
   const window = await buildWindow(
-    [decoded],
+    [rendered],
     {
       offset: 1,
       limit: caps.limit,

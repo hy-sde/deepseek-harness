@@ -109,10 +109,36 @@ function textOf(result: { content?: { type: string; text?: string }[] }): string
   return (result.content ?? []).filter(block => block.type === 'text').map(block => block.text ?? '').join('')
 }
 
-/** A session-style artifact: two concatenated checksummed frames. */
-async function framedJsonl(): Promise<Uint8Array> {
-  const header = await compressZstdFrame('{"type":"session","version":0,"id":"s1","createdAt":1}\n')
-  const batch = await compressZstdFrame('{"type":"user/message","seq":1}\n{"type":"assistant/message","seq":2}\n')
+/** A session-style artifact: header + realistic events, two concatenated frames. */
+async function framedSession(): Promise<Uint8Array> {
+  const header = await compressZstdFrame(
+    '{"type":"session","version":0,"id":"s1","createdAt":1700000000000,"cwd":"/workspace"}\n',
+  )
+  const batch = await compressZstdFrame(
+    '{"type":"user/message","seq":0,"time":0,"surfaceOp":"append","data":{"content":[{"type":"text","text":"hello world"}]}}\n'
+    + '{"type":"assistant/message","seq":1,"time":1,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"I will do it"}]}}}\n'
+    + '{"type":"tool/call","seq":2,"time":2,"data":{"name":"write","arguments":"{\\"path\\":\\"x\\"}"}}\n'
+    + '{"type":"tool/result","seq":3,"time":3,"surfaceOp":"append","data":{"message":{"role":"tool","content":[{"type":"text","text":"written"}]}}}\n'
+    + '{"type":"turn/end","seq":4,"time":4,"data":{"reason":{"kind":"error","error":{"message":"oops","code":"UNKNOWN"}}}}\n',
+  )
+  return Buffer.concat([header, batch])
+}
+
+/** A session log where a compaction replaced the early range with a digest. */
+async function framedCompactedSession(): Promise<Uint8Array> {
+  const header = await compressZstdFrame(
+    '{"type":"session","version":0,"id":"s2","createdAt":1700000000000,"cwd":"/workspace"}\n',
+  )
+  const batch = await compressZstdFrame(
+    // original exchange, then a surface replacement shadowing seqs 0-2
+    '{"type":"user/message","seq":0,"time":0,"surfaceOp":"append","data":{"content":[{"type":"text","text":"old question"}]}}\n'
+    + '{"type":"assistant/message","seq":1,"time":1,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"old answer"}]}}}\n'
+    + '{"type":"tool/result","seq":2,"time":2,"surfaceOp":"append","data":{"message":{"role":"tool","content":[{"type":"text","text":"old result"}]}}}\n'
+    + '{"type":"compaction/summary","seq":3,"time":3,"data":{"summary":[{"type":"text","text":"digest of the old exchange"}],"shadowedSeqs":[0,1,2]}}\n'
+    + '{"type":"user/message","seq":4,"time":4,"surfaceOp":{"op":"replace","start":0,"end":2},"sourceEventSeqs":[0,3,1,2],"data":{"content":[{"type":"text","text":"digest of the old exchange"}]}}\n'
+    + '{"type":"user/message","seq":5,"time":5,"surfaceOp":"append","data":{"content":[{"type":"text","text":"follow-up"}]}}\n'
+    + '{"type":"assistant/message","seq":6,"time":6,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"new answer"}]}}}\n',
+  )
   return Buffer.concat([header, batch])
 }
 
@@ -122,15 +148,50 @@ async function singleFrameText(): Promise<Uint8Array> {
 }
 
 describe('read zstd routing', () => {
-  it('decodes a session-style .jsonl.zstd log into line-numbered JSONL text', async () => {
+  it('renders a session-style .jsonl.zstd log as a readable transcript', async () => {
     const { ctx, fs } = await setup()
-    fs.files.set('key:session.jsonl.zstd', await framedJsonl())
+    fs.files.set('key:session.jsonl.zstd', await framedSession())
     const { value: result } = await readResult(ctx, 'session.jsonl.zstd')
     expect(result.path).toBe('/abs/session.jsonl')
-    expect(result.totalLines).toBe(3)
-    expect(result.lines.map(l => l.text).join('\n')).toContain('"id":"s1"')
-    expect(result.lines.map(l => l.text).join('\n')).toContain('"type":"assistant/message"')
+    const text = result.lines.map(l => l.text).join('\n')
+    expect(text).toContain('SESSION s1')
+    expect(text).toContain('created 2023-11-14T22:13:20.000Z')
+    expect(text).toContain('cwd /workspace')
+    expect(text).toContain('# user')
+    expect(text).toContain('hello world')
+    expect(text).toContain('# assistant')
+    expect(text).toContain('I will do it')
+    expect(text).toContain('→ written')
+    expect(text).toContain('✗ turn ended: error — oops')
     expect(result.lines[0]?.number).toBe(1)
+  })
+
+  it('shadows compacted ranges and surfaces the digest in the transcript', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:compacted.jsonl.zstd', await framedCompactedSession())
+    const { value: result } = await readResult(ctx, 'compacted.jsonl.zstd')
+    const text = result.lines.map(l => l.text).join('\n')
+    expect(text).toContain('SESSION s2')
+    // the shadowed original exchange is gone from the current surface
+    expect(text).not.toContain('old question')
+    expect(text).not.toContain('old answer')
+    expect(text).not.toContain('old result')
+    // the replacement carried the digest onto the surface
+    expect(text).toContain('digest of the old exchange')
+    expect(text).toContain('follow-up')
+    expect(text).toContain('new answer')
+    // the log-only compaction digest is rendered as a marker line
+    expect(text).toContain('📦 compacted 3 events: digest of the old exchange')
+  })
+
+  it('falls back to the decoded JSONL window for a header without parsable events', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:bare.jsonl.zstd', await compressZstdFrame(
+      '{"type":"session","version":0,"id":"s3","createdAt":1}\n{"type":"bogus"\n',
+    ))
+    const { value: result } = await readResult(ctx, 'bare.jsonl.zstd')
+    const text = result.lines.map(l => l.text).join('\n')
+    expect(text).toContain('"id":"s3"') // raw JSONL window, not a transcript
   })
 
   it('decodes a generic single-frame .zst and honors offset/limit via the standard window', async () => {

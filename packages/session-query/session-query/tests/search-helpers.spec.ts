@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { createUserMessage, CallId , createMessage, createToolResultMessage } from '@deepseek-ai/dsh-llm'
+import { CompactionId } from '@deepseek-ai/dsh-compaction'
 import SessionStore, {
   SESSION_FORMAT_VERSION,
   SessionId,
@@ -115,6 +116,22 @@ describe('session-query semantic extraction', () => {
     expect(extractSessionEventText(events[4]!)).toBe('failed\nOops\nE_OOPS')
     expect(extractSessionEventText(events[5]!)).toBe('')
     expect(extractSessionEventText(events[6]!)).toBe('in_progress\nship search')
+    expect(extractSessionEventText({
+      type: 'compaction/summary',
+      seq: 10,
+      time: 11,
+      data: {
+        compactionId: CompactionId('c-1'),
+        summary: [{ type: 'text', text: 'the user wanted search; we shipped it' }],
+        shadowedRange: { start: 0, end: 5 },
+        shadowedSeqs: [0, 1, 2, 3, 4, 5],
+        shadowedTokenCount: 120,
+        provider: 'mock',
+        model: 'mock',
+        rawOutput: [],
+        llmStreamCall: true,
+      },
+    })).toBe('the user wanted search; we shipped it')
   })
 
   it('extracts meaningful turn outcomes and skips structural or unknown events', () => {

@@ -15,7 +15,7 @@ import type {
   MemorySearchResult,
 } from '@deepseek-ai/dsh-memory'
 import {
-  mineCandidateOf, mineFingerprint, resolveSessionQuery, searchSessionHistory, sessionLabel,
+  formatSessionMention, mineCandidateOf, mineFingerprint, resolveSessionQuery, searchSessionHistory, sessionLabel,
 } from './session-history.ts'
 
 /** Session-history recall tuning (wired from tool config in index.ts). */
@@ -136,7 +136,9 @@ function formatRecall(query: string, result: MemorySearchResult): string {
     const meta = [
       item.source ?? '',
       item.timestamp?.slice(0, 10) ?? '',
-      item.sessionId !== undefined ? `session ${sessionLabel(item.sessionId)}` : '',
+      item.sessionId !== undefined
+        ? `session ${sessionLabel(item.sessionId)} ${formatSessionMention(item.sessionId)}`
+        : '',
     ].filter(Boolean).join(' · ')
     const score = item.score === undefined ? '' : ` · score ${item.score.toFixed(2)}`
     const readonly = item.readonly ? ' · read-only' : ''
