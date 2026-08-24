@@ -236,6 +236,15 @@
     - id: internal-urls
       name: '@deepseek-ai/dsh-internal-urls'
 
+    # session:// internal-URL scheme (registers into ctx.internalUrls): the
+    # harness's own session history becomes files — session://<id> transcript,
+    # session://<id>/event/<seq> exact event JSON, session://* listing, and
+    # session://search?q=… FTS hits — reachable by the read/grep tools with no
+    # new tool code. Host-plane like the registry it extends; only session://search
+    # requires content search (openAt) enabled — exact reads never do.
+    - id: session-url
+      name: '@deepseek-ai/dsh-session-url'
+
     # Agent-curated long-horizon memory (ctx.memory): durable, project-scoped
     # memory banks with a backend registry and a shipped `local` provider
     # (retain/recall/reflect/memory_edit/learn + first-turn prompt injection

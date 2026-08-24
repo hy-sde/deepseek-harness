@@ -173,6 +173,40 @@ describe('persistent kernels — failure taxonomy', () => {
         expect(result.error?.kind).toBe('output-limit')
       }, { maxOutputBytes: 64 })
     })
+
+    it(`spills the full output on an output overrun (${language})`, async () => {
+      await withManager(async (manager) => {
+        const spilled: string[] = []
+        const code = language === 'python'
+          ? "'x' * 200"
+          : "return 'x'.repeat(200)"
+        const result = await manager.run({ language, code }, async (content) => {
+          spilled.push(content)
+          return 'spill://kernel-output-1'
+        })
+        expect(result.error?.kind).toBe('output-limit')
+        expect(result.error?.message).toContain('full program output preserved at spill://kernel-output-1')
+        expect(spilled).toHaveLength(1)
+        expect(spilled[0]).toContain('[completion value]')
+        expect(spilled[0]).toContain('x'.repeat(200))
+      }, { maxOutputBytes: 64 })
+    })
+
+    it(`keeps the truncated result when the spill hook declines (${language})`, async () => {
+      await withManager(async (manager) => {
+        const called: string[] = []
+        const code = language === 'python'
+          ? "'x' * 200"
+          : "return 'x'.repeat(200)"
+        const result = await manager.run({ language, code }, async (content) => {
+          called.push(content)
+          return undefined
+        })
+        expect(result.error?.kind).toBe('output-limit')
+        expect(result.error?.message).not.toContain('preserved at')
+        expect(called).toHaveLength(1)
+      }, { maxOutputBytes: 64 })
+    })
   }
 
   it('uncaps output when within budget and surfaces a completion value', async () => {

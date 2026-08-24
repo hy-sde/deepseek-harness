@@ -31,3 +31,7 @@ Every observation carries a Playwright ARIA snapshot with `[ref=eN]` ids. The id
 ## Session isolation
 
 The `browser` service is shared host-plane; the tool namespaces its tab key per session id, so concurrent sessions never steer each other's tabs.
+
+## Targeting the local harness GUI
+
+The tool is URL-agnostic, so it can also drive the harness's own Web GUI (`dsh web`, `http://127.0.0.1:3080`): `launch` a browser or `attach` to a running Chrome, navigate to the local origin, and work the GUI's session-history and review surfaces directly. That closes the loop for the same corpus — a session is readable as a URL (`session://<id>`), as tool results (`session_query`), and as screen pixels (browser → GUI) without any special casing in the tool.

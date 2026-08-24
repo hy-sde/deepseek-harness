@@ -68,6 +68,7 @@
 - **一次性**。没有 `session` 时，spawn 一个新 kernel，恰好运行一个程序后关闭。
 - **持久化**。Python：模块级变量与循环状态跨 cell 保留。JavaScript：`state`（长寿命共享对象）与 sloppy 全局赋值跨 cell 保留；cell 顶层的 `const`/`let`/`function`/`class` 是每 cell 作用域（async 函数体），持久定义请放 `state`。cell 以 `return <json>` 携带完成值，或以无 `return` 结束为无值运行；非 lossless JSON 完成值（环、`BigInt`、集合）判为 `'invalid-output'`。
 - **预算与失败种类**。墙钟超时 → `'timeout'`；取消或被迫终止 → `'abort'`；抛异常 → `'exception'`；非 JSON 完成 → `'invalid-output'`；合并输出溢出 → `'output-limit'`；kernel 死亡 → 会话注册表替换 kernel 并重试一次。全部是结果字段，绝不会 reject 工具调用。
+- **输出溢出恢复**。运行溢出 `maxOutputBytes`（`'output-limit'` 失败）时，工具调用 `ctx.spillStore.saveText()` 保存完整的捕获输出（日志加溢出的完成值），成功后（已加载 `spillStore` 后端且有会话属主）在失败消息后追加 `full program output preserved at <retrieval-hint>`，让溢出尾部可恢复而非被丢弃。spill 失败是最佳努力：绝不会让调用失败或改变截断后的结果。
 
 ## 开发
 

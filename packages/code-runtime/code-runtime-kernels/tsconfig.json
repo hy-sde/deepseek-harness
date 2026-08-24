@@ -22,6 +22,9 @@
       "path": "../../core/tools"
     },
     {
+      "path": "../../spill/spill"
+    },
+    {
       "path": "../../core/system-prompt"
     },
     {

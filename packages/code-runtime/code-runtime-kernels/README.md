@@ -68,6 +68,7 @@ It resolves the seam's result envelope — `value` (JSON completion), `logs`, `e
 - **One-shot.** Without `session`, a fresh kernel is spawned, exactly one program runs, and the kernel is shut down.
 - **Persistence.** Python: module-level variables and loop state survive across cells. JavaScript: `state` (a long-lived shared object) and sloppy-mode global assignments survive; `const`/`let`/`function`/`class` at cell top level are per-cell (async body), so persistent definitions go on `state`. A cell completes `return <json>` for a completion value, or with no `return` for a no-value run; non-lossless completions (cycles, `BigInt`, sets) are `'invalid-output'`.
 - **Budgets and failure kinds.** Wall-clock expiry → `'timeout'`; cancellation or a kernel that had to die → `'abort'`; thrown exceptions → `'exception'`; non-JSON completions → `'invalid-output'`; combined output overflow → `'output-limit'`; kernel death → the session registry replaces the kernel and retries once. All are result FIELDS, never rejections of the tool.
+- **Output overflow recovery.** When a run overflows `maxOutputBytes` (an `'output-limit'` failure), the tool calls `ctx.spillStore.saveText()` with the FULL captured output (logs plus the overflowing completion value) and, on success (a `spillStore` backend is loaded and there is a session owner), appends `full program output preserved at <retrieval-hint>` to the failure message so the tail becomes recoverable instead of dropped. Spill failure is best-effort: it never fails the call or alters the truncated result.
 
 ## Development
 

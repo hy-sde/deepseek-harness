@@ -36,6 +36,7 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
   'packages/util/launch-environment': 'The package only resolves host environment values; model-facing consumers own any rendered use.',
   'packages/fs/fs-archive': 'The pure multi-format archive engine registers no tool schema, prompt, session/UI surface, or observable events; the read tool (dsh-tool-fs) owns every model-facing effect.',
   'packages/av/av': 'The host CLI-wrapper service registers no tool schema, prompt, session/UI surface, or observable events; the Automic Vault tools (dsh-tool-av) own every model-facing effect, and the service itself never renders secret material.',
+  'packages/session-query/session-url': 'The `session://` handler registers no tool schema, prompt section, or UI surface; it only makes the existing session corpus reachable through the read/grep tools (dsh-tool-fs), which own every model-facing effect.',
 }
 
 /**

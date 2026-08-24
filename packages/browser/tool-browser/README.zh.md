@@ -31,3 +31,7 @@ DeepSeek Harness 的模型方 agent 化浏览器工具（移植自 omp / oh-my-p
 ## 会话隔离
 
 `browser` 服务共享于宿主平面；工具把标签页键按会话 id 命名空间隔离，因此并发会话不会互相夺走标签页。
+
+## 瞄准本地 harness GUI
+
+工具与 URL 无关，因此也可以直接驱动 harness 自己的 Web GUI（`dsh web`，`http://127.0.0.1:3080`）：`launch` 一个浏览器或 `attach` 到已运行的 Chrome，导航到本地 origin，直接操作 GUI 的会话历史与复盘界面。这样就为同一语料闭环——一个会话既可以是 URL（`session://<id>`），可以是工具结果（`session_query`），也可以是屏幕像素（browser → GUI）——而工具无需任何特判。

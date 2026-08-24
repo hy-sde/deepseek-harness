@@ -12,7 +12,9 @@
  */
 
 import { randomUUID } from 'node:crypto'
+import { inspect } from 'node:util'
 import { Context } from '@deepseek-ai/cordis'
+import type { SaveTextSpill } from '@deepseek-ai/dsh-spill'
 import z from '@deepseek-ai/schemastery'
 import {
   DUNDER_MEMBER,
@@ -273,8 +275,20 @@ export class KernelManager {
    * disposed manager, an invalid binding namespace). With a non-empty
    * `sessionId` the program runs in that session's persistent kernel and
    * `executionCount` is reported; `reset: true` discards prior state first.
+   *
+   * `onOutputLimit` is a best-effort spill hook called only when the run's
+   * output crosses `maxOutputBytes`: it receives the FULL captured program
+   * output (the same bytes that just overflowed the result budget) and may
+   * persist them somewhere recoverable. Returning a retrieval hint rewrites
+   * the `output-limit` message so the caller can recover the dropped tail;
+   * returning `undefined` (no backend, no owner, storage failure) keeps the
+   * truncated result untouched. The manager never awaits this beyond a
+   * best-effort `catch` — spill failure cannot fail the program.
    */
-  async run(request: KernelRunRequest): Promise<KernelRunResult> {
+  async run(
+    request: KernelRunRequest,
+    onOutputLimit?: (content: string) => Promise<string | undefined>,
+  ): Promise<KernelRunResult> {
     if (this.#disposed) throw new Error('dsh-code-runtime-kernels: run() after disposal')
     const registry = this.#registries.get(request.language)
     if (registry === undefined) {
@@ -305,7 +319,7 @@ export class KernelManager {
           signal: controller.signal,
         })
         : await this.#runOneShot(request.language, request.code, bindings, controller.signal)
-      return this.finalize(outcome, timedOut)
+      return await this.finalize(outcome, timedOut, onOutputLimit)
     } finally {
       clearTimeout(timer)
       request.signal?.removeEventListener('abort', onOuter)
@@ -378,7 +392,20 @@ export class KernelManager {
    * kernel survived to acknowledge it); everything else interrupted is an
    * abort; a died kernel is an abort unless the budget already owns the run.
    */
-  private finalize(outcome: KernelExecResult, timedOut: boolean): KernelRunResult {
+  /**
+   * Map a kernel outcome onto the failure taxonomy through the output ledger.
+   * Budget expiry owns a run that hit the wall clock (whether or not the
+   * kernel survived to acknowledge it); everything else interrupted is an
+   * abort; a died kernel is an abort unless the budget already owns the run.
+   *
+   * An `output-limit` outcome additionally consults `onOutputLimit` to spill
+   * the full captured output, best-effort (never awaited past a catch).
+   */
+  private async finalize(
+    outcome: KernelExecResult,
+    timedOut: boolean,
+    onOutputLimit?: (content: string) => Promise<string | undefined>,
+  ): Promise<KernelRunResult> {
     const ledger = this.#ledgerFactory()
     const logs = outcome.logs.map(entry => entry.text)
     if (timedOut) {
@@ -402,7 +429,37 @@ export class KernelManager {
     const result = outcome.value === undefined
       ? ledger.success(logs)
       : ledger.success(logs, outcome.value)
-    return { ...result, ...outcome.executionCount !== undefined ? { executionCount: outcome.executionCount } : {} }
+    const settled: KernelRunResult = {
+      ...result,
+      ...outcome.executionCount !== undefined ? { executionCount: outcome.executionCount } : {},
+    }
+    if (settled.error?.kind === 'output-limit' && onOutputLimit !== undefined) {
+      // The overflow was either captured logs or (for a clean run) a
+      // completion value too large to survive the JSON serialization budget —
+      // spill whatever full text we still hold so the caller can recover it.
+      let valueText: string | undefined
+      if (outcome.value !== undefined) {
+        try {
+          valueText = JSON.stringify(outcome.value)
+        } catch {
+          // JSON.stringify rejected the value (circular reference, exotic
+          // object); a structural inspection is the best text we still have.
+          valueText = inspect(outcome.value, { depth: 8, maxArrayLength: 200, breakLength: 100 })
+        }
+      }
+      const spillContent = valueText === undefined
+        ? logs.join('\n')
+        : `${logs.join('\n')}\n[completion value]\n${valueText}`
+      try {
+        const hint = await onOutputLimit(spillContent)
+        if (hint !== undefined && hint.length > 0) {
+          return { ...settled, error: { ...settled.error, message: `${settled.error.message} — full program output preserved at ${hint}` } }
+        }
+      } catch {
+        // Best-effort by contract: a spill failure keeps the truncated result.
+      }
+    }
+    return settled
   }
 
   /** Reject malformed binding globals or typed-error declarations as contract misuse. */
@@ -580,13 +637,34 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       presentationMeta: (_args, value) => runKernelCodeMeta(value as RunKernelCodeValue),
     },
     async execute(args: RunKernelCodeArgs, exec) {
+      // Best-effort recovery for output overruns: persist the full captured
+      // output through ctx.spillStore so an oversized dataframe dump survives
+      // the result budget. No store, no session owner, or a storage failure
+      // leaves the truncated `output-limit` result intact.
+      const sessionId = exec.agent?.session.header.id
+      const spillStore = ctx.get('spillStore')
+      const onOutputLimit = async (content: string): Promise<string | undefined> => {
+        if (sessionId === undefined || spillStore === undefined) return undefined
+        const save: SaveTextSpill = {
+          owner: { sessionId },
+          source: { toolName: 'run_kernel_code', callId: exec.callId, label: 'kernel-output' },
+          suggestedName: 'kernel-output.txt',
+          content,
+        }
+        try {
+          return (await spillStore.saveText(save)).retrievalHint
+        } catch (error: unknown) {
+          ctx.logger.warn(`code-runtime-kernels: spill of ${content.length} chars failed (${String(error)}); keeping the truncated result`)
+          return undefined
+        }
+      }
       const result = await manager.run({
         language: args.language,
         code: args.code,
         ...args.session !== undefined ? { sessionId: args.session } : {},
         ...args.reset !== undefined ? { reset: args.reset } : {},
         signal: exec.signal,
-      })
+      }, onOutputLimit)
       return result
     },
     presentCall: presentRunKernelCodeCall,
