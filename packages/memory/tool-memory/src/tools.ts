@@ -14,6 +14,33 @@ import type {
   MemorySearchItem,
   MemorySearchResult,
 } from '@deepseek-ai/dsh-memory'
+import {
+  mineCandidateOf, mineFingerprint, resolveSessionQuery, searchSessionHistory, sessionLabel,
+} from './session-history.ts'
+
+/** Session-history recall tuning (wired from tool config in index.ts). */
+export interface SessionHistoryConfig {
+  /** Whether `recall`/`reflect` merge past-session hits. Defaults to true. */
+  enabled: boolean
+  /** Max session hits merged into one recall result. */
+  limit: number
+}
+
+export const DEFAULT_SESSION_HISTORY: SessionHistoryConfig = { enabled: true, limit: 3 }
+
+/** Search the bank, then merge best-effort past-session hits when configured. */
+export async function memorySearchWithHistory(
+  ctx: Context,
+  exec: ToolRunContext,
+  query: string,
+  options: { limit: number; history: SessionHistoryConfig },
+): Promise<MemorySearchResult> {
+  const result = await ctx.memory.search(memoryContextOf(exec), query, { limit: options.limit })
+  if (!options.history.enabled) return result
+  const history = await searchSessionHistory(ctx, exec, query, options.history.limit)
+  if (history.length === 0) return result
+  return { ...result, count: result.items.length + history.length, items: [...result.items, ...history] }
+}
 
 /** Extract the calling session's project cwd, falling back to the process cwd. */
 export function sessionCwd(exec: ToolRunContext): string {
@@ -105,10 +132,11 @@ function formatRecall(query: string, result: MemorySearchResult): string {
   if (result.count === 0) return `No relevant memories found for "${query}".`
   const lines = [`Found ${result.count} relevant ${result.count === 1 ? 'memory' : 'memories'} (as of ${new Date().toISOString().slice(0, 19)}Z):\n`]
   result.items.forEach((item, index) => {
-    const id = item.id ?? '?'
+    const id = item.id ?? (item.source === 'session' ? sessionLabel(item.sessionId ?? '?') : '?')
     const meta = [
       item.source ?? '',
       item.timestamp?.slice(0, 10) ?? '',
+      item.sessionId !== undefined ? `session ${sessionLabel(item.sessionId)}` : '',
     ].filter(Boolean).join(' · ')
     const score = item.score === undefined ? '' : ` · score ${item.score.toFixed(2)}`
     const readonly = item.readonly ? ' · read-only' : ''
@@ -118,7 +146,7 @@ function formatRecall(query: string, result: MemorySearchResult): string {
   return lines.join('\n')
 }
 
-export function applyRecallTool(ctx: Context): void {
+export function applyRecallTool(ctx: Context, history: SessionHistoryConfig = DEFAULT_SESSION_HISTORY): void {
   ctx.tools.register(defineTool({
     name: 'recall',
     description:
@@ -152,6 +180,8 @@ export function applyRecallTool(ctx: Context): void {
                 score: { type: 'number' },
                 readonly: { type: 'boolean' },
                 importance: { type: 'number' },
+                sessionId: { type: 'string' },
+                seq: { type: 'integer' },
               },
             },
           },
@@ -162,7 +192,7 @@ export function applyRecallTool(ctx: Context): void {
     isConcurrencySafe: () => true,
     async execute(args: RecallArgs, exec) {
       const limit = args.limit === undefined ? undefined : Math.max(1, Math.min(50, args.limit))
-      const result = await ctx.memory.search(memoryContextOf(exec), args.query, limit === undefined ? {} : { limit })
+      const result = await memorySearchWithHistory(ctx, exec, args.query, { limit: limit ?? 10, history })
       return { query: result.query, count: result.count, items: result.items, message: formatRecall(args.query, result) }
     },
     presentCall: (args: RecallArgs): GenericCallView | undefined => ({ card: 'generic', title: 'Recall', rawInput: args.query }),
@@ -188,7 +218,7 @@ function formatReflect(result: MemorySearchResult): string {
   return `Based on ${result.count} recalled ${result.count === 1 ? 'memory' : 'memories'}:\n\n${sections.join('\n\n')}`
 }
 
-export function applyReflectTool(ctx: Context): void {
+export function applyReflectTool(ctx: Context, history: SessionHistoryConfig = DEFAULT_SESSION_HISTORY): void {
   ctx.tools.register(defineTool({
     name: 'reflect',
     description:
@@ -214,7 +244,7 @@ export function applyReflectTool(ctx: Context): void {
     },
     isConcurrencySafe: () => true,
     async execute(args: ReflectArgs, exec) {
-      const result = await ctx.memory.search(memoryContextOf(exec), args.query, { limit: 20 })
+      const result = await memorySearchWithHistory(ctx, exec, args.query, { limit: 20, history })
       return {
         query: result.query,
         count: result.count,
@@ -322,5 +352,120 @@ export function applyLearnTool(ctx: Context): void {
       return { stored: result.stored, message: result.message, ...result.id !== undefined ? { id: result.id } : {} }
     },
     presentCall: (args: LearnArgs): GenericCallView | undefined => ({ card: 'generic', title: 'Learn', rawInput: args.memory }),
+  }))
+}
+
+/* ── mine_sessions ───────────────────────────────────────────────────────── */
+
+interface MineArgs { session_id?: string }
+interface MineValue { available: boolean; mined: number; sessions: number; message: string }
+
+export function applyMineSessionsTool(
+  ctx: Context,
+  config: { sessions: number; lessons: number } = { sessions: 3, lessons: 10 },
+): void {
+  ctx.tools.register(defineTool({
+    name: 'mine_sessions',
+    description:
+      'Harvest reusable lessons from your own past sessions of this project (needs the harness '
+      + '`sessionQuery` service; degrades to an unavailable notice without it). Reads the most recent '
+      + 'few session logs (or one specific `session_id`), extracts digests from compaction summaries, '
+      + 'failures from turn/end error reasons, and all-completed todos, then stores each new lesson '
+      + 'through `learn` with the session as provenance. Run occasionally to convert conversation '
+      + 'history into durable memory; deduped, so re-running adds nothing new.',
+    parameters: {
+      session_id: { type: 'string', description: 'Optional explicit session id to mine instead of the recent sessions of this project' },
+    },
+    output: {
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          available: { type: 'boolean', required: true },
+          mined: { type: 'integer', required: true },
+          sessions: { type: 'integer', required: true },
+          message: { type: 'string', required: true },
+        },
+      },
+      render: (_args, value: MineValue) => [{ type: 'text', text: value.message }],
+    },
+    isConcurrencySafe: () => false,
+    async execute(args: MineArgs, exec) {
+      const port = resolveSessionQuery(ctx)
+      if (port === undefined) {
+        return {
+          available: false,
+          mined: 0,
+          sessions: 0,
+          message: 'mine_sessions is unavailable: no `sessionQuery` service is mounted in this environment.',
+        }
+      }
+      const cwd = exec.agent?.session.header.cwd ?? process.cwd()
+
+      // Resolve the session set to mine: explicit id, or recent sessions of cwd.
+      let sessionIds: string[]
+      let title: string | undefined
+      if (args.session_id !== undefined && args.session_id.length > 0) {
+        sessionIds = [args.session_id]
+      } else {
+        const records = await port.filterSessions([{ kind: 'cwd', values: [cwd] }])
+        const sorted = [...records]
+          .sort((a, b) => (b.header.createdAt ?? 0) - (a.header.createdAt ?? 0))
+          .slice(0, config.sessions)
+        sessionIds = sorted.map(record => record.header.id)
+      }
+      if (sessionIds.length === 0) {
+        return { available: true, mined: 0, sessions: 0, message: 'No sessions found to mine for this project.' }
+      }
+
+      const seen = new Set<string>()
+      let mined = 0
+      for (const sessionId of sessionIds) {
+        let snapshot
+        try {
+          snapshot = await port.readSession(sessionId)
+        } catch {
+          continue // missing/corrupt session log — skip rather than fail the run
+        }
+        if (args.session_id === undefined) {
+          try {
+            title = await port.readTitle(snapshot.session.id)
+          } catch {
+            title = undefined
+          }
+        }
+        for (const event of snapshot.events) {
+          if (mined >= config.lessons) break
+          for (const candidate of mineCandidateOf(event, snapshot.session.id, title)) {
+            const fingerprint = mineFingerprint(candidate.content)
+            if (seen.has(fingerprint)) continue
+            seen.add(fingerprint)
+            const input: MemorySaveInput = {
+              content: candidate.content,
+              context: candidate.context,
+              source: 'mine',
+              sessionId: snapshot.session.id,
+              importance: IMPORTANCE_LEARN,
+            }
+            const result = await ctx.memory.learn(memoryContextOf(exec), input)
+            if (result.stored > 0) mined += 1
+          }
+        }
+      }
+      const noun = mined === 1 ? 'lesson' : 'lessons'
+      return {
+        available: true,
+        mined,
+        sessions: sessionIds.length,
+        message: mined === 0
+          ? `Mined ${sessionIds.length} session(s) for this project; no new lessons.`
+          : `Mined ${mined} new ${noun} from ${sessionIds.length} session(s) into project memory (deduped).`,
+      }
+    },
+    presentCall: (args: MineArgs): GenericCallView | undefined => ({
+      card: 'generic',
+      title: 'Mine sessions',
+      rawInput: args.session_id ?? 'recent',
+    }),
   }))
 }

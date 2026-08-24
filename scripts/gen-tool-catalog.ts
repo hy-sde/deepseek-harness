@@ -392,13 +392,13 @@ const TOOL_PACKAGES: ToolPackage[] = [
       // The tools inject `memory` (the host-plane store registered here),
       // `tools`, and `systemPrompt` (the `memory:project` first-turn injection
       // section) — the catalog harness already mounts SystemPrompt and
-      // ToolRuntime. Schema harvest only registers the five tools; nothing
+      // ToolRuntime. Schema harvest only registers the six tools; nothing
       // executes, so no disk writes occur here.
       await ctx.plugin(Memory)
       await ctx.plugin(ToolMemory)
     },
     note:
-      'retain, recall, reflect, memory_edit, and learn over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session\'s project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). Local-only in this port; the registry seam stays open for Hindsight/Mnemopi providers later.',
+      'retain, recall, reflect, memory_edit, learn, and mine_sessions over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session\'s project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). When the harness `sessionQuery` service is mounted alongside (the tool-session-query row), `recall`/`reflect` merge past-session hits (source `session`, read-only, sessionId/seq provenance) and `mine_sessions` harvests lessons from completed session logs — digests from compaction summaries, failures from turn/end error reasons, all-completed todos — stored as `learn` entries with the session as provenance and deduped per run; without the service every session feature degrades to a no-op. Local-only in this port; the registry seam stays open for Hindsight/Memnopi providers later.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-terminal',

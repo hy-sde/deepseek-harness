@@ -4492,7 +4492,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'MemorySaveInput',
-    declaration: 'export interface MemorySaveInput {\n    content: string;\n    context?: string;\n    source?: string;\n    importance?: number;\n}',
+    declaration: 'export interface MemorySaveInput {\n    content: string;\n    context?: string;\n    source?: string;\n    importance?: number;\n    sessionId?: string;\n}',
   },
   {
     name: 'MemorySaveResult',
@@ -4500,7 +4500,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'MemorySearchItem',
-    declaration: 'export interface MemorySearchItem {\n    id?: string;\n    content: string;\n    source?: string;\n    timestamp?: string;\n    score?: number;\n    readonly?: boolean;\n    importance?: number;\n}',
+    declaration: 'export interface MemorySearchItem {\n    id?: string;\n    content: string;\n    source?: string;\n    timestamp?: string;\n    score?: number;\n    readonly?: boolean;\n    importance?: number;\n    sessionId?: string;\n    seq?: number;\n}',
   },
   {
     name: 'MemorySearchOptions',

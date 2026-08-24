@@ -27,7 +27,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (image-tool registration)`, `ctx.llm + an image-capable route (image-tool execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`, `grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments. |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`, `ast_grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt`, `ctx.fs (ast_edit apply)` | `tool/call`, `fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`, `tool/result` | - | ast_grep (structural search) and ast_edit (preview / apply structural rewrite) over the packaged ast-grep native binary (`@ast-grep/cli`) — no host ast-grep install and no shell layer. ast_edit always PREVIEWS first (apply defaults to false) and only writes with apply: true, through the filesystem seam (observation + version guard + sandbox policy). |
-| `@deepseek-ai/dsh-tool-memory` | `learn`, `memory_edit`, `recall`, `reflect`, `retain` | `ctx.tools`, `ctx.memory`, `ctx.systemPrompt` | `tool/call`, `project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`, `tool/result` | - | retain, recall, reflect, memory_edit, and learn over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). Local-only in this port; the registry seam stays open for Hindsight/Mnemopi providers later. |
+| `@deepseek-ai/dsh-tool-memory` | `learn`, `memory_edit`, `mine_sessions`, `recall`, `reflect`, `retain` | `ctx.tools`, `ctx.memory`, `ctx.systemPrompt` | `tool/call`, `project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`, `tool/result` | - | retain, recall, reflect, memory_edit, learn, and mine_sessions over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). When the harness `sessionQuery` service is mounted alongside (the tool-session-query row), `recall`/`reflect` merge past-session hits (source `session`, read-only, sessionId/seq provenance) and `mine_sessions` harvests lessons from completed session logs — digests from compaction summaries, failures from turn/end error reasons, all-completed todos — stored as `learn` entries with the session as provenance and deduped per run; without the service every session feature degrades to a no-op. Local-only in this port; the registry seam stays open for Hindsight/Memnopi providers later. |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`, `terminal_list`, `terminal_open`, `terminal_read`, `terminal_send`, `terminal_signal` | `ctx.tools`, `ctx.terminals`, `ctx.systemPrompt`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema. |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
@@ -711,7 +711,7 @@ Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts
 
 ### `read`
 
-Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine.
+Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window.
 
 ```json
 {
@@ -1024,6 +1024,24 @@ Edit project memory by id (ids returned by `recall`/`reflect`). Operations: `upd
 
 Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
+### `mine_sessions`
+
+Harvest reusable lessons from your own past sessions of this project (needs the harness `sessionQuery` service; degrades to an unavailable notice without it). Reads the most recent few session logs (or one specific `session_id`), extracts digests from compaction summaries, failures from turn/end error reasons, and all-completed todos, then stores each new lesson through `learn` with the session as provenance. Run occasionally to convert conversation history into durable memory; deduped, so re-running adds nothing new.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Optional explicit session id to mine instead of the recent sessions of this project"
+    }
+  }
+}
+```
+
+Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
 ### `recall`
 
 Search long-term project memory; return raw relevance-ranked matching entries. Use proactively before questions about past conversations, user preferences, project decisions, or topics where prior context improves accuracy. `recall` returns specific facts and entries, `reflect` a synthesized answer across many memories. Memory ids returned here round-trip through `memory_edit`.
@@ -1109,7 +1127,7 @@ Store one or more facts in long-term project memory for future sessions. Use for
 
 Source: [`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
-retain, recall, reflect, memory_edit, and learn over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). Local-only in this port; the registry seam stays open for Hindsight/Mnemopi providers later.
+retain, recall, reflect, memory_edit, learn, and mine_sessions over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory (summary + lessons + working entries) at the start of the next session (port_omp.md item 4). When the harness `sessionQuery` service is mounted alongside (the tool-session-query row), `recall`/`reflect` merge past-session hits (source `session`, read-only, sessionId/seq provenance) and `mine_sessions` harvests lessons from completed session logs — digests from compaction summaries, failures from turn/end error reasons, all-completed todos — stored as `learn` entries with the session as provenance and deduped per run; without the service every session feature degrades to a no-op. Local-only in this port; the registry seam stays open for Hindsight/Memnopi providers later.
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 

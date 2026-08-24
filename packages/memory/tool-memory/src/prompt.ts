@@ -21,12 +21,14 @@ import {
   SUMMARY_FILE,
   displayRoot,
   formatBankRows,
+  isZstdData,
   neutralizeLearnedText,
   parseBankText,
   projectRootOf,
   renderSummariesBlock,
   resolveMemoryRoot,
 } from '@deepseek-ai/dsh-memory'
+import { decompressZstdFrameSync, scanZstdFrames } from '@deepseek-ai/dsh-zstd-frame'
 import type { PromptSection } from '@deepseek-ai/dsh-system-prompt'
 
 /** Plugin configuration for prompt injection. */
@@ -57,6 +59,18 @@ function truncateApprox(text: string, maxChars: number): string {
   return `${text.slice(0, head)}\n\n...[truncated]...\n\n${text.slice(-tail)}`
 }
 
+/** Decode a zstd-framed or plaintext bank for the synchronous prompt reader. */
+function readBankText(raw: Buffer): string {
+  if (!isZstdData(raw)) return raw.toString('utf8')
+  try {
+    const { frames } = scanZstdFrames(raw)
+    return Buffer.concat(frames.map(frame => decompressZstdFrameSync(raw.subarray(frame.start, frame.end)))).toString('utf8')
+  } catch {
+    // Corrupt frame stream → read as text; parseBankText self-heals.
+    return raw.toString('utf8')
+  }
+}
+
 /** Synchronously read the project memory block ('' when absent). */
 export function readProjectMemoryBlock(root: string, maxChars: number): string {
   let summary = ''
@@ -73,7 +87,11 @@ export function readProjectMemoryBlock(root: string, maxChars: number): string {
     // Missing lessons are normal for a fresh project.
   }
   try {
-    const rows = parseBankText(readFileSync(`${root}/${BANK_FILE}`, 'utf8'))
+    const rows = parseBankText(
+      readBankText(readFileSync(`${root}/${BANK_FILE}`)),
+      // Default importance only matters when the plaintext omits it; modern
+      // banks carry it per row. Fall back to parseBankText's default.
+    )
     const bullets = formatBankRows(rows, MAX_INJECTED_BANK_ENTRIES)
     bank = bullets
   } catch {

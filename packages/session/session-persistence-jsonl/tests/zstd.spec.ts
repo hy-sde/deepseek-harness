@@ -13,8 +13,7 @@ import {
   compressZstdFrame, createZstdFrameDecoder, decompressZstdFrame, decompressZstdPrefix, scanZstdFrames,
   type ZstdFrameDecoder,
 } from '../src/zstd.ts'
-import { NodePrivateZstdFrameDecoder } from '../src/zstd-private-decoder.ts'
-import { PublicZstdFrameDecoder } from '../src/zstd-public-decoder.ts'
+import { NodePrivateZstdFrameDecoder, PublicZstdFrameDecoder } from '@deepseek-ai/dsh-zstd-frame'
 import { runPersistenceContract, meta, oneTurnLog } from '../../session-persistence/tests/contract.ts'
 import { runCoordinatorContract, type CoordinatorFixture } from '../../session-persistence/tests/coordinator-contract.ts'
 

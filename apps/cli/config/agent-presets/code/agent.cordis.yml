@@ -89,6 +89,16 @@
 - id: tool-memory
   name: '@deepseek-ai/dsh-tool-memory'
 
+# ── session history search (recall/mine fallback tier) ──────────────────────
+
+# Model-facing views over the host `sessionQuery` engine (full-text search of
+# persisted session logs, event tracing, event reads). Mounting this row turns
+# on recall/reflect's past-session fallback tier and the `mine_sessions` lesson
+# miner — both feature-detect this service. No realm — the tools only consume
+# the host instance.
+- id: tool-session-query
+  name: '@deepseek-ai/dsh-tool-session-query'
+
 # ── agentic git (commit + review) ───────────────────────────────────────────
 
 # Port of omp's agentic git commit + review. The `git` SERVICE stays host-plane

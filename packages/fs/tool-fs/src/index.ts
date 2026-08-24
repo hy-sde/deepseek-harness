@@ -8,7 +8,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-user-approval'
-import { applyReadTool, READ_LIMIT, READ_MAX_ARCHIVE_BYTES, STREAM_MIN_SIZE } from './read.ts'
+import { applyReadTool, READ_LIMIT, READ_MAX_ARCHIVE_BYTES, READ_MAX_ZSTD_BYTES, STREAM_MIN_SIZE } from './read.ts'
 import { applyWriteTool } from './write.ts'
 import { applyEditTool } from './edit.ts'
 import { applyReadImageTool } from './read-image.ts'
@@ -33,6 +33,8 @@ export interface Config {
   readStreamMinSize?: number
   /** Maximum bytes of an archive file loaded into memory for member reads (default 256 MiB). */
   readMaxArchiveBytes?: number
+  /** Maximum bytes of a zstd file loaded into memory for decoded reads (default 64 MiB). */
+  readMaxZstdBytes?: number
   /** Register the literal `edit` tool. Set false when a rich editor replaces it; default true. */
   enableEdit?: boolean
 }
@@ -43,6 +45,7 @@ export const Config: z<Config> = z.object({
   readMaxBytes: z.number().default(READ_MAX_BYTES),
   readStreamMinSize: z.number().default(STREAM_MIN_SIZE),
   readMaxArchiveBytes: z.number().default(READ_MAX_ARCHIVE_BYTES),
+  readMaxZstdBytes: z.number().default(READ_MAX_ZSTD_BYTES),
   enableEdit: z.boolean().default(true),
 })
 
@@ -70,6 +73,7 @@ export function apply(ctx: Context, config: Config): void {
     maxBytes: resolved.readMaxBytes,
     streamMinSize: resolved.readStreamMinSize,
     maxArchiveBytes: resolved.readMaxArchiveBytes,
+    maxZstdBytes: resolved.readMaxZstdBytes,
   })
   // read_image is composition-conditional: without a mounted attachment store
   // the deployment cannot durably commit image bytes, so the tool never

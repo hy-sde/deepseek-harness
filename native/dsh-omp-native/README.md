@@ -1,5 +1,7 @@
 # dsh-omp-native
 
+English | [中文](README.zh.md)
+
 Standalone native sidecar extracted from the
 [oh-my-pi](https://github.com/stencil-hq/omp) Rust rewrite (omp², MIT). It gives
 the DeepSeek Harness two bounded, read-only capabilities that were previously

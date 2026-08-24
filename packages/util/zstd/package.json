@@ -1,14 +1,14 @@
 {
-  "name": "@deepseek-ai/dsh-tool-memory",
-  "description": "Model-facing long-horizon memory tools (retain, recall, reflect, memory_edit, learn) over the ctx.memory service, plus first-turn project-memory prompt injection",
-  "version": "0.1.0-rc.1",
+  "name": "@deepseek-ai/dsh-zstd-frame",
+  "description": "Zstandard frame primitives (scan / compress / decompress / multi-frame decoder) shared by the session persistence backend and the project memory bank",
+  "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
-    "directory": "packages/memory/tool-memory"
+    "directory": "packages/util/zstd"
   },
   "type": "module",
   "main": "lib/index.js",
@@ -31,22 +31,15 @@
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
-  "dependencies": {
-    "@deepseek-ai/dsh-memory": "workspace:^",
-    "@deepseek-ai/dsh-zstd-frame": "workspace:^"
+  "engines": {
+    "node": ">=22"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-memory": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^",
     "@deepseek-ai/cordis": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-memory": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:^"
   }
 }

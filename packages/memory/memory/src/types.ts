@@ -51,6 +51,8 @@ export interface MemorySaveInput {
   source?: string
   /** Importance in `[0, 1]`; defaults to the backend's baseline. */
   importance?: number
+  /** Optional originating session id, captured for cross-session provenance. */
+  sessionId?: string
 }
 
 /** Outcome of one storage call. */
@@ -79,6 +81,10 @@ export interface MemorySearchItem {
   readonly?: boolean
   /** The entry's importance when the backend tracks one. */
   importance?: number
+  /** Session id that originated this hit (bank provenance or a session-search hit). */
+  sessionId?: string
+  /** Event seq within the originating session, when known. */
+  seq?: number
 }
 
 /** Options for one memory search. */

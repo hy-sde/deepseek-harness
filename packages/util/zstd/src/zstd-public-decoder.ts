@@ -1,10 +1,10 @@
 /**
  * Public-API synchronous Zstandard frame decoder fallback.
- * @module dsh-session-persistence-jsonl/zstd-public-decoder
+ * @module @deepseek-ai/dsh-zstd-frame/zstd-public-decoder
  */
 
 import { zstdDecompressSync } from 'node:zlib'
-import type { ZstdFrameDecoder, ZstdFrameRange } from './zstd.ts'
+import type { ZstdFrameDecoder, ZstdFrameRange } from './index.ts'
 
 /** Multi-frame adapter built exclusively from Node's supported one-shot API. */
 export class PublicZstdFrameDecoder implements ZstdFrameDecoder {
@@ -22,7 +22,7 @@ export class PublicZstdFrameDecoder implements ZstdFrameDecoder {
         try {
           decoded = zstdDecompressSync(source.subarray(start, end))
         } catch (error) {
-          throw new Error(`corrupt Zstandard session log: frame at byte ${start} failed validation`, {
+          throw new Error(`corrupt Zstandard stream: frame at byte ${start} failed validation`, {
             cause: error,
           })
         }

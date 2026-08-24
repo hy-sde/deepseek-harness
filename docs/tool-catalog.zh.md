@@ -29,7 +29,7 @@
 | `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (read_image registration)`、`ctx.llm + an image-capable route (read_image execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时 `read_image` 不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。 |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`、`ast_grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt`、`ctx.fs (ast_edit apply)` | `tool/call`、`fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`、`tool/result` | - | ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。 |
-| `@deepseek-ai/dsh-tool-memory` | `learn`、`memory_edit`、`recall`、`reflect`、`retain` | `ctx.tools`、`ctx.memory`、`ctx.systemPrompt` | `tool/call`、`project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`、`tool/result` | - | retain、recall、reflect、memory_edit 与 learn 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。 |
+| `@deepseek-ai/dsh-tool-memory` | `learn`、`memory_edit`、`mine_sessions`、`recall`、`reflect`、`retain` | `ctx.tools`、`ctx.memory`、`ctx.systemPrompt` | `tool/call`、`project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`、`tool/result` | - | retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。同时挂载 `sessionQuery` 服务（tool-session-query 行）时，`recall`/`reflect` 合并过往会话命中（source `session`、只读、带 sessionId/seq 溯源），`mine_sessions` 从已完成的会话日志中收割教训；没有该服务时所有会话特性降级为无操作。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。 |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
@@ -699,7 +699,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
 
 ### `read`
 
-读取 UTF-8 文本文件，并返回带行号的内容。
+读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL。
 
 ```json
 {
@@ -1011,6 +1011,24 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
+### `mine_sessions`
+
+从本项目自己的过往会话中收割可复用教训（需要宿主 `sessionQuery` 服务；没有它则降级为不可用的提示）。读取最近数条会话日志（或明确指定的某个 `session_id`），从压缩摘要、turn/end 错误原因、全部完成的 todos 中抽取教训，并通过 `learn` 以会话作为溯源逐条存入。可偶尔运行以把对话历史转化为持久记忆；按内容去重，因此重复运行不会新增内容。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Optional explicit session id to mine instead of the recent sessions of this project"
+    }
+  }
+}
+```
+
+来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
 ### `recall`
 
 搜索长期项目记忆；返回原始相关性排序的匹配条目。在回答过往对话、用户偏好、项目决策或先前上下文能提升准确度的话题之前主动使用。`recall` 返回具体事实与条目，`reflect` 返回跨多条记忆的综合答案。此处返回的记忆 id 可回传给 `memory_edit`。
@@ -1096,7 +1114,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
-retain、recall、reflect、memory_edit 与 learn 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。
+retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。同时挂载 `sessionQuery` 服务（tool-session-query 行）时，`recall`/`reflect` 合并过往会话命中（source `session`、只读、带 sessionId/seq 溯源），`mine_sessions` 从已完成的会话日志中收割教训——压缩摘要中的要点、turn/end 错误原因中的失败、全部完成的 todos——以 `learn` 条目存储并以会话作为溯源、按运行去重；没有该服务时所有会话特性降级为无操作，`mine_sessions` 报告 `available: false`。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 ## `@deepseek-ai/dsh-tool-terminal`

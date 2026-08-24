@@ -1,11 +1,11 @@
 /**
  * Node-private synchronous Zstandard frame decoder optimization.
- * @module dsh-session-persistence-jsonl/zstd-private-decoder
+ * @module @deepseek-ai/dsh-zstd-frame/zstd-private-decoder
  */
 
 import { constants as bufferConstants } from 'node:buffer'
 import { createZstdDecompress } from 'node:zlib'
-import type { ZstdFrameDecoder, ZstdFrameRange } from './zstd.ts'
+import type { ZstdFrameDecoder, ZstdFrameRange } from './index.ts'
 
 const DECODE_CHUNK_SIZE = 1024 * 1024
 
@@ -103,7 +103,7 @@ export class NodePrivateZstdFrameDecoder implements ZstdFrameDecoder {
         try {
           yield this.decodeFrame(source.subarray(frame.start, frame.end))
         } catch (error) {
-          throw new Error(`corrupt Zstandard session log: frame at byte ${frame.start} failed validation`, {
+          throw new Error(`corrupt Zstandard stream: frame at byte ${frame.start} failed validation`, {
             cause: error,
           })
         }

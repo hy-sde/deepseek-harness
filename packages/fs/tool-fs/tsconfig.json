@@ -50,6 +50,9 @@
     },
     {
       "path": "../fs-archive"
+    },
+    {
+      "path": "../../util/zstd"
     }
   ]
 }

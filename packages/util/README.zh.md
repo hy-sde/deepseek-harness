@@ -12,3 +12,4 @@
 | [`retention/`](output-retention/README.zh.md) | 限制保留文本和项集合的大小 |
 | [`atomic-write/`](atomic-write/README.zh.md) | 以原子方式替换文件 |
 | [`native-command/`](native-command/README.zh.md) | 不经 shell 运行宿主原生命令 |
+| [`zstd/`](zstd/README.zh.md) | Zstandard 帧原语（扫描/压缩/解压、受损帧恢复、多帧解码器） |
