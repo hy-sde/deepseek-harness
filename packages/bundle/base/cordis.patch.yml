@@ -261,6 +261,16 @@
     - id: browser
       name: '@deepseek-ai/dsh-browser'
 
+    # Read-only Automic Vault plumbing (ctx.av): audit the Mac for exposed
+    # dev-tool credentials (`av scan --json`), verify hardening (`av doctor`),
+    # catalog detectors/hardeners, and list saved secret names — no value ever
+    # leaves the vault (port_omp.md-style host service for automic-vault).
+    # Host-plane — the CLI wrapper shells out per call and holds no durable
+    # state, so one instance serves every session; the tool row contributes the
+    # model-facing surface and resolves this instance.
+    - id: av
+      name: '@deepseek-ai/dsh-av'
+
     # AST structural search/rewrite over the packaged ast-grep binary, mountable
     # anywhere the subprocess + filesystem seams exist. ast_edit always PREVIEWS
     # first and only writes with apply: true, through the filesystem seam

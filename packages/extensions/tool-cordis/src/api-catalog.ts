@@ -502,6 +502,55 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'av',
+    summary: 'The `ctx.av` service.',
+    description: 'The `ctx.av` service.',
+    methods: [
+      {
+        signature: 'async probe(): Promise<AvProbe>',
+        description: 'Check whether the `av` CLI is reachable and answering `av --version`. Never throws: an unavailable binary, launch failure, or timeout surfaces as `{ available: false, reason }`.',
+        parameters: [],
+        returns: 'reachability, CLI version when present, and a human reason on failure.',
+      },
+      {
+        signature: 'async scan(detectors: readonly string[] = []): Promise<ScanReport>',
+        description: 'Audit the Mac for supported credential exposures and hazards (`av scan --json`).',
+        parameters: [{ name: 'detectors', description: 'optional detector-name filter (from `detectors()`); empty means all.' }],
+        returns: 'the parsed `av scan --json` report.',
+      },
+      {
+        signature: 'async doctor(selector?: string): Promise<DoctorReport>',
+        description: 'Verify installed hardening (`av doctor [tool] --json`).',
+        parameters: [{ name: 'selector', description: 'optional tool name (e.g. `gh`); empty means all.' }],
+        returns: 'the parsed `av doctor [tool] --json` report.',
+      },
+      {
+        signature: 'async detectors(): Promise<DetectorsReport>',
+        description: 'Print detector metadata (`av detectors --json`).',
+        parameters: [],
+        returns: 'the parsed report.',
+      },
+      {
+        signature: 'async hardeners(): Promise<HardenersReport>',
+        description: 'Print hardener metadata (`av hardeners --json`).',
+        parameters: [],
+        returns: 'the parsed report.',
+      },
+      {
+        signature: 'async list(): Promise<string[]>',
+        description: 'List saved secret names (`av list`). NAMES only — never values; the value-releasing verbs are deliberately out of this service\'s surface.',
+        parameters: [],
+        returns: 'sorted saved secret names (only names, never values).',
+      },
+      {
+        signature: 'async run( argv: readonly string[], options: { cwd: string; signal?: AbortSignal | undefined; stdin?: string | undefined; timeoutMs?: number }, ): Promise<CommandRun>',
+        description: 'Run one `av` command. A non-zero exit code is returned as data on the run (callers decide whether it is an error); only a launch failure, a signal kill, or a timeout throws AvCommandError.',
+        parameters: [{ name: 'argv', description: 'av arguments (never shell-interpreted).' }, { name: 'options', description: 'cwd (required), abort signal, stdin text, timeout override.' }],
+        returns: 'exit code, collected stdout/stderr, and killed flag; throws {@link AvCommandError} on launch/timeout/signal failures.',
+      },
+    ],
+  },
+  {
     key: 'browser',
     summary: 'One browser connection per (cwd + kind), one tab per name.',
     description: 'One browser connection per (cwd + kind), one tab per name.',
@@ -3510,6 +3559,46 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type AuthorizationStatus = \'authorized\' | \'cancelled\';',
   },
   {
+    name: 'AvDetector',
+    declaration: 'export interface AvDetector {\n    name: string;\n    homepage?: string;\n    docs_url?: string;\n    documentation?: string;\n    watch_scopes: AvWatchScope[];\n}',
+  },
+  {
+    name: 'AvDoctorIssue',
+    declaration: 'export interface AvDoctorIssue {\n    kind: string;\n    command?: string;\n    message: string;\n    remediation?: string;\n    stub_path?: string;\n    target_path?: string;\n    resolved_path?: string;\n}',
+  },
+  {
+    name: 'AvDoctorResult',
+    declaration: 'export interface AvDoctorResult {\n    name: string;\n    commands: string[];\n    issues: AvDoctorIssue[];\n}',
+  },
+  {
+    name: 'AvFinding',
+    declaration: 'export interface AvFinding {\n    source: string;\n    severity: string;\n    homepage?: string;\n    explanation: string;\n    solution: string;\n    affected: {\n        path: string;\n        line?: number | null;\n    }[];\n    docs_url?: string;\n    detectors: string[];\n}',
+  },
+  {
+    name: 'AvHardenedCommand',
+    declaration: 'export interface AvHardenedCommand {\n    name: string;\n    hardened: boolean;\n    stub_path?: string;\n    target_path?: string;\n    required_paths: string[];\n}',
+  },
+  {
+    name: 'AvHardener',
+    declaration: 'export interface AvHardener {\n    name: string;\n    documentation?: string;\n    hardened: boolean;\n    applicable: boolean;\n    stub_path?: string;\n    target_path?: string;\n    commands: AvHardenedCommand[];\n    secret_gate?: AvSecretGate;\n}',
+  },
+  {
+    name: 'AvProbe',
+    declaration: 'export interface AvProbe {\n    available: boolean;\n    version?: string;\n    reason?: string;\n}',
+  },
+  {
+    name: 'AvSecretGate',
+    declaration: 'export interface AvSecretGate {\n    id: string;\n    key_patterns: string[];\n    routes: AvSecretGateRoute[];\n}',
+  },
+  {
+    name: 'AvSecretGateRoute',
+    declaration: 'export interface AvSecretGateRoute {\n    operation: string;\n    script_path?: string;\n    target_path?: string;\n    caller_identifiers?: string[];\n    key_patterns: string[];\n    replace_existing_env?: boolean;\n    allow_missing_keys?: boolean;\n}',
+  },
+  {
+    name: 'AvWatchScope',
+    declaration: 'export interface AvWatchScope {\n    path: string;\n    recursive: boolean;\n}',
+  },
+  {
     name: 'BackendRegistry',
     declaration: 'export class BackendRegistry {\n    register(name: string, backend: StorageBackend): () => void;\n    get(name: string): StorageBackend;\n    names(): string[];\n}',
   },
@@ -3604,10 +3693,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CommandResult',
     declaration: 'export type CommandResult = {\n    readonly kind: \'success\';\n    readonly text?: string;\n    readonly sourceEventSeq?: number;\n} | {\n    readonly kind: \'error\';\n    readonly text: string;\n};',
-  },
-  {
-    name: 'CommandRun',
-    declaration: 'export interface CommandRun {\n    stdout: string;\n    exitCode: number;\n    killed: boolean;\n    stderr: string;\n}',
   },
   {
     name: 'CompactionAgentContext',
@@ -3850,6 +3935,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface DapVariable {\n    name: string;\n    value: string;\n    type?: string;\n    presentationHint?: {\n        kind?: string;\n        attributes?: string[];\n        visibility?: string;\n        lazy?: boolean;\n    };\n    evaluateName?: string;\n    variablesReference: number;\n    namedVariables?: number;\n    indexedVariables?: number;\n    memoryReference?: string;\n}',
   },
   {
+    name: 'DetectorsReport',
+    declaration: 'export interface DetectorsReport {\n    detectors: AvDetector[];\n}',
+  },
+  {
     name: 'DiffCallView',
     declaration: 'export interface DiffCallView {\n    card: \'diff\';\n    title: string;\n    diffs: FileDiff[];\n    locations?: FileLocation[];\n}',
   },
@@ -3876,6 +3965,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DirectoryRegistrationHandle',
     declaration: 'export interface DirectoryRegistrationHandle {\n    (): void;\n    replace(entries: readonly LlmConfigurableProvider[]): void;\n}',
+  },
+  {
+    name: 'DoctorReport',
+    declaration: 'export interface DoctorReport {\n    results: AvDoctorResult[];\n}',
   },
   {
     name: 'Domain',
@@ -4080,6 +4173,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GrantRecord',
     declaration: 'export interface GrantRecord {\n    readonly kind: \'grant\';\n    readonly payload: unknown;\n}',
+  },
+  {
+    name: 'HardenersReport',
+    declaration: 'export interface HardenersReport {\n    hardeners: AvHardener[];\n}',
   },
   {
     name: 'HunkSelector',
@@ -4760,6 +4857,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SaveTextSpill',
     declaration: 'export interface SaveTextSpill {\n    owner: SpillOwner;\n    source: SpillSource;\n    suggestedName: string;\n    content: string;\n}',
+  },
+  {
+    name: 'ScanReport',
+    declaration: 'export interface ScanReport {\n    findings: AvFinding[];\n}',
   },
   {
     name: 'ScheduledToolDispatch',

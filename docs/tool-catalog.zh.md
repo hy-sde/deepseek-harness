@@ -49,6 +49,7 @@
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
 | `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`、`ctx.browser`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 浏览器工具（omp 移植）：open/close/run/state 覆盖 launch（stealth 补丁）、CDP-attach 或本地 relay＋扩展；观察为带 click-by-selector 的 ARIA ref 树，截图写 PNG 路径。 |
+| `@deepseek-ai/dsh-tool-av` | `av_catalog`、`av_doctor`、`av_list`、`av_scan` | `ctx.tools`、`ctx.av`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3087,3 +3088,96 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 来源：[`packages/browser/tool-browser/src/index.ts`](../packages/browser/tool-browser/src/index.ts)
 
 Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.
+
+## `@deepseek-ai/dsh-tool-av`
+
+### `av_catalog`
+
+列出 Automic Vault 认识的工具：检测器（扫描覆盖范围；名称供 `av_scan` 的 `detector` 使用）与加固器（加固状态；名称供 `av_doctor` 的 `tool` 使用），各含文档链接。来自 `av detectors --json` 与 `av hardeners --json` 的只读元数据。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "description": "Which catalog to return (default both).",
+      "enum": [
+        "detectors",
+        "hardeners",
+        "both"
+      ]
+    },
+    "max_entries": {
+      "type": "integer",
+      "description": "Cap on entries per scope (default 60)."
+    }
+  }
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+### `av_doctor`
+
+校验已安装开发工具的 Automic Vault 加固状态（运行 `av doctor [tool] --json`）：哪些已加固工具健康、哪些有问题，并给出每条 issue 的修复步骤（stub/target 路径）。只读；代理报告，加固由用户运行。先用 `av_catalog` 查看工具名称。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tool": {
+      "type": "string",
+      "description": "Hardener/tool name to check (default: all applicable)."
+    }
+  }
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+### `av_list`
+
+列出 Automic Vault 中已保存密钥的名称（`av list`）。只返回**名称**——绝不返回值，绝不释放密钥。用它告知用户保管库中有什么，再由用户决定如何处置。
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+### `av_scan`
+
+用 Automic Vault 审计 Mac 上受支持的凭据暴露与安全风险（运行 `av scan --json`）：开发者工具密钥以明文配置、钥匙串或环境助手形式暴露的文件/行，每条 finding 都带说明与修复建议。只读；绝不返回已存储的密钥值。可用 `detector`（来自 `av_catalog` scope=detectors 的名称）收窄，或保留完整审计。向用户报告 finding，并提出文档化的 `av harden <tool>` 式修复——运行加固是在终端中进行的人工决策。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "severity": {
+      "type": "string",
+      "description": "Only findings at or above this severity (default: all).",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "detector": {
+      "type": "string",
+      "description": "Detector name (e.g. gh_cli) to scan only that tool; from `av_catalog` scope=detectors."
+    },
+    "max_findings": {
+      "type": "integer",
+      "description": "Cap on returned findings (default 30); remaining findings are summarized."
+    }
+  }
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。

@@ -73,6 +73,8 @@ import Git from '@deepseek-ai/dsh-git'
 import * as ToolGit from '@deepseek-ai/dsh-tool-git'
 import Browser from '@deepseek-ai/dsh-browser'
 import * as ToolBrowser from '@deepseek-ai/dsh-tool-browser'
+import Av from '@deepseek-ai/dsh-av'
+import * as ToolAv from '@deepseek-ai/dsh-tool-av'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
@@ -723,6 +725,24 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-av',
+    dir: 'tool-av',
+    source: 'packages/av/tool-av/src/index.ts',
+    requires: ['ctx.tools', 'ctx.av', 'ctx.systemPrompt'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // Schema harvest only registers tools; the av service probes the CLI at
+      // execute time, so mounting it with the default config is safe for
+      // schema collection (binary resolution errors happen per call, not on
+      // mount).
+      await ctx.plugin(LocalSubprocessRuntime)
+      await ctx.plugin(Av)
+      await ctx.plugin(ToolAv)
+    },
+    note:
+      'Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision.',
   },
 ]
 

@@ -164,6 +164,9 @@ flowchart LR
   pkg_memory["memory"]
   svc_memory["ctx.memory<br/>Long-horizon project memory"]
   pkg_tool_memory["tool-memory"]
+  pkg_av["av"]
+  svc_av["ctx.av<br/>Read-only Automic Vault CLI seam"]
+  pkg_tool_av["tool-av"]
   pkg_compaction["compaction"]
   svc_compaction["ctx.compaction<br/>Compaction seam"]
   pkg_subagent["subagent"]
@@ -226,6 +229,7 @@ flowchart LR
   pkg_attachment --> svc_attachments
   pkg_attachment_local --> svc_attachments
   pkg_authorization --> svc_authorization
+  pkg_av --> svc_av
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
   pkg_browser --> svc_browser
@@ -335,6 +339,7 @@ flowchart LR
   svc_attachments --> pkg_host_runtime
   svc_attachments --> pkg_llm_pi_ai
   svc_authorization --> pkg_llm_pi_ai
+  svc_av --> pkg_tool_av
   svc_browser --> pkg_tool_browser
   svc_clientModules --> pkg_hmr
   svc_codeRuntime --> pkg_tools
@@ -440,6 +445,7 @@ flowchart LR
   svc_workflowEngine --> pkg_tool_ralph
   svc_workflowEngine --> pkg_tool_workflow
   svc_workspaceRegistry --> pkg_apiproxy
+  svc_av -. event gate .-> pkg_subprocess
   svc_browser -. event gate .-> pkg_tool_web
   svc_fs -. event gate .-> pkg_fs_observation_policy
   svc_git -. event gate .-> pkg_subprocess
@@ -496,6 +502,7 @@ flowchart LR
 | `ctx.git` | `seam` | [`git`](../packages/git/git) | - | [`tool-git`](../packages/git/tool-git) | [`subprocess`](../packages/subprocess/subprocess), [`tool-subagent`](../packages/subagent/tool-subagent) | 宿主侧无状态的 git CLI 包装（经由 ctx.subprocess，commit／review 子集）；面向模型的 commit/commit_apply/review 工具消费它，review 经 subagent seam 扇出（port_omp.md 条目：commit）。 |
 | `ctx.browser` | `seam` | [`browser`](../packages/browser/browser) | - | [`tool-browser`](../packages/browser/tool-browser) | [`tool-web`](../packages/web/tool-web) | 宿主侧经 playwright-core CDP 持有的浏览器连接：stealth 补丁派生（app.path）、接入既有 CDP 端点（app.cdp_url）、或进程内 relay＋配套 Chrome 扩展驱动用户自己的标签页（app.relay）。标签页由工具按会话命名空间隔离（port_omp.md 条目：browser tool with stealth + relay/CDP-attach）。 |
 | `ctx.memory` | `core` | [`memory`](../packages/memory/memory) | - | [`tool-memory`](../packages/memory/tool-memory) | - | 按项目保存的宿主侧持久化项目记忆（决策、偏好、事实、经验教训）；移植的 retain/recall/reflect/memory_edit/learn 工具消费它，注册 seam 为未来提供方保留（port_omp.md 第 4 项）。 |
+| `ctx.av` | `seam` | [`av`](../packages/av/av) | - | [`tool-av`](../packages/av/tool-av) | [`subprocess`](../packages/subprocess/subprocess) | 一个通过 ctx.subprocess 调用 Automic Vault `av` CLI 的、宿主持有的无状态封装：scan（审计）、doctor（加固校验）、detectors/hardeners（目录）与 list（仅密钥名）。面向模型的 av_scan/av_doctor/av_catalog/av_list 工具消费它；任何 Secret Value 都不会离开保管库，加固始终由用户在终端人工决定。 |
 | `ctx.compaction` | `seam` | [`compaction`](../packages/compaction/compaction) | [`compaction-basic`](../packages/compaction/compaction-basic) | [`compaction-basic`](../packages/compaction/compaction-basic) | - | 基础后端消费步骤后的压力事件和请求错误恢复事件；不存在面向模型的压缩工具。 |
 | `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-codex`](../packages/subagent/subagent-codex), [`subagent-claude-code`](../packages/subagent/subagent-claude-code), [`subagent-dsh-sdk`](../packages/subagent/subagent-dsh-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/workflow/tool-ralph) | - | 提供方实现传输；该服务还负责可选的、基于 Activation 的延续编排，tool-subagent 选择一次性或可延续委派，tool-subagent-control 传递后续消息，而 tool-ralph 要求一条全新的结构化输出路由。 |
 | `ctx.agentTeams` | `core` | `agent-team` | - | `tool-agent-team` | - | 负责隐式 Root roster、持久 peer mailbox、共享任务 DAG 与 continuable child 生命周期；tool-agent-team 提供作用域化模型策略和控制工具。 |

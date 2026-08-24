@@ -88,6 +88,8 @@ flowchart LR
   cfg --> plugin_dsh_base_git
   plugin_dsh_base_browser["browser<br/>@deepseek-ai/dsh-browser"]
   cfg --> plugin_dsh_base_browser
+  plugin_dsh_base_av["av<br/>@deepseek-ai/dsh-av"]
+  cfg --> plugin_dsh_base_av
   plugin_dsh_base_tool_ast["tool-ast<br/>@deepseek-ai/dsh-tool-ast"]
   cfg --> plugin_dsh_base_tool_ast
   plugin_dsh_base_agent_instructions["agent-instructions<br/>@deepseek-ai/dsh-agent-instructions"]
@@ -218,6 +220,7 @@ flowchart LR
 | `memory` | `@deepseek-ai/dsh-memory` |
 | `git` | `@deepseek-ai/dsh-git` |
 | `browser` | `@deepseek-ai/dsh-browser` |
+| `av` | `@deepseek-ai/dsh-av` |
 | `tool-ast` | `@deepseek-ai/dsh-tool-ast` |
 | `agent-instructions` | `@deepseek-ai/dsh-agent-instructions` |
 | `skill` | `@deepseek-ai/dsh-skill` |

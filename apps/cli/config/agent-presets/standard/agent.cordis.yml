@@ -105,6 +105,14 @@
 - id: tool-browser
   name: '@deepseek-ai/dsh-tool-browser'
 
+# Read-only Automic Vault tools (av_scan audit, av_doctor hardening check,
+# av_catalog, av_list secret names). The `av` SERVICE stays host-plane
+# (stateless CLI wrapper over the subprocess seam); this row contributes the
+# model-facing tools plus the `av:tools` prompt section. No realm — the tools
+# only consume the host instance, and outputs never contain Secret Values.
+- id: tool-av
+  name: '@deepseek-ai/dsh-tool-av'
+
 # ── rich editor + LSP ────────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each

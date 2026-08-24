@@ -499,6 +499,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Host-owned durable store of project memories (decisions, preferences, facts, lessons) keyed by project; the ported retain/recall/reflect/memory_edit/learn tools consume it, and the registry seam stays open for future providers (port_omp.md item 4).',
   },
   {
+    key: 'av',
+    pkg: 'av',
+    title: 'Read-only Automic Vault CLI seam',
+    mode: 'seam',
+    implementations: [],
+    consumers: ['tool-av'],
+    companions: ['subprocess'],
+    note: 'A host-owned stateless wrapper over the Automic Vault `av` CLI through ctx.subprocess: scan (audit), doctor (hardening verification), detectors/hardeners (catalogs), and list (secret names only). The model-facing av_scan/av_doctor/av_catalog/av_list tools consume it; no Secret Value ever leaves the vault and hardening stays a human terminal decision.',
+  },
+  {
     key: 'compaction',
     pkg: 'compaction',
     title: 'Compaction seam',

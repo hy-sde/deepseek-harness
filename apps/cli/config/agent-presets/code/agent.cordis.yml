@@ -112,6 +112,9 @@
 - id: tool-browser
   name: '@deepseek-ai/dsh-tool-browser'
 
+- id: tool-av
+  name: '@deepseek-ai/dsh-tool-av'
+
 # ── rich editor + LSP ────────────────────────────────────────────────────────
 
 # The LSP seam and its stdio provider live in an entry-local realm so each

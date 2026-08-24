@@ -241,6 +241,8 @@
     { "path": "./packages/git/tool-git" },
     { "path": "./packages/browser/browser" },
     { "path": "./packages/browser/tool-browser" },
+    { "path": "./packages/av/av" },
+    { "path": "./packages/av/tool-av" },
     { "path": "./packages/edit/hashline" },
     { "path": "./packages/edit/tool-edit" },
     { "path": "./packages/compaction/compaction" },

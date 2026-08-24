@@ -47,6 +47,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
 | `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
+| `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3100,3 +3101,98 @@ Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a 
 Source: [`packages/browser/tool-browser/src/index.ts`](../packages/browser/tool-browser/src/index.ts)
 
 Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.
+
+<a id="deepseek-aidsh-tool-av"></a>
+
+## `@deepseek-ai/dsh-tool-av`
+
+### `av_catalog`
+
+List which tools Automic Vault knows: detectors (scan coverage; names feed `av_scan` `detector`) and hardeners (hardening status; names feed `av_doctor` `tool`), each with its docs link. Read-only metadata from `av detectors --json` and `av hardeners --json`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "description": "Which catalog to return (default both).",
+      "enum": [
+        "detectors",
+        "hardeners",
+        "both"
+      ]
+    },
+    "max_entries": {
+      "type": "integer",
+      "description": "Cap on entries per scope (default 60)."
+    }
+  }
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+### `av_doctor`
+
+Verify Automic Vault hardening status of installed developer tools (runs `av doctor [tool] --json`): which hardened tools are healthy and which have issues, with the remediation step per issue (stub/target paths). Read-only; the agent reports, the user runs hardening. Use `av_catalog` first to see tool names.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tool": {
+      "type": "string",
+      "description": "Hardener/tool name to check (default: all applicable)."
+    }
+  }
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+### `av_list`
+
+List the names of secrets stored in Automic Vault (`av list`). Returns NAMES ONLY — never values, and never releases a secret. Use it to tell the user what the vault holds, then let the user decide what to do.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+### `av_scan`
+
+Audit the Mac for supported credential exposures and security hazards using Automic Vault (runs `av scan --json`): files/lines where developer-tool secrets are exposed in plaintext config, keychains, or ambient helpers, with an explanation and remediation per finding. Read-only; never returns stored secret values. Narrow with `detector` (a name from `av_catalog` scope=detectors) or keep the full audit. Report findings to the user and propose the documented `av harden <tool>`-style fix — running hardening is a human decision in a terminal.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "severity": {
+      "type": "string",
+      "description": "Only findings at or above this severity (default: all).",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "detector": {
+      "type": "string",
+      "description": "Detector name (e.g. gh_cli) to scan only that tool; from `av_catalog` scope=detectors."
+    },
+    "max_findings": {
+      "type": "integer",
+      "description": "Cap on returned findings (default 30); remaining findings are summarized."
+    }
+  }
+}
+```
+
+Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
+Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision.
