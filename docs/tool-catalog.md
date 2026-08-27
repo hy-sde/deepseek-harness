@@ -48,6 +48,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
+| `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`, `logseq_list`, `logseq_query`, `logseq_remove`, `logseq_search`, `logseq_server`, `logseq_show`, `logseq_upsert` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3214,3 +3215,443 @@ Audit the Mac for supported credential exposures and security hazards using Auto
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
 
 Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision.
+
+<a id="deepseek-aidsh-tool-logseq"></a>
+
+## `@deepseek-ai/dsh-tool-logseq`
+
+### `logseq_graph`
+
+Graph lifecycle ops (`logseq graph ...`): validate, info, export (edn/sqlite to a file), import, backup list/create/restore/remove. Use export/backup before destructive passes.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Which graph operation to run.",
+      "enum": [
+        "validate",
+        "info",
+        "export",
+        "import",
+        "backup-list",
+        "backup-create",
+        "backup-restore",
+        "backup-remove"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "description": "export: output format.",
+      "enum": [
+        "edn",
+        "sqlite"
+      ]
+    },
+    "file": {
+      "type": "string",
+      "description": "export: output file; import: input file."
+    },
+    "backupName": {
+      "type": "string",
+      "description": "backup-create/restore: backup name."
+    },
+    "fix": {
+      "type": "boolean",
+      "description": "validate: fix problems."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_list`
+
+List Logseq graph entities (pages, tags, properties, tasks, nodes, assets) from the db graph via the `logseq list <entity>` CLI.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind of entity to list.",
+      "enum": [
+        "page",
+        "tag",
+        "property",
+        "task",
+        "node",
+        "asset"
+      ]
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum result count (default: 50)."
+    },
+    "offset": {
+      "type": "integer",
+      "description": "Result offset."
+    },
+    "sort": {
+      "type": "string",
+      "description": "Sort field (e.g. id, title, updated-at)."
+    },
+    "order": {
+      "type": "string",
+      "description": "Sort order.",
+      "enum": [
+        "asc",
+        "desc"
+      ]
+    },
+    "fields": {
+      "type": "string",
+      "description": "Comma-separated fields to include (id, title, ident, uuid, status, ...)."
+    },
+    "includeBuiltIn": {
+      "type": "boolean",
+      "description": "Include built-in/system entries (pages/tags/properties)."
+    },
+    "journalOnly": {
+      "type": "boolean",
+      "description": "Pages: only journal pages."
+    },
+    "includeHidden": {
+      "type": "boolean",
+      "description": "Pages: include hidden pages."
+    },
+    "withProperties": {
+      "type": "boolean",
+      "description": "Tags: include properties data."
+    },
+    "withExtends": {
+      "type": "boolean",
+      "description": "Tags: include extends data."
+    },
+    "taskStatus": {
+      "type": "string",
+      "description": "Tasks: filter by status (todo/doing/done/...)."
+    },
+    "taskPriority": {
+      "type": "string",
+      "description": "Tasks: filter by priority."
+    },
+    "content": {
+      "type": "string",
+      "description": "Tasks: content filter; Search: search text."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_query`
+
+Run a Datascript query against the graph (`logseq query --query <EDN>`), or a saved query by name with optional inputs. Use for structural questions page/blocks/tags cannot answer in one hop.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Datascript query EDN, e.g. `[:find [?t ...] :where [?b :block/title ?t]]`."
+    },
+    "name": {
+      "type": "string",
+      "description": "Saved query name (from `logseq query list`)."
+    },
+    "inputs": {
+      "type": "string",
+      "description": "Query inputs EDN, e.g. `[:foo \"value\"]` or `[30]`."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Cap on returned rows (default 20)."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_remove`
+
+Permanently remove entities from the graph (`logseq remove <entity>`). Destruction is real — only use when certain; prefer flagging with status/superseded where the wiki schema allows.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind to remove.",
+      "enum": [
+        "block",
+        "page",
+        "tag",
+        "property"
+      ]
+    },
+    "id": {
+      "type": "integer",
+      "description": "Entity db/id."
+    },
+    "uuid": {
+      "type": "string",
+      "description": "Entity UUID."
+    },
+    "page": {
+      "type": "string",
+      "description": "Page name (for page entity)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Tag/property name."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_search`
+
+Search Logseq blocks/pages/properties/tags by content text (`logseq search <type> --content <text>`). Returns matching items.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind to search.",
+      "enum": [
+        "block",
+        "page",
+        "property",
+        "tag"
+      ]
+    },
+    "content": {
+      "type": "string",
+      "description": "Search text."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Cap on returned items (default 50)."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_server`
+
+Manage the db-worker-node server(s) (`logseq server ...`): list/start/stop/restart/cleanup. Needed for headless use: start once per graph, then any read/write tool works without the desktop app.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Server operation (default list).",
+      "enum": [
+        "list",
+        "start",
+        "stop",
+        "restart",
+        "cleanup"
+      ]
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_show`
+
+Show the block/page tree (`logseq show --page <name>` or `--id`/`--uuid`), optionally with hierarchy: returns the CLI human tree text.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": "string",
+      "description": "Page name to show."
+    },
+    "id": {
+      "type": "integer",
+      "description": "Entity db/id to show."
+    },
+    "uuid": {
+      "type": "string",
+      "description": "Block/page UUID to show."
+    },
+    "level": {
+      "type": "integer",
+      "description": "Tree depth cap."
+    },
+    "pageHierarchy": {
+      "type": "boolean",
+      "description": "Include page hierarchy."
+    },
+    "linkedReferences": {
+      "type": "boolean",
+      "description": "Include linked references."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_upsert`
+
+Create or update a Logseq entity (block/page/tag/property/task). Update mode when id/uuid is given; tags/properties/task status are structured options, never embedded in content.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind to upsert.",
+      "enum": [
+        "block",
+        "page",
+        "tag",
+        "property",
+        "task"
+      ]
+    },
+    "id": {
+      "type": "integer",
+      "description": "Entity db/id (update mode)."
+    },
+    "uuid": {
+      "type": "string",
+      "description": "Entity UUID (update mode)."
+    },
+    "content": {
+      "type": "string",
+      "description": "block/task content text (required to create)."
+    },
+    "targetPage": {
+      "type": "string",
+      "description": "block/task: page to place under."
+    },
+    "targetId": {
+      "type": "integer",
+      "description": "block/task: target block id (position anchor)."
+    },
+    "pos": {
+      "type": "string",
+      "description": "block/task: insert position.",
+      "enum": [
+        "first-child",
+        "last-child",
+        "sibling"
+      ]
+    },
+    "page": {
+      "type": "string",
+      "description": "page name."
+    },
+    "name": {
+      "type": "string",
+      "description": "tag/property name."
+    },
+    "propertyType": {
+      "type": "string",
+      "description": "property type.",
+      "enum": [
+        "default",
+        "number",
+        "date",
+        "checkbox",
+        "url"
+      ]
+    },
+    "cardinality": {
+      "type": "string",
+      "description": "property cardinality.",
+      "enum": [
+        "one",
+        "many"
+      ]
+    },
+    "updateTags": {
+      "type": "array",
+      "description": "tags to add (page/block).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "updateProperties": {
+      "type": "object",
+      "description": "properties map to add/update (page/block).",
+      "additionalProperties": true
+    },
+    "removeTags": {
+      "type": "array",
+      "description": "tags to remove.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "removeProperties": {
+      "type": "array",
+      "description": "property names to remove.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "task status (structured, not in content).",
+      "enum": [
+        "todo",
+        "doing",
+        "done",
+        "waiting",
+        "later",
+        "cancelled"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "description": "task priority (A/B/C/...)."
+    },
+    "scheduled": {
+      "type": "string",
+      "description": "task scheduled date."
+    },
+    "deadline": {
+      "type": "string",
+      "description": "task deadline date."
+    },
+    "restore": {
+      "type": "boolean",
+      "description": "page: restore recycled page before updating."
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Print the exact CLI invocation only; do not write."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle.

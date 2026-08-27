@@ -75,6 +75,7 @@ import Browser from '@deepseek-ai/dsh-browser'
 import * as ToolBrowser from '@deepseek-ai/dsh-tool-browser'
 import Av from '@deepseek-ai/dsh-av'
 import * as ToolAv from '@deepseek-ai/dsh-tool-av'
+import * as ToolLogseq from '@deepseek-ai/dsh-tool-logseq'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
@@ -743,6 +744,20 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-logseq',
+    dir: 'tool-logseq',
+    source: 'packages/logseq/tool-logseq/src/index.ts',
+    requires: ['ctx.tools', 'ctx.systemPrompt'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // Schema harvest only registers tools; the plugin spawns the logseq CLI
+      // at execute time (CLI resolution errors happen per call, not on mount).
+      await ctx.plugin(ToolLogseq)
+    },
+    note:
+      'Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle.',
   },
 ]
 

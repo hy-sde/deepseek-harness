@@ -50,6 +50,7 @@
 | `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`、`ctx.browser`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 浏览器工具（omp 移植）：open/close/run/state 覆盖 launch（stealth 补丁）、CDP-attach 或本地 relay＋扩展；观察为带 click-by-selector 的 ARIA ref 树，截图写 PNG 路径。 |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`、`av_doctor`、`av_list`、`av_scan` | `ctx.tools`、`ctx.av`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。 |
+| `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`、`logseq_list`、`logseq_query`、`logseq_remove`、`logseq_search`、`logseq_server`、`logseq_show`、`logseq_upsert` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3199,3 +3200,443 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
 
 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。
+
+<a id="deepseek-aidsh-tool-logseq"></a>
+
+## `@deepseek-ai/dsh-tool-logseq`
+
+### `logseq_graph`
+
+图生命周期操作（`logseq graph ...`）：validate、info、export（edn/sqlite 到文件）、import、backup list/create/restore/remove。破坏性操作前先用 export/backup。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Which graph operation to run.",
+      "enum": [
+        "validate",
+        "info",
+        "export",
+        "import",
+        "backup-list",
+        "backup-create",
+        "backup-restore",
+        "backup-remove"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "description": "export: output format.",
+      "enum": [
+        "edn",
+        "sqlite"
+      ]
+    },
+    "file": {
+      "type": "string",
+      "description": "export: output file; import: input file."
+    },
+    "backupName": {
+      "type": "string",
+      "description": "backup-create/restore: backup name."
+    },
+    "fix": {
+      "type": "boolean",
+      "description": "validate: fix problems."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_list`
+
+通过 `logseq list <entity>` CLI 从数据库图列出 Logseq 图实体（页面、标签、属性、任务、节点、资产）。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind of entity to list.",
+      "enum": [
+        "page",
+        "tag",
+        "property",
+        "task",
+        "node",
+        "asset"
+      ]
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum result count (default: 50)."
+    },
+    "offset": {
+      "type": "integer",
+      "description": "Result offset."
+    },
+    "sort": {
+      "type": "string",
+      "description": "Sort field (e.g. id, title, updated-at)."
+    },
+    "order": {
+      "type": "string",
+      "description": "Sort order.",
+      "enum": [
+        "asc",
+        "desc"
+      ]
+    },
+    "fields": {
+      "type": "string",
+      "description": "Comma-separated fields to include (id, title, ident, uuid, status, ...)."
+    },
+    "includeBuiltIn": {
+      "type": "boolean",
+      "description": "Include built-in/system entries (pages/tags/properties)."
+    },
+    "journalOnly": {
+      "type": "boolean",
+      "description": "Pages: only journal pages."
+    },
+    "includeHidden": {
+      "type": "boolean",
+      "description": "Pages: include hidden pages."
+    },
+    "withProperties": {
+      "type": "boolean",
+      "description": "Tags: include properties data."
+    },
+    "withExtends": {
+      "type": "boolean",
+      "description": "Tags: include extends data."
+    },
+    "taskStatus": {
+      "type": "string",
+      "description": "Tasks: filter by status (todo/doing/done/...)."
+    },
+    "taskPriority": {
+      "type": "string",
+      "description": "Tasks: filter by priority."
+    },
+    "content": {
+      "type": "string",
+      "description": "Tasks: content filter; Search: search text."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_query`
+
+对图运行 Datascript 查询（`logseq query --query <EDN>`），或按名称运行已保存查询并附可选 inputs。用于页面/块/标签一次跳转答不了的结构性问题。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Datascript query EDN, e.g. `[:find [?t ...] :where [?b :block/title ?t]]`."
+    },
+    "name": {
+      "type": "string",
+      "description": "Saved query name (from `logseq query list`)."
+    },
+    "inputs": {
+      "type": "string",
+      "description": "Query inputs EDN, e.g. `[:foo \"value\"]` or `[30]`."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Cap on returned rows (default 20)."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_remove`
+
+从图永久删除实体（`logseq remove <entity>`）。删除是真实的——仅在确定时使用；wiki schema 允许时优先用 status/superseded 标记。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind to remove.",
+      "enum": [
+        "block",
+        "page",
+        "tag",
+        "property"
+      ]
+    },
+    "id": {
+      "type": "integer",
+      "description": "Entity db/id."
+    },
+    "uuid": {
+      "type": "string",
+      "description": "Entity UUID."
+    },
+    "page": {
+      "type": "string",
+      "description": "Page name (for page entity)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Tag/property name."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_search`
+
+按内容文本搜索 Logseq 块/页面/属性/标签（`logseq search <type> --content <text>`）。返回匹配项。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind to search.",
+      "enum": [
+        "block",
+        "page",
+        "property",
+        "tag"
+      ]
+    },
+    "content": {
+      "type": "string",
+      "description": "Search text."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Cap on returned items (default 50)."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_server`
+
+管理 db-worker-node 服务（`logseq server ...`）：list/start/stop/restart/cleanup。无头场景需要它：每张图 start 一次，随后任何读/写工具都不再依赖桌面 App。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Server operation (default list).",
+      "enum": [
+        "list",
+        "start",
+        "stop",
+        "restart",
+        "cleanup"
+      ]
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_show`
+
+显示块/页面树（`logseq show --page <name>` 或 `--id`/`--uuid`），可选层级：返回 CLI 的人类可读树文本。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": "string",
+      "description": "Page name to show."
+    },
+    "id": {
+      "type": "integer",
+      "description": "Entity db/id to show."
+    },
+    "uuid": {
+      "type": "string",
+      "description": "Block/page UUID to show."
+    },
+    "level": {
+      "type": "integer",
+      "description": "Tree depth cap."
+    },
+    "pageHierarchy": {
+      "type": "boolean",
+      "description": "Include page hierarchy."
+    },
+    "linkedReferences": {
+      "type": "boolean",
+      "description": "Include linked references."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+### `logseq_upsert`
+
+创建或更新 Logseq 实体（block/page/tag/property/task）。给定 id/uuid 时为更新模式；标签/属性/任务状态是结构化选项，绝不嵌入正文。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entityType": {
+      "type": "string",
+      "description": "Kind to upsert.",
+      "enum": [
+        "block",
+        "page",
+        "tag",
+        "property",
+        "task"
+      ]
+    },
+    "id": {
+      "type": "integer",
+      "description": "Entity db/id (update mode)."
+    },
+    "uuid": {
+      "type": "string",
+      "description": "Entity UUID (update mode)."
+    },
+    "content": {
+      "type": "string",
+      "description": "block/task content text (required to create)."
+    },
+    "targetPage": {
+      "type": "string",
+      "description": "block/task: page to place under."
+    },
+    "targetId": {
+      "type": "integer",
+      "description": "block/task: target block id (position anchor)."
+    },
+    "pos": {
+      "type": "string",
+      "description": "block/task: insert position.",
+      "enum": [
+        "first-child",
+        "last-child",
+        "sibling"
+      ]
+    },
+    "page": {
+      "type": "string",
+      "description": "page name."
+    },
+    "name": {
+      "type": "string",
+      "description": "tag/property name."
+    },
+    "propertyType": {
+      "type": "string",
+      "description": "property type.",
+      "enum": [
+        "default",
+        "number",
+        "date",
+        "checkbox",
+        "url"
+      ]
+    },
+    "cardinality": {
+      "type": "string",
+      "description": "property cardinality.",
+      "enum": [
+        "one",
+        "many"
+      ]
+    },
+    "updateTags": {
+      "type": "array",
+      "description": "tags to add (page/block).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "updateProperties": {
+      "type": "object",
+      "description": "properties map to add/update (page/block).",
+      "additionalProperties": true
+    },
+    "removeTags": {
+      "type": "array",
+      "description": "tags to remove.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "removeProperties": {
+      "type": "array",
+      "description": "property names to remove.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "task status (structured, not in content).",
+      "enum": [
+        "todo",
+        "doing",
+        "done",
+        "waiting",
+        "later",
+        "cancelled"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "description": "task priority (A/B/C/...)."
+    },
+    "scheduled": {
+      "type": "string",
+      "description": "task scheduled date."
+    },
+    "deadline": {
+      "type": "string",
+      "description": "task deadline date."
+    },
+    "restore": {
+      "type": "boolean",
+      "description": "page: restore recycled page before updating."
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Print the exact CLI invocation only; do not write."
+    }
+  }
+}
+```
+
+Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
+图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。
