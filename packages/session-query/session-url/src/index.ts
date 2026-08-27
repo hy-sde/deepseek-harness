@@ -22,20 +22,21 @@ export { SessionProtocolHandler }
 export const name = 'session-url'
 
 /**
+ * Services this row requires to register the scheme handler. Declared as hard
+ * injects so Cordis guarantees activation order: the sqlite engine publishes
+ * `sessionQuery` synchronously at the start of its own apply, and this plugin
+ * must not race ahead of it. When an assembly provides neither `internalUrls`
+ * nor `sessionQuery`, the row simply stays dormant ("waiting for …") instead
+ * of throwing and failing boot.
+ */
+export const inject = ['internalUrls', 'sessionQuery']
+
+/**
  * Register the `session://` scheme into the mounted internal-URL registry.
- * Requires both `ctx.internalUrls` and `ctx.sessionQuery`, so this row mounts
- * after those services in an assembly that owns them (the base bundle).
+ * Requires both `ctx.internalUrls` and `ctx.sessionQuery` (declared above).
  */
 export function apply(ctx: Context): void {
-  const iu = ctx.get('internalUrls')
-  if (iu === undefined) {
-    throw new Error('session-url requires the internal-urls registry (ctx.internalUrls) — mount @deepseek-ai/dsh-internal-urls first')
-  }
-  const query = ctx.get('sessionQuery')
-  if (query === undefined) {
-    throw new Error('session-url requires the session-query engine (ctx.sessionQuery) — mount @deepseek-ai/dsh-session-query-sqlite (or another engine) first')
-  }
-  const disposer = iu.register(new SessionProtocolHandler(query))
+  const disposer = ctx.internalUrls.register(new SessionProtocolHandler(ctx.sessionQuery))
   ctx.effect(() => {
     return () => {
       disposer()
@@ -43,4 +44,5 @@ export function apply(ctx: Context): void {
   })
 }
 
-export default apply
+/** Cordis plugin object (loader reads `inject` from this shape). */
+export default { name, inject, apply }
