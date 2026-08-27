@@ -244,6 +244,7 @@
     { "path": "./packages/browser/tool-browser" },
     { "path": "./packages/av/av" },
     { "path": "./packages/av/tool-av" },
+    { "path": "./packages/logseq/tool-logseq" },
     { "path": "./packages/edit/hashline" },
     { "path": "./packages/edit/tool-edit" },
     { "path": "./packages/compaction/compaction" },
