@@ -3087,6 +3087,42 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     downloads: {
       sessionLog: () => Promise.resolve(new Response('fixture mode does not serve session export', { status: 404 })),
     },
+    // Loose in-memory wiki surface so UI tests against the fixture can open
+    // the drawer, browse pages/blocks/tasks and exercise edit callbacks
+    // without any host service.
+    wiki: {
+      listPages: request => ok(request, { pages: [
+        { id: 240, title: 'Rust', updatedAt: 1_787_808_165_009, createdAt: 1_787_808_086_650 },
+        { id: 242, title: 'Zig', updatedAt: 1_787_808_159_455, createdAt: 1_787_808_087_002 },
+      ] }),
+      getPage: request => ok(request, {
+        root: {
+          id: 240,
+          name: 'rust',
+          title: 'Rust',
+          uuid: null,
+          createdAt: 1,
+          updatedAt: 2,
+          tags: [{ id: 199, name: null, title: 'topic' }],
+          props: { 'user.property/status-mnIvao0n': 272 },
+          children: [
+            { id: 273, uuid: null, content: 'Systems language in the LLM-era vibe shift', order: 'a0', createdAt: 1, updatedAt: 2, tags: [], children: [] },
+            { id: 274, uuid: null, content: 'DONE review borrow checker ergonomics', order: 'a1', createdAt: 1, updatedAt: 2, tags: [], children: [] },
+          ],
+        },
+        linked: [{ id: 241, content: 'Two vibe shifts', pageName: 'fast and hard code', pageTitle: 'Fast and Hard Code', pageId: 232, updatedAt: 3 }],
+      }),
+      listTags: request => ok(request, { tags: [{ id: 199, name: 'topic', title: 'topic' }, { id: 205, name: 'todo', title: 'todo' }] }),
+      listProperties: request => ok(request, { properties: [{ id: 198, name: 'user.property/status-mnIvao0n', title: 'status' }, { id: 197, name: 'user.property/source-jIg6LPPT', title: 'source' }] }),
+      listTasks: request => ok(request, { tasks: [{ id: 274, content: 'review borrow checker ergonomics', status: 'done', priority: null, scheduled: null, deadline: null }] }),
+      search: request => ok(request, { items: [{ id: 273, title: 'Systems language in the LLM-era vibe shift', pageName: 'rust' }] }),
+      query: request => ok(request, { rows: [] }),
+      upsert: request => ok(request, { entityType: request.payload.entityType, status: 'ok', detail: `${request.payload.entityType} upserted (fixture)` }),
+      remove: request => ok(request, { entityType: request.payload.entityType ?? 'block', detail: 'removed (fixture)' }),
+      server: request => request.payload.action === 'list'
+        ? ok(request, { servers: [{ id: 26331, name: 'llm-wiki', url: 'http://127.0.0.1:59198', status: 'ready', graph: 'llm-wiki', port: 59198 }] })
+        : ok(request, { action: request.payload.action ?? 'list', message: 'fixture' }),
+    },
   }
 
   const rpc: ClientConnectionRpc = {
@@ -3227,6 +3263,16 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'llm.providers': return this.api.llm.providers(request)
       case 'llm.models': return this.api.llm.models(request)
       case 'llm.discoverModels': return this.api.llm.discoverModels(request, signal)
+      case 'wiki.listPages': return this.api.wiki.listPages(request)
+      case 'wiki.getPage': return this.api.wiki.getPage(request)
+      case 'wiki.listTags': return this.api.wiki.listTags(request)
+      case 'wiki.listProperties': return this.api.wiki.listProperties(request)
+      case 'wiki.listTasks': return this.api.wiki.listTasks(request)
+      case 'wiki.search': return this.api.wiki.search(request)
+      case 'wiki.query': return this.api.wiki.query(request)
+      case 'wiki.upsert': return this.api.wiki.upsert(request)
+      case 'wiki.remove': return this.api.wiki.remove(request)
+      case 'wiki.server': return this.api.wiki.server(request)
     }
   }
 

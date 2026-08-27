@@ -1,0 +1,39 @@
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-fg-muted, #888);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.toggle:hover {
+  background: var(--dsw-alias-button-floating-hover, rgba(127, 127, 127, 0.14));
+  color: var(--dsw-alias-fg, #222);
+}
+
+.rail {
+  justify-content: center;
+  padding: 6px;
+}
+
+.glyph {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.active {
+  color: var(--dsw-alias-accent, #4c8dff);
+  background: var(--dsw-alias-accent-soft, rgba(76, 141, 255, 0.12));
+}
+
+.label {
+  font-weight: 600;
+}

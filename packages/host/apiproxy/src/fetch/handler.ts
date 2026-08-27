@@ -45,6 +45,11 @@ import {
 } from '../api/workspace.schema.ts'
 import { skillListRequestSchema } from '../api/skills.schema.ts'
 import {
+  wikiGetPageRequestSchema, wikiListPagesRequestSchema, wikiListPropertiesRequestSchema,
+  wikiListTagsRequestSchema, wikiListTasksRequestSchema, wikiQueryRequestSchema,
+  wikiRemoveRequestSchema, wikiSearchRequestSchema, wikiServerRequestSchema, wikiUpsertRequestSchema,
+} from '../api/wiki.schema.ts'
+import {
   agentPresetCopyRequestSchema, agentPresetListRequestSchema, agentPresetOpenDocumentRequestSchema,
   agentPresetReadRequestSchema, agentPresetRemoveRequestSchema, agentPresetSelectRequestSchema,
 } from '../api/agent-presets.schema.ts'
@@ -117,6 +122,16 @@ const UNARY_ROUTES: UnaryRoutes = {
   'workspace.insertSessionBefore': { schema: workspaceInsertSessionBeforeRequestSchema, invoke: (api, r) => api.workspace.insertSessionBefore(r) },
   'workspace.archiveSession': { schema: workspaceArchiveSessionRequestSchema, invoke: (api, r) => api.workspace.archiveSession(r) },
   'skill.list': { schema: skillListRequestSchema, invoke: (api, r) => api.skills.list(r) },
+  'wiki.listPages': { schema: wikiListPagesRequestSchema, invoke: (api, r) => api.wiki.listPages(r) },
+  'wiki.getPage': { schema: wikiGetPageRequestSchema, invoke: (api, r) => api.wiki.getPage(r) },
+  'wiki.listTags': { schema: wikiListTagsRequestSchema, invoke: (api, r) => api.wiki.listTags(r) },
+  'wiki.listProperties': { schema: wikiListPropertiesRequestSchema, invoke: (api, r) => api.wiki.listProperties(r) },
+  'wiki.listTasks': { schema: wikiListTasksRequestSchema, invoke: (api, r) => api.wiki.listTasks(r) },
+  'wiki.search': { schema: wikiSearchRequestSchema, invoke: (api, r) => api.wiki.search(r) },
+  'wiki.query': { schema: wikiQueryRequestSchema, invoke: (api, r) => api.wiki.query(r) },
+  'wiki.upsert': { schema: wikiUpsertRequestSchema, invoke: (api, r) => api.wiki.upsert(r) },
+  'wiki.remove': { schema: wikiRemoveRequestSchema, invoke: (api, r) => api.wiki.remove(r) },
+  'wiki.server': { schema: wikiServerRequestSchema, invoke: (api, r) => api.wiki.server(r) },
   'agentPreset.list': { schema: agentPresetListRequestSchema, invoke: (api, r) => api.agentPresets.list(r) },
   'agentPreset.select': { schema: agentPresetSelectRequestSchema, invoke: (api, r) => api.agentPresets.select(r) },
   'agentPreset.read': { schema: agentPresetReadRequestSchema, invoke: (api, r) => api.agentPresets.read(r) },
@@ -173,8 +188,7 @@ function fullResponse(narrow: RpcResponse<unknown>): Response {
  * absent ones are indistinguishable after JSON transport).
  */
 // K appears once in the signature but ties the UNARY_ROUTES[K] row lookup to its own
-// schema/invoke pairing; a union parameter degrades the row to an uninvokable intersection.
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+// schema/invoke pairing.
 async function handleUnary<K extends keyof RpcMethodMap>(
   api: ApiProxy, method: K, message: ClientRequest, signal: AbortSignal,
 ): Promise<Response> {

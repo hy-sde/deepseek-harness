@@ -171,6 +171,8 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/web/web-fetch-http': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/web/web-search-public': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/workflow/workflow': { kind: 'indirect', reason: 'The service delegates parent and child model rendering to its consumer and engine.' },
+  'packages/client/ui-wiki': { kind: 'none', reason: 'Browser-side wiki drawer over the host wiki domain; the model-facing logseq tools own every model-context effect.' },
+  'packages/logseq/logseq-graph': { kind: 'none', reason: 'The host graph service registers no tool schema, prompt section, or result; the service data reaches the model only through dsh-tool-logseq and the drawer.' },
 }
 
 interface Failure {

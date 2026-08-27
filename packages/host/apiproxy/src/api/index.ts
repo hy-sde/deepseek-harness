@@ -9,6 +9,7 @@ import type { HostApi } from './host.ts'
 import type { WorkspaceApi } from './workspace.ts'
 import type { AgentPresetsApi } from './agent-presets.ts'
 import type { SkillsApi } from './skills.ts'
+import type { WikiApi } from './wiki.ts'
 import type { SubagentsApi } from './subagents.ts'
 import type { EventsApi } from './events.ts'
 import type { GoalsApi } from './goals.ts'
@@ -31,6 +32,8 @@ export interface ApiProxy {
   settings: SettingsApi
   credentials: CredentialsApi
   llm: LlmApi
+  /** Wiki graph surface (headless Logseq CLI seam); empty payloads for listTags/listProperties. */
+  wiki: WikiApi
   /** Host-only download surfaces (GET, no wire envelope); absent from IApiClient. */
   downloads: DownloadsApi
   /**
@@ -55,6 +58,12 @@ export type {
 export type { JobView } from './jobs.ts'
 export type { WorkspaceApi, WorkspaceId, WorkspaceView } from './workspace.ts'
 export type { SkillsApi, SkillEntry } from './skills.ts'
+export type {
+  WikiApi, WikiBlockNode, WikiLinkedBlock, WikiPageRoot, WikiPageRow, WikiPropertyRow,
+  WikiSearchItem, WikiServerRow, WikiTagRef, WikiTagRow, WikiTaskRow,
+  WikiUpsertRequest, WikiUpsertValue, WikiRemoveRequest, WikiRemoveValue,
+  WikiGetPageValue, WikiServerRequestValue, WikiServerActionValue, WikiServerListValue,
+} from './wiki.ts'
 export type { AgentPresetsApi, AgentPresetEntry } from './agent-presets.ts'
 export type { EventsApi, MuxFrame, HostFrame, QueuedInboxItem, ToolCallView, ToolEventView, ToolResultView } from './events.ts'
 export type { GoalsApi, GoalId, GoalRef } from './goals.ts'

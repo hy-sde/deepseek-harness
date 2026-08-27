@@ -225,6 +225,26 @@ export class FakeApiClient implements IApiClient {
     discoverModels: payload => this.record('llm.discoverModels', payload, Promise.resolve(ok({ models: [] }))),
   }
 
+  readonly wiki: IApiClient['wiki'] = {
+    listPages: payload => this.record('wiki.listPages', payload, Promise.resolve(ok({ pages: [] }))),
+    getPage: payload => this.record('wiki.getPage', payload, Promise.resolve(ok({
+      root: { id: 0, name: null, title: '', uuid: null, createdAt: null, updatedAt: null, tags: [], props: {}, children: [] },
+      linked: [],
+    }))),
+    listTags: payload => this.record('wiki.listTags', payload, Promise.resolve(ok({ tags: [] }))),
+    listProperties: payload => this.record('wiki.listProperties', payload, Promise.resolve(ok({ properties: [] }))),
+    listTasks: payload => this.record('wiki.listTasks', payload, Promise.resolve(ok({ tasks: [] }))),
+    search: payload => this.record('wiki.search', payload, Promise.resolve(ok({ items: [] }))),
+    query: payload => this.record('wiki.query', payload, Promise.resolve(ok({ rows: [] }))),
+    upsert: payload => this.record('wiki.upsert', payload, Promise.resolve(ok({
+      entityType: (payload as { entityType?: string }).entityType ?? 'block', status: 'ok' as const, detail: 'ok',
+    }))),
+    remove: payload => this.record('wiki.remove', payload, Promise.resolve(ok({
+      entityType: (payload as { entityType?: string }).entityType ?? 'block', detail: 'removed',
+    }))),
+    server: payload => this.record('wiki.server', payload, Promise.resolve(ok({ servers: [] }))),
+  }
+
   /** When true, streams never fire onOpen (misbehaving-carrier material for the handshake timeout guard). */
   suppressStreamOpen = false
 

@@ -9,6 +9,7 @@ import type { HostApi } from './host.ts'
 import type { WorkspaceApi } from './workspace.ts'
 import type { AgentPresetsApi } from './agent-presets.ts'
 import type { SkillsApi } from './skills.ts'
+import type { WikiApi } from './wiki.ts'
 import type { GoalsApi } from './goals.ts'
 import type { SettingsApi } from './settings.ts'
 import type { CredentialsApi } from './credentials.ts'
@@ -51,6 +52,16 @@ export interface RpcMethodMap {
   'workspace.insertSessionBefore': WorkspaceApi['insertSessionBefore']
   'workspace.archiveSession': WorkspaceApi['archiveSession']
   'skill.list': SkillsApi['list']
+  'wiki.listPages': WikiApi['listPages']
+  'wiki.getPage': WikiApi['getPage']
+  'wiki.listTags': WikiApi['listTags']
+  'wiki.listProperties': WikiApi['listProperties']
+  'wiki.listTasks': WikiApi['listTasks']
+  'wiki.search': WikiApi['search']
+  'wiki.query': WikiApi['query']
+  'wiki.upsert': WikiApi['upsert']
+  'wiki.remove': WikiApi['remove']
+  'wiki.server': WikiApi['server']
   'agentPreset.list': AgentPresetsApi['list']
   'agentPreset.select': AgentPresetsApi['select']
   'agentPreset.read': AgentPresetsApi['read']

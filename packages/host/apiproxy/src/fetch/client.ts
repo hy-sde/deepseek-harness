@@ -42,6 +42,11 @@ import {
 } from '../api/workspace.schema.ts'
 import { skillListValueSchema } from '../api/skills.schema.ts'
 import {
+  wikiGetPageValueSchema, wikiListPagesValueSchema, wikiListPropertiesValueSchema,
+  wikiListTagsValueSchema, wikiListTasksValueSchema, wikiQueryValueSchema, wikiRemoveValueSchema,
+  wikiSearchValueSchema, wikiServerValueSchema, wikiUpsertValueSchema,
+} from '../api/wiki.schema.ts'
+import {
   agentPresetCopyValueSchema, agentPresetListValueSchema, agentPresetOpenDocumentValueSchema,
   agentPresetReadValueSchema, agentPresetRemoveValueSchema, agentPresetSelectValueSchema,
 } from '../api/agent-presets.schema.ts'
@@ -161,6 +166,18 @@ export interface IApiClient {
     models(payload: RequestPayload<'llm.models'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'llm.models'>>>
     discoverModels(payload: RequestPayload<'llm.discoverModels'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'llm.discoverModels'>>>
   }
+  wiki: {
+    listPages(payload: RequestPayload<'wiki.listPages'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listPages'>>>
+    getPage(payload: RequestPayload<'wiki.getPage'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.getPage'>>>
+    listTags(payload: RequestPayload<'wiki.listTags'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listTags'>>>
+    listProperties(payload: RequestPayload<'wiki.listProperties'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listProperties'>>>
+    listTasks(payload: RequestPayload<'wiki.listTasks'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listTasks'>>>
+    search(payload: RequestPayload<'wiki.search'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.search'>>>
+    query(payload: RequestPayload<'wiki.query'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.query'>>>
+    upsert(payload: RequestPayload<'wiki.upsert'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.upsert'>>>
+    remove(payload: RequestPayload<'wiki.remove'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.remove'>>>
+    server(payload: RequestPayload<'wiki.server'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.server'>>>
+  }
   /** client-response passthrough (rpcId is a backfill of the server-request's id — never minted here). */
   respond(message: ClientResponse, signal?: AbortSignal): Promise<RpcReceipt>
 }
@@ -199,6 +216,16 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'workspace.insertSessionBefore': workspaceInsertSessionBeforeValueSchema,
   'workspace.archiveSession': workspaceArchiveSessionValueSchema,
   'skill.list': skillListValueSchema,
+  'wiki.listPages': wikiListPagesValueSchema,
+  'wiki.getPage': wikiGetPageValueSchema,
+  'wiki.listTags': wikiListTagsValueSchema,
+  'wiki.listProperties': wikiListPropertiesValueSchema,
+  'wiki.listTasks': wikiListTasksValueSchema,
+  'wiki.search': wikiSearchValueSchema,
+  'wiki.query': wikiQueryValueSchema,
+  'wiki.upsert': wikiUpsertValueSchema,
+  'wiki.remove': wikiRemoveValueSchema,
+  'wiki.server': wikiServerValueSchema,
   'agentPreset.list': agentPresetListValueSchema,
   'agentPreset.select': agentPresetSelectValueSchema,
   'agentPreset.read': agentPresetReadValueSchema,
@@ -455,6 +482,21 @@ export abstract class AbstractApiClient implements IApiClient {
 
   readonly skills: IApiClient['skills'] = {
     list: (payload, signal) => this.callUnary('skill.list', payload, signal),
+  }
+
+  // Annotated like every sibling (see agentPresets comment): keeps the wire
+  // view types from leaking the host Context merges into Client programs.
+  readonly wiki: IApiClient['wiki'] = {
+    listPages: (payload, signal) => this.callUnary('wiki.listPages', payload, signal),
+    getPage: (payload, signal) => this.callUnary('wiki.getPage', payload, signal),
+    listTags: (payload, signal) => this.callUnary('wiki.listTags', payload, signal),
+    listProperties: (payload, signal) => this.callUnary('wiki.listProperties', payload, signal),
+    listTasks: (payload, signal) => this.callUnary('wiki.listTasks', payload, signal),
+    search: (payload, signal) => this.callUnary('wiki.search', payload, signal),
+    query: (payload, signal) => this.callUnary('wiki.query', payload, signal),
+    upsert: (payload, signal) => this.callUnary('wiki.upsert', payload, signal),
+    remove: (payload, signal) => this.callUnary('wiki.remove', payload, signal),
+    server: (payload, signal) => this.callUnary('wiki.server', payload, signal),
   }
 
   // Annotated like every sibling, and load-bearing rather than cosmetic:

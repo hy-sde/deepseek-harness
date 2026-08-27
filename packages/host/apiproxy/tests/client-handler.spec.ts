@@ -22,6 +22,7 @@ function scriptedApi(overrides: {
   subagents?: Partial<ApiProxy['subagents']>
   host?: Partial<ApiProxy['host']>
   skills?: Partial<ApiProxy['skills']>
+  wiki?: Partial<ApiProxy['wiki']>
   agentPresets?: Partial<ApiProxy['agentPresets']>
   events?: Partial<ApiProxy['events']>
   goals?: Partial<ApiProxy['goals']>
@@ -90,6 +91,19 @@ function scriptedApi(overrides: {
       archiveSession: r => ok(r, { archivedSessionIds: [r.payload.sessionId] }),
     },
     skills: { list: r => ok(r, { skills: [] }), ...overrides.skills },
+    wiki: {
+      listPages: r => ok(r, { pages: [] }),
+      getPage: err,
+      listTags: r => ok(r, { tags: [] }),
+      listProperties: r => ok(r, { properties: [] }),
+      listTasks: r => ok(r, { tasks: [] }),
+      search: r => ok(r, { items: [] }),
+      query: r => ok(r, { rows: [] }),
+      upsert: err,
+      remove: err,
+      server: r => ok(r, { servers: [] }),
+      ...overrides.wiki,
+    },
     agentPresets: {
       list: r => ok(r, { presets: [], authorable: false, hasDocument: false }),
       select: r => ok(r, { agentPreset: r.payload.agentPreset }),
@@ -811,5 +825,94 @@ describe('config unary surface', () => {
     expect(response.result.ok).toBe(false)
     if (response.result.ok) throw new Error('unreachable')
     expect(response.result.error.code).toBe('bad-request')
+  })
+})
+
+describe('wiki domain', () => {
+  it('round-trips listPages through the wire', async () => {
+    const seen: { method: string; payload: unknown }[] = []
+    const api = scriptedApi({
+      wiki: {
+        listPages: (r) => {
+          seen.push({ method: 'wiki.listPages', payload: r.payload })
+          return ok(r, { pages: [{ id: 240, title: 'Rust', updatedAt: 1787808165009, createdAt: 1787808086650 }] })
+        },
+      },
+    })
+    const response = await client(api).wiki.listPages({ includeBuiltIn: false, limit: 5 })
+    expect(response.result.ok).toBe(true)
+    if (response.result.ok) {
+      expect(response.result.value.pages[0]).toEqual({ id: 240, title: 'Rust', updatedAt: 1787808165009, createdAt: 1787808086650 })
+    }
+    expect(seen[0]?.method).toBe('wiki.listPages')
+  })
+
+  it('rejects a bad limit at the carrier boundary', async () => {
+    const api = scriptedApi()
+    const response = await client(api).wiki.listPages({ limit: -1 })
+    expect(response.result.ok).toBe(false)
+    if (response.result.ok) throw new Error('unreachable')
+    expect(response.result.error.code).toBe('bad-request')
+  })
+
+  it('round-trips a nested block tree through getPage', async () => {
+    const api = scriptedApi({
+      wiki: {
+        getPage: r => ok(r, {
+          root: {
+            id: 240,
+            name: 'rust',
+            title: 'Rust',
+            uuid: null,
+            createdAt: 1,
+            updatedAt: 2,
+            tags: [{ id: 199, name: null, title: 'topic' }],
+            props: { 'user.property/status-mnIvao0n': 272 },
+            children: [{
+              id: 273,
+              uuid: null,
+              content: 'Systems language in [[Fast and Hard Code]]',
+              order: 'a0',
+              createdAt: 1,
+              updatedAt: 2,
+              tags: [],
+              children: [{ id: 274, uuid: null, content: 'nested', order: 'a0', createdAt: null, updatedAt: null, tags: [], children: [] }],
+            }],
+          },
+          linked: [{ id: 241, content: 'Two vibe shifts…', pageName: 'fast and hard code', pageTitle: 'Fast and Hard Code', pageId: 232, updatedAt: 3 }],
+        }),
+      },
+    })
+    const response = await client(api).wiki.getPage({ page: 'Rust' })
+    expect(response.result.ok).toBe(true)
+    if (response.result.ok) {
+      expect(response.result.value.root.children[0]?.children[0]?.content).toBe('nested')
+      expect(response.result.value.root.props['user.property/status-mnIvao0n']).toBe(272)
+      expect(response.result.value.linked[0]?.pageTitle).toBe('Fast and Hard Code')
+    }
+  })
+
+  it('forwards an upsert payload including passthrough options', async () => {
+    let received: unknown
+    const api = scriptedApi({
+      wiki: {
+        upsert: (r) => {
+          received = r.payload
+          return ok(r, { entityType: 'block', status: 'ok' as const, detail: 'block upserted' })
+        },
+      },
+    })
+    const response = await client(api).wiki.upsert({
+      entityType: 'block',
+      content: 'new block',
+      targetPage: 'Rust',
+      pos: 'last-child',
+      updateProperties: { status: 'draft' },
+    })
+    expect(response.result.ok).toBe(true)
+    if (response.result.ok) {
+      expect(response.result.value).toEqual({ entityType: 'block', status: 'ok', detail: 'block upserted' })
+    }
+    expect(received).toMatchObject({ entityType: 'block', content: 'new block', updateProperties: { status: 'draft' } })
   })
 })

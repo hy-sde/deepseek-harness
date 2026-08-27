@@ -294,6 +294,20 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
         return new Response('stub', { status: 404 })
       },
     },
+    // Contract-satisfaction stub: this spec exercises the carrier + handler
+    // round trip, not the wiki domain (that is client-handler.spec.ts).
+    wiki: {
+      listPages: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { pages: [] } } }),
+      getPage: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { root: { id: 0, name: null, title: '', uuid: null, createdAt: null, updatedAt: null, tags: [], props: {}, children: [] }, linked: [] } } }),
+      listTags: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { tags: [] } } }),
+      listProperties: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { properties: [] } } }),
+      listTasks: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { tasks: [] } } }),
+      search: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { items: [] } } }),
+      query: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { rows: [] } } }),
+      upsert: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { entityType: request.payload.entityType, status: 'ok' as const, detail: 'ok' } } }),
+      remove: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { entityType: request.payload.entityType ?? 'block', detail: 'removed' } } }),
+      server: async request => ({ rpcId: request.rpcId, result: { ok: true as const, value: { servers: [] } } }),
+    },
   }
 }
 
