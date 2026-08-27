@@ -1,3 +1,6 @@
+/* Block tree outliner: DSH design tokens throughout (design-platform.css),
+   so nested wiki content follows the active theme. */
+
 .row {
   --wiki-depth: 0;
   display: flex;
@@ -13,7 +16,7 @@
 }
 
 .line:hover {
-  background: var(--dsw-alias-surface-hover, rgba(127, 127, 127, 0.08));
+  background: var(--dsw-alias-interactive-bg-hover);
 }
 
 .bullet {
@@ -22,7 +25,7 @@
   height: 10px;
   margin-top: 7px;
   border-radius: 50%;
-  background: var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.4));
+  background: var(--dsw-alias-border-l3);
 }
 
 .taskBox {
@@ -31,9 +34,9 @@
   height: 16px;
   margin-top: 3px;
   border-radius: 4px;
-  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.5));
+  border: 1px solid var(--dsw-alias-border-l3);
   background: transparent;
-  color: var(--dsw-alias-accent-fg, inherit);
+  color: var(--dsw-alias-label-primary);
   cursor: pointer;
   font-size: 11px;
   display: inline-flex;
@@ -43,9 +46,9 @@
 }
 
 .taskDone {
-  background: var(--dsw-alias-success, #2f9e44);
-  border-color: var(--dsw-alias-success, #2f9e44);
-  color: #fff;
+  background: var(--dsw-alias-state-success-primary);
+  border-color: var(--dsw-alias-state-success-primary);
+  color: var(--dsw-alias-label-primary-inverted);
 }
 
 .body {
@@ -62,7 +65,7 @@
 .textLine {
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--dsw-alias-fg, #222);
+  color: var(--dsw-alias-label-primary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -72,18 +75,18 @@
   gap: 6px;
   font-size: 12px;
   line-height: 1.4;
-  color: var(--dsw-alias-fg-muted, #777);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .propKey {
   flex: 0 0 auto;
   min-width: 72px;
   font-weight: 600;
-  color: var(--dsw-alias-fg-subtle, #999);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .propValue {
-  color: var(--dsw-alias-fg-muted, #666);
+  color: var(--dsw-alias-label-secondary);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -103,7 +106,7 @@
   appearance: none;
   border: none;
   background: transparent;
-  color: var(--dsw-alias-fg-muted, #888);
+  color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
@@ -112,8 +115,8 @@
 }
 
 .action:hover {
-  background: var(--dsw-alias-button-floating-hover, rgba(127, 127, 127, 0.14));
-  color: var(--dsw-alias-fg, #222);
+  background: var(--dsw-alias-button-floating-hover);
+  color: var(--dsw-alias-label-primary);
 }
 
 .children {
@@ -130,7 +133,7 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.2));
+  background: var(--dsw-alias-border-l2);
 }
 
 .tree {
@@ -145,13 +148,17 @@
   font: inherit;
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--dsw-alias-fg, #222);
-  background: var(--dsw-alias-surface, #fff);
-  border: 1px solid var(--dsw-alias-accent, #4c8dff);
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-brand-primary);
   border-radius: 6px;
   padding: 4px 6px;
   resize: vertical;
   min-height: 52px;
+}
+
+.editor:focus {
+  outline: none;
 }
 
 .addRow {
@@ -167,8 +174,17 @@
   font: inherit;
   font-size: 12.5px;
   padding: 4px 6px;
-  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.5));
+  border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 6px;
-  background: var(--dsw-alias-surface, #fff);
-  color: var(--dsw-alias-fg, #222);
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+}
+
+.addInput::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.addInput:focus {
+  outline: none;
+  border-color: var(--dsw-alias-brand-primary);
 }

@@ -82,9 +82,18 @@ if (first === 'list') {
 }
 if (first === 'show') { stdout.write(${JSON.stringify(SHOW_RUST_JSON)} + '\\n'); return }
 if (first === 'server' && args[1] === 'list') { stdout.write(${JSON.stringify(SERVER_LIST_JSON)} + '\\n'); return }
-if (first === 'upsert' || first === 'remove' || first === 'query' || first === 'search' || first === 'server') {
+if (first === 'upsert' || first === 'remove' || first === 'query' || first === 'server') {
   // Echo canonical args back so tests can assert forwarding.
   stdout.write(JSON.stringify({ status: 'ok', data: { argv: args } }) + '\\n')
+  return
+}
+if (first === 'search') {
+  // Mirror the real CLI: search takes --content only; a --limit flag is rejected.
+  if (args.includes('--limit')) {
+    stdout.write(JSON.stringify({ status: 'error', error: { code: 'invalid-options', message: 'Unknown option: :limit' } }) + '\\n')
+    process.exit(1)
+  }
+  stdout.write(JSON.stringify({ status: 'ok', data: { items: [] } }) + '\\n')
   return
 }
 stdout.write(JSON.stringify({ status: 'error', error: 'unknown command: ' + args.join(' ') }) + '\\n')
@@ -183,6 +192,12 @@ describe('wikiGraph service (shim CLI)', () => {
   it('search pages projects page hits', async () => {
     const { items } = await service.search({ type: 'page', content: 'Rust' })
     expect(Array.isArray(items)).toBe(true)
+  })
+
+  it('search forwards content-only argv and rejects an unsupported --limit flag', async () => {
+    // The real CLI has no --limit; the service must not forward one.
+    const { items } = await service.search({ type: 'block', content: 'borrow', limit: 25 })
+    expect(items).toEqual([])
   })
 
   it('query returns the result rows', async () => {

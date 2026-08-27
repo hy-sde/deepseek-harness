@@ -300,7 +300,6 @@ export class LogseqGraphService extends Service {
   async search(options: { type?: 'block' | 'page' | 'property' | 'tag'; content: string; limit?: number }): Promise<{ items: SearchItem[] }> {
     const type = options.type ?? 'block'
     const argv = ['search', type, '--content', options.content]
-    addArg(argv, '--limit', options.limit)
     const data = await this.run(argv)
     const rows = itemsOf(data)
     if (type === 'page') {

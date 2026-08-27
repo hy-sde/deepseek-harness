@@ -1,3 +1,5 @@
+/* Wiki sidebar-foot toggle: DSH design tokens throughout. */
+
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -5,7 +7,7 @@
   appearance: none;
   border: none;
   background: transparent;
-  color: var(--dsw-alias-fg-muted, #888);
+  color: var(--dsw-alias-label-secondary);
   font: inherit;
   font-size: 12.5px;
   padding: 6px 10px;
@@ -15,8 +17,8 @@
 }
 
 .toggle:hover {
-  background: var(--dsw-alias-button-floating-hover, rgba(127, 127, 127, 0.14));
-  color: var(--dsw-alias-fg, #222);
+  background: var(--dsw-alias-button-floating-hover);
+  color: var(--dsw-alias-label-primary);
 }
 
 .rail {
@@ -30,8 +32,8 @@
 }
 
 .active {
-  color: var(--dsw-alias-accent, #4c8dff);
-  background: var(--dsw-alias-accent-soft, rgba(76, 141, 255, 0.12));
+  color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-interactive-bg-active);
 }
 
 .label {

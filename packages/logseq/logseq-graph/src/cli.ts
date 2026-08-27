@@ -25,14 +25,28 @@ export class LogseqCliError extends Error {
   readonly stderr: string
   /** Process exit code when the CLI actually ran; null for spawn failures. */
   readonly exitCode: number | null
-  constructor(message: string, args: string[], stdout: string, stderr: string, exitCode: number | null) {
+  /** Original `status:'error'` payload (string, or the parsed object form with code/message/hint). */
+  readonly payload: string | { code?: string; message?: string; hint?: string }
+  constructor(
+    message: string, args: string[], stdout: string, stderr: string,
+    exitCode: number | null, payload?: string | { code?: string; message?: string; hint?: string },
+  ) {
     super(message)
     this.name = 'LogseqCliError'
     this.args = args
     this.stdout = stdout
     this.stderr = stderr
     this.exitCode = exitCode
+    this.payload = payload ?? message
   }
+}
+
+/** Render an envelope `error` field (string or object) into a readable message. */
+function formatEnvelopeError(error: { code?: string; message?: string; hint?: string } | string | undefined): string {
+  if (typeof error === 'string') return error || 'unknown CLI error'
+  if (error === undefined) return 'unknown CLI error'
+  const parts = [error.message, error.code !== undefined ? `(${error.code})` : '', error.hint !== undefined ? `— ${error.hint}` : ''].filter(Boolean)
+  return parts.join(' ') || 'unknown CLI error'
 }
 
 /** Run the logseq CLI with the given args and return its decoded output.
@@ -61,14 +75,15 @@ export function execCli(
         return
       }
       const text = stdout
-      let envelope: { status?: string; data?: unknown; error?: string } | null = null
+      let envelope: { status?: string; data?: unknown; error?: { code?: string; message?: string; hint?: string } | string } | null = null
       try {
-        envelope = JSON.parse(text) as { status?: string; data?: unknown; error?: string }
+        envelope = JSON.parse(text) as
+          { status?: string; data?: unknown; error?: { code?: string; message?: string; hint?: string } | string } | null
       } catch {
         envelope = null
       }
       if (envelope && envelope.status === 'error') {
-        reject(new LogseqCliError(envelope.error ?? 'unknown CLI error', full, text, stderr, exitCode))
+        reject(new LogseqCliError(formatEnvelopeError(envelope.error), full, text, stderr, exitCode, envelope.error))
         return
       }
       if (error || exitCode !== 0) {
@@ -78,7 +93,7 @@ export function execCli(
       if (envelope) {
         resolve({ data: envelope.data ?? null, text })
       } else if (text.trim().startsWith('Error (')) {
-        reject(new LogseqCliError(text.trim(), full, text, stderr, 0))
+        reject(new LogseqCliError(text.trim(), full, text, stderr, 0)) // raw text passthrough
       } else {
         resolve({ data: null, text })
       }
