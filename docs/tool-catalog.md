@@ -49,6 +49,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`, `logseq_list`, `logseq_query`, `logseq_remove`, `logseq_search`, `logseq_server`, `logseq_show`, `logseq_upsert` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle. |
+| `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`, `codebase_detect_changes`, `codebase_get_architecture`, `codebase_get_code_snippet`, `codebase_get_graph_schema`, `codebase_index_repository`, `codebase_index_status`, `codebase_ingest_traces`, `codebase_list_projects`, `codebase_manage_adr`, `codebase_query_graph`, `codebase_search_code`, `codebase_search_graph`, `codebase_trace_path` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3655,3 +3656,516 @@ Create or update a Logseq entity (block/page/tag/property/task). Update mode whe
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
 Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle.
+
+<a id="deepseek-aidsh-tool-codebase-memory"></a>
+
+## `@deepseek-ai/dsh-tool-codebase-memory`
+
+### `codebase_delete_project`
+
+Delete a project's index from the codebase-memory graph store. Destructive and permanent: the graph is rebuilt only by re-running codebase_index_repository. Use only for cleanup of superseded indexes (e.g. to free disk).
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_detect_changes`
+
+Detect code changes and their impact on an indexed project's knowledge graph: git diff from a base branch/ref mapped onto the graph, telling you which symbols/routes/clusters a change touches. Use before and after edits to plan and review work.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "scope": {
+      "type": "string",
+      "description": "Optional scope hint for the analysis."
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Impact depth (default 2)."
+    },
+    "baseBranch": {
+      "type": "string",
+      "description": "Base branch to diff from (default main)."
+    },
+    "since": {
+      "type": "string",
+      "description": "Git ref or tag to compare from, e.g. HEAD~5 or v0.5.0. Diffs <ref>...HEAD."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_get_architecture`
+
+High-level architecture overview of a project from the knowledge graph: packages, services, dependencies, and de-facto modules (Leiden clusters over the call/import graph) with cohesion and representative nodes. Use before diving into traversal code, and to validate refactors against the real seams. Optional directory prefix scopes the analysis.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "path": {
+      "type": "string",
+      "description": "Optional directory prefix to scope the architecture, e.g. apps/hoa."
+    },
+    "aspects": {
+      "type": "array",
+      "description": "Aspects to include: all, overview, structure, dependencies, routes, languages, packages, entry_points, hotspots, boundaries, layers, file_tree, clusters. Omit = all.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_get_code_snippet`
+
+Read the source of one symbol from an indexed project — full qualified name from codebase_search_graph, or a short function name. Use instead of several file read + grep cycles when you already know the symbol (from codebase_search_graph / codebase_trace_path).
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "qualifiedName": {
+      "type": "string",
+      "description": "Full qualified_name from codebase_search_graph, or a short function name."
+    },
+    "includeNeighbors": {
+      "type": "boolean",
+      "description": "Also render the symbol's structural neighbors."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_get_graph_schema`
+
+Return the node labels and edge types available in a project's knowledge graph — the vocabulary for codebase_query_graph Cypher and the labels accepted by codebase_search_graph.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_index_repository`
+
+Index a repository into the codebase-memory knowledge graph. Use INSTEAD of ad-hoc greps when you need structural answers (callers/callees, routes, architectures, cross-service links) that the filesystem tools would need many read/grep cycles to piece together. Runs in the daemon; repos are indexed once and queried repeatedly afterwards.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "repoPath": {
+      "type": "string",
+      "description": "Path to the repository to index."
+    },
+    "mode": {
+      "type": "string",
+      "description": "full (default): all files + similarity/semantic edges. moderate: filtered files + similarity/semantic. fast: filtered files, no similarity/semantic. cross-repo-intelligence: only match routes/channels across already-indexed projects (requires targetProjects).",
+      "enum": [
+        "full",
+        "moderate",
+        "fast",
+        "cross-repo-intelligence"
+      ]
+    },
+    "targetProjects": {
+      "type": "array",
+      "description": "Projects to search for cross-repo links (cross-repo-intelligence mode). Use [\"*\"] for all indexed projects.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "name": {
+      "type": "string",
+      "description": "Override the derived project name (defaults to the path slug)."
+    },
+    "persistence": {
+      "type": "boolean",
+      "description": "Write a compressed artifact to .codebase-memory/graph.db.zst for team sharing."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_index_status`
+
+Report indexing status and coverage for a project: node/edge counts, freshness, skipped and partially-parsed files, and any logfile of the last index run. Use before trusting an answer about a recently-changed repo.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_ingest_traces`
+
+Fold runtime call traces into an indexed project's knowledge graph so queries and analysis reflect observed behavior, not just static structure. Accepts an array of {caller, callee, count} and returns the accepted/imported counts.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "traces": {
+      "type": "array",
+      "description": "Runtime traces to ingest.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "caller": {
+            "type": "string"
+          },
+          "callee": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "caller",
+          "callee",
+          "count"
+        ]
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_list_projects`
+
+List every project indexed into the codebase-memory knowledge graph (name, root path, git state). Use before any other codebase_* tool to learn the canonical `project` name for the repository in question, then pass it to the other tools.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_manage_adr`
+
+Read or write Architecture Decision Records for an indexed project. Modes: get (list ADRs), update (create/replace an ADR), sections (read individual ADR sections). Use to persist load-bearing architectural choices next to the code.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "mode": {
+      "type": "string",
+      "description": "get: list ADRs; update: create/replace an ADR; sections: read one ADR's sections.",
+      "enum": [
+        "get",
+        "update",
+        "sections"
+      ]
+    },
+    "content": {
+      "type": "string",
+      "description": "Full ADR content for mode=update."
+    },
+    "sections": {
+      "type": "array",
+      "description": "Section names to read for mode=sections.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_query_graph`
+
+Execute a raw Cypher query against the codebase-memory knowledge graph for multi-hop patterns, aggregations, and cross-service analysis the curated tools cannot express. Response carries total (returned row count); the graph enforces a hard 100k row ceiling, so add LIMIT for broad queries. Each Function/Method node also carries complexity/cognitive/loop/recursion hot-path properties.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "query": {
+      "type": "string",
+      "description": "Cypher query, e.g. MATCH (f:Function) WHERE f.transitive_loop_depth >= 3 RETURN f.qualified_name, f.transitive_loop_depth, f.linear_scan_in_loop ORDER BY f.transitive_loop_depth DESC."
+    },
+    "maxRows": {
+      "type": "integer",
+      "description": "Optional row cap (default: unlimited up to the 100k ceiling). No offset support — use codebase_search_graph for paged browsing."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_search_code`
+
+Grep-augmented code search: finds text patterns, then enriches matches into containing functions ranked by structural importance (definitions first, popular functions next, tests last). Modes: compact (default, signatures), full (with source), files (just file paths). Use when you need to find code by literal text within one indexed project.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "pattern": {
+      "type": "string",
+      "description": "Text pattern to search (grep syntax)."
+    },
+    "filePattern": {
+      "type": "string",
+      "description": "Glob to restrict files, e.g. *.go or packages/**/*.ts."
+    },
+    "pathFilter": {
+      "type": "string",
+      "description": "Regex filter on result file paths, e.g. ^src/ or \\.(go|ts)$."
+    },
+    "mode": {
+      "type": "string",
+      "description": "compact (default): signatures + metadata. full: with source. files: just file list.",
+      "enum": [
+        "compact",
+        "full",
+        "files"
+      ]
+    },
+    "context": {
+      "type": "integer",
+      "description": "Lines of context around each match (grep -C). Only used in compact mode."
+    },
+    "regex": {
+      "type": "boolean",
+      "description": "Treat pattern as a regular expression (default literal)."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Max enriched results (default 10; responses carry total_grep_matches/total_results so you can detect truncation and raise limit or narrow path_filter)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_search_graph`
+
+Search the codebase-memory knowledge graph for functions, classes, routes, and variables. Preferred over plain grep/glob when finding definitions, implementations, or relationships: three independent modes — query (BM25 full-text with camelCase splitting and structural label boosting), namePattern (exact regex on symbol names), semanticQuery (vector cosine; fills the vocabulary gap, e.g. find "publish" when you search "send"). Responds with prefix-grouped tree rows of qn/label/file/lines and in/out degrees.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "query": {
+      "type": "string",
+      "description": "Natural-language or keyword full-text search. Tokens split on whitespace; camelCase identifiers index as individual words. When provided, namePattern is ignored."
+    },
+    "label": {
+      "type": "string",
+      "description": "Restrict to one node label, e.g. Function, Method, Route, Class."
+    },
+    "namePattern": {
+      "type": "string",
+      "description": "Exact regex over symbol names (ignored when query is provided)."
+    },
+    "qnPattern": {
+      "type": "string",
+      "description": "Regex over qualified names."
+    },
+    "filePattern": {
+      "type": "string",
+      "description": "Restrict to files matching this substring/glob."
+    },
+    "relationship": {
+      "type": "string",
+      "description": "Edge relationship to filter by."
+    },
+    "minDegree": {
+      "type": "integer",
+      "description": "Minimum selected degree."
+    },
+    "maxDegree": {
+      "type": "integer",
+      "description": "Maximum selected degree."
+    },
+    "excludeEntryPoints": {
+      "type": "boolean",
+      "description": "Exclude entry-point symbols."
+    },
+    "includeConnected": {
+      "type": "boolean",
+      "description": "Also return connected nodes."
+    },
+    "semanticQuery": {
+      "type": "array",
+      "description": "Array of keyword strings (NOT a single string) — each scored via per-keyword min-cosine. Requires moderate/full index mode.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Max results per call (default 50). Response carries total and has_more; page with offset when truncated."
+    },
+    "offset": {
+      "type": "integer",
+      "description": "Skip the first N results. Combine with limit to page until has_more is false."
+    },
+    "format": {
+      "type": "string",
+      "description": "Response encoding: tree (default) prefix-grouped rows; json the same model as structured JSON.",
+      "enum": [
+        "tree",
+        "json"
+      ]
+    },
+    "fields": {
+      "type": "array",
+      "description": "Extra per-node property columns, e.g. complexity, cognitive, signature, docstring, return_type, is_test, lines(int). Core columns (qn/label/file/lines/in/out) are always present.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_trace_path`
+
+Trace call/dataflow/cross-service paths through the codebase-memory knowledge graph. callers/callees (calls mode), value propagation with argument expressions (data_flow), or through HTTP/async route nodes and across repos (cross_service). Callers surface the declaration plus every inbound edge.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "functionName": {
+      "type": "string",
+      "description": "Qualified name from codebase_search_graph, or a short function name."
+    },
+    "direction": {
+      "type": "string",
+      "description": "Trace direction (default both).",
+      "enum": [
+        "inbound",
+        "outbound",
+        "both"
+      ]
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Hop depth (default 3)."
+    },
+    "mode": {
+      "type": "string",
+      "description": "calls: CALLS edges. data_flow: CALLS+DATA_FLOWS with arg expressions. cross_service: HTTP/async routes and CROSS_* cross-repo edges.",
+      "enum": [
+        "calls",
+        "data_flow",
+        "cross_service"
+      ]
+    },
+    "parameterName": {
+      "type": "string",
+      "description": "data_flow mode: scope the trace to one parameter name."
+    },
+    "edgeTypes": {
+      "type": "array",
+      "description": "Restrict to specific edge types.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "riskLabels": {
+      "type": "boolean",
+      "description": "Add CRITICAL/HIGH/MEDIUM/LOW risk classes by hop distance."
+    },
+    "includeTests": {
+      "type": "boolean",
+      "description": "Include test nodes (default excludes them)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor.

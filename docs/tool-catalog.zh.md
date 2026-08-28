@@ -51,6 +51,7 @@
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`、`ctx.browser`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 浏览器工具（omp 移植）：open/close/run/state 覆盖 launch（stealth 补丁）、CDP-attach 或本地 relay＋扩展；观察为带 click-by-selector 的 ARIA ref 树，截图写 PNG 路径。 |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`、`av_doctor`、`av_list`、`av_scan` | `ctx.tools`、`ctx.av`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。 |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`、`logseq_list`、`logseq_query`、`logseq_remove`、`logseq_search`、`logseq_server`、`logseq_show`、`logseq_upsert` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。 |
+| `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`、`codebase_detect_changes`、`codebase_get_architecture`、`codebase_get_code_snippet`、`codebase_get_graph_schema`、`codebase_index_repository`、`codebase_index_status`、`codebase_ingest_traces`、`codebase_list_projects`、`codebase_manage_adr`、`codebase_query_graph`、`codebase_search_code`、`codebase_search_graph`、`codebase_trace_path` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 代码智能工具（codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project），通过 `codebase-memory-mcp cli --json` 模式对本地 codebase-memory daemon 发起一次性查询——stdio MCP 客户端行的本地替代方案，共享同一 daemon、索引、变更锁与索引 supervisor。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -3640,3 +3641,515 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。
+<a id="deepseek-aidsh-tool-codebase-memory"></a>
+
+## `@deepseek-ai/dsh-tool-codebase-memory`
+
+### `codebase_delete_project`
+
+从 codebase-memory 图存储删除一个项目的索引。破坏性且永久：图只能通过重新运行 codebase_index_repository 重建。仅用于清理被取代的索引（例如释放磁盘）。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_detect_changes`
+
+检测代码改动及其对已索引项目知识图的影响：把来自基准分支/引用的 git diff 映射到图上，告诉你一次改动会波及哪些符号/路由/集群。编辑前后使用以规划与复盘工作。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "scope": {
+      "type": "string",
+      "description": "Optional scope hint for the analysis."
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Impact depth (default 2)."
+    },
+    "baseBranch": {
+      "type": "string",
+      "description": "Base branch to diff from (default main)."
+    },
+    "since": {
+      "type": "string",
+      "description": "Git ref or tag to compare from, e.g. HEAD~5 or v0.5.0. Diffs <ref>...HEAD."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_get_architecture`
+
+从知识图给出项目的高层架构概览：包、服务、依赖，以及对调用/导入图做 Leiden 社区检测得到的 de-facto 模块（含凝聚力与代表性节点）。深入遍历代码前使用，并据此检验重构是否符合真实接缝。可选目录前缀限定分析范围。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "path": {
+      "type": "string",
+      "description": "Optional directory prefix to scope the architecture, e.g. apps/hoa."
+    },
+    "aspects": {
+      "type": "array",
+      "description": "Aspects to include: all, overview, structure, dependencies, routes, languages, packages, entry_points, hotspots, boundaries, layers, file_tree, clusters. Omit = all.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_get_code_snippet`
+
+读取已索引项目中单个符号的源码——codebase_search_graph 给出的完整限定名，或短函数名。在已知道符号（来自 codebase_search_graph / codebase_trace_path）时，用它替代若干次文件读取 + grep 循环。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "qualifiedName": {
+      "type": "string",
+      "description": "Full qualified_name from codebase_search_graph, or a short function name."
+    },
+    "includeNeighbors": {
+      "type": "boolean",
+      "description": "Also render the symbol's structural neighbors."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_get_graph_schema`
+
+返回项目知识图中的节点标签与边类型——codebase_query_graph 的 Cypher 与 codebase_search_graph 接受的标签词汇表。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_index_repository`
+
+把仓库索引进 codebase-memory 知识图。需要结构答案（调用者/被调者、路由、架构、跨服务链接）时用它替代临时 grep——文件系统工具要把这些拼出来需要很多次 read/grep 循环。在 daemon 中运行；仓库索引一次即可反复查询。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "repoPath": {
+      "type": "string",
+      "description": "Path to the repository to index."
+    },
+    "mode": {
+      "type": "string",
+      "description": "full (default): all files + similarity/semantic edges. moderate: filtered files + similarity/semantic. fast: filtered files, no similarity/semantic. cross-repo-intelligence: only match routes/channels across already-indexed projects (requires targetProjects).",
+      "enum": [
+        "full",
+        "moderate",
+        "fast",
+        "cross-repo-intelligence"
+      ]
+    },
+    "targetProjects": {
+      "type": "array",
+      "description": "Projects to search for cross-repo links (cross-repo-intelligence mode). Use [\"*\"] for all indexed projects.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "name": {
+      "type": "string",
+      "description": "Override the derived project name (defaults to the path slug)."
+    },
+    "persistence": {
+      "type": "boolean",
+      "description": "Write a compressed artifact to .codebase-memory/graph.db.zst for team sharing."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_index_status`
+
+报告项目的索引状态与覆盖率：节点/边数量、新鲜度、跳过与部分解析的文件，以及上次索引运行的日志文件。在信任一个关于近期改动仓库的答案前使用。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_ingest_traces`
+
+把运行时调用 trace 折入已索引项目的知识图，使查询与分析反映观测到的行为而不只是静态结构。接受 {caller, callee, count} 数组并返回接受/导入数量。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "traces": {
+      "type": "array",
+      "description": "Runtime traces to ingest.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "caller": {
+            "type": "string"
+          },
+          "callee": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "caller",
+          "callee",
+          "count"
+        ]
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_list_projects`
+
+列出已索引进 codebase-memory 知识图的全部项目（名称、根路径、git 状态）。在其他 codebase_* 工具之前使用，取到目标仓库的标准 `project` 名，再传给其它工具。
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_manage_adr`
+
+读写已索引项目的架构决策记录。模式：get（列出 ADR）、update（创建/替换一条 ADR）、sections（读取某条 ADR 的指定部分）。用来把承重架构选择持久化到代码旁边。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "mode": {
+      "type": "string",
+      "description": "get: list ADRs; update: create/replace an ADR; sections: read one ADR's sections.",
+      "enum": [
+        "get",
+        "update",
+        "sections"
+      ]
+    },
+    "content": {
+      "type": "string",
+      "description": "Full ADR content for mode=update."
+    },
+    "sections": {
+      "type": "array",
+      "description": "Section names to read for mode=sections.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_query_graph`
+
+对 codebase-memory 知识图执行原始 Cypher 查询，表达精选工具无法表达的多跳模式、聚合与跨服务分析。响应带 total（返回行数）；图有硬性 10 万行上限，宽泛查询请加 LIMIT。每个 Function/Method 节点还带有 complexity/cognitive/loop/recursion 热点属性。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "query": {
+      "type": "string",
+      "description": "Cypher query, e.g. MATCH (f:Function) WHERE f.transitive_loop_depth >= 3 RETURN f.qualified_name, f.transitive_loop_depth, f.linear_scan_in_loop ORDER BY f.transitive_loop_depth DESC."
+    },
+    "maxRows": {
+      "type": "integer",
+      "description": "Optional row cap (default: unlimited up to the 100k ceiling). No offset support — use codebase_search_graph for paged browsing."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_search_code`
+
+grep 增强的代码搜索：按文本找匹配，再把匹配丰富进包含它们的函数，按结构重要性排序（定义优先、热门函数其次、测试最后）。模式：compact（默认，签名）、full（带源码）、files（仅文件列表）。需要在单个已索引项目内按字面文本找代码时使用。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "pattern": {
+      "type": "string",
+      "description": "Text pattern to search (grep syntax)."
+    },
+    "filePattern": {
+      "type": "string",
+      "description": "Glob to restrict files, e.g. *.go or packages/**/*.ts."
+    },
+    "pathFilter": {
+      "type": "string",
+      "description": "Regex filter on result file paths, e.g. ^src/ or \\.(go|ts)$."
+    },
+    "mode": {
+      "type": "string",
+      "description": "compact (default): signatures + metadata. full: with source. files: just file list.",
+      "enum": [
+        "compact",
+        "full",
+        "files"
+      ]
+    },
+    "context": {
+      "type": "integer",
+      "description": "Lines of context around each match (grep -C). Only used in compact mode."
+    },
+    "regex": {
+      "type": "boolean",
+      "description": "Treat pattern as a regular expression (default literal)."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Max enriched results (default 10; responses carry total_grep_matches/total_results so you can detect truncation and raise limit or narrow path_filter)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_search_graph`
+
+在 codebase-memory 知识图中搜索函数、类、路由与变量。找定义、实现或关系时优先于普通 grep/glob：三种独立模式——query（BM25 全文，带 camelCase 拆分与结构标签加权）、namePattern（符号名的精确正则）、semanticQuery（向量余弦；弥合词汇差距，如搜索 "send" 可找到 "publish"）。以 qn/label/file/lines 与 in/out 度数分组的树行响应。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "query": {
+      "type": "string",
+      "description": "Natural-language or keyword full-text search. Tokens split on whitespace; camelCase identifiers index as individual words. When provided, namePattern is ignored."
+    },
+    "label": {
+      "type": "string",
+      "description": "Restrict to one node label, e.g. Function, Method, Route, Class."
+    },
+    "namePattern": {
+      "type": "string",
+      "description": "Exact regex over symbol names (ignored when query is provided)."
+    },
+    "qnPattern": {
+      "type": "string",
+      "description": "Regex over qualified names."
+    },
+    "filePattern": {
+      "type": "string",
+      "description": "Restrict to files matching this substring/glob."
+    },
+    "relationship": {
+      "type": "string",
+      "description": "Edge relationship to filter by."
+    },
+    "minDegree": {
+      "type": "integer",
+      "description": "Minimum selected degree."
+    },
+    "maxDegree": {
+      "type": "integer",
+      "description": "Maximum selected degree."
+    },
+    "excludeEntryPoints": {
+      "type": "boolean",
+      "description": "Exclude entry-point symbols."
+    },
+    "includeConnected": {
+      "type": "boolean",
+      "description": "Also return connected nodes."
+    },
+    "semanticQuery": {
+      "type": "array",
+      "description": "Array of keyword strings (NOT a single string) — each scored via per-keyword min-cosine. Requires moderate/full index mode.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Max results per call (default 50). Response carries total and has_more; page with offset when truncated."
+    },
+    "offset": {
+      "type": "integer",
+      "description": "Skip the first N results. Combine with limit to page until has_more is false."
+    },
+    "format": {
+      "type": "string",
+      "description": "Response encoding: tree (default) prefix-grouped rows; json the same model as structured JSON.",
+      "enum": [
+        "tree",
+        "json"
+      ]
+    },
+    "fields": {
+      "type": "array",
+      "description": "Extra per-node property columns, e.g. complexity, cognitive, signature, docstring, return_type, is_test, lines(int). Core columns (qn/label/file/lines/in/out) are always present.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+### `codebase_trace_path`
+
+追踪 codebase-memory 知识图中的调用/数据流/跨服务路径。callers/callees（calls 模式）、带参数表达式的值传播（data_flow），或穿过 HTTP/异步路由节点并跨仓库（cross_service）。调用方浮出声明与每条入边。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Indexed project name (see codebase_list_projects)."
+    },
+    "functionName": {
+      "type": "string",
+      "description": "Qualified name from codebase_search_graph, or a short function name."
+    },
+    "direction": {
+      "type": "string",
+      "description": "Trace direction (default both).",
+      "enum": [
+        "inbound",
+        "outbound",
+        "both"
+      ]
+    },
+    "depth": {
+      "type": "integer",
+      "description": "Hop depth (default 3)."
+    },
+    "mode": {
+      "type": "string",
+      "description": "calls: CALLS edges. data_flow: CALLS+DATA_FLOWS with arg expressions. cross_service: HTTP/async routes and CROSS_* cross-repo edges.",
+      "enum": [
+        "calls",
+        "data_flow",
+        "cross_service"
+      ]
+    },
+    "parameterName": {
+      "type": "string",
+      "description": "data_flow mode: scope the trace to one parameter name."
+    },
+    "edgeTypes": {
+      "type": "array",
+      "description": "Restrict to specific edge types.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "riskLabels": {
+      "type": "boolean",
+      "description": "Add CRITICAL/HIGH/MEDIUM/LOW risk classes by hop distance."
+    },
+    "includeTests": {
+      "type": "boolean",
+      "description": "Include test nodes (default excludes them)."
+    }
+  }
+}
+```
+
+Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
+代码智能工具（codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project），通过 `codebase-memory-mcp cli --json` 模式对本地 codebase-memory daemon 发起一次性查询——stdio MCP 客户端行的本地替代方案，共享同一 daemon、索引、变更锁与索引 supervisor。
