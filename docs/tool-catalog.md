@@ -554,7 +554,25 @@ One owner-isolated persistent bash tool; deployment composition supplies the PTY
 Single-file edit tool. The mode is fixed by configuration, not per-call;
 the appropriate argument shape is documented in &lt;parameters&gt;.
 
-Mode "replace" (default) — literal string replacement with fuzzy whitespace
+Mode "hashline" (default) — a line-anchored patch language. &lt;guidance&gt;
+Section: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.
+HEADER FORMS:
+- PUT N.=M: — replace original inclusive lines N–M with body (body rows)
+- PUT N*: — replace the syntactic block beginning N (closing line resolved)
+- PUT &lt;N: — insert body rows before line N (PUT &lt;1: = file head)
+- PUT &gt;N: — insert body rows after line N (PUT &gt;$: = file tail)
+- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register
+- REM — delete section file; MV DEST — move/rename section file
+- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).
+  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.
+- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.
+- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.
+- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.
+- NEVER format/restyle with this tool; run the project formatter.
+Full prompt guidance lives in the package's hashline prompt (not duplicated here).
+&lt;/guidance&gt;
+
+Mode "replace" — literal string replacement with fuzzy whitespace
 matching. MUST use the smallest old_string uniquely identifying the change.
 A non-unique old_string MUST add context or use replace_all: true for all
 occurrences. Renaming a string across the file → replace_all: true.
@@ -580,24 +598,6 @@ Mode "apply_patch" — Codex-style envelope:
 *** Delete File: &lt;path&gt;
 *** End Patch
 File references relative, never absolute. New-file lines MUST start `+`.
-
-Mode "hashline" — a line-anchored patch language. &lt;guidance&gt;
-Section: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.
-HEADER FORMS:
-- PUT N.=M: — replace original inclusive lines N–M with body (body rows)
-- PUT N*: — replace the syntactic block beginning N (closing line resolved)
-- PUT &lt;N: — insert body rows before line N (PUT &lt;1: = file head)
-- PUT &gt;N: — insert body rows after line N (PUT &gt;$: = file tail)
-- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register
-- REM — delete section file; MV DEST — move/rename section file
-- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).
-  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.
-- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.
-- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.
-- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.
-- NEVER format/restyle with this tool; run the project formatter.
-Full prompt guidance lives in the package's hashline prompt (not duplicated here).
-&lt;/guidance&gt;
 
 &lt;parameters&gt;
 replace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }

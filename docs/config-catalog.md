@@ -2672,7 +2672,7 @@ Requires: `tools` · `fs` · `systemPrompt`
 ```ts config-catalog
 /** Runtime configuration for the `edit` tool. */
 export interface Config {
-  /** Which mode the single `edit` tool runs (default 'auto': dispatch by args). */
+  /** Which mode the single `edit` tool runs (default 'hashline': line-anchored patches). */
   mode?: EditMode
   /** Whether fuzzy whitespace matching is allowed (replace/patch). */
   fuzzyMatch?: boolean

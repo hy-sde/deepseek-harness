@@ -269,7 +269,7 @@ describe('tool-edit (replace mode)', () => {
   })
 
   it('applies a Codex apply-patch envelope in apply_patch mode', async () => {
-    const { ctx, root, owner } = await setup()
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
     const sample = join(root, 'codex.txt')
     await writeFile(sample, 'alpha\nbeta\ngamma\n')
 

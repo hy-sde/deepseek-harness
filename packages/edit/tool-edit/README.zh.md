@@ -37,7 +37,7 @@
 - id: tool-edit
   name: '@deepseek-ai/dsh-tool-edit'
   config:
-    mode: auto
+    mode: hashline
 ```
 
 ## 许可证／来源

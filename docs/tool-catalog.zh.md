@@ -555,24 +555,7 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 单文件编辑工具。模式由配置固定，而非每次调用指定；合适的参数形态见 &lt;parameters&gt;。
 
-"replace" 模式（默认）——带模糊空白匹配的字面量字符串替换。必须使用能唯一标识变更的最小的 old_string。非唯一的 old_string 必须补充上下文，或对全部出现使用 replace_all: true。跨文件重命名字符串 → replace_all: true。
-
-"patch" 模式——应用 diff 变更块。变更块头：当上下文行唯一时为裸 `@@`，否则为从文件逐字复制的 `@@ $ANCHOR`。每个变更块主体只能包含以 ' ' | '+' | '-' 开头的行，且至少有一处变更（+ 或 −）。使用足够的 ` ` 前缀上下文行使匹配唯一（通常 2–8）。在编辑结构化代码块时，包含其开头与结尾行，使编辑保持在块内。绝不要用行号作为锚点。若某次 patch 失败，请重新读取文件并生成全新的 patch——绝不要重试同一 diff。
-
-"apply_patch" 模式——Codex 风格信封：
-*** Begin Patch
-*** Add File: &lt;path&gt;
-+&lt;initial contents lines&gt;
-*** Update File: &lt;path&gt; [*** Move to: &lt;new path&gt;]
-@@ &lt;optional anchor/class/function&gt;
-- &lt;old line&gt;
-+ &lt;new line&gt;
-  &lt;context line&gt;
-*** Delete File: &lt;path&gt;
-*** End Patch
-文件引用相对，绝不绝对。新建文件的行必须以 `+` 开头。
-
-"hashline" 模式——基于行的锚定 patch 语言。&lt;guidance&gt;
+"hashline" 模式（默认）——基于行的锚定 patch 语言。&lt;guidance&gt;
 Section: [PATH#TAG]; TAG: 最新 read/search 的 4 位十六进制快照，每个 section 必填。
 HEADER FORMS:
 - PUT N.=M: — 用主体行（body rows）替换原始第 N–M 行（含）
@@ -589,6 +572,23 @@ HEADER FORMS:
 - 绝不要用此工具格式化／重排版；请运行项目格式化器。
 完整的提示指引位于该包的 hashline 提示中（此处不重复）。
 &lt;/guidance&gt;
+
+"replace" 模式——带模糊空白匹配的字面量字符串替换。必须使用能唯一标识变更的最小的 old_string。非唯一的 old_string 必须补充上下文，或对全部出现使用 replace_all: true。跨文件重命名字符串 → replace_all: true。
+
+"patch" 模式——应用 diff 变更块。变更块头：当上下文行唯一时为裸 `@@`，否则为从文件逐字复制的 `@@ $ANCHOR`。每个变更块主体只能包含以 ' ' | '+' | '-' 开头的行，且至少有一处变更（+ 或 −）。使用足够的 ` ` 前缀上下文行使匹配唯一（通常 2–8）。在编辑结构化代码块时，包含其开头与结尾行，使编辑保持在块内。绝不要用行号作为锚点。若某次 patch 失败，请重新读取文件并生成全新的 patch——绝不要重试同一 diff。
+
+"apply_patch" 模式——Codex 风格信封：
+*** Begin Patch
+*** Add File: &lt;path&gt;
++&lt;initial contents lines&gt;
+*** Update File: &lt;path&gt; [*** Move to: &lt;new path&gt;]
+@@ &lt;optional anchor/class/function&gt;
+- &lt;old line&gt;
++ &lt;new line&gt;
+  &lt;context line&gt;
+*** Delete File: &lt;path&gt;
+*** End Patch
+文件引用相对，绝不绝对。新建文件的行必须以 `+` 开头。
 
 &lt;parameters&gt;
 replace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }

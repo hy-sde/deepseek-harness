@@ -38,7 +38,7 @@ export const inject = ['tools', 'fs', 'systemPrompt']
 
 /** Runtime configuration for the `edit` tool. */
 export interface Config {
-  /** Which mode the single `edit` tool runs (default 'auto': dispatch by args). */
+  /** Which mode the single `edit` tool runs (default 'hashline': line-anchored patches). */
   mode?: EditMode
   /** Whether fuzzy whitespace matching is allowed (replace/patch). */
   fuzzyMatch?: boolean
@@ -58,7 +58,7 @@ export interface Config {
 
 /** Runtime configuration schema for the `edit` tool. */
 export const Config: z<Config> = z.object({
-  mode: z.union(['auto', 'hashline', 'replace', 'patch', 'apply_patch'] as const).default('auto'),
+  mode: z.union(['auto', 'hashline', 'replace', 'patch', 'apply_patch'] as const).default('hashline'),
   fuzzyMatch: z.boolean().default(true),
   fuzzyThreshold: z.number().default(0.95),
   enforceSeenLines: z.boolean().default(false),
@@ -71,7 +71,7 @@ export const Config: z<Config> = z.object({
 /** Resolve the schema defaults into the runtime config handed to sessions. */
 export function resolveConfig(config: Config): ResolvedConfig {
   return {
-    mode: config.mode ?? 'auto',
+    mode: config.mode ?? 'hashline',
     fuzzyMatch: config.fuzzyMatch ?? true,
     fuzzyThreshold: config.fuzzyThreshold ?? 0.95,
     enforceSeenLines: config.enforceSeenLines ?? false,

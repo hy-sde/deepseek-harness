@@ -2673,7 +2673,7 @@ Source: [`packages/debug/tool-debug/src/index.ts:71`](../packages/debug/tool-deb
 ```ts config-catalog
 /** Runtime configuration for the `edit` tool. */
 export interface Config {
-  /** Which mode the single `edit` tool runs (default 'auto': dispatch by args). */
+  /** Which mode the single `edit` tool runs (default 'hashline': line-anchored patches). */
   mode?: EditMode
   /** Whether fuzzy whitespace matching is allowed (replace/patch). */
   fuzzyMatch?: boolean
