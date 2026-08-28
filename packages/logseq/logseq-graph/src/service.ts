@@ -7,7 +7,7 @@
  */
 
 import { Context, Service } from '@deepseek-ai/cordis'
-import type { BlockNode, LinkedBlock, PageRow, PageRoot, PropertyRow, SearchItem, ServerRow, TagRow, TaskRow, TagRef } from './types.ts'
+import type { BlockNode, LinkedBlock, PageRow, PageRoot, PropertyRow, SearchItem, ServerRow, TagRow, TagRef } from './types.ts'
 
 /** Configuration for the graph binding (CLI executable + target graph). */
 export interface LogseqGraphConfig {
@@ -161,16 +161,6 @@ function rowToProperty(row: Row): PropertyRow {
   }
 }
 
-function rowToTask(row: Row): TaskRow {
-  return {
-    id: asNum(row['db/id']) ?? 0,
-    content: asStr(row['block/title']) ?? '',
-    status: asStr(row['block/status']) ?? asStr(row['block/task-status']),
-    priority: asStr(row['block/priority']),
-    scheduled: asStr(row['block/scheduled']),
-    deadline: asStr(row['block/deadline']),
-  }
-}
 
 function rowToServer(row: Row): ServerRow {
   return {
@@ -265,16 +255,6 @@ export class LogseqGraphService extends Service {
     return { properties: itemsOf(data).map(rowToProperty) }
   }
 
-  /** List tasks with structured status.
-   * @param options - optional status filter.
-   * @returns projected task rows. */
-  async listTasks(options?: { status?: string }): Promise<{ tasks: TaskRow[] }> {
-    const argv = ['list', 'task']
-    addArg(argv, '--status', options?.status)
-    const data = await this.run(argv)
-    return { tasks: itemsOf(data).map(rowToTask) }
-  }
-
   /** Get one page root with its nested block tree and linked references.
    * @param options - page/id/uuid selector (mutually exclusive).
    * @returns root tree + linked references. */
@@ -327,18 +307,17 @@ export class LogseqGraphService extends Service {
     return { rows: result?.['result'] ?? [] }
   }
 
-  /** Create/update a page/block/tag/property/task. Mirrors the CLI flag surface.
+  /** Create/update a page/block/tag/property. Mirrors the CLI flag surface.
    * @param args - the requested entity change (one logical change per call).
    * @returns an acknowledgement; `dryRun` returns what would be run. */
   async upsert(args: Record<string, unknown>): Promise<UpsertResult> {
     const t = typeof args.entityType === 'string' ? args.entityType : 'page'
-    const allowed = ['block', 'page', 'tag', 'property', 'task'] as const
+    const allowed = ['block', 'page', 'tag', 'property'] as const
     if (!allowed.includes(t as (typeof allowed)[number])) {
       throw new Error(`unsupported entityType ${t}`)
     }
     const argv = ['upsert', t]
-    const isNewBlockish = (t === 'block' || t === 'task')
-      && typeof args.content !== 'string'
+    const isNewBlockish = t === 'block' && typeof args.content !== 'string'
       && args.id === undefined && args.uuid === undefined && typeof args.targetId !== 'number'
     if (isNewBlockish) throw new Error('missing-content: content is required')
     addArg(argv, '--page', typeof args.page === 'string' ? args.page : undefined)
@@ -351,10 +330,6 @@ export class LogseqGraphService extends Service {
     addArg(argv, '--pos', typeof args.pos === 'string' ? args.pos : undefined)
     addArg(argv, '--type', typeof args.propertyType === 'string' ? args.propertyType : undefined)
     addArg(argv, '--cardinality', typeof args.cardinality === 'string' ? args.cardinality : undefined)
-    addArg(argv, '--status', typeof args.status === 'string' ? args.status : undefined)
-    addArg(argv, '--priority', typeof args.priority === 'string' ? args.priority : undefined)
-    addArg(argv, '--scheduled', typeof args.scheduled === 'string' ? args.scheduled : undefined)
-    addArg(argv, '--deadline', typeof args.deadline === 'string' ? args.deadline : undefined)
     if (Array.isArray(args.updateTags)) argv.push('--update-tags', toEdn(args.updateTags as string[]))
     if (Array.isArray(args.removeTags)) argv.push('--remove-tags', toEdn(args.removeTags as string[]))
     if (args.updateProperties !== undefined && typeof args.updateProperties === 'object' && args.updateProperties !== null) {

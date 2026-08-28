@@ -56,7 +56,6 @@ export interface RpcMethodMap {
   'wiki.getPage': WikiApi['getPage']
   'wiki.listTags': WikiApi['listTags']
   'wiki.listProperties': WikiApi['listProperties']
-  'wiki.listTasks': WikiApi['listTasks']
   'wiki.search': WikiApi['search']
   'wiki.query': WikiApi['query']
   'wiki.upsert': WikiApi['upsert']

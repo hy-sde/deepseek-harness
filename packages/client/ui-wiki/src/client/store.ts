@@ -5,21 +5,14 @@
  * index.ts mounts the toggle and the drawer, both read here.
  */
 
-import { WikiClient, type WikiGetPageValue, type WikiSearchItem, type WikiTaskRow } from './api.ts'
-
-/** Which tab of the drawer is showing. */
-export type WikiView = 'pages' | 'tasks'
+import { WikiClient, type WikiGetPageValue, type WikiSearchItem } from './api.ts'
 
 /** Snapshot of the drawer store. */
 export interface WikiState {
   /** Drawer open. */
   open: boolean
-  /** Current view inside the drawer. */
-  view: WikiView
   /** Loaded page list (built-ins excluded). */
   pages: { id: number; title: string | null; updatedAt: number | null }[]
-  /** Cached task rows (tasks view). */
-  tasks: WikiTaskRow[]
   /** Search hit list for the active query. */
   searchQuery: string
   searchResults: WikiSearchItem[]
@@ -37,9 +30,7 @@ export interface WikiState {
 
 const INITIAL: WikiState = {
   open: false,
-  view: 'pages',
   pages: [],
-  tasks: [],
   searchQuery: '',
   searchResults: [],
   current: null,
@@ -121,22 +112,6 @@ class WikiStore {
 
   backToPages(): void {
     this.set({ current: null, currentName: null, error: null })
-  }
-
-  setView(view: WikiView): void {
-    this.set({ view })
-    if (view === 'tasks') void this.refreshTasks()
-  }
-
-  async refreshTasks(): Promise<void> {
-    if (this.client === null) return
-    this.set({ loading: true, error: null })
-    try {
-      const { tasks } = await this.client.listTasks({})
-      this.set({ tasks, view: 'tasks', loading: false })
-    } catch (error) {
-      this.set({ loading: false, error: `task list failed: ${String(error)}` })
-    }
   }
 
   // ---- search ----
@@ -237,27 +212,6 @@ class WikiStore {
         if (name === null) return
         const refreshed = await this.client.getPage({ page: name })
         this.set({ current: refreshed })
-      }
-    } catch (error) {
-      this.openError(error)
-    } finally {
-      this.set({ busy: false })
-    }
-  }
-
-  async toggleTask(id: number, marker: string): Promise<void> {
-    if (this.client === null) return
-    this.set({ busy: true, error: null })
-    try {
-      const next = marker === 'DONE' ? 'todo' : 'done'
-      await this.client.upsert({ entityType: 'task', id, status: next })
-      if (this.state.view === 'tasks') await this.refreshTasks()
-      else if (this.state.current !== null) {
-        const name = this.state.currentName
-        if (name !== null) {
-          const current = await this.client.getPage({ page: name })
-          this.set({ current })
-        }
       }
     } catch (error) {
       this.openError(error)

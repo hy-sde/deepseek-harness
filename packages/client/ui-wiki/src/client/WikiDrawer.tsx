@@ -1,13 +1,12 @@
 /**
  * The wiki drawer: a frame-wide floating panel (rendered into the
  * `shell.overlay` list slot) that browses and edits the LLM-wiki graph —
- * pages, blocks, tasks — with no desktop Logseq. When the store is closed
- * the drawer renders nothing, so the overlay stays clear.
+ * pages and blocks — with no desktop Logseq. When the store is closed the
+ * drawer renders nothing, so the overlay stays clear.
  */
 
 import { useState, useSyncExternalStore } from 'react'
-import clsx from 'clsx'
-import { BlockTree, taskMarkerOf } from './BlockTree.tsx'
+import { BlockTree } from './BlockTree.tsx'
 import { wikiStore } from './store.ts'
 import css from './WikiDrawer.module.css'
 
@@ -17,10 +16,6 @@ function WikiBody() {
 
   if (state.loading && state.current === null && state.pages.length === 0) {
     return <div className={css.muted}>Loading…</div>
-  }
-
-  if (state.view === 'tasks') {
-    return <TaskList />
   }
 
   if (state.current !== null) {
@@ -154,35 +149,7 @@ function PageList() {
   )
 }
 
-/** Task rows with done/todo toggles. */
-function TaskList() {
-  const state = wikiStore.getState()
-  if (state.tasks.length === 0) {
-    return <div className={css.muted}>No tasks yet.</div>
-  }
-  return (
-    <div className={css.taskList}>
-      <div className={css.sectionTitle}>Tasks ({state.tasks.length})</div>
-      {state.tasks.map((task) => {
-        const marker = taskMarkerOf(task.content) ?? (task.status ?? 'TODO').toUpperCase()
-        const done = marker === 'DONE' || task.status === 'done'
-        return (
-          <button
-            key={task.id}
-            className={css.taskRow}
-            onClick={() => void wikiStore.toggleTask(task.id, marker)}
-            title="Click to toggle done/todo"
-          >
-            <span className={clsx(css.taskCheck, done ? css.taskDone : undefined)}>{done ? '✓' : ''}</span>
-            <span className={css.taskText}>{task.content}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-/** The drawer shell: header + tabs + body. Renders nothing when closed. */
+/** The drawer shell: header + body. Renders nothing when closed. */
 export function WikiDrawer() {
   const state = useSyncExternalStore(
     store => wikiStore.subscribe(store),
@@ -197,20 +164,6 @@ export function WikiDrawer() {
     <div className={css.drawer} data-wiki-drawer>
       <div className={css.header}>
         <div className={css.title}>LLM Wiki</div>
-        <div className={css.tabs}>
-          <button
-            className={clsx(css.tab, wikiStore.getState().view === 'pages' && css.tabActive)}
-            onClick={() => { wikiStore.setView('pages') }}
-          >
-            Pages
-          </button>
-          <button
-            className={clsx(css.tab, wikiStore.getState().view === 'tasks' && css.tabActive)}
-            onClick={() => { wikiStore.setView('tasks') }}
-          >
-            Tasks
-          </button>
-        </div>
         <button className={css.close} title="Close wiki (or toggle from sidebar)" onClick={() => { wikiStore.close() }}>×</button>
       </div>
       {wikiStore.getState().error !== null && (

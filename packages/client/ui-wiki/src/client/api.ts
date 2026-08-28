@@ -1,6 +1,6 @@
 /**
  * Typed wiki API face over the connection's IApiClient. Keeps every wire call
- * in one place (page list, page read, search, task list, upsert, remove,
+ * in one place (page list, page read, search, upsert, remove,
  * server) and converts the RpcResponse envelope into plain values or Errors
  * the store can surface. All shapes are derived from IApiClient so no host
  * package leaks into this browser bundle.
@@ -19,15 +19,12 @@ type Value<K extends keyof IApiClient['wiki']> =
 export type WikiPageRow = Value<'listPages'>['pages'][number]
 /** One search hit over the wire. */
 export type WikiSearchItem = Value<'search'>['items'][number]
-/** One structured task row over the wire. */
-export type WikiTaskRow = Value<'listTasks'>['tasks'][number]
 /** getPage result: root tree + linked references. */
 export type WikiGetPageValue = Value<'getPage'>
 /** upsert acknowledgement over the wire. */
 export type WikiUpsertValue = Value<'upsert'>
 /** server response: table or action acknowledgement. */
 export type WikiServerValue = Value<'server'>
-/** Recursive outliner node: one block of the getPage tree. */
 /** Recursive outliner node: one block of the getPage tree. */
 export type WikiBlockNode = NonNullable<WikiGetPageValue['root']['children']>[number]
 
@@ -65,15 +62,6 @@ export class WikiClient {
    */
   listTags(): Promise<Value<'listTags'>> {
     return this.api.listTags({}).then(unwrap)
-  }
-
-  /**
-   * List tasks.
-   * @param options - status filter.
-   * @returns task rows.
-   */
-  listTasks(options?: Payload<'listTasks'>): Promise<Value<'listTasks'>> {
-    return this.api.listTasks(options ?? {}).then(unwrap)
   }
 
   /**

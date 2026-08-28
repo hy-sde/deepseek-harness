@@ -3107,14 +3107,13 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           props: { 'user.property/status-mnIvao0n': 272 },
           children: [
             { id: 273, uuid: null, content: 'Systems language in the LLM-era vibe shift', order: 'a0', createdAt: 1, updatedAt: 2, tags: [], children: [] },
-            { id: 274, uuid: null, content: 'DONE review borrow checker ergonomics', order: 'a1', createdAt: 1, updatedAt: 2, tags: [], children: [] },
+            { id: 274, uuid: null, content: 'Great vibes on borrow checker ergonomics', order: 'a1', createdAt: 1, updatedAt: 2, tags: [], children: [] },
           ],
         },
         linked: [{ id: 241, content: 'Two vibe shifts', pageName: 'fast and hard code', pageTitle: 'Fast and Hard Code', pageId: 232, updatedAt: 3 }],
       }),
       listTags: request => ok(request, { tags: [{ id: 199, name: 'topic', title: 'topic' }, { id: 205, name: 'todo', title: 'todo' }] }),
       listProperties: request => ok(request, { properties: [{ id: 198, name: 'user.property/status-mnIvao0n', title: 'status' }, { id: 197, name: 'user.property/source-jIg6LPPT', title: 'source' }] }),
-      listTasks: request => ok(request, { tasks: [{ id: 274, content: 'review borrow checker ergonomics', status: 'done', priority: null, scheduled: null, deadline: null }] }),
       search: request => ok(request, { items: [{ id: 273, title: 'Systems language in the LLM-era vibe shift', pageName: 'rust' }] }),
       query: request => ok(request, { rows: [] }),
       upsert: request => ok(request, { entityType: request.payload.entityType, status: 'ok', detail: `${request.payload.entityType} upserted (fixture)` }),
@@ -3267,7 +3266,6 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'wiki.getPage': return this.api.wiki.getPage(request)
       case 'wiki.listTags': return this.api.wiki.listTags(request)
       case 'wiki.listProperties': return this.api.wiki.listProperties(request)
-      case 'wiki.listTasks': return this.api.wiki.listTasks(request)
       case 'wiki.search': return this.api.wiki.search(request)
       case 'wiki.query': return this.api.wiki.query(request)
       case 'wiki.upsert': return this.api.wiki.upsert(request)

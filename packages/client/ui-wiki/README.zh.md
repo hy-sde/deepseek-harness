@@ -3,14 +3,14 @@
 [English](README.md) | 中文
 
 面向 LLM-wiki 工作流的内嵌 wiki 抽屉：一个由侧栏脚部切换的全幅浮动面板，浏览并编辑由宿主
-`wikiGraph` 服务提供的 Logseq 图 —— 无需桌面 Logseq。页面、块、标签、任务与搜索都挂在一个
+`wikiGraph` 服务提供的 Logseq 图 —— 无需桌面 Logseq。页面、块、标签与搜索都挂在一个
 共享 store 后面，store 通过连接层 `wiki` apiproxy 域的类型化线面与宿主通信。
 
 ## Surfaces
 
 - `sidebar.footer.action` —— **Wiki** 开关（展开态显示标签；窄轨道只显示图形）。
-- `shell.overlay` —— 浮动 **LLM Wiki** 抽屉：Pages/Tasks 页签、搜索、可内联新建的页面列表、
-  带递归大纲的页面视图（块内联编辑、加子块、删除、任务勾选框、删除页面）与链接引用。
+- `shell.overlay` —— 浮动 **LLM Wiki** 抽屉：搜索、可内联新建的页面列表、带递归大纲的页面视图
+  （块内联编辑、加子块、删除、删除页面）与链接引用。
 
 插槽注册都是增量的 —— 挂载本包永远不会改变宿主或模型平面。
 

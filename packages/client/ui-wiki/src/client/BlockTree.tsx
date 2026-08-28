@@ -1,26 +1,14 @@
 /**
  * The recursive outliner: renders each block of a page tree with inline text
- * edits, add-child, delete, and task-marker toggles. Content lines starting
+ * edits, add-child, delete. Content lines starting
  * `key:: value` are drawn as property rows (Logseq property syntax stored in
  * the block's raw text).
  */
 
 import { useState } from 'react'
-import clsx from 'clsx'
 import type { WikiBlockNode } from './api.ts'
 import { wikiStore } from './store.ts'
 import css from './BlockTree.module.css'
-
-const TASK_MARKERS = ['TODO', 'DOING', 'DONE', 'LATER', 'NOW', 'WAIT'] as const
-
-/** Detect a task-marker prefix on a block's first line. */
-export function taskMarkerOf(content: string): string | null {
-  const first = content.split('\n', 1)[0]?.trim() ?? ''
-  for (const marker of TASK_MARKERS) {
-    if (first === marker || first.startsWith(`${marker} `)) return marker
-  }
-  return null
-}
 
 const KEY_VALUE_LINE = /^([\w-]+)::\s*(.*)$/
 
@@ -58,9 +46,6 @@ export function BlockRow({ node, pageName, depth }: BlockRowProps) {
   const [adding, setAdding] = useState(false)
   const [addDraft, setAddDraft] = useState('')
 
-  const marker = taskMarkerOf(node.content)
-  const done = marker === 'DONE'
-
   const commitEdit = (): void => {
     void wikiStore.saveBlockContent(node.id, draft)
     setEditing(false)
@@ -79,18 +64,7 @@ export function BlockRow({ node, pageName, depth }: BlockRowProps) {
   return (
     <div className={css.row} style={{ '--wiki-depth': depth } as React.CSSProperties}>
       <div className={css.line}>
-        {marker !== null ? (
-          <button
-            className={clsx(css.taskBox, done ? css.taskDone : undefined)}
-            title={marker}
-            aria-label={marker}
-            onClick={() => void wikiStore.toggleTask(node.id, marker)}
-          >
-            {done ? '✓' : ''}
-          </button>
-        ) : (
-          <span className={css.bullet} />
-        )}
+        <span className={css.bullet} />
         <div className={css.body} onDoubleClick={() => { setDraft(node.content); setEditing(true) }}>
           {editing ? (
             <textarea

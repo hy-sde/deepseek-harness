@@ -286,7 +286,6 @@ export class FakeApiClient implements IApiClient {
     }))),
     listTags: payload => this.record('wiki.listTags', payload, Promise.resolve(ok({ tags: [] }))),
     listProperties: payload => this.record('wiki.listProperties', payload, Promise.resolve(ok({ properties: [] }))),
-    listTasks: payload => this.record('wiki.listTasks', payload, Promise.resolve(ok({ tasks: [] }))),
     search: payload => this.record('wiki.search', payload, Promise.resolve(ok({ items: [] }))),
     query: payload => this.record('wiki.query', payload, Promise.resolve(ok({ rows: [] }))),
     upsert: payload => this.record('wiki.upsert', payload, Promise.resolve(ok({

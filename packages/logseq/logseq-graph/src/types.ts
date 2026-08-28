@@ -79,16 +79,6 @@ export interface SearchItem {
   pageName: string | null
 }
 
-/** Task row (`wiki.listTasks`), structured status pills for the UI. */
-export interface TaskRow {
-  id: number
-  content: string
-  status: string | null
-  priority: string | null
-  scheduled: string | null
-  deadline: string | null
-}
-
 /** One db-worker-node server row (`wiki.server`). */
 export interface ServerRow {
   id: number | null

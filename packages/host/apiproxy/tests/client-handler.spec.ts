@@ -96,7 +96,6 @@ function scriptedApi(overrides: {
       getPage: err,
       listTags: r => ok(r, { tags: [] }),
       listProperties: r => ok(r, { properties: [] }),
-      listTasks: r => ok(r, { tasks: [] }),
       search: r => ok(r, { items: [] }),
       query: r => ok(r, { rows: [] }),
       upsert: err,

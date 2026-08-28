@@ -68,7 +68,7 @@ import type {} from '@deepseek-ai/dsh-session-projection-cache'
 // GoalError narrows domain rejections to their stable codes at the wire boundary.
 import { GoalError } from '@deepseek-ai/dsh-goal'
 import type { GoalRef as CoreGoalRef } from '@deepseek-ai/dsh-goal'
-import type { LogseqGraphService } from '@deepseek-ai/dsh-logseq-graph'
+import type {} from '@deepseek-ai/dsh-logseq-graph'
 // Type-only edges: resolve the command-change stream and `ctx.get('skills')`.
 import type {} from '@deepseek-ai/dsh-commands'
 // Type-only: the dynamic-package runner's forwarded-event declarations. Its
@@ -3165,7 +3165,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       // here; otherwise every method answers 'service absent'. `ctx.get` keeps
       // these handlers independent of the gateway plugin's inject list.
       async listPages(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const { pages } = await svc.listPages(request.payload)
@@ -3176,7 +3176,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async getPage(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const { root, linked } = await svc.getPage(request.payload)
@@ -3187,7 +3187,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async listTags(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const { tags } = await svc.listTags()
@@ -3198,7 +3198,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async listProperties(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const { properties } = await svc.listProperties()
@@ -3208,19 +3208,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         }
       },
 
-      async listTasks(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
-        if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
-        try {
-          const { tasks } = await svc.listTasks(request.payload)
-          return ok(request, { tasks })
-        } catch (error: unknown) {
-          return err(request, { code: 'internal', message: `wiki.listTasks failed: ${String(error)}`, details: {} })
-        }
-      },
-
       async search(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const { items } = await svc.search(request.payload)
@@ -3231,7 +3220,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async query(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const { rows } = await svc.query(request.payload)
@@ -3242,7 +3231,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async upsert(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const result = await svc.upsert(request.payload as unknown as Record<string, unknown>)
@@ -3253,7 +3242,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async remove(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const result = await svc.remove(request.payload)
@@ -3264,7 +3253,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async server(request) {
-        const svc = ctx.get('wikiGraph') as LogseqGraphService | undefined
+        const svc = ctx.get('wikiGraph')
         if (svc === undefined) return err(request, { code: 'internal', message: 'wiki service absent: the host composition does not mount @deepseek-ai/dsh-logseq-graph', details: {} })
         try {
           const result = await svc.server(

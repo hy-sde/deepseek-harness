@@ -60,7 +60,7 @@ export type { WorkspaceApi, WorkspaceId, WorkspaceView } from './workspace.ts'
 export type { SkillsApi, SkillEntry } from './skills.ts'
 export type {
   WikiApi, WikiBlockNode, WikiLinkedBlock, WikiPageRoot, WikiPageRow, WikiPropertyRow,
-  WikiSearchItem, WikiServerRow, WikiTagRef, WikiTagRow, WikiTaskRow,
+  WikiSearchItem, WikiServerRow, WikiTagRef, WikiTagRow,
   WikiUpsertRequest, WikiUpsertValue, WikiRemoveRequest, WikiRemoveValue,
   WikiGetPageValue, WikiServerRequestValue, WikiServerActionValue, WikiServerListValue,
 } from './wiki.ts'

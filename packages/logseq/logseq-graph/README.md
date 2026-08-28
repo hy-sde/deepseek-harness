@@ -4,7 +4,7 @@ English | [中文](README.zh.md)
 
 Host-plane graph service exposing the [Logseq](https://github.com/logseq/logseq) CLI's `db-worker-node`
 graph operations as structured JSON calls, independent of any agent tools: page/block trees,
-tags, properties, tasks, Datalog queries, upserts/removals, and the `logseq_server` lifecycle.
+tags, properties, Datalog queries, upserts/removals, and the `logseq_server` lifecycle.
 The web GUI's embedded wiki drawer serves its reads/writes through this service via the apiproxy
 `wiki` domain; the model-facing `logseq_*` CLI tools (see `@deepseek-ai/dsh-tool-logseq`) use the
 same CLI directly.
@@ -15,7 +15,7 @@ One Cordis service `ctx.wikiGraph` (`LogseqGraphService`) with methods:
 
 - `listPages({ includeBuiltIn, limit, offset })` → flat page rows
 - `getPage({ page | id | uuid })` → nested block tree + linked references
-- `listTags`, `listProperties`, `listTasks({ status })`
+- `listTags`, `listProperties`
 - `search({ type, content, limit })`, `query({ query, inputs, limit })` (Datalog)
 - `upsert(args)`, `remove(args)` — one logical change per call, forwarded flag-for-flag
 - `server(action, { name })` — `list` / `start` / `stop` / `restart` / `cleanup`

@@ -1,13 +1,12 @@
 /**
- * ui-wiki unit coverage: task-marker/property parsing and the store's state
- * machine over a scripted wiki wire face (no DOM needed — jsdom-free).
+ * ui-wiki unit coverage: property parsing and the store's state machine over
+ * a scripted wiki wire face (no DOM needed — jsdom-free).
  * The store is the single source of wire traffic, so these tests pin the
  * upsert/remove argument shapes the drawer's actions produce.
  */
 
 import { describe, expect, it, beforeEach } from 'vitest'
 import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
-import { taskMarkerOf } from '../src/client/BlockTree.tsx'
 import { WikiClient } from '../src/client/api.ts'
 import { wikiStore } from '../src/client/store.ts'
 
@@ -39,7 +38,6 @@ function scriptedWiki(calls: { method: string; args: unknown[] }[]): IApiClient[
     getPage: wirePayload('getPage', () => ({ root, linked: [] })),
     listTags: wire('listTags', () => ({ tags: [] })),
     listProperties: wire('listProperties', () => ({ properties: [] })),
-    listTasks: wirePayload('listTasks', () => ({ tasks: [{ id: 274, content: 'review borrow checker ergonomics', status: 'done', priority: null, scheduled: null, deadline: null }] })),
     search: wirePayload('search', () => ({ items: [{ id: 273, title: 'Systems language', pageName: 'rust' }] })),
     query: wirePayload('query', () => ({ rows: [] })),
     upsert: wirePayload('upsert', payload => ({ entityType: (payload as { entityType: string }).entityType, status: 'ok' as const, detail: 'ok' })),
@@ -49,20 +47,6 @@ function scriptedWiki(calls: { method: string; args: unknown[] }[]): IApiClient[
 }
 
 beforeEach(resetStore)
-
-describe('taskMarkerOf', () => {
-  it('detects leading task markers', () => {
-    expect(taskMarkerOf('DONE review borrow checker')).toBe('DONE')
-    expect(taskMarkerOf('TODO write release notes')).toBe('TODO')
-    expect(taskMarkerOf('LATER maybe')).toBe('LATER')
-    expect(taskMarkerOf('DOING in progress')).toBe('DOING')
-  })
-
-  it('returns null for plain content and nested markers', () => {
-    expect(taskMarkerOf('review borrow checker')).toBeNull()
-    expect(taskMarkerOf('refers to DONE elsewhere')).toBeNull()
-  })
-})
 
 describe('WikiClient face', () => {
   it('unwraps ok values and folds failures into Errors', async () => {
@@ -117,15 +101,6 @@ describe('wikiStore state machine', () => {
     const upserts = stub.filter(call => call.method === 'upsert').map(call => call.args[0])
     expect(upserts[0]).toMatchObject({ entityType: 'block', content: 'child text', targetId: 240, pos: 'last-child' })
     expect(upserts[1]).toMatchObject({ entityType: 'block', content: 'tail text', targetPage: 'Rust', pos: 'last-child' })
-  })
-
-  it('toggleTask issues task upserts with done/todo status', async () => {
-    await wikiStore.openPage('Rust')
-    await wikiStore.toggleTask(274, 'TODO')
-    await wikiStore.toggleTask(274, 'DONE')
-    const tasks = stub.filter(call => call.method === 'upsert').map(call => call.args[0])
-    expect(tasks[0]).toMatchObject({ entityType: 'task', id: 274, status: 'done' })
-    expect(tasks[1]).toMatchObject({ entityType: 'task', id: 274, status: 'todo' })
   })
 
   it('runSearch issues page + block searches and dedupes', async () => {

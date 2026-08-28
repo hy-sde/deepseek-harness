@@ -43,7 +43,7 @@ import {
 import { skillListValueSchema } from '../api/skills.schema.ts'
 import {
   wikiGetPageValueSchema, wikiListPagesValueSchema, wikiListPropertiesValueSchema,
-  wikiListTagsValueSchema, wikiListTasksValueSchema, wikiQueryValueSchema, wikiRemoveValueSchema,
+  wikiListTagsValueSchema, wikiQueryValueSchema, wikiRemoveValueSchema,
   wikiSearchValueSchema, wikiServerValueSchema, wikiUpsertValueSchema,
 } from '../api/wiki.schema.ts'
 import {
@@ -171,7 +171,6 @@ export interface IApiClient {
     getPage(payload: RequestPayload<'wiki.getPage'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.getPage'>>>
     listTags(payload: RequestPayload<'wiki.listTags'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listTags'>>>
     listProperties(payload: RequestPayload<'wiki.listProperties'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listProperties'>>>
-    listTasks(payload: RequestPayload<'wiki.listTasks'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.listTasks'>>>
     search(payload: RequestPayload<'wiki.search'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.search'>>>
     query(payload: RequestPayload<'wiki.query'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.query'>>>
     upsert(payload: RequestPayload<'wiki.upsert'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'wiki.upsert'>>>
@@ -220,7 +219,6 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'wiki.getPage': wikiGetPageValueSchema,
   'wiki.listTags': wikiListTagsValueSchema,
   'wiki.listProperties': wikiListPropertiesValueSchema,
-  'wiki.listTasks': wikiListTasksValueSchema,
   'wiki.search': wikiSearchValueSchema,
   'wiki.query': wikiQueryValueSchema,
   'wiki.upsert': wikiUpsertValueSchema,
@@ -491,7 +489,6 @@ export abstract class AbstractApiClient implements IApiClient {
     getPage: (payload, signal) => this.callUnary('wiki.getPage', payload, signal),
     listTags: (payload, signal) => this.callUnary('wiki.listTags', payload, signal),
     listProperties: (payload, signal) => this.callUnary('wiki.listProperties', payload, signal),
-    listTasks: (payload, signal) => this.callUnary('wiki.listTasks', payload, signal),
     search: (payload, signal) => this.callUnary('wiki.search', payload, signal),
     query: (payload, signal) => this.callUnary('wiki.query', payload, signal),
     upsert: (payload, signal) => this.callUnary('wiki.upsert', payload, signal),

@@ -4,15 +4,15 @@ English | [中文](README.zh.md)
 
 Embedded wiki drawer for the LLM-wiki workflow: a frame-wide floating panel toggled from the
 sidebar foot that browses and edits the Logseq graph served by the host `wikiGraph` service —
-no desktop Logseq. Pages, blocks, tags, tasks and search live behind a shared store with a typed
+no desktop Logseq. Pages, blocks, tags, and search live behind a shared store with a typed
 wire face over the connection's `wiki` api-proxy domain.
 
 ## Surfaces
 
 - `sidebar.footer.action` — the **Wiki** toggle (wide label; rail shows a glyph only).
-- `shell.overlay` — the floating **LLM Wiki** drawer: Pages/Tasks tabs, search, page list with
-  inline creation, page view with a recursive outliner (inline block editing, add-child, delete,
-  task checkboxes, delete page) and linked references.
+- `shell.overlay` — the floating **LLM Wiki** drawer: search, page list with inline
+  creation, page view with a recursive outliner (inline block editing, add-child,
+  delete, and page deletion) and linked references.
 
 Slot registrations are additive — mounting this package never changes the host or the model plane.
 

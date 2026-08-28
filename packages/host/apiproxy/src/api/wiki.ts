@@ -81,16 +81,6 @@ export interface WikiPropertyRow {
   title: string | null
 }
 
-/** Task row with structured status. */
-export interface WikiTaskRow {
-  id: number
-  content: string
-  status: string | null
-  priority: string | null
-  scheduled: string | null
-  deadline: string | null
-}
-
 /** Generic search hit. */
 export interface WikiSearchItem {
   id: number
@@ -118,7 +108,7 @@ export interface WikiUpsertValue {
 
 /** Upsert request payload (passthrough of service args). */
 export interface WikiUpsertRequest {
-  entityType: 'block' | 'page' | 'tag' | 'property' | 'task'
+  entityType: 'block' | 'page' | 'tag' | 'property'
   page?: string
   name?: string
   content?: string
@@ -183,9 +173,6 @@ export interface WikiApi {
   /** List properties. */
   listProperties(request: RpcRequest<{}>): Promise<RpcResponse<{ properties: WikiPropertyRow[] }>>
 
-  /** List tasks with structured status. */
-  listTasks(request: RpcRequest<{ status?: string }>): Promise<RpcResponse<{ tasks: WikiTaskRow[] }>>
-
   /** Search pages/blocks/properties/tags by text content. */
   search(request: RpcRequest<{ type?: 'block' | 'page' | 'property' | 'tag'; content: string; limit?: number }>):
   Promise<RpcResponse<{ items: WikiSearchItem[] }>>
@@ -194,7 +181,7 @@ export interface WikiApi {
   query(request: RpcRequest<{ query: string; inputs?: string; limit?: number }>):
   Promise<RpcResponse<{ rows: unknown }>>
 
-  /** Create/update a page/block/tag/property/task. */
+  /** Create/update a page/block/tag/property. */
   upsert(request: RpcRequest<WikiUpsertRequest>): Promise<RpcResponse<WikiUpsertValue>>
 
   /** Remove a page/block/tag/property. Destruction is permanent. */

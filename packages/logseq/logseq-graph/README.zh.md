@@ -3,7 +3,7 @@
 [English](README.md) | 中文
 
 主机平面的图服务：把本地安装的 [Logseq](https://github.com/logseq/logseq) CLI（`db-worker-node`）的
-图操作暴露为结构化 JSON 调用，与任何 agent 工具无关：页面/块树、标签、属性、任务、Datalog 查询、
+图操作暴露为结构化 JSON 调用，与任何 agent 工具无关：页面/块树、标签、属性、Datalog 查询、
 upsert/remove，以及 `logseq_server` 生命周期。Web GUI 内嵌的 wiki 抽屉通过 apiproxy 的 `wiki`
 域用该服务完成读写；面向模型的 `logseq_*` CLI 工具（见 `@deepseek-ai/dsh-tool-logseq`）直接使用同一个 CLI。
 
@@ -13,7 +13,7 @@ upsert/remove，以及 `logseq_server` 生命周期。Web GUI 内嵌的 wiki 抽
 
 - `listPages({ includeBuiltIn, limit, offset })` → 扁平页行
 - `getPage({ page | id | uuid })` → 嵌套块树 + 链接引用
-- `listTags`、`listProperties`、`listTasks({ status })`
+- `listTags`、`listProperties`
 - `search({ type, content, limit })`、`query({ query, inputs, limit })`（Datalog）
 - `upsert(args)`、`remove(args)` —— 每次调用一个逻辑变更，逐标志转发
 - `server(action, { name })` —— `list` / `start` / `stop` / `restart` / `cleanup`

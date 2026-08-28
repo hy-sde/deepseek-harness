@@ -39,7 +39,6 @@ function scriptedWiki(calls: { method: string; args: unknown[] }[]): IApiClient[
     }) as unknown as IApiClient['wiki']['getPage'],
     listTags: wire('listTags', { tags: [] }) as unknown as IApiClient['wiki']['listTags'],
     listProperties: wire('listProperties', { properties: [] }) as unknown as IApiClient['wiki']['listProperties'],
-    listTasks: wire('listTasks', { tasks: [] }) as unknown as IApiClient['wiki']['listTasks'],
     search: wire('search', { items: [] }) as unknown as IApiClient['wiki']['search'],
     query: wire('query', { rows: [] }) as unknown as IApiClient['wiki']['query'],
     upsert: wire('upsert', { entityType: 'block', status: 'ok' as const, detail: 'ok' }) as unknown as IApiClient['wiki']['upsert'],

@@ -10,7 +10,7 @@ import type { Wire } from './rpc.schema.ts'
 import type { RequestPayload, ResponseValue } from './index.ts'
 import type {
   WikiBlockNode, WikiLinkedBlock, WikiPageRoot, WikiPropertyRow, WikiSearchItem,
-  WikiServerRow, WikiTagRef, WikiTaskRow, WikiUpsertRequest, WikiUpsertValue,
+  WikiServerRow, WikiTagRef, WikiUpsertRequest, WikiUpsertValue,
 } from './wiki.ts'
 
 /** Literal-like integer (db ids). Positive or zero. */
@@ -104,21 +104,6 @@ export const wikiListPropertiesValueSchema = z.object({
   })) as unknown as z.ZodType<Wire<WikiPropertyRow[]>>,
 }) as unknown as z.ZodType<Wire<ResponseValue<'wiki.listProperties'>>>
 
-/** wiki.listTasks request payload + response value. */
-export const wikiListTasksRequestSchema = z.object({
-  status: z.string().optional(),
-}) as unknown as z.ZodType<Wire<RequestPayload<'wiki.listTasks'>>>
-export const wikiListTasksValueSchema = z.object({
-  tasks: z.array(z.object({
-    id: dbId,
-    content: z.string(),
-    status: z.string().nullable(),
-    priority: z.string().nullable(),
-    scheduled: z.string().nullable(),
-    deadline: z.string().nullable(),
-  })) as unknown as z.ZodType<Wire<WikiTaskRow[]>>,
-}) as unknown as z.ZodType<Wire<ResponseValue<'wiki.listTasks'>>>
-
 /** wiki.search request payload + response value. */
 export const wikiSearchRequestSchema = z.object({
   type: z.enum(['block', 'page', 'property', 'tag']).default('block').optional(),
@@ -145,7 +130,7 @@ export const wikiQueryValueSchema = z.object({
 
 /** wiki.upsert request payload (passthrough service args → CLI flags). */
 export const wikiUpsertRequestSchema = z.object({
-  entityType: z.enum(['block', 'page', 'tag', 'property', 'task']),
+  entityType: z.enum(['block', 'page', 'tag', 'property']),
   page: z.string().optional(),
   name: z.string().optional(),
   content: z.string().optional(),

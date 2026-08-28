@@ -46,7 +46,7 @@ import {
 import { skillListRequestSchema } from '../api/skills.schema.ts'
 import {
   wikiGetPageRequestSchema, wikiListPagesRequestSchema, wikiListPropertiesRequestSchema,
-  wikiListTagsRequestSchema, wikiListTasksRequestSchema, wikiQueryRequestSchema,
+  wikiListTagsRequestSchema, wikiQueryRequestSchema,
   wikiRemoveRequestSchema, wikiSearchRequestSchema, wikiServerRequestSchema, wikiUpsertRequestSchema,
 } from '../api/wiki.schema.ts'
 import {
@@ -126,7 +126,6 @@ const UNARY_ROUTES: UnaryRoutes = {
   'wiki.getPage': { schema: wikiGetPageRequestSchema, invoke: (api, r) => api.wiki.getPage(r) },
   'wiki.listTags': { schema: wikiListTagsRequestSchema, invoke: (api, r) => api.wiki.listTags(r) },
   'wiki.listProperties': { schema: wikiListPropertiesRequestSchema, invoke: (api, r) => api.wiki.listProperties(r) },
-  'wiki.listTasks': { schema: wikiListTasksRequestSchema, invoke: (api, r) => api.wiki.listTasks(r) },
   'wiki.search': { schema: wikiSearchRequestSchema, invoke: (api, r) => api.wiki.search(r) },
   'wiki.query': { schema: wikiQueryRequestSchema, invoke: (api, r) => api.wiki.query(r) },
   'wiki.upsert': { schema: wikiUpsertRequestSchema, invoke: (api, r) => api.wiki.upsert(r) },
@@ -189,6 +188,7 @@ function fullResponse(narrow: RpcResponse<unknown>): Response {
  */
 // K appears once in the signature but ties the UNARY_ROUTES[K] row lookup to its own
 // schema/invoke pairing.
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
 async function handleUnary<K extends keyof RpcMethodMap>(
   api: ApiProxy, method: K, message: ClientRequest, signal: AbortSignal,
 ): Promise<Response> {
