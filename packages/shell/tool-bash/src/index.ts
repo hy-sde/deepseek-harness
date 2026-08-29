@@ -236,7 +236,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.systemPrompt.section({
     name: 'tool:bash',
     order: 105,
-    text: 'Check the [exit code: N] marker on every bash result; investigate failures before moving on.',
+    text: 'Check the [exit code: N] marker on every bash result; investigate failures before moving on. '
+      + 'If you must search from bash, use `rg`, never `grep`: rg respects .gitignore, skips binary and hidden '
+      + 'files, and keeps output tight.',
   })
 
   ctx.tools.register(defineTool({

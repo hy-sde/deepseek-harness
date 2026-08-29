@@ -8,7 +8,7 @@ Requires a loaded executor Service Provider (e.g. `@deepseek-ai/dsh-bash-local`)
 
 The package root exposes only the Cordis plugin contract (`name`, `inject`, `Config`, `apply`); result rendering and background-process adaptation remain package-internal.
 
-The plugin also contributes the `tool:bash` prompt section (order 105): check the `[exit code: N]` marker on every result and investigate failures before moving on.
+The plugin also contributes the `tool:bash` prompt section (order 105): check the `[exit code: N]` marker on every result and investigate failures before moving on — and if a search from bash is ever justified, use `rg`, never `grep`, because `rg` respects `.gitignore`, skips binary and hidden files, and keeps output tight.
 
 ## Tools
 
