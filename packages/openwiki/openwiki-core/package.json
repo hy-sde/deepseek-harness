@@ -1,0 +1,48 @@
+{
+  "name": "@deepseek-ai/dsh-openwiki-core",
+  "version": "0.1.0-rc.1",
+  "description": "In-fork port of the openwiki 0.4.3 deterministic engine core (MIT): resumable page-job lifecycle with durable .run.json and page manifest, Grounded Claims store/session/runtime with repository evidence resolution and .claims/ sidecars, OKF v0.2 front matter repair + index sync + generated provenance, Mermaid validation and wiki-link validation, behind a minimal WikiFs seam with no external openwiki CLI.",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/openwiki/openwiki-core"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./agent/*": "./src/agent/*",
+    "./generation/*": "./src/generation/*",
+    "./claims/*": "./src/claims/*",
+    "./okf/*": "./src/okf/*",
+    "./mermaid/*": "./src/mermaid/*",
+    "./fs/*": "./src/fs/*",
+    "./integrations/*": "./src/integrations/*",
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.8"
+  }
+}

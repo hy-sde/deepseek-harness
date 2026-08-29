@@ -333,6 +333,7 @@
         "./packages/mcp/*/src",
         "./packages/logseq/*/src",
         "./packages/codebase-memory/*/src",
+        "./packages/openwiki/*/src",
         "./packages/identity/*/src",
         "./packages/test-support/*/src",
         "./packages/host/*/src",

@@ -50,6 +50,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`, `logseq_list`, `logseq_query`, `logseq_remove`, `logseq_search`, `logseq_server`, `logseq_show`, `logseq_upsert` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle. |
 | `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`, `codebase_detect_changes`, `codebase_get_architecture`, `codebase_get_code_snippet`, `codebase_get_graph_schema`, `codebase_index_repository`, `codebase_index_status`, `codebase_ingest_traces`, `codebase_list_projects`, `codebase_manage_adr`, `codebase_query_graph`, `codebase_search_code`, `codebase_search_graph`, `codebase_trace_path` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor. |
+| `@deepseek-ai/dsh-tool-openwiki` | `openwiki_begin`, `openwiki_finish`, `openwiki_next_page`, `openwiki_submit_page`, `openwiki_submit_plan` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Repository wiki lifecycle tools (openwiki_begin/submit_plan/next_page/submit_page/finish) that run the ported openwiki 0.4 deterministic engine core in-process — resumable .run.json checkpoints, page manifests, Grounded Claims with repository evidence resolution, OKF front matter repair + index sync — with no external openwiki CLI, wired to codebase-memory for structural discovery. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -4228,3 +4229,223 @@ Trace call/dataflow/cross-service paths through the codebase-memory knowledge gr
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
 Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor.
+
+<a id="deepseek-aidsh-tool-openwiki"></a>
+
+## `@deepseek-ai/dsh-tool-openwiki`
+
+### `openwiki_begin`
+
+Start or resume OpenWiki repository generation. Returns status=noop for a clean update, otherwise the durable planning/generation run state. An unrecognized `language` fails the call with invalid_input instead of starting a run.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "root": {
+      "type": "string",
+      "description": "Absolute path to any directory inside the target Git repository."
+    },
+    "mode": {
+      "type": "string",
+      "description": "init generates a fresh wiki; update refreshes an existing one.",
+      "enum": [
+        "init",
+        "update"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "description": "BCP-47 documentation language code, e.g. \"ko\" (not \"Korean\"). Omit to keep the existing wiki language."
+    },
+    "force": {
+      "type": "boolean",
+      "description": "Bypass update no-op detection."
+    }
+  },
+  "required": [
+    "root",
+    "mode"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_finish`
+
+Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, provenance, Claims finalization, and run metadata persistence.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_next_page`
+
+Return the first pending page job and its current Claims, or status=complete when no jobs remain.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_submit_page`
+
+Complete the current page job after its Markdown is written by submitting that page's complete intended repository-grounded Claim set. Preserve the id, exact statement, and evidence resource values of each unchanged existing Claim; reuse its id for a necessary revision; omit it to retract it; and omit id for a genuinely new Claim. The final page and Claim set must agree.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    },
+    "jobId": {
+      "type": "string",
+      "description": "Current pending job UUID from openwiki_next_page."
+    },
+    "claims": {
+      "type": "array",
+      "description": "Complete material Claim set for the finished page.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Existing id to preserve/reuse; omit for a genuinely new Claim."
+          },
+          "statement": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "resource": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "resource"
+              ]
+            }
+          }
+        },
+        "required": [
+          "statement",
+          "evidence"
+        ]
+      }
+    }
+  },
+  "required": [
+    "runId",
+    "jobId",
+    "claims"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_submit_plan`
+
+Submit the final canonical page plan. OpenWiki validates it and durably persists the ordered PageJob queue before accepting it.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    },
+    "pages": {
+      "type": "array",
+      "description": "Ordered proposed page queue.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "seedPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relatedPages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "path",
+          "title",
+          "purpose"
+        ]
+      }
+    },
+    "deletePages": {
+      "type": "array",
+      "description": "Existing generated pages to delete.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "runId",
+    "pages"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+Repository wiki lifecycle tools (openwiki_begin/submit_plan/next_page/submit_page/finish) that run the ported openwiki 0.4 deterministic engine core in-process — resumable .run.json checkpoints, page manifests, Grounded Claims with repository evidence resolution, OKF front matter repair + index sync — with no external openwiki CLI, wired to codebase-memory for structural discovery.

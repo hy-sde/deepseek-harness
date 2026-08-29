@@ -52,6 +52,7 @@
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`、`av_doctor`、`av_list`、`av_scan` | `ctx.tools`、`ctx.av`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。 |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`、`logseq_list`、`logseq_query`、`logseq_remove`、`logseq_search`、`logseq_server`、`logseq_show`、`logseq_upsert` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。 |
 | `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`、`codebase_detect_changes`、`codebase_get_architecture`、`codebase_get_code_snippet`、`codebase_get_graph_schema`、`codebase_index_repository`、`codebase_index_status`、`codebase_ingest_traces`、`codebase_list_projects`、`codebase_manage_adr`、`codebase_query_graph`、`codebase_search_code`、`codebase_search_graph`、`codebase_trace_path` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 代码智能工具（codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project），通过 `codebase-memory-mcp cli --json` 模式对本地 codebase-memory daemon 发起一次性查询——stdio MCP 客户端行的本地替代方案，共享同一 daemon、索引、变更锁与索引 supervisor。 |
+| `@deepseek-ai/dsh-tool-openwiki` | `openwiki_begin`、`openwiki_finish`、`openwiki_next_page`、`openwiki_submit_page`、`openwiki_submit_plan` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 仓库 wiki 生命周期工具（openwiki_begin/submit_plan/next_page/submit_page/finish）在进程内运行移植的 openwiki 0.4 确定性引擎核心——可恢复的 .run.json 检查点、页面 manifest、带仓库证据解析的 Grounded Claims、OKF 前言修复与索引同步——无需外部 openwiki CLI，并与 codebase-memory 接通以做结构化发现。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -4212,3 +4213,223 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
 代码智能工具（codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project），通过 `codebase-memory-mcp cli --json` 模式对本地 codebase-memory daemon 发起一次性查询——stdio MCP 客户端行的本地替代方案，共享同一 daemon、索引、变更锁与索引 supervisor。
+
+<a id="deepseek-aidsh-tool-openwiki"></a>
+
+## `@deepseek-ai/dsh-tool-openwiki`
+
+### `openwiki_begin`
+
+启动或恢复 OpenWiki 仓库生成。干净更新返回 status=noop，否则返回持久的规划/生成运行状态。无法识别的 `language` 会以 invalid_input 失败，而不是启动一次运行。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "root": {
+      "type": "string",
+      "description": "Absolute path to any directory inside the target Git repository."
+    },
+    "mode": {
+      "type": "string",
+      "description": "init generates a fresh wiki; update refreshes an existing one.",
+      "enum": [
+        "init",
+        "update"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "description": "BCP-47 documentation language code, e.g. \"ko\" (not \"Korean\"). Omit to keep the existing wiki language."
+    },
+    "force": {
+      "type": "boolean",
+      "description": "Bypass update no-op detection."
+    }
+  },
+  "required": [
+    "root",
+    "mode"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_finish`
+
+仅在每个 PageJob 都完成后调用。执行确定性的删除、校验、索引、出处、Claims 收尾与运行元数据持久化。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_next_page`
+
+返回第一个待办的页面任务及其当前 Claims；无剩余任务时返回 status=complete。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_submit_page`
+
+在页面 Markdown 写好后，提交该页完整的、以仓库为锚的预期 Claim 集以完成当前任务。保留每个未变既有 Claim 的 id、精确 statement 与证据 resource 值；必要的修订复用其 id；省略即撤消；真正的新 Claim 省略 id。最终页面与 Claim 集必须一致。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    },
+    "jobId": {
+      "type": "string",
+      "description": "Current pending job UUID from openwiki_next_page."
+    },
+    "claims": {
+      "type": "array",
+      "description": "Complete material Claim set for the finished page.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Existing id to preserve/reuse; omit for a genuinely new Claim."
+          },
+          "statement": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "resource": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "resource"
+              ]
+            }
+          }
+        },
+        "required": [
+          "statement",
+          "evidence"
+        ]
+      }
+    }
+  },
+  "required": [
+    "runId",
+    "jobId",
+    "claims"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+### `openwiki_submit_plan`
+
+提交最终规范性页面计划。OpenWiki 会校验它，并在接受前持久化有序的 PageJob 队列。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Stable run UUID returned by openwiki_begin."
+    },
+    "pages": {
+      "type": "array",
+      "description": "Ordered proposed page queue.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "seedPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relatedPages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "path",
+          "title",
+          "purpose"
+        ]
+      }
+    },
+    "deletePages": {
+      "type": "array",
+      "description": "Existing generated pages to delete.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "runId",
+    "pages"
+  ]
+}
+```
+
+Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
+仓库 wiki 生命周期工具（openwiki_begin/submit_plan/next_page/submit_page/finish）在进程内运行移植的 openwiki 0.4 确定性引擎核心——可恢复的 .run.json 检查点、页面 manifest、带仓库证据解析的 Grounded Claims、OKF 前言修复与索引同步——无需外部 openwiki CLI，并与 codebase-memory 接通以做结构化发现。

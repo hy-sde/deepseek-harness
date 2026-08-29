@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    // Ported from upstream openwiki 0.4, whose code contract writes optional
+    // fields as `?: T` and assigns `undefined` freely. The fork's base enables
+    // exactOptionalPropertyTypes + noUncheckedIndexedAccess; relaxing both at
+    // package level keeps the port byte-faithful (mirrors packages/fs/fs-archive).
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}
