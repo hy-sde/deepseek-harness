@@ -41,14 +41,17 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 import type {
   ContinuableCreateRequest,
   ContinuableCreateSpec,
+  OpenDecision,
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
   SubagentProvider,
+  SubagentReportContent,
   SubagentRun,
   SubagentRunEndInfo,
   SubagentRunInfo,
   SubagentStartRequest,
 } from './types.ts'
+import { normalizeDecisionKey } from './types.ts'
 import { SubagentError } from './error.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
 import { createActivationObserver, createLifecycleEmitter, observeRun } from './lifecycle.ts'
@@ -74,15 +77,19 @@ export { SubagentRunId } from './types.ts'
 export type {
   ContinuableCreateRequest,
   ContinuableCreateSpec,
+  DecisionStatus,
+  OpenDecision,
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
   SubagentProvider,
+  SubagentReportContent,
   SubagentResult,
   SubagentRun,
   SubagentStartRequest,
   SubagentStopReason,
   SubagentStopReasonMap,
 } from './types.ts'
+export { normalizeDecisionKey } from './types.ts'
 export {
   foldSubagentDescriptor,
   snapshotSubagentDescriptor,
@@ -173,6 +180,14 @@ export class SubagentRuntime extends Service {
   private continuations: SubagentContinuationManager | undefined
   /** Deployment contributions composed into unpublished continuable children. */
   private readonly setupRegistry = new SubagentActivationSetupRegistry()
+  /**
+   * Child-reported decisions still awaiting an answer, keyed by parent session
+   * id → per-child stable key. In-process lifetime: a report opens a record,
+   * the parent's `resolveOpenDecision` closes it; a restart simply loses the
+   * ledger (open decisions mirror the child's own reports, which stay in the
+   * parent's transcript).
+   */
+  private readonly openDecisions = new Map<string, Map<string, OpenDecision>>()
   /**
    * The contained lifecycle-edge publisher. Built here because scoped dispatch
    * keys its carrier by this exact service instance, whose own context filter
@@ -272,7 +287,76 @@ export class SubagentRuntime extends Service {
     content: ContentBlock[],
     options: SubagentReportOptions,
   ): Promise<MessageId> {
-    return this.requireContinuations().reportFrom(child, content, options)
+    const messageId = await this.requireContinuations().reportFrom(child, content, options)
+    const structured = options.report
+    if (structured !== undefined) this.recordOpenDecision(child, structured)
+    return messageId
+  }
+
+  /**
+   * Record a decision-shaped structured report as an open decision for the
+   * child's durable direct parent. Only `needs-decision`/`blocked` reports
+   * with a normalized, non-empty `decisionKey` open a record; other statuses
+   * are advisory and change nothing. Re-opening the same key refreshes its
+   * timestamp rather than duplicating it.
+   */
+  private recordOpenDecision(child: Agent, report: SubagentReportContent): void {
+    if (report.status !== 'needs-decision' && report.status !== 'blocked') return
+    if (typeof report.decisionKey !== 'string') return
+    const key = normalizeDecisionKey(report.decisionKey)
+    if (key.length === 0 || typeof report.summary !== 'string' || report.summary.trim().length === 0) return
+    const parentId = child.session.header.parentSession
+    if (parentId === undefined) return
+    const entry: OpenDecision = {
+      childId: child.id,
+      key,
+      label: child.session.header.agentPreset ?? 'subagent',
+      status: report.status,
+      summary: report.summary.trim(),
+      openedAt: Date.now(),
+    }
+    let bucket = this.openDecisions.get(parentId.toString())
+    if (bucket === undefined) {
+      bucket = new Map()
+      this.openDecisions.set(parentId.toString(), bucket)
+    }
+    bucket.set(`${child.id}\u0000${key}`, entry)
+  }
+
+  /**
+   * List every open decision a continuable child of `parent` has reported,
+   * oldest first. Open decisions survive the child settling: an unanswered
+   * question the child asked remains owed.
+   * @param parent - the exact live parent agent owning the children.
+   * @returns chronological open-decision records (detached).
+   */
+  listOpenDecisions(parent: Agent): OpenDecision[] {
+    const bucket = this.openDecisions.get(parent.id.toString())
+    if (bucket === undefined) return []
+    const entries: OpenDecision[] = [...bucket.values()]
+    entries.sort((a, b) => a.openedAt - b.openedAt)
+    return entries
+  }
+
+  /**
+   * Close one open decision after the parent answers it. Idempotent: an
+   * unknown (already-resolved, never-opened, or malformed) key returns `false`
+   * without throwing.
+   * @param parent - the exact live parent answering the decision.
+   * @param childId - the reporting child's session id.
+   * @param key - the decision key as reported (normalized before lookup).
+   * @returns whether a record was actually closed.
+   */
+  resolveOpenDecision(parent: Agent, childId: SessionId, key: string): boolean {
+    const normalized = normalizeDecisionKey(key)
+    if (normalized.length === 0) return false
+    const bucket = this.openDecisions.get(parent.id.toString())
+    if (bucket === undefined) return false
+    const record = bucket.get(`${childId}\u0000${normalized}`)
+    if (record === undefined) return false
+    bucket.delete(`${childId}\u0000${normalized}`)
+    if (bucket.size === 0) this.openDecisions.delete(parent.id.toString())
+    return true
   }
 
   /**

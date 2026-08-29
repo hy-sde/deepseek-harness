@@ -169,7 +169,15 @@ describe('dsh-tool-subagent-report', () => {
     const schemas = ctx.tools.schemas(child).filter(schema => schema.name === 'report')
     expect(schemas).toHaveLength(1)
     const properties = (schemas[0]?.parameters as { properties: Record<string, unknown> }).properties
-    expect(Object.keys(properties)).toEqual(['output'])
+    expect(Object.keys(properties)).toEqual([
+      'output',
+      'status',
+      'summary',
+      'evidence',
+      'nextSteps',
+      'blocker',
+      'decisionKey',
+    ])
   })
 
   it('adds no implicit capability when the package is absent', async () => {
@@ -602,5 +610,131 @@ describe('dsh-tool-subagent-report result independence', () => {
     expect(reports(parent)).toEqual([])
     expect(userTexts((await ctx.sessionPersistence.load(started.childId)).events)).toEqual(['child task'])
     expect(ctx.get('jobs')).toBeUndefined()
+  })
+})
+
+describe('dsh-tool-subagent-report keyed decisions', () => {
+  it('records a keyed needs-decision report as an open decision for the parent', async () => {
+    const { ctx, parent } = await setup()
+    const { child } = await startChild(ctx, parent)
+
+    const result = await ctx.tools.execute({
+      signal: testSignal,
+      callId: CallId(`report-decision-${++calls}`),
+      name: 'report',
+      arguments: {
+        output: 'approach A works; approach B needs your call',
+        status: 'needs-decision',
+        summary: 'Pick between approach A and B',
+        evidence: ['A passes all unit tests', 'B is faster but untested'],
+        nextSteps: ['Land the chosen approach'],
+        decisionKey: 'approach-choice',
+      },
+      agent: child,
+    })
+    expect(result.isError).toBe(false)
+
+    // The parent transcript carries the typed status and the structured arm.
+    const delivered = reports(parent).map(report => report.text)
+    expect(delivered.some(text => text.includes('[NEEDS DECISION] Pick between approach A and B'))).toBe(true)
+    expect(delivered.some(text => text.includes('Evidence:') && text.includes('- A passes all unit tests'))).toBe(true)
+    expect(delivered.some(text => text.includes('Next steps:'))).toBe(true)
+    expect(delivered.some(text => text.includes('Note: approach A works; approach B needs your call'))).toBe(true)
+
+    const decisions = ctx.subagents.listOpenDecisions(parent)
+    expect(decisions).toHaveLength(1)
+    expect(decisions[0]).toMatchObject({
+      childId: child.id,
+      key: 'approach-choice',
+      status: 'needs-decision',
+      summary: 'Pick between approach A and B',
+    })
+
+    // Re-reporting the same key refreshes the record instead of duplicating it.
+    const again = await ctx.tools.execute({
+      signal: testSignal,
+      callId: CallId(`report-decision-${++calls}`),
+      name: 'report',
+      arguments: {
+        status: 'needs-decision',
+        summary: 'Pick between approach A and B (still open)',
+        decisionKey: 'approach-choice',
+      },
+      agent: child,
+    })
+    expect(again.isError).toBe(false)
+    expect(ctx.subagents.listOpenDecisions(parent)).toHaveLength(1)
+
+    // The parent can close the record with the same key.
+    expect(ctx.subagents.resolveOpenDecision(parent, child.id, 'approach-choice')).toBe(true)
+    expect(ctx.subagents.listOpenDecisions(parent)).toEqual([])
+  })
+
+  it('records a blocked report with its blocker and keeps it after the child settles', async () => {
+    const { ctx, parent, adapter } = await setup()
+    const { started, child } = await startChild(ctx, parent)
+
+    const result = await ctx.tools.execute({
+      signal: testSignal,
+      callId: CallId(`report-blocked-${++calls}`),
+      name: 'report',
+      arguments: {
+        status: 'blocked',
+        summary: 'Need the API token to continue',
+        blocker: 'Credentials for the staging endpoint are missing',
+        decisionKey: 'need-token',
+      },
+      agent: child,
+    })
+    expect(result.isError).toBe(false)
+    expect(ctx.subagents.listOpenDecisions(parent)).toHaveLength(1)
+
+    adapter.release()
+    await vi.waitFor(() => {
+      expect(ctx.agents.get(started.childId) === undefined).toBe(true)
+    }, { timeout: 5_000 })
+
+    // Settlement does not retract an owed decision: defaults to lazy progress.
+    expect(ctx.subagents.listOpenDecisions(parent)[0]).toMatchObject({
+      childId: started.childId,
+      key: 'need-token',
+      status: 'blocked',
+    })
+  })
+
+  it('rejects a decision-shaped report missing a key or summary, and opens none for plain output', async () => {
+    const { ctx, parent } = await setup()
+    const { child } = await startChild(ctx, parent)
+
+    const missingKey = await ctx.tools.execute({
+      signal: testSignal,
+      callId: CallId(`report-bad-${++calls}`),
+      name: 'report',
+      arguments: { status: 'blocked', summary: 'stuck' },
+      agent: child,
+    })
+    expect(missingKey.isError).toBe(true)
+
+    const missingSummary = await ctx.tools.execute({
+      signal: testSignal,
+      callId: CallId(`report-bad-${++calls}`),
+      name: 'report',
+      arguments: { status: 'needs-decision', decisionKey: 'k' },
+      agent: child,
+    })
+    expect(missingSummary.isError).toBe(true)
+
+    const empty = await ctx.tools.execute({
+      signal: testSignal,
+      callId: CallId(`report-bad-${++calls}`),
+      name: 'report',
+      arguments: {},
+      agent: child,
+    })
+    expect(empty.isError).toBe(true)
+
+    // Plain output reports stay advisory: no ledger records open.
+    expect(await callReport(ctx, child, 'plain note')).toMatchObject({ isError: false })
+    expect(ctx.subagents.listOpenDecisions(parent)).toEqual([])
   })
 })

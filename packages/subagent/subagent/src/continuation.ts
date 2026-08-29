@@ -49,7 +49,13 @@ import {
 import type { DelegatedPolicyOverrides } from './child-agent.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
 import { seedDescriptorTurn } from './descriptor-seed.ts'
-import type { ContinuableCreateRequest, ContinuableCreateSpec, SubagentResult, SubagentStartRequest } from './types.ts'
+import type {
+  ContinuableCreateRequest,
+  ContinuableCreateSpec,
+  SubagentReportContent,
+  SubagentResult,
+  SubagentStartRequest,
+} from './types.ts'
 import type { ActivationObserver, ActivationTerminal } from './lifecycle.ts'
 import { SubagentError } from './error.ts'
 import type SubagentActivationSetupRegistry from './activation-setup-registry.ts'
@@ -106,6 +112,13 @@ export interface SubagentReportOptions {
   readonly delivery: SubagentReportDelivery
   /** Caller cancellation, owning authorization and admission until acceptance. */
   readonly signal: AbortSignal
+  /**
+   * Optional structured arm. When present with a normalized `decisionKey` and
+   * a `needs-decision`/`blocked` status, the subagent service records the
+   * report as an open decision for the parent; the parent answers it with the
+   * same key to close the record.
+   */
+  readonly report?: SubagentReportContent
 }
 
 /** What a caller asks for when starting a continuable background child. */

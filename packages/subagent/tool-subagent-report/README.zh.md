@@ -18,7 +18,7 @@
 
 #### 模型看到的内容
 
-已生成的 [`report` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent-report)：包含一个必填 `output` 字符串。其描述说明子级必须在结束前上报一次，上报只会到达启动该子级的 Agent，并且不会结束轮次。它不包含接收方或投递模式参数。独立的 `tool:report` 提示词 section 在 schema 之外重申该义务，使忽略工具描述的子级仍能读到。
+已生成的 [`report` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent-report)：包含一个可选的 `output` 字符串以及结构化臂。其描述说明子级必须在结束前上报一次，上报只会到达启动该子级的 Agent，并且不会结束轮次。它不包含接收方或投递模式参数。独立的 `tool:report` 提示词 section 在 schema 之外重申该义务，使忽略工具描述的子级仍能读到。在结构化臂中，`status`（`done`/`progress`/`needs-decision`/`blocked`）、`summary`、`evidence`、`nextSteps`、`blocker` 与 `decisionKey` 存在时渲染为一个紧凑的父级可见块，而纯 `output` 的调用原样透传文本（与引入结构化臂之前的报告字节兼容）。`needs-decision` 或 `blocked` 报告还必须携带 `decisionKey` 与 `summary`，否则调用报错。这类报告会被 subagent 服务记录为父级的一个打开的待决事项（`ctx.subagents.listOpenDecisions(parent)`），键为每个子级规范化后的 `decisionKey`；用同一键重复上报会刷新记录，记录在子级结算后仍然保留，父级通过 `send_message` + `resolve_decision_key` 每次只关闭一个（参见 [`@deepseek-ai/dsh-tool-subagent-control`](../tool-subagent-control/README.zh.md)）。`done`/`progress` 报告永远不会打开记录。
 
 #### Token 影响
 
@@ -46,7 +46,7 @@
 
 #### 模型看到的内容
 
-一条用户角色的父级消息，以 `Background subagent <child-id> reported:` 开头，后接子级未经改动的 `output`，并带有指明该子级的持久化来源 `{ kind: 'subagent-report', senderSessionId: <child-id> }`。
+一条用户角色的父级消息，以 `Background subagent <child-id> reported:` 开头，后接子级的内容——纯报告是未改动的 `output`，结构化报告则是渲染后的状态块（`[NEEDS DECISION]`、`Evidence:`、`Next steps:`、`Blocker:`，并把 `output` 折叠成末尾的 `Note:`）——并带有指明该子级的持久化来源 `{ kind: 'subagent-report', senderSessionId: <child-id> }`。
 
 #### Token 影响
 

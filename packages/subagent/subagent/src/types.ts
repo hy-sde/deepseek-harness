@@ -329,3 +329,60 @@ export interface SubagentProvider {
    */
   prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreateSpec>
 }
+
+/**
+ * A continuable child's report carries an optional structured arm so the
+ * parent can distinguish "a decision needs me now" from "progress, nothing to
+ * do", and answer each keyed decision exactly once. Decision-shaped reports
+ * are recorded by the subagent service and surfaced through
+ * `ctx.subagents.listOpenDecisions()` / `resolveOpenDecision()`.
+ */
+export type DecisionStatus = 'done' | 'progress' | 'needs-decision' | 'blocked'
+
+/** A child-reported decision that still awaits the parent's answer. */
+export interface OpenDecision {
+  /** Durable session id of the reporting child. */
+  readonly childId: SessionId
+  /**
+   * Stable, normalized decision key (unique within one child); the parent
+   * answers with the same key to close the record.
+   */
+  readonly key: string
+  /** One-line label naming the decision (currently the child's label). */
+  readonly label: string
+  /**
+   * `needs-decision` = the child is waiting while staying productive;
+   * `blocked` = the child cannot proceed without this answer.
+   */
+  readonly status: 'needs-decision' | 'blocked'
+  /** Actionable summary of what the parent must decide. */
+  readonly summary: string
+  /** Epoch milliseconds when the decision was opened (or last re-opened). */
+  readonly openedAt: number
+}
+
+/**
+ * The structured arm of one child report, delivered alongside the free-text
+ * content. `status` without a `decisionKey` is advisory only; a key turns the
+ * report into a durable open-decision record.
+ */
+export interface SubagentReportContent {
+  /** Structured report status (default `progress` when omitted). */
+  readonly status?: DecisionStatus
+  /** One-line actionable summary shown to the parent. */
+  readonly summary?: string
+  /** Optional evidence lines backing the summary. */
+  readonly evidence?: readonly string[]
+  /** Optional next steps the child has planned or awaits. */
+  readonly nextSteps?: readonly string[]
+  /** Required (and only meaningful) when `status` is `blocked`. */
+  readonly blocker?: string
+  /** Stable key making this report an open decision; required for
+   * `needs-decision`/`blocked` reports. */
+  readonly decisionKey?: string
+}
+
+/** Normalize a caller-supplied decision key: trim and collapse whitespace. */
+export function normalizeDecisionKey(key: string): string {
+  return key.trim().replace(/\s+/g, ' ')
+}

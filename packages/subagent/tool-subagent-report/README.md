@@ -18,7 +18,7 @@ The contribution body is exported as `installReportTool(childCtx, ctx, delivery)
 
 #### What the model sees
 
-The generated [`report` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-subagent-report): one required `output` string. Its description states that the child must report once before finishing, that reporting reaches only the Agent that started the child, and that it does not end the turn. It carries no recipient or delivery-mode parameter. The separate `tool:report` prompt section repeats the obligation outside the schema, where a child that ignores tool descriptions still reads it.
+The generated [`report` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-subagent-report): an optional `output` string plus the structured arm. Its description states that the child must report once before finishing, that reporting reaches only the Agent that started the child, and that it does not end the turn. It carries no recipient or delivery-mode parameter. The separate `tool:report` prompt section repeats the obligation outside the schema, where a child that ignores tool descriptions still reads it. In the structured arm, `status` (`done`/`progress`/`needs-decision`/`blocked`), `summary`, `evidence`, `nextSteps`, `blocker`, and `decisionKey` render a compact parent-facing block when present, while a plain `output`-only call passes the text through verbatim (byte-compatible with pre-structured reports). A `needs-decision` or `blocked` report must also carry a `decisionKey` and a `summary`, or the call is an error. Such a report is recorded by the subagent service as an open decision for the parent (`ctx.subagents.listOpenDecisions(parent)`), keyed by the normalized `decisionKey` per child; re-reporting the same key refreshes the record, records survive the child settling, and the parent closes one exactly-once with `send_message` + `resolve_decision_key` (see [`@deepseek-ai/dsh-tool-subagent-control`](../tool-subagent-control/README.md)). `done`/`progress` reports never open a record.
 
 #### Token effect
 
@@ -46,7 +46,7 @@ Append-only in the child. In the parent, the framed report follows existing hist
 
 #### What the model sees
 
-One user-role parent message framed as `Background subagent <child-id> reported:` followed by the child's exact `output`, with a durable source `{ kind: 'subagent-report', senderSessionId: <child-id> }` that names the child.
+One user-role parent message framed as `Background subagent <child-id> reported:` followed by the child's content — the exact `output` for a plain report, or the rendered status block (`[NEEDS DECISION]`, `Evidence:`, `Next steps:`, `Blocker:`, with `output` folded in as a final `Note:`) for a structured one — with a durable source `{ kind: 'subagent-report', senderSessionId: <child-id> }` that names the child.
 
 #### Token effect
 

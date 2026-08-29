@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-可选的全局具名 `send_message`、`interrupt_agent` 与 `list_agents` 工具是 `ctx.subagents` 之上的轻量适配器。绑定提供方的 `@deepseek-ai/dsh-tool-subagent` 实例会为每种传输注册不同的委派工具；这个单独加载的包只注册一次共享控制工具，因此多个委派工具绝不会重复注册全局控制工具。根插件注册 `send_message` 与 `interrupt_agent`，且只要求 `subagents`；可单独加载的 `./list-agents` 插件注册 `list_agents`，并将 `subagents` 与 `agents` 声明为加载时依赖。其目录读取在调用时还要求会话存储与投影注册表，但不要求任何查询服务。部署可保留根插件工具并省略列表工具。是否加载这些工具不会决定委派工具是否启动可继续工作。这些工具只负责父到子的方向；单独安装的 [`@deepseek-ai/dsh-tool-subagent-report`](../tool-subagent-report/README.zh.md) 负责子到父的方向。
+可选的全局具名 `send_message`、`interrupt_agent`、`pending_decisions` 与 `list_agents` 工具是 `ctx.subagents` 之上的轻量适配器。绑定提供方的 `@deepseek-ai/dsh-tool-subagent` 实例会为每种传输注册不同的委派工具；这个单独加载的包只注册一次共享控制工具，因此多个委派工具绝不会重复注册全局控制工具。根插件注册 `send_message`、`interrupt_agent` 与 `pending_decisions`，且要求 `subagents` 与系统提示词；可单独加载的 `./list-agents` 插件注册 `list_agents`，并将 `subagents` 与 `agents` 声明为加载时依赖。其目录读取在调用时还要求会话存储与投影注册表，但不要求任何查询服务。部署可保留根插件工具并省略列表工具。是否加载这些工具不会决定委派工具是否启动可继续工作。这些工具只负责父到子的方向；单独安装的 [`@deepseek-ai/dsh-tool-subagent-report`](../tool-subagent-report/README.zh.md) 负责子到父的方向。
 
 本工具不执行生命周期路由：驻留与冷恢复归 subagent 服务所有。它将 `exec.agent` 作为授权投递的确切在线父级传入，并把每条消息的来源记录为 `{ kind: 'coordinator', senderSessionId: parent.id }`；服务会保留该来源，但绝不将其视为权限。每条消息都会通过 `Agent.followup()` 成为 subagent 的下一个 FIFO 轮次：如果子 agent（智能体）仍在工作，该消息会等待其当前轮次结束，因此无法重定向已经在进行的工作。本工具会转发其执行信号，该信号只在 inbox 接受之前掌管准入；一旦子 agent 接受消息，已接受的轮次便无法再通过本工具取消。本次调用不会返回子 agent 的回复；通过该 id 查看其 transcript（文本记录），才是了解它完成了哪些工作的真源。拥有 `report` 的子 agent 会自行把内容作为一条单独的父级消息发回。投递失败会变为出错的工具结果，并明确说明消息未送达。
 
@@ -10,13 +10,15 @@
 
 `list_agents` 接受一个可选的 `scope` 参数，会从调用它的 agent 推导根 id，并且不使用 cursor，将服务目录投影为可继续 child。默认的 `children` scope 读取 `ctx.subagents.listChildren()`；`descendants` 读取 `ctx.subagents.listDescendants()`，其单份语料的遍历会穿过普通会话与一次性 child，并按稳定 pre-order 以 `parent=<id> depth=<n>` 渲染保留下来的条目。`parent` 注释是持久化直接 parent 会话 id，可能指向输出中省略的普通会话。对于调用本工具的 agent，只有 depth-1 child 条目可作为 `send_message` 候选；更深的 child 条目只能作为 `interrupt_agent` 候选。状态来自在线 Agent 注册表：`running`（driver 活跃）、`idle`（驻留但处于轮次之间，可能在等待它启动的 agent）或 `ready`（仅存于存储，表示可恢复而非终态）。服务结果还包含由会话支撑的一次性 subagent，以供 UI 等消费方使用；但这些条目无法接受 `send_message`，因此会从这个模型工具中排除。diagnostic 仍然可见，并在 descendants scope 中带有位置。持久化身份和模式来自每个子 agent 的描述符，消息送达时的鉴权和 Activation 所有权检查仍归服务负责。
 
+`pending_decisions` 列出直接 child 以 `needs-decision` 或 `blocked` 状态、并带 `decisionKey` 报告的每个带键待决事项——该账本是 `ctx.subagents.listOpenDecisions()` 向调用它的父级投影的结果，最旧的在前，可按 `subagent_id` 过滤。记录存放在 subagent 服务的进程内账本中，由决策形态的报告打开、由父级的回答关闭，因此在子级结算后仍然保留。`send_message` 接受可选的 `resolve_decision_key`：当它存在且消息投递成功时，服务会关闭该子级对应的记录（`ctx.subagents.resolveOpenDecision()`，幂等——未知键解析为 false，消息照常投递）。工具输出携带 `decisionResolved`，让模型能区分已关闭的决策与未回答的决策。
+
 ## 模型体验
 
 ### 工具 schema
 
 #### 模型看到的内容
 
-已生成的 [schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent-control)：`send_message` 包含 `subagent_id` 和 `message`，说明消息会成为 subagent 的下一个轮次、本次调用不会返回 subagent 的回答，以及失败即表示消息未送达；`interrupt_agent` 包含 `agent_id`，说明只有当前轮次会停止、已排队消息保持暂停、后代继续运行，以及接受先于实际停止；`list_agents` 包含可选的 `scope` 枚举。
+已生成的 [schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent-control)：`send_message` 包含 `subagent_id`、`message` 与可选的 `resolve_decision_key`（当这条消息就是在回答该子级某个打开的待决事项时，用它关闭对应记录），说明消息会成为 subagent 的下一个轮次、本次调用不会返回 subagent 的回答，以及失败即表示消息未送达；`interrupt_agent` 包含 `agent_id`，说明只有当前轮次会停止、已排队消息保持暂停、后代继续运行，以及接受先于实际停止；`list_agents` 包含可选的 `scope` 枚举；`pending_decisions` 包含可选的 `subagent_id` 过滤器，并返回每项待答决策的 `child_id`、`label`、`key`、`status`、`summary` 与 `opened_at`，指引通过 `send_message` + `resolve_decision_key` 每次只回答一个键。
 
 #### Token 影响
 

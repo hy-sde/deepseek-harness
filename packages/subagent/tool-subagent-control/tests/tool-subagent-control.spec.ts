@@ -100,12 +100,12 @@ async function waitNoActivation(ctx: Context, childId: SessionId): Promise<void>
 }
 
 describe('dsh-tool-subagent-control', () => {
-  it('registers send_message once, globally, with the two required parameters', async () => {
+  it('registers send_message once, globally, with the three parameters', async () => {
     const { ctx } = await setup([])
     const schemas = ctx.tools.schemas().filter(schema => schema.name === 'send_message')
     expect(schemas).toHaveLength(1)
     const props = (schemas[0]!.parameters as { properties?: Record<string, unknown> }).properties ?? {}
-    expect(Object.keys(props).sort()).toEqual(['message', 'subagent_id'])
+    expect(Object.keys(props).sort()).toEqual(['message', 'resolve_decision_key', 'subagent_id'])
     // The continuable path has no Task, so the schema must not promise one.
     expect(schemas[0]!.description).not.toContain('job_output')
     expect(schemas[0]!.description).not.toContain('job id')
@@ -219,7 +219,7 @@ describe('dsh-tool-subagent-control', () => {
   it('has the namespace-plugin export shape (no stray default)', () => {
     expect('default' in tool).toBe(false)
     expect(tool.name).toBe('tool-subagent-control')
-    expect(tool.inject).toEqual(['tools', 'subagents'])
+    expect(tool.inject).toEqual(['tools', 'subagents', 'systemPrompt'])
     expect(typeof tool.apply).toBe('function')
   })
 })
@@ -384,6 +384,104 @@ describe('dsh-tool-subagent-control interrupt_agent', () => {
   it('fails loud when invoked without a calling agent', async () => {
     const { ctx } = await setup([])
     const result = await callTool(ctx, 'interrupt_agent', { agent_id: 'x' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('requires a calling agent')
+  })
+})
+
+describe('dsh-tool-subagent-control keyed decisions', () => {
+  it('lists owed decisions and closes them via send_message resolve_decision_key', async () => {
+    const releaseChild = Promise.withResolvers<undefined>()
+    const adapter = new GatedAdapter([
+      { chunks: [], gate: releaseChild.promise }, // child turn held open
+      { chunks: textResponse('ack') },            // the answered next turn
+    ])
+    const { ctx, parent } = await setupWith(adapter)
+    const started = await ctx.subagents.startContinuable({
+      provider: 'spawn',
+      label: 'worker',
+      request: { prompt: [{ type: 'text', text: 'worker task' }], parent },
+      signal: testToolSignal,
+    })
+    const child = await vi.waitFor(() => {
+      const live = ctx.agents.get(started.childId)
+      expect(live).toBeDefined()
+      return live as NonNullable<typeof live>
+    })
+
+    // A decision-shaped report from the child's own service path opens a record.
+    const opened = await ctx.subagents.reportFrom(child, [{ type: 'text', text: 'I need a port' }], {
+      delivery: 'quiet',
+      signal: testToolSignal,
+      report: {
+        status: 'needs-decision',
+        summary: 'Which port should the service listen on',
+        decisionKey: 'choose-port',
+      },
+    })
+    expect(opened).toBeDefined()
+
+    const list = await callTool(ctx, 'pending_decisions', {}, parent)
+    expect(list.isError).toBe(false)
+    const listValue = list.value as {
+      decisions: { child_id: string; label: string; key: string; status: string; summary: string }[]
+    }
+    const decisions = listValue.decisions
+    expect(decisions).toEqual([expect.objectContaining({
+      child_id: started.childId.toString(),
+      label: 'subagent',
+      key: 'choose-port',
+      status: 'needs-decision',
+      summary: 'Which port should the service listen on',
+    })])
+
+    const filtered = await callTool(ctx, 'pending_decisions', { subagent_id: 'other-id' }, parent)
+    expect(filtered.isError).toBe(false)
+    expect((filtered.value as { decisions: unknown[] }).decisions).toEqual([])
+
+    // Answering with the same key closes the record.
+    const resolve = await callTool(ctx, 'send_message', {
+      subagent_id: started.childId,
+      message: 'listen on 8080',
+      resolve_decision_key: 'choose-port',
+    }, parent)
+    expect(resolve.isError).toBe(false)
+    expect((resolve.value as { decisionResolved: boolean }).decisionResolved).toBe(true)
+    expect(text(resolve)).toContain('decision "choose-port" closed')
+
+    const after = await callTool(ctx, 'pending_decisions', {}, parent)
+    expect((after.value as { decisions: unknown[] }).decisions).toEqual([])
+
+    releaseChild.resolve(undefined)
+    await waitNoActivation(ctx, started.childId)
+  })
+
+  it('reports an unknown key as unresolved without dropping the message', async () => {
+    const { ctx, parent } = await setup([textResponse('answer'), textResponse('answer')])
+    const started = await ctx.subagents.startContinuable({
+      provider: 'spawn',
+      label: 'worker',
+      request: { prompt: [{ type: 'text', text: 'worker task' }], parent },
+      signal: testToolSignal,
+    })
+    await waitNoActivation(ctx, started.childId)
+
+    const resolve = await callTool(ctx, 'send_message', {
+      subagent_id: started.childId,
+      message: 'hello',
+      resolve_decision_key: 'never-opened',
+    }, parent)
+    expect(resolve.isError).toBe(false)
+    expect((resolve.value as { decisionResolved: boolean }).decisionResolved).toBe(false)
+    expect(text(resolve)).toContain('no open decision "never-opened" existed to close')
+
+    const after = await callTool(ctx, 'pending_decisions', {}, parent)
+    expect((after.value as { decisions: unknown[] }).decisions).toEqual([])
+  })
+
+  it('fails loud when invoked without a calling agent', async () => {
+    const { ctx } = await setup([])
+    const result = await callTool(ctx, 'pending_decisions', {})
     expect(result.isError).toBe(true)
     expect(text(result)).toContain('requires a calling agent')
   })

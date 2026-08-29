@@ -10,7 +10,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { SubagentReportDelivery } from '@deepseek-ai/dsh-subagent'
+import type { SubagentReportContent, SubagentReportDelivery } from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 
@@ -58,7 +58,10 @@ export function installReportTool(
       + 'answer. The agent that started you shares your workspace but does not automatically receive your '
       + 'transcript, tool output, or reasoning, so a closing remark such as "done" leaves it nothing it can '
       + 'use. Report earlier as well whenever a partial finding changes what that agent should do next; '
-      + 'reporting never ends your turn.',
+      + 'reporting never ends your turn. When you genuinely need that agent to decide something before you '
+      + 'continue, send status "needs-decision" (or "blocked" when you cannot proceed) together with a '
+      + 'short, stable `decisionKey` and an actionable `summary`; do not reopen the same key with the same '
+      + 'summary, and answer questions only with a later keyed report.',
   })
   let disposeTool: () => void
   try {
@@ -70,12 +73,40 @@ export function installReportTool(
         + 'next. That agent shares your workspace but does not automatically receive your transcript, tool '
         + 'output, or reasoning, so finishing your work is not itself a result. Reporting does not end your '
         + 'turn or finish your work, and only your direct parent receives it. A failed call may still have '
-        + 'arrived, so do not blindly repeat it.',
+        + 'arrived, so do not blindly repeat it. Use `output` alone for free-form notes; add `status` with a '
+        + '`decisionKey` + `summary` only when the parent must decide something before you continue '
+        + '(`needs-decision` = you keep working meanwhile, `blocked` = you cannot).',
       parameters: {
         output: {
           type: 'string',
-          required: true,
           description: 'Actionable content for your parent; summarize conclusions and reference relevant shared paths.',
+        },
+        status: {
+          type: 'string',
+          enum: ['done', 'progress', 'needs-decision', 'blocked'],
+          description: 'Structured status of this report. `needs-decision` and `blocked` open a keyed decision for your parent.',
+        },
+        summary: {
+          type: 'string',
+          description: 'One-line actionable summary. Required together with `decisionKey` for a decision-shaped report.',
+        },
+        evidence: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional evidence lines backing the summary.',
+        },
+        nextSteps: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional next steps you have planned or that await the parent\'s answer.',
+        },
+        blocker: {
+          type: 'string',
+          description: 'Required (and only meaningful) when `status` is `blocked`: what stops you.',
+        },
+        decisionKey: {
+          type: 'string',
+          description: 'Stable, short key making this report an open decision; unique within your reports. The parent answers with the same key.',
         },
       },
       output: {
@@ -92,12 +123,25 @@ export function installReportTool(
         }],
       },
       async execute(args, exec) {
-        const content: ContentBlock[] = [{ type: 'text', text: args.output }]
+        const structured = collectStructured(args)
+        const { report } = structured
+        if ((report.status === 'needs-decision' || report.status === 'blocked')
+          && (report.decisionKey === undefined || report.summary === undefined)) {
+          throw new Error(
+            'a needs-decision or blocked report must carry both a decisionKey and a summary to be answerable',
+          )
+        }
+        const text = renderReportText(args.output, structured)
+        if (text.length === 0) {
+          throw new Error('report needs output, summary, or another structured field to say something')
+        }
+        const content: ContentBlock[] = [{ type: 'text', text }]
         // Scope-local resolution guarantees an Agent. The service still verifies
         // its exact live Activation identity at the authority boundary.
         const messageId = await ctx.subagents.reportFrom(exec.agent as Agent, content, {
           delivery,
           signal: exec.signal,
+          ...(structured.hasAny ? { report: structured.report } : {}),
         })
         return { messageId }
       },
@@ -139,4 +183,68 @@ export function apply(ctx: Context, config: Config = {}): void {
   const { reportDelivery } = Config(config) as { reportDelivery: SubagentReportDelivery }
   ctx.subagents.registerContinuableSetup(childCtx =>
     installReportTool(childCtx, ctx, reportDelivery))
+}
+
+/** The tool arguments of `report`, as resolved by defineTool's schema. */
+interface ReportArgs {
+  output?: string
+  status?: 'done' | 'progress' | 'needs-decision' | 'blocked'
+  summary?: string
+  evidence?: string[]
+  nextSteps?: string[]
+  blocker?: string
+  decisionKey?: string
+}
+
+/** Extracted structured arm plus whether any structured field was supplied. */
+interface StructuredContent {
+  readonly hasAny: boolean
+  readonly report: SubagentReportContent
+}
+
+function collectStructured(args: ReportArgs): StructuredContent {
+  const report: SubagentReportContent = {
+    ...(args.status !== undefined ? { status: args.status } : {}),
+    ...(args.summary !== undefined ? { summary: args.summary } : {}),
+    ...(args.evidence !== undefined && args.evidence.length > 0 ? { evidence: args.evidence } : {}),
+    ...(args.nextSteps !== undefined && args.nextSteps.length > 0 ? { nextSteps: args.nextSteps } : {}),
+    ...(args.blocker !== undefined ? { blocker: args.blocker } : {}),
+    ...(args.decisionKey !== undefined ? { decisionKey: args.decisionKey } : {}),
+  }
+  const hasAny = Object.keys(report).length > 0
+  return { hasAny, report }
+}
+
+const REPORT_STATUS_LABELS: Record<NonNullable<SubagentReportContent['status']>, string> = {
+  done: 'DONE',
+  progress: 'PROGRESS',
+  'needs-decision': 'NEEDS DECISION',
+  blocked: 'BLOCKED',
+}
+
+/**
+ * Canonical parent-facing text for one report. A plain `output`-only report is
+ * passed through verbatim (back-compat); structured fields render as a compact
+ * status block, with `output` (when also supplied) folded in as a final note.
+ */
+function renderReportText(output: string | undefined, structured: StructuredContent): string {
+  const { report } = structured
+  if (!structured.hasAny) return output ?? ''
+  const parts: string[] = []
+  if (report.status !== undefined) {
+    let line = `[${REPORT_STATUS_LABELS[report.status]}]`
+    if (report.summary !== undefined) line += ` ${report.summary}`
+    parts.push(line)
+  } else if (report.summary !== undefined) {
+    parts.push(report.summary)
+  }
+  if (report.evidence !== undefined && report.evidence.length > 0) {
+    parts.push(`Evidence:\n${report.evidence.map(item => `- ${item}`).join('\n')}`)
+  }
+  if (report.nextSteps !== undefined && report.nextSteps.length > 0) {
+    parts.push(`Next steps:\n${report.nextSteps.map((step, index) => `${index + 1}. ${step}`).join('\n')}`)
+  }
+  if (report.blocker !== undefined) parts.push(`Blocker: ${report.blocker}`)
+  if (output !== undefined && output.length > 0) parts.push(`Note: ${output}`)
+  return parts.join('\n\n')
 }

@@ -24,6 +24,16 @@
     - id: llm
       name: '@deepseek-ai/dsh-llm'
 
+    # Host-wide model-slot admission: one shared FIFO budget (default 3) over
+    # every model call so a handful of concurrent local inference slots stay
+    # predictable. Ships in the shared core because subagents and workflows in
+    # every profile cross the same llm/stream chokepoint.
+    - id: llm-slots
+      name: '@deepseek-ai/dsh-llm-slots'
+      config:
+        enabled: true
+        capacity: 3
+
     - id: session
       name: '@deepseek-ai/dsh-session'
 
