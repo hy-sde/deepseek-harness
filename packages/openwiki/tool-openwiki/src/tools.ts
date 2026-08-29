@@ -90,7 +90,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
           ? { force: (args as { force: boolean }).force }
           : {}),
       }
-      return await requireManager().begin(input) as BeginView
+      return projectBegin(await requireManager().begin(input))
     },
   }))
 
@@ -136,7 +136,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     },
     async execute(args) {
       const a = args as SubmitPlanRequest & { runId: string }
-      return await requireManager().submitPlan({
+      const planned = await requireManager().submitPlan({
         runId: a.runId,
         pages: (a.pages ?? []).map(p => ({
           path: p.path,
@@ -148,6 +148,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
         })),
         ...(a.deletePages ? { deletePages: a.deletePages } : {}),
       }) as PlanView
+      return { ...planned, text: renderValue(planned) } as PlanView
     },
   }))
 
@@ -206,7 +207,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     },
     async execute(args) {
       const a = args as NextPageRequest
-      return await requireManager().nextPage(a) as NextView
+      return projectNext(await requireManager().nextPage(a))
     },
   }))
 
@@ -260,7 +261,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     },
     async execute(args) {
       const a = args as SubmitPageRequest
-      return await requireManager().submitPage({
+      const submitted = await requireManager().submitPage({
         runId: a.runId,
         jobId: a.jobId,
         claims: (a.claims ?? []).map(c => ({
@@ -269,6 +270,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
           evidence: c.evidence.map(e => ({ resource: e.resource })),
         })),
       }) as PageView
+      return { ...submitted, text: renderValue(submitted) } as PageView
     },
   }))
 
@@ -296,7 +298,8 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     },
     async execute(args) {
       const a = args as NextPageRequest
-      return await requireManager().finish(a) as FinishView
+      const finished = await requireManager().finish(a) as FinishView
+      return { ...finished, text: renderValue(finished) } as FinishView
     },
   }))
 }
@@ -305,6 +308,72 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
 function renderValue(value: unknown): string {
   if (value === null || value === undefined) return '{}'
   return JSON.stringify(value, null, 2)
+}
+
+/**
+ * Engine results leave `HostSessionManager` as `unknown` (the upstream
+ * transport-neutral contract), and their views carry fields beyond the tool's
+ * stable output schema. Each executor projects the engine view onto the
+ * declared schema shape and folds the full detail into `text`, so the
+ * model-readable summary stays complete while the structured fields stay
+ * exactly contract-bound.
+ */
+function projectBegin(raw: unknown): BeginView {
+  const view = (raw ?? {}) as Record<string, unknown>
+  const summary: Record<string, unknown> = {}
+  for (const key of [
+    'status', 'runId', 'root', 'mode', 'language', 'languageChanged',
+    'phase', 'resumed', 'lastUpdate', 'wikiGoal', 'changedPaths',
+    'pageUpdateWindows', 'claimIssues', 'completedPages', 'totalPages',
+  ]) {
+    if (view[key] !== undefined) summary[key] = view[key]
+  }
+  const status = typeof view.status === 'string' ? view.status : 'error'
+  return {
+    status,
+    text: renderValue(summary),
+    ...(typeof view.runId === 'string' ? { runId: view.runId } : {}),
+    ...(typeof view.mode === 'string' ? { mode: view.mode } : {}),
+    ...(typeof view.language === 'string' ? { language: view.language } : {}),
+    ...(typeof view.phase === 'string' ? { phase: view.phase } : {}),
+    ...(Array.isArray(view.changedPaths) ? { changedPaths: view.changedPaths.filter((p): p is string => typeof p === 'string') } : {}),
+    ...(Array.isArray(view.claimIssues) ? { claimIssues: view.claimIssues as JsonValue[] } : {}),
+  }
+}
+
+function projectNext(raw: unknown): NextView {
+  const view = (raw ?? {}) as Record<string, unknown>
+  if (view.status === 'complete' || typeof view.job !== 'object' || view.job === null) {
+    return { status: 'complete', text: renderValue(view) }
+  }
+  const job = view.job as Record<string, unknown>
+  const projected: NextView['job'] = {
+    ...(typeof job.id === 'string' ? { id: job.id } : {}),
+    ...(typeof job.path === 'string' ? { path: job.path } : {}),
+    ...(typeof job.title === 'string' ? { title: job.title } : {}),
+    ...(typeof job.purpose === 'string' ? { purpose: job.purpose } : {}),
+    ...(typeof job.mode === 'string' ? { mode: job.mode } : {}),
+    ...(typeof job.existing === 'boolean' ? { existing: job.existing } : {}),
+    ...(Array.isArray(job.instructions) ? { instructions: job.instructions.filter((s): s is string => typeof s === 'string') } : {}),
+    ...(Array.isArray(job.existingClaims)
+      ? {
+        existingClaims: job.existingClaims
+          .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
+          .map(c => ({
+            ...(typeof c.id === 'string' ? { id: c.id } : {}),
+            ...(typeof c.statement === 'string' ? { statement: c.statement } : {}),
+            ...(Array.isArray(c.evidence)
+              ? {
+                evidence: c.evidence
+                  .filter((e): e is Record<string, unknown> => typeof e === 'object' && e !== null)
+                  .map(e => ({ ...(typeof e.resource === 'string' ? { resource: e.resource } : {}) })),
+              }
+              : {}),
+          })),
+      }
+      : {}),
+  }
+  return { status: 'pending', job: projected, text: renderValue(view) }
 }
 
 /**
