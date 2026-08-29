@@ -820,7 +820,7 @@ Source: [`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-searc
 
 ### `grep`
 
-Search file contents with a ripgrep regular expression. Returns matching lines with line numbers, grouped by file. Returns the first 250 matches inline; a capped result reports where the complete match list was saved. Use read on a matched file for surrounding context.
+Search file contents with a ripgrep regular expression. Returns matching lines with line numbers, grouped by file, ranked so git-modified files come first. Returns the first 50 matches inline; a capped result returns a continuation cursor — pass it back unchanged (same pattern/path/include) to fetch the next page, or follow the spill locator for the complete result. Use read on a matched file for surrounding context.
 
 ```json
 {
@@ -837,6 +837,10 @@ Search file contents with a ripgrep regular expression. Returns matching lines w
     "include": {
       "type": "string",
       "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "Opaque continuation token returned by a capped previous result. Pass it back unchanged with the same pattern, path, and include to fetch the next page."
     }
   },
   "required": [

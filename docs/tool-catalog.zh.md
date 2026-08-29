@@ -807,7 +807,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
 
 ### `grep`
 
-使用 ripgrep 正则表达式搜索文件内容。返回带行号的匹配行，并按文件分组。前 250 条匹配会直接返回；结果达到上限时会报告完整匹配列表的保存位置。如需周边上下文，请对匹配的文件使用 read。
+使用 ripgrep 正则表达式搜索文件内容。返回带行号的匹配行，按文件分组，并优先排列 git 修改过的文件。前 50 条匹配会直接返回；结果达到上限时会返回延续 `cursor`——原样传回（相同的 pattern/path/include）以获取下一页，或按 spill locator 读取完整结果。如需周边上下文，请对匹配的文件使用 read。
 
 ```json
 {
@@ -824,6 +824,10 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
     "include": {
       "type": "string",
       "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "Opaque continuation token returned by a capped previous result. Pass it back unchanged with the same pattern, path, and include to fetch the next page."
     }
   },
   "required": [
@@ -834,7 +838,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
 
 来源：[`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-search/src/index.ts)
 
-glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。
+glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。另外，grep 的每次调用会做一次 `git status` 探测；在 git 仓库中，被修改文件会排到最前并用 ` [M in git]` 标注，非仓库工作目录则静默跳过。
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 

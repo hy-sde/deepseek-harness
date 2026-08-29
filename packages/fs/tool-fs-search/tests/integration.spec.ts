@@ -12,6 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, utimes, writeFile } from 'node:fs/promises'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -20,6 +21,32 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { TOOL_ABORTED_BEFORE_DISPATCH } from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import * as ToolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
+
+/**
+ * Whether a usable `git` binary exists on PATH — the git-aware-ranking
+ * integration test needs to initialize the fixture as a real repo, so it is
+ * skipped in environments without git (units cover the ranking logic).
+ */
+const gitAvailable = (() => {
+  try {
+    spawnSync('git', ['--version'], { timeout: 5000, stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+})()
+
+/** The git spawn environment for the fixture-repo integration test (identity-free). */
+const gitEnv = (dir: string): Record<string, string> => ({
+  ...process.env,
+  GIT_CONFIG_NOSYSTEM: '1',
+  GIT_CONFIG_GLOBAL: join(dir, '.gitconfig'),
+  HOME: dir,
+})
+
+function runGit(dir: string, args: string[]): void {
+  execFileSync('git', ['-C', dir, ...args], { env: gitEnv(dir), stdio: 'pipe' })
+}
 
 const testToolSignal = new AbortController().signal
 
@@ -156,6 +183,28 @@ describe('search tools over the real subprocess service + the packaged rg', () =
       const result = await call('grep', { pattern: 'x', path: 'no-such-dir' })
       expect(result.isError).toBe(true)
       expect(result.error).toMatchObject({ info: { code: 'SEARCH_FAILED' } })
+    })
+
+    it.skipIf(!gitAvailable)('ranks a git-dirty file first and annotates it [M in git]', async () => {
+      // Real git + real rg: initialize the fixture repo, commit everything,
+      // then modify one file so the git probe has a dirty path to rank first.
+      const dirtyFile = join('src', 'beta.ts')
+      runGit(dir, ['init', '-q'])
+      runGit(dir, ['add', '-A'])
+      runGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'init'])
+      await writeFile(join(dir, dirtyFile), 'export const beta = 2\n// TODO: just modified\n')
+      // beta.ts now has a TODO and is dirty; alpha.ts has a TODO and is clean —
+      // git-aware ranking must surface beta's group FIRST despite rg order.
+      const cleanFile = join('src', 'alpha.ts')
+      const result = await call('grep', { pattern: 'TODO' }, agent())
+      expect(result.isError).toBe(false)
+      const output = text(result)
+      const dirtyAt = output.indexOf(dirtyFile)
+      const cleanAt = output.indexOf(cleanFile)
+      expect(dirtyAt).toBeGreaterThanOrEqual(0)
+      expect(cleanAt).toBeGreaterThanOrEqual(0)
+      expect(dirtyAt).toBeLessThan(cleanAt)
+      expect(output).toContain(`${dirtyFile} [M in git]`)
     })
   })
 

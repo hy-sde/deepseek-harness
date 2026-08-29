@@ -992,7 +992,7 @@ describe('grep results', () => {
         { path: 'b.ts', lineNumber: 3, line: 'three' },
       ],
     })
-    expect(text(result)).toBe('Found 2 of 3 matches\n\na.ts\nLine 1: one\nLine 2: two\n\n(Full grep result stored at: /spill/grep-results.txt. Use the fake retrieval hint.)')
+    expect(text(result)).toBe('Found 2 of 3 matches\n\na.ts\nLine 1: one\nLine 2: two\n\n(Full grep result stored at: /spill/grep-results.txt. Use the fake retrieval hint. Continue with cursor="offset:2" for the next page.)')
     expect(spill?.saves[0]).toMatchObject({
       source: { toolName: 'grep', label: 'result' },
       suggestedName: 'grep-results.txt',
@@ -1042,7 +1042,7 @@ describe('grep results', () => {
         { path: 'b.ts', lineNumber: 2, line: 'two' },
       ],
     })
-    expect(text(result)).toBe('Found 1 of 2 matches\n\na.ts\nLine 1: one\n\n(The complete result could not be saved; narrow pattern, path, or include to see more.)')
+    expect(text(result)).toBe('Found 1 of 2 matches\n\na.ts\nLine 1: one\n\n(The complete result could not be saved. Continue with cursor="offset:1" for the next page.)')
     expect(spill?.saves).toHaveLength(0)
   })
 
@@ -1051,7 +1051,47 @@ describe('grep results', () => {
     subprocess.handler = () => runResult(`${matchLine('a.ts', 1, 'one')}\n${matchLine('a.ts', 2, 'two')}\n`)
     const result = await call(ctx, 'grep', { pattern: 'o' }, { agent: agent('/w') })
     expect(result.isError).toBe(false)
-    expect(text(result)).toBe('Found 1 of 2 matches\n\na.ts\nLine 1: one\n\n(The complete result could not be saved; narrow pattern, path, or include to see more.)')
+    expect(text(result)).toBe('Found 1 of 2 matches\n\na.ts\nLine 1: one\n\n(The complete result could not be saved. Continue with cursor="offset:1" for the next page.)')
+  })
+
+  it('pages a capped result with an opaque continuation cursor', async () => {
+    const { ctx, subprocess } = await setup({ config: { grepMaxMatches: 2 } })
+    subprocess.handler = () => runResult([
+      matchLine('a.ts', 1, 'one'),
+      matchLine('a.ts', 2, 'two'),
+      matchLine('b.ts', 3, 'three'),
+      matchLine('b.ts', 4, 'four'),
+      '',
+    ].join('\n'))
+    // Page 1: first two matches, truncation footer with the opaque cursor token.
+    const first = await call(ctx, 'grep', { pattern: 'e' }, { agent: agent('/w') })
+    expect(text(first)).toBe('Found 2 of 4 matches\n\na.ts\nLine 1: one\nLine 2: two\n\n(The complete result could not be saved. Continue with cursor="offset:2" for the next page.)')
+    // Page 2: same pattern plus the cursor — the next two matches, now complete.
+    const second = await call(ctx, 'grep', { pattern: 'e', cursor: 'offset:2' }, { agent: agent('/w') })
+    expect(text(second)).toBe('Found 2 of 4 matches (page 2 of 2)\n\nb.ts\nLine 3: three\nLine 4: four')
+  })
+
+  it('rejects a cursor that is not a continuation token', async () => {
+    const { ctx, subprocess } = await setup()
+    subprocess.handler = () => { throw new Error('must not spawn for an invalid cursor') }
+    const result = await call(ctx, 'grep', { pattern: 'x', cursor: 'fff_c1' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('cursor must be a continuation token returned by a previous grep result')
+    expect(subprocess.spawns).toHaveLength(0)
+  })
+
+  it('reports an empty tail page as No more matches', async () => {
+    const { ctx, subprocess } = await setup({ config: { grepMaxMatches: 2 } })
+    subprocess.handler = () => runResult([
+      matchLine('a.ts', 1, 'one'),
+      matchLine('a.ts', 2, 'two'),
+      matchLine('b.ts', 3, 'three'),
+      matchLine('b.ts', 4, 'four'),
+      '',
+    ].join('\n'))
+    const result = await call(ctx, 'grep', { pattern: 'e', cursor: 'offset:4' }, { agent: agent('/w') })
+    expect(result.isError).toBe(false)
+    expect(text(result)).toBe('No more matches in this result (page 3 of 2)')
   })
 
   it('validates arguments (empty pattern, blank path, bad include)', async () => {
@@ -1068,6 +1108,109 @@ describe('grep results', () => {
     subprocess.handler = () => runResult('', { exitCode: 1 })
     const result = await call(ctx, 'grep', { pattern: '  ', include: '*.{ts,tsx}' })
     expect(result.isError).toBe(false)
+  })
+})
+
+describe('git-aware ranking', () => {
+  it('parses porcelain v1 -z into a path → status map', () => {
+    const { parsePorcelainV1Z } = ToolFsSearch
+    // ' M  ' style: two status chars + space + path; renames emit a bare old path
+    // record after the XY record; untracked is '?? path'; paths may contain spaces.
+    const text = ' M src/dirty.ts\0A  staged.ts\0RM renamed.ts\0renamed-old.ts\0?? raw/notes with spaces.md\0'
+    expect(parsePorcelainV1Z(text)).toEqual(new Map([
+      ['src/dirty.ts', 'M'],
+      ['staged.ts', 'A'],
+      ['renamed.ts', 'RM'],
+      ['raw/notes with spaces.md', '??'],
+    ]))
+    expect(parsePorcelainV1Z('')).toEqual(new Map())
+  })
+
+  it('keeps export helper parity through the package namespace', () => {
+    expect(typeof ToolFsSearch.parsePorcelainV1Z).toBe('function')
+    expect(typeof ToolFsSearch.rankGrepMatchesByDirty).toBe('function')
+    expect(typeof ToolFsSearch.cursorToken).toBe('function')
+    expect(ToolFsSearch.cursorToken(42)).toBe('offset:42')
+  })
+
+  it('ranks git-dirty file matches first without disturbing within-file order', () => {
+    const { rankGrepMatchesByDirty } = ToolFsSearch
+    const matches = [
+      { path: 'src/clean.ts', lineNumber: 1, line: 'TODO' },
+      { path: 'src/dirty.ts', lineNumber: 2, line: 'TODO' },
+      { path: 'src/dirty.ts', lineNumber: 5, line: 'TODO too' },
+      { path: 'src/clean.ts', lineNumber: 9, line: 'TODO nine' },
+      { path: 'raw/notes.md', lineNumber: 3, line: 'TODO note' },
+    ]
+    const ranked = rankGrepMatchesByDirty(matches, new Map([['src/dirty.ts', 'M'], ['raw/notes.md', '??']]))
+    expect(ranked.map(m => m.path)).toEqual(['src/dirty.ts', 'src/dirty.ts', 'raw/notes.md', 'src/clean.ts', 'src/clean.ts'])
+    expect(ranked[0]).toMatchObject({ lineNumber: 2 })
+    expect(ranked[1]).toMatchObject({ lineNumber: 5 }) // within-file source order preserved
+  })
+
+  it('reorders matches and annotates dirty file headers in a real grep call', async () => {
+    const { ctx, subprocess } = await setup()
+    subprocess.handler = (spec) => {
+      if (spec.argv[0] === 'git') return runResult(' M src/dirty.ts\0?? raw/notes.md\0')
+      return runResult([
+        matchLine('src/clean.ts', 1, 'TODO'),
+        matchLine('src/dirty.ts', 2, 'TODO'),
+        matchLine('src/dirty.ts', 5, 'TODO too'),
+        matchLine('raw/notes.md', 3, 'TODO note'),
+        '',
+      ].join('\n'))
+    }
+    const result = await call(ctx, 'grep', { pattern: 'TODO' }, { agent: agent('/w') })
+    if (result.isError) throw new Error('expected grep success')
+    // Dirty files first, each annotated with its porcelain code.
+    expect(result.value).toEqual({
+      matches: [
+        { path: 'src/dirty.ts', lineNumber: 2, line: 'TODO' },
+        { path: 'src/dirty.ts', lineNumber: 5, line: 'TODO too' },
+        { path: 'raw/notes.md', lineNumber: 3, line: 'TODO note' },
+        { path: 'src/clean.ts', lineNumber: 1, line: 'TODO' },
+      ],
+      git: { 'src/dirty.ts': 'M', 'raw/notes.md': '??' },
+    })
+    expect(text(result)).toBe('Found 4 matches\n\nsrc/dirty.ts [M in git]\nLine 2: TODO\nLine 5: TODO too\n\nraw/notes.md [?? in git]\nLine 3: TODO note\n\nsrc/clean.ts\nLine 1: TODO')
+  })
+
+  it('keeps ripgrep output order untouched when the probe finds no dirty files', async () => {
+    const { ctx, subprocess } = await setup()
+    subprocess.handler = spec => spec.argv[0] === 'git' ? runResult('') : runResult([
+      matchLine('src/b.ts', 1, 'hit'),
+      matchLine('src/a.ts', 2, 'hit'),
+      '',
+    ].join('\n'))
+    const result = await call(ctx, 'grep', { pattern: 'hit' }, { agent: agent('/w') })
+    if (result.isError) throw new Error('expected grep success')
+    expect(result.value).toEqual({
+      matches: [
+        { path: 'src/b.ts', lineNumber: 1, line: 'hit' },
+        { path: 'src/a.ts', lineNumber: 2, line: 'hit' },
+      ],
+    })
+  })
+
+  it('skips ranking silently when the workdir is not a git repo (git exit 128)', async () => {
+    const { ctx, subprocess } = await setup()
+    subprocess.handler = spec => spec.argv[0] === 'git'
+      ? runResult('fatal: not a git repository', { exitCode: 128 })
+      : runResult(`${matchLine('src/a.ts', 1, 'hit')}\n`)
+    const result = await call(ctx, 'grep', { pattern: 'hit' }, { agent: agent('/w') })
+    expect(result.isError).toBe(false)
+    expect(text(result)).toBe('Found 1 match\n\nsrc/a.ts\nLine 1: hit')
+  })
+
+  it('grepGitRank: false skips the git probe entirely (one spawn per call)', async () => {
+    const { ctx, subprocess } = await setup({ config: { grepGitRank: false } })
+    subprocess.handler = (spec) => {
+      expect(spec.argv[0]).not.toBe('git')
+      return runResult(`${matchLine('src/a.ts', 1, 'hit')}\n`)
+    }
+    const result = await call(ctx, 'grep', { pattern: 'hit' }, { agent: agent('/w') })
+    expect(result.isError).toBe(false)
+    expect(subprocess.spawns).toHaveLength(1)
   })
 })
 
