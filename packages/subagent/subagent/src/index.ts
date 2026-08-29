@@ -34,8 +34,9 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import { scopeTarget } from '@deepseek-ai/dsh-scope'
 import type { Scoped } from '@deepseek-ai/dsh-scope'
+import z from '@deepseek-ai/schemastery'
 import { assertObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import type { ContentBlock, MessageId } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, GenerateOptions, MessageId, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type {
@@ -70,6 +71,16 @@ import { listChildren as listSubagentChildren, listDescendants as listSubagentDe
 import type { SubagentDescendantListEntry, SubagentListEntry } from './list-children.ts'
 import { snapshotSubagentDescriptor } from './descriptor.ts'
 import { subagentIdentityProjectionDefinition, subagentTimingProjectionDefinition } from './projection.ts'
+import { foldSubagentDecisions } from './decisions.ts'
+import type { SubagentDecisionEventData } from './decisions.ts'
+import {
+  diagnoseWedge,
+  isWedgeDecisionKey,
+  wedgeDecisionKey,
+  wedgeDecisionSummary,
+  WEDGE_DECISION_STATUS,
+} from './supervision.ts'
+import type { SupervisionConfig, WedgeProbe } from './supervision.ts'
 
 export * from './out-of-process.ts'
 export { AssistantOutputFold, finalAssistantOutput } from './assistant-output.ts'
@@ -120,7 +131,9 @@ export type { ChildComposition, DelegatedPolicyOverrides } from './child-agent.t
 export type {
   ContinuableStart,
   ContinuableStartSpec,
+  ContinuationManagerOptions,
   CoordinatorMessageSource,
+  SubagentDecisionsMessageSource,
   SubagentFollowupOptions,
   SubagentInterruptAuthority,
   SubagentReportDelivery,
@@ -132,6 +145,16 @@ export type { ContinuableSetupContribution } from './activation-setup-registry.t
 export type { SubagentDescendantListEntry, SubagentListEntry } from './list-children.ts'
 export type { SubagentRunEndInfo, SubagentRunInfo } from './types.ts'
 export type { SubagentIdentityProjection, SubagentTimingProjection } from './projection-types.ts'
+export type { SubagentDecisionEventData } from './decisions.ts'
+export { foldSubagentDecisions, isSubagentDecisionEvent } from './decisions.ts'
+export type { SupervisionConfig, WedgeProbe } from './supervision.ts'
+export {
+  diagnoseWedge,
+  isWedgeDecisionKey,
+  wedgeDecisionKey,
+  wedgeDecisionSummary,
+  WEDGE_DECISION_STATUS,
+} from './supervision.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -174,20 +197,71 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
+/** Config for the keyed open-decisions ledger and its counterpart systems. */
+export interface SubagentConfig {
+  /**
+   * Coalescing window for decision-shaped `next-step` reports (ms, default 150).
+   * A burst of reports within the window delivers ONE waking decision notice to
+   * the parent instead of one wake per report; `0` disables coalescing.
+   */
+  readonly wakeCoalesceMs?: number
+  /**
+   * Wedge supervision: no-progress threshold before a resident running child
+   * with no active model call is surfaced to its parent as a keyed decision
+   * (ms, default 15 minutes; `0` disables the interval).
+   */
+  readonly wedgeStaleMs?: number
+  /**
+   * Supervisor polling interval (ms, default 15 seconds). `0` disables the
+   * interval entirely (no wedge raising, no stale-decision re-notification).
+   */
+  readonly supervisorTickMs?: number
+  /**
+   * After a wedge decision is resolved, suppress re-raising the same child
+   * until this long passes with still no progress (ms, default 60 minutes).
+   */
+  readonly wedgeCoolDownMs?: number
+  /**
+   * Re-notify the parent once a decision stays open past this age (ms,
+   * default 30 minutes). `0` disables stale re-notification.
+   */
+  readonly staleDecisionNotifyMs?: number
+}
+
+const SUBAGENT_DEFAULTS = {
+  wakeCoalesceMs: 150,
+  wedgeStaleMs: 15 * 60 * 1000,
+  supervisorTickMs: 15 * 1000,
+  wedgeCoolDownMs: 60 * 60 * 1000,
+  staleDecisionNotifyMs: 30 * 60 * 1000,
+} as const
+
 /** Named provider registry with one-shot runs, durable discovery, and continuable-child operations. */
 export class SubagentRuntime extends Service {
+  static Config: z<SubagentConfig> = z.object({
+    wakeCoalesceMs: z.natural().default(SUBAGENT_DEFAULTS.wakeCoalesceMs),
+    wedgeStaleMs: z.natural().default(SUBAGENT_DEFAULTS.wedgeStaleMs),
+    supervisorTickMs: z.natural().default(SUBAGENT_DEFAULTS.supervisorTickMs),
+    wedgeCoolDownMs: z.natural().default(SUBAGENT_DEFAULTS.wedgeCoolDownMs),
+    staleDecisionNotifyMs: z.natural().default(SUBAGENT_DEFAULTS.staleDecisionNotifyMs),
+  })
+
+  private readonly config: Required<SubagentConfig>
   private providers = new Map<string, SubagentProvider>()
   private continuations: SubagentContinuationManager | undefined
   /** Deployment contributions composed into unpublished continuable children. */
   private readonly setupRegistry = new SubagentActivationSetupRegistry()
   /**
    * Child-reported decisions still awaiting an answer, keyed by parent session
-   * id → per-child stable key. In-process lifetime: a report opens a record,
-   * the parent's `resolveOpenDecision` closes it; a restart simply loses the
-   * ledger (open decisions mirror the child's own reports, which stay in the
-   * parent's transcript).
+   * id → per-child stable key. In-process projection of the DURABLE
+   * `subagent/decision` ledger: every mutation is appended to the parent
+   * session, so a restart rebuilds the same record set through rehydration.
    */
   private readonly openDecisions = new Map<string, Map<string, OpenDecision>>()
+  /** Parent session ids whose durable ledger was already folded this process. */
+  private readonly hydratedParents = new Set<string>()
+  /** Parent → decision key → last stale-notification epoch (in-memory only). */
+  private readonly staleNotifiedAt = new Map<string, Map<string, number>>()
   /**
    * The contained lifecycle-edge publisher. Built here because scoped dispatch
    * keys its carrier by this exact service instance, whose own context filter
@@ -195,14 +269,25 @@ export class SubagentRuntime extends Service {
    */
   private readonly emitLifecycle: LifecycleEmitter
 
-  constructor(ctx: Context) {
+  constructor(ctx: Context, config: SubagentConfig = {}) {
     super(ctx, 'subagents')
+    this.config = {
+      wakeCoalesceMs: config.wakeCoalesceMs ?? SUBAGENT_DEFAULTS.wakeCoalesceMs,
+      wedgeStaleMs: config.wedgeStaleMs ?? SUBAGENT_DEFAULTS.wedgeStaleMs,
+      supervisorTickMs: config.supervisorTickMs ?? SUBAGENT_DEFAULTS.supervisorTickMs,
+      wedgeCoolDownMs: config.wedgeCoolDownMs ?? SUBAGENT_DEFAULTS.wedgeCoolDownMs,
+      staleDecisionNotifyMs: config.staleDecisionNotifyMs ?? SUBAGENT_DEFAULTS.staleDecisionNotifyMs,
+    }
     this.emitLifecycle = createLifecycleEmitter(this.ctx, parent => scopeTarget(this, parent))
+    // Observe every model call crossing the gateway so the wedge supervisor knows
+    // which children are inside a live llm/stream (long prefills/thinking) versus
+    // stalled between calls. Same seam llm-slots admission uses; observation only.
+    ctx.on('llm/stream', (options, next) => this.superviseStream(options, next), { global: true })
     ctx.inject(['agents'], (childCtx: Context) => {
       const manager = new SubagentContinuationManager(childCtx, {
         prepareContinuable: (name, request) => this.prepareContinuable(name, request),
         observeActivation: (provider, childId, parent) => this.observeActivation(provider, childId, parent),
-      }, this.setupRegistry)
+      }, this.setupRegistry, { wakeCoalesceMs: this.config.wakeCoalesceMs })
       this.continuations = manager
       childCtx.effect(() => () => {
         /* v8 ignore else -- one injected binding owns the slot until its fiber disposes. */
@@ -213,6 +298,13 @@ export class SubagentRuntime extends Service {
       projectionCtx.sessionProjections.register(subagentTimingProjectionDefinition)
       projectionCtx.sessionProjections.register(subagentIdentityProjectionDefinition)
     })
+    if (this.config.supervisorTickMs > 0) {
+      ctx.effect(() => {
+        const timer = setInterval(() => this.runSupervision(Date.now()), this.config.supervisorTickMs)
+        timer.unref?.()
+        return () => clearInterval(timer)
+      }, 'subagents.supervision()')
+    }
   }
 
   /**
@@ -298,7 +390,8 @@ export class SubagentRuntime extends Service {
    * child's durable direct parent. Only `needs-decision`/`blocked` reports
    * with a normalized, non-empty `decisionKey` open a record; other statuses
    * are advisory and change nothing. Re-opening the same key refreshes its
-   * timestamp rather than duplicating it.
+   * timestamp rather than duplicating it. Every opened record is appended to
+   * the parent's durable log so restarts rehydrate it.
    */
   private recordOpenDecision(child: Agent, report: SubagentReportContent): void {
     if (report.status !== 'needs-decision' && report.status !== 'blocked') return
@@ -315,22 +408,91 @@ export class SubagentRuntime extends Service {
       summary: report.summary.trim(),
       openedAt: Date.now(),
     }
+    this.openLedgerRecord(parentId, entry)
+  }
+
+  /**
+   * Enter one open decision into the in-process projection and append its
+   * durable `open` mutation to the parent's session.
+   * @param parentId - the durable direct parent session id.
+   * @param entry - the decision record to open/refresh.
+   */
+  private openLedgerRecord(parentId: SessionId, entry: OpenDecision): void {
     let bucket = this.openDecisions.get(parentId.toString())
     if (bucket === undefined) {
       bucket = new Map()
       this.openDecisions.set(parentId.toString(), bucket)
     }
-    bucket.set(`${child.id}\u0000${key}`, entry)
+    bucket.set(`${entry.childId}\u0000${entry.key}`, entry)
+    this.appendDecisionEvent(parentId, {
+      phase: 'open',
+      childId: entry.childId.toString(),
+      key: entry.key,
+      status: entry.status,
+      summary: entry.summary,
+      label: entry.label,
+      ...entry.wedge === true ? { wedge: true as const } : {},
+      openedAt: entry.openedAt,
+    })
+  }
+
+  /**
+   * Best-effort durable append of one ledger mutation to a parent session.
+   * The in-process projection is authoritative for the live host; a failed
+   * append (absent session service, closing session) is logged and never
+   * throws into the report/answer path.
+   */
+  private appendDecisionEvent(parentId: SessionId, data: SubagentDecisionEventData): void {
+    try {
+      const session = this.ctx.get('sessions')?.get(parentId)
+      session?.append('subagent/decision', data)
+    } catch (error: unknown) {
+      this.ctx.logger.warn(`subagent decision ledger append failed for "${parentId}": ${String(error)}`)
+    }
+  }
+
+  /**
+   * Fold the parent's durable `subagent/decision` events into the in-process
+   * projection exactly once per parent per process. A restarted host rebuilds
+   * the ledger here; records already projected in-memory (this process opened
+   * them) win over the folded copy atomically. Absent the sessions service or
+   * the parent session, there is nothing to fold and hydration still settles.
+   * @param parentId - the durable parent session id to hydrate.
+   */
+  private ensureHydrated(parentId: SessionId): void {
+    const key = parentId.toString()
+    if (this.hydratedParents.has(key)) return
+    this.hydratedParents.add(key)
+    let session
+    try {
+      session = this.ctx.get('sessions')?.get(parentId)
+    } catch {
+      session = undefined
+    }
+    if (session === undefined) return
+    const folded = foldSubagentDecisions(session.events)
+    let bucket = this.openDecisions.get(key)
+    for (const [recordKey, entry] of folded) {
+      if (bucket !== undefined && bucket.has(recordKey)) continue // in-process wins
+      if (bucket === undefined) {
+        bucket = new Map()
+        this.openDecisions.set(key, bucket)
+      }
+      bucket.set(recordKey, entry)
+    }
   }
 
   /**
    * List every open decision a continuable child of `parent` has reported,
    * oldest first. Open decisions survive the child settling: an unanswered
-   * question the child asked remains owed.
+   * question the child asked remains owed. The durable ledger is folded into
+   * the projection on first list, so a restarted host reports the same
+   * records without a fresh child report.
    * @param parent - the exact live parent agent owning the children.
    * @returns chronological open-decision records (detached).
    */
   listOpenDecisions(parent: Agent): OpenDecision[] {
+    this.ensureHydrated(parent.id)
     const bucket = this.openDecisions.get(parent.id.toString())
     if (bucket === undefined) return []
     const entries: OpenDecision[] = [...bucket.values()]
@@ -341,22 +503,186 @@ export class SubagentRuntime extends Service {
   /**
    * Close one open decision after the parent answers it. Idempotent: an
    * unknown (already-resolved, never-opened, or malformed) key returns `false`
-   * without throwing.
+   * without throwing. Closing appends the durable `resolve` mutation; closing
+   * a supervisor-raised wedge decision also starts that child's re-raise
+   * cool-down.
    * @param parent - the exact live parent answering the decision.
    * @param childId - the reporting child's session id.
    * @param key - the decision key as reported (normalized before lookup).
    * @returns whether a record was actually closed.
    */
   resolveOpenDecision(parent: Agent, childId: SessionId, key: string): boolean {
+    this.ensureHydrated(parent.id)
     const normalized = normalizeDecisionKey(key)
     if (normalized.length === 0) return false
     const bucket = this.openDecisions.get(parent.id.toString())
     if (bucket === undefined) return false
-    const record = bucket.get(`${childId}\u0000${normalized}`)
+    const recordKey = `${childId}\u0000${normalized}`
+    const record = bucket.get(recordKey)
     if (record === undefined) return false
-    bucket.delete(`${childId}\u0000${normalized}`)
+    bucket.delete(recordKey)
     if (bucket.size === 0) this.openDecisions.delete(parent.id.toString())
+    this.appendDecisionEvent(parent.id, {
+      phase: 'resolve',
+      childId: childId.toString(),
+      key: normalized,
+      openedAt: record.openedAt,
+    })
+    if (isWedgeDecisionKey(normalized)) this.continuations?.markWedgeResolved(childId)
     return true
+  }
+
+  /**
+   * Wrap one `llm/stream` waterfall tail in stream-liveness observation: mark
+   * the owning child inside a live call (long prefills and thinking produce no
+   * interim events, so this is the wedge supervisor's false-positive guard),
+   * then relay the unchanged tail.
+   * @param options - the routed request.
+   * @param next - the remaining waterfall (admission, adapters).
+   * @returns the unchanged stream tail.
+   */
+  private async * superviseStream(
+    options: GenerateOptions,
+    next: () => AsyncIterable<StreamChunk>,
+  ): AsyncIterable<StreamChunk> {
+    const sessionId = options.sessionId
+    if (sessionId !== undefined && this.continuations !== undefined) {
+      this.continuations.noteStream(sessionId, true)
+    }
+    try {
+      yield* next()
+    } finally {
+      if (sessionId !== undefined && this.continuations !== undefined) {
+        this.continuations.noteStream(sessionId, false)
+      }
+    }
+  }
+
+  /**
+   * One supervision pass: raise wedge decisions for stalled children and
+   * re-notify stale unanswered decisions. Runs on the configured interval and
+   * is exposed for tests and operators. Never kills a child — it only opens
+   * (or refreshes) a keyed decision the parent answers exactly once.
+   * @param now - the pass's `Date.now()`; injectable for tests.
+   * @returns what this pass raised or re-notified, for operators and tests.
+   */
+  runSupervision(now: number = Date.now()): { wedges: WedgeProbe[]; staleNotified: number } {
+    const manager = this.continuations
+    const wedges: WedgeProbe[] = []
+    const slots = this.readModelSlots()
+    const config: SupervisionConfig = {
+      wedgeStaleMs: this.config.wedgeStaleMs,
+      wedgeCoolDownMs: this.config.wedgeCoolDownMs,
+      staleDecisionNotifyMs: this.config.staleDecisionNotifyMs,
+      staleDecisionReNotifyMs: this.config.wedgeCoolDownMs,
+    }
+    let staleNotified = 0
+    let wedgedChildren = 0
+    if (manager !== undefined) {
+      for (const probe of manager.probeActivations()) {
+        const verdict = diagnoseWedge(probe, now, config)
+        if (verdict.kind !== 'stale') continue
+        wedgedChildren += 1
+        if (probe.wedgeOutstanding) continue
+        if (probe.wedgeResolvedAt !== undefined && now - probe.wedgeResolvedAt < config.wedgeCoolDownMs) {
+          continue // parent answered recently; cool-down
+        }
+        this.raiseWedgeDecision(probe, verdict.idleForMs, slots)
+        wedges.push(probe)
+      }
+    }
+    if (this.config.staleDecisionNotifyMs > 0) {
+      for (const [parentKey, bucket] of [...this.openDecisions]) {
+        const parentId = parentKey as unknown as SessionId
+        const parent = this.ctx.agents.get(parentId)
+        if (parent === undefined) continue
+        for (const entry of bucket.values()) {
+          if (now - entry.openedAt < this.config.staleDecisionNotifyMs) continue
+          const notified = this.staleNotifiedAt.get(parentKey)?.get(entry.key)
+          if (notified !== undefined && now - notified < this.config.wedgeCoolDownMs) continue
+          this.notifyStaleDecision(parent, entry)
+          let map = this.staleNotifiedAt.get(parentKey)
+          if (map === undefined) {
+            map = new Map()
+            this.staleNotifiedAt.set(parentKey, map)
+          }
+          map.set(entry.key, now)
+          staleNotified += 1
+        }
+      }
+    }
+    if (wedgedChildren > 0) {
+      this.ctx.logger.warn(`subagent supervision: ${wedgedChildren} stalled child(ren); raised ${wedges.length} wedge decision(s)`)
+    }
+    return { wedges, staleNotified }
+  }
+
+  /** Snapshot the host model-slot gate for admission-aware wedge summaries. */
+  private readModelSlots(): { running: number; waiting: number; capacity: number } | undefined {
+    try {
+      const slots = this.ctx.get('modelSlots') as { stats(): { running: number; waiting: number; capacity: number } } | undefined
+      return slots?.stats()
+    } catch {
+      return undefined
+    }
+  }
+
+  /**
+   * Open a wedge decision for one stalled child through the shared keyed
+   * protocol and wake its parent with the raise. The decision's
+   * `wedge:<childId>` key lets the parent close it exactly once.
+   * @param probe - the stalled child's liveness snapshot.
+   * @param idleForMs - measured quiet duration.
+   * @param slots - optional host model-slot snapshot for the summary.
+   */
+  private raiseWedgeDecision(
+    probe: WedgeProbe,
+    idleForMs: number,
+    slots?: { running: number; waiting: number; capacity: number } | undefined,
+  ): void {
+    const childId = probe.childId as unknown as SessionId
+    const parentId = probe.parentSession as unknown as SessionId
+    const entry: OpenDecision = {
+      childId,
+      key: wedgeDecisionKey(probe.childId),
+      label: probe.label,
+      status: WEDGE_DECISION_STATUS,
+      summary: wedgeDecisionSummary(probe, idleForMs, slots),
+      openedAt: Date.now(),
+      wedge: true,
+    }
+    this.openLedgerRecord(parentId, entry)
+    this.continuations?.markWedgeOutstanding(childId)
+    const parent = this.ctx.agents.get(parentId)
+    if (parent !== undefined) {
+      this.continuations?.notifySupervisorNotice(
+        parent,
+        [{ type: 'text', text: entry.summary }],
+        `subagent ${probe.childId} appears stalled`,
+      )
+    }
+  }
+
+  /** Injective the parent's attention to one stale unanswered decision. */
+  private notifyStaleDecision(parent: Agent, entry: OpenDecision): void {
+    this.continuations?.notifySupervisorNotice(
+      parent,
+      [{
+        type: 'text',
+        text: `Subagent decision "${entry.key}" from ${entry.childId} has been open since `
+          + `${new Date(entry.openedAt).toISOString()} and still awaits an answer: ${entry.summary}`,
+      }],
+      `decision "${entry.key}" still open`,
+    )
+  }
+
+  /**
+   * Flush any pending decision wakes for one parent immediately. Test/ops
+   * hook: normally the coalescing debounce fires on its own timer.
+   * @param parentId - the parent session whose queued wake to flush.
+   */
+  flushDecisionWakes(parentId: SessionId): void {
+    this.continuations?.flushDecisionWake(parentId)
   }
 
   /**

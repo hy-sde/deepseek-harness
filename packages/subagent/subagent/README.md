@@ -109,6 +109,20 @@ The model-facing tool collects synchronously by default: it awaits the child res
 
 Continuable Activations await a best-effort final session flush without treating listener participation as durability confirmation. One-shot runs retain best-effort session checkpointing, so a completed one-shot child is discoverable after disposal only when its session actually reached persistence; the service does not invent a catalog entry from Task history when that checkpoint is absent.
 
+## Configuration
+
+`SubagentRuntime` accepts these service-config keys on its plugin row:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `wakeCoalesceMs` | `150` | Coalescing window for decision-shaped `next-step` reports: a burst within the window yields ONE waking decision notice to the parent instead of one wake per report. `0` disables coalescing (immediate per-report wakes). |
+| `wedgeStaleMs` | `900000` | No-progress threshold before a resident running child with no active model call is surfaced to its parent as a keyed `wedge:<childId>` decision (the parent answers it to acknowledge, and interrupts separately to stop the child). |
+| `supervisorTickMs` | `15000` | Polling interval for the wedge supervisor and stale-decision re-notification. `0` disables the interval (no wedge raising, no re-notification). |
+| `wedgeCoolDownMs` | `3600000` | After a wedge decision is resolved, suppress re-raising the same child until this long passes with still no progress (ms). |
+| `staleDecisionNotifyMs` | `1800000` | Re-notify the parent once a decision stays open past this age (ms). `0` disables stale re-notification. |
+
+The open-decisions ledger is durable: every `open`/`resolve` mutation is appended to the parent session as a log-only `subagent/decision` event, and the projection rehydrates from the parent's log on boot/resume, so `pending_decisions` stays correct across host restarts. A child inside a live model call (long prefill or thinking, or waiting in the model-slot queue) is never wedged: the supervisor ignores it while its `sessionId` is in an active `llm/stream`.
+
 ## Model Experience
 
 ### Settlement notice

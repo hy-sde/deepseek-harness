@@ -182,6 +182,10 @@ export function apply(ctx: Context): void {
                 status: { type: 'string', required: true },
                 summary: { type: 'string', required: true },
                 opened_at: { type: 'number', required: true },
+                wedge: {
+                  type: 'boolean',
+                  description: 'True when the supervision runtime raised this decision because the child appeared stalled; answer it to acknowledge, interrupt the child to stop it.',
+                },
               },
             },
             required: true,
@@ -215,6 +219,7 @@ export function apply(ctx: Context): void {
           status: entry.status,
           summary: entry.summary,
           opened_at: entry.openedAt,
+          ...entry.wedge === true ? { wedge: true } : {},
         })),
       }
     },

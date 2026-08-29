@@ -38,6 +38,8 @@ import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import type { ToolRestriction } from '@deepseek-ai/dsh-tools'
 import { foldSubagentDescriptor, snapshotSubagentDescriptor } from './descriptor.ts'
 import type { SubagentDescriptorData } from './descriptor.ts'
+import type { WedgeProbe } from './supervision.ts'
+import { isWedgeDecisionKey } from './supervision.ts'
 import {
   appendDelegatedPolicyOverrides,
   applyChildComposition,
@@ -56,6 +58,7 @@ import type {
   SubagentResult,
   SubagentStartRequest,
 } from './types.ts'
+import { normalizeDecisionKey } from './types.ts'
 import type { ActivationObserver, ActivationTerminal } from './lifecycle.ts'
 import { SubagentError } from './error.ts'
 import type SubagentActivationSetupRegistry from './activation-setup-registry.ts'
@@ -79,7 +82,7 @@ export interface SubagentReportMessageSource {
 }
 
 /**
- * Durable attribution for the runtime's own account of a continuable child
+ * Durable attribution for the manager's own account of a continuable child
  * settling. Deliberately a different kind from
  * {@link SubagentReportMessageSource}: a report is content the child chose,
  * while this message is the manager stating what became of the child, and a
@@ -95,16 +98,47 @@ export interface SubagentSettledMessageSource {
   readonly senderSessionId: SessionId
 }
 
+/**
+ * Durable attribution for the manager's coalesced "children await decisions"
+ * wake. Built only when a burst of decision-shaped reports shares one debounce
+ * window; the wake inside it lists each pending child and decision key.
+ */
+export interface SubagentDecisionsMessageSource {
+  readonly kind: 'subagent-decisions'
+  /** A runtime account shown without expanding the row (`notice` context form). */
+  readonly form: 'notice'
+  /** One-line account of how many decisions await an answer. */
+  readonly summary: string
+  /** Session ids of the children whose decisions the wake lists. */
+  readonly childIds: readonly SessionId[]
+}
+
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
     coordinator: CoordinatorMessageSource
     'subagent-report': SubagentReportMessageSource
     'subagent-settled': SubagentSettledMessageSource
+    'subagent-decisions': SubagentDecisionsMessageSource
   }
 }
 
 /** Deployment scheduling policy for accepted child reports. */
 export type SubagentReportDelivery = 'quiet' | 'next-step'
+
+/**
+ * Tunables for the continuation manager's report scheduling and liveness
+ * observation. Defaults make the service configurable without changing the
+ * typed surface.
+ */
+export interface ContinuationManagerOptions {
+  /**
+   * Coalescing window for decision-shaped `next-step` reports (ms). Reports
+   * arriving within the window from the same parent burst deliver ONE waking
+   * decision notice listing every pending decision; `0` delivers each report
+   * as its own wake (the pre-coalescing behavior).
+   */
+  readonly wakeCoalesceMs?: number
+}
 
 /** Options for one continuable child's report to its direct parent. */
 export interface SubagentReportOptions {
@@ -256,6 +290,33 @@ interface Activation {
   announced: boolean
   /** Renewed whenever a settlement watcher must re-observe quiescence. */
   poke: PromiseWithResolvers<void>
+  /**
+   * Last observed progress (epoch ms): any session append, inbox/status
+   * transition, or `llm/stream` entry. Signal for the wedge supervisor's
+   * no-progress threshold.
+   */
+  lastProgress: number
+  /** Whether this child is inside a live `llm/stream` call right now. */
+  activeStream: boolean
+  /** Whether a wedge decision for this child is currently outstanding. */
+  wedgeOutstanding: boolean
+  /** Epoch ms when the parent last resolved this child's wedge decision. */
+  wedgeResolvedAt: number | undefined
+}
+
+/** One pending decision report queued for a coalesced parent wake. */
+interface CoalescedDecisionEntry {
+  readonly childId: SessionId
+  readonly key: string
+  readonly status: 'needs-decision' | 'blocked'
+  readonly summary: string
+  label: string
+}
+
+/** The per-parent debounce state for decision wakes. */
+interface DecisionWakeQueue {
+  timer: ReturnType<typeof setTimeout> | undefined
+  entries: CoalescedDecisionEntry[]
 }
 
 /** Inputs shared by fresh and resumed Activation materialization. */
@@ -335,6 +396,24 @@ type SettlementAttempt =
   | { readonly settling: false }
   | { readonly settling: true; readonly done: Promise<void> }
 
+/**
+ * Extract the coalescible decision shape from a structured report, or
+ * `undefined` when the report does not open a decision (wrong status, or
+ * missing key/summary) and must keep the immediate per-report wake.
+ */
+function decisionShape(
+  report: SubagentReportContent | undefined,
+): { key: string; status: 'needs-decision' | 'blocked'; summary: string } | undefined {
+  if (report === undefined) return undefined
+  if (report.status !== 'needs-decision' && report.status !== 'blocked') return undefined
+  if (typeof report.decisionKey !== 'string') return undefined
+  const key = normalizeDecisionKey(report.decisionKey)
+  if (key.length === 0 || typeof report.summary !== 'string' || report.summary.trim().length === 0) {
+    return undefined
+  }
+  return { key, status: report.status, summary: report.summary.trim() }
+}
+
 /** Serialize each durable child's delivery, release, and disposal. */
 class ChildLock {
   private tails = new Map<SessionId, Promise<unknown>>()
@@ -380,13 +459,19 @@ export class SubagentContinuationManager {
    * poisoning a later same-id replacement.
    */
   private readonly closingScopes = new Map<Agent, Set<Agent>>()
+  /** Per-parent defensed decision wakes (parent session id → pending queue). */
+  private readonly wakeQueues = new Map<SessionId, DecisionWakeQueue>()
+  /** The coalescing window for decision-shaped next-step reports (ms). */
+  private readonly wakeCoalesceMs: number
   private draining = false
 
   constructor(
     private readonly ctx: Context,
     private readonly host: ContinuationHost,
     private readonly setupRegistry: SubagentActivationSetupRegistry,
+    options: ContinuationManagerOptions = {},
   ) {
+    this.wakeCoalesceMs = options.wakeCoalesceMs ?? 0
     // Ordinary Cordis owner effects unwind in reverse registration order, which
     // cannot express the dynamic child graph. Register the private scope's
     // structural disposer FIRST and the drain SECOND, so reverse unwind invokes
@@ -628,7 +713,7 @@ export class SubagentContinuationManager {
     this.assertAdmitting(child)
     const activation = this.authorizeReporter(child)
     const parent = this.resolveReportParent(child)
-    return this.deliverReport(activation, parent, content, options.delivery)
+    return this.deliverReport(activation, parent, content, options.delivery, options.report)
   }
 
   /** Authorize only the exact Agent of one resident Activation. */
@@ -665,12 +750,20 @@ export class SubagentContinuationManager {
     return parent
   }
 
-  /** Deliver one framed report through the selected parent scheduling preset. */
+  /**
+   * Deliver one framed report through the selected parent scheduling preset.
+   * A decision-shaped report (`needs-decision`/`blocked` with a non-empty key
+   * and summary) under `next-step` delivery delivers its content immediately
+   * (quiet — durably accepted, non-waking) and enters the parent's decision
+   * wake coalescer: one waking notice per burst, listed at the end of the
+   * coalescing window. Other reports keep the immediate per-report wake.
+   */
   private deliverReport(
     activation: Activation,
     parent: Agent,
     content: ContentBlock[],
     delivery: SubagentReportDelivery,
+    report?: SubagentReportContent,
   ): MessageId {
     const message = createUserMessage({
       content: [
@@ -683,12 +776,216 @@ export class SubagentContinuationManager {
         senderSessionId: activation.childId,
       },
     })
+    const decision = decisionShape(report)
+    if (delivery === 'next-step' && decision !== undefined) {
+      // Content lands immediately and durably; only the WAKE is coalesced.
+      this.sendReport(parent, message, 'quiet')
+      this.coalesceDecisionWake(parent, activation.childId, decision)
+      return message.id
+    }
     if (delivery === 'next-step') {
       this.sendWaking(parent, message, () => { this.sendReport(parent, message, delivery) })
     } else {
       this.sendReport(parent, message, delivery)
     }
     return message.id
+  }
+
+  /**
+   * Enter one decision-shaped report into the parent's coalescer: record the
+   * pending decision and (re)arm the debounce timer. Firing delivers ONE
+   * waking notice listing every decision that landed inside the window.
+   * @param parent - the live parent receiving the coalesced wake.
+   * @param childId - the reporting child's session id.
+   * @param decision - the report's decision shape (already validated).
+   */
+  private coalesceDecisionWake(
+    parent: Agent,
+    childId: SessionId,
+    decision: { key: string; status: 'needs-decision' | 'blocked'; summary: string },
+  ): void {
+    let queue = this.wakeQueues.get(parent.id)
+    if (queue === undefined) {
+      queue = { timer: undefined, entries: [] }
+      this.wakeQueues.set(parent.id, queue)
+    }
+    const child = this.ctx.agents.get(childId)
+    queue.entries.push({
+      childId,
+      key: decision.key,
+      status: decision.status,
+      summary: decision.summary,
+      label: child?.session.header.agentPreset ?? 'subagent',
+    })
+    if (queue.timer !== undefined) clearTimeout(queue.timer)
+    if (this.wakeCoalesceMs <= 0) {
+      this.flushDecisionWake(parent.id)
+      return
+    }
+    queue.timer = setTimeout(() => this.flushDecisionWake(parent.id), this.wakeCoalesceMs)
+  }
+
+  /**
+   * Flush one parent's pending decision wake immediately (timer fire, explicit
+   * test/ops flush, or the zero-window path). Builds a single waking notice
+   * listing every queued decision and steering the parent at its nearest step
+   * boundary. A parent that left the registry while the debounce was pending
+   * swallows the wake silently — the decision records themselves are durable.
+   * @param parentId - the parent session whose queued wake to flush.
+   */
+  flushDecisionWake(parentId: SessionId): void {
+    const queue = this.wakeQueues.get(parentId)
+    this.wakeQueues.delete(parentId)
+    if (queue === undefined || queue.entries.length === 0) return
+    if (queue.timer !== undefined) clearTimeout(queue.timer)
+    const parent = this.ctx.agents.get(parentId)
+    if (parent === undefined) return
+    const entries = queue.entries
+    const childIds = entries.map(entry => entry.childId).filter((id, index, all) => all.indexOf(id) === index)
+    const content: ContentBlock[] = [
+      {
+        type: 'text',
+        text: `${entries.length} background subagent decision${entries.length === 1 ? '' : 's'} await an answer:`,
+      },
+      ...entries.map(entry => ({
+        type: 'text' as const,
+        text: `• ${entry.childId} (${entry.label}) [${entry.status}] "${entry.key}": ${entry.summary}`,
+      })),
+      { type: 'text', text: 'Answer each key exactly once with send_message + resolve_decision_key.' },
+    ]
+    const message = createUserMessage({
+      content,
+      source: {
+        kind: 'subagent-decisions' as const,
+        form: 'notice' as const,
+        summary: `${entries.length} subagent decision${entries.length === 1 ? '' : 's'} await an answer`,
+        childIds,
+      },
+    })
+    try {
+      this.sendWaking(parent, message, () => { this.sendReport(parent, message, 'next-step') })
+    } catch {
+      // The parent left the registry mid-debounce; the decision records keep
+      // the question open for its next live wake.
+    }
+  }
+
+  /** Flush every pending decision wake (manager drain). */
+  private flushAllDecisionWakes(): void {
+    for (const parentId of [...this.wakeQueues.keys()]) this.flushDecisionWake(parentId)
+  }
+
+  /**
+   * Mark one durable child as having made progress, resetting the wedge
+   * supervisor's no-progress window and any outstanding wedge record.
+   * @param activation - the Activation to refresh.
+   */
+  private recordActivity(activation: Activation): void {
+    activation.lastProgress = Date.now()
+    activation.wedgeOutstanding = false
+    activation.wedgeResolvedAt = undefined
+  }
+
+  /**
+   * Report whether a durable child is inside a live `llm/stream` call. Entering
+   * a stream is itself progress (long prefills and thinking produce no interim
+   * events); leaving one marks the boundary. The manager's own ctx listener is
+   * fed by the service's global `llm/stream` observer.
+   * @param childId - the durable child session id.
+   * @param active - whether the child's stream call is currently live.
+   */
+  noteStream(childId: SessionId, active: boolean): void {
+    const activation = this.activations.get(childId)
+    if (activation === undefined || activation.disposal !== undefined) return
+    if (active) {
+      activation.activeStream = true
+      this.recordActivity(activation)
+    } else {
+      activation.activeStream = false
+      activation.lastProgress = Date.now()
+      if (!activation.wedgeOutstanding) activation.wedgeResolvedAt = undefined
+    }
+  }
+
+  /**
+   * Record that the parent resolved this child's wedge decision, starting the
+   * re-raise cool-down until the next no-progress verdict.
+   * @param childId - the wedged child whose decision was resolved.
+   */
+  markWedgeResolved(childId: SessionId): void {
+    const activation = this.activations.get(childId)
+    if (activation === undefined) return
+    activation.wedgeOutstanding = false
+    activation.wedgeResolvedAt = Date.now()
+  }
+
+  /**
+   * Mark the supervisor's wedge decision for this child as outstanding, so
+   * probes do not re-raise it until the parent resolves it or activity returns.
+   * @param childId - the stalled child whose wedge decision was raised.
+   */
+  markWedgeOutstanding(childId: SessionId): void {
+    const activation = this.activations.get(childId)
+    if (activation === undefined) return
+    activation.wedgeOutstanding = true
+    activation.wedgeResolvedAt = undefined
+  }
+
+  /**
+   * Detached per-child liveness snapshots for the wedge supervisor. The
+   * supervisor judges these pure records; it never touches the Activations.
+   * @returns one {@link WedgeProbe} per resident Activation, in map order.
+   */
+  probeActivations(): WedgeProbe[] {
+    const probes: WedgeProbe[] = []
+    for (const activation of this.activations.values()) {
+      if (activation.disposal !== undefined) continue
+      probes.push({
+        childId: activation.childId.toString(),
+        parentSession: activation.parentSession.toString(),
+        label: activation.handle.agent.session.header.agentPreset ?? 'subagent',
+        lastProgress: activation.lastProgress,
+        activeStream: activation.activeStream,
+        running: activation.handle.agent.status === 'running',
+        wedgeOutstanding: activation.wedgeOutstanding,
+        ...activation.wedgeResolvedAt !== undefined ? { wedgeResolvedAt: activation.wedgeResolvedAt } : {},
+      })
+    }
+    return probes
+  }
+
+  /**
+   * Wake one live parent with a runtime-generated notice (wedge escalation,
+   * stale-decision re-notification). Uses the same waking send path as reports,
+   * so a continuation-managed parent's settlement accounting sees the wake.
+   * @param parent - the exact live parent to wake.
+   * @param content - the notice content.
+   * @param summary - the notice's one-line account.
+   */
+  notifySupervisorNotice(
+    parent: Agent,
+    content: ContentBlock[],
+    summary: string,
+  ): void {
+    const message = createUserMessage({
+      content,
+      source: {
+        kind: 'subagent-decisions' as const,
+        form: 'notice' as const,
+        summary,
+        childIds: [],
+      },
+    })
+    try {
+      this.sendWaking(parent, message, () => { this.sendReport(parent, message, 'next-step') })
+    } catch {
+      // Parent not live at notice time; the decision records stay durable.
+    }
+  }
+
+  /** Whether a resolved key belongs to this manager's wedge protocol. */
+  isWedgeKey(key: string): boolean {
+    return isWedgeDecisionKey(key)
   }
 
   /**
@@ -745,6 +1042,10 @@ export class SubagentContinuationManager {
     // already past that cutoff remain tracked until their handle is installed
     // or rollback completes, producing a stable forest for the later snapshot.
     this.draining = true
+    // Deliver any decision wakes still inside their coalescing window before
+    // teardown advances; a parent whose debounce never fired would lose the
+    // wake while the decision records stay durable.
+    this.flushAllDecisionWakes()
     await Promise.all([...this.materializations].map(materialization => materialization.settled))
     // Snapshot roots after closing admission: a root is an Activation no live
     // Activation owns, so disposing roots recurses child-first into the forest.
@@ -1112,6 +1413,10 @@ export class SubagentContinuationManager {
       accepted: new Set(),
       announced: false,
       poke: Promise.withResolvers<void>(),
+      lastProgress: Date.now(),
+      activeStream: false,
+      wedgeOutstanding: false,
+      wedgeResolvedAt: undefined,
     }
     // After transfer, any failure must dispose the created handle, remove the
     // Activation, and roll back parent ownership before rejecting.
@@ -1129,10 +1434,14 @@ export class SubagentContinuationManager {
         /* v8 ignore next -- a claim of an id this manager never admitted needs
          * another sender on the same child, which no current path allows. */
         if (activation.accepted.delete(message.id)) this.wake(activation)
+        this.recordActivity(activation)
       })
       handle.agent.ctx.on('agent/inbox/discarded', ({ message }) => {
         if (activation.accepted.delete(message.id)) this.wake(activation)
+        this.recordActivity(activation)
       })
+      handle.agent.ctx.on('agent/inbox/inserted', () => this.recordActivity(activation))
+      handle.agent.ctx.on('agent/status', () => this.recordActivity(activation))
       // Agent creation committed setup at its publication boundary;
       // revocations from here on are immediate live revocation.
       // Publish the start edge before any turn can run, so observers see this

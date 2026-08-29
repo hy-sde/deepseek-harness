@@ -111,6 +111,20 @@ subagent seam 允许一个 agent（智能体）通过具名提供方把工作委
 
 可继续 Activation 会等待 best-effort 的最终会话 flush，但不会把 listener 参与视为持久性确认。一次性运行保留尽力执行的会话检查点，因此已完成的一次性 child 只有在其会话确实进入持久化存储时，才可在 dispose 后继续被发现；如果该检查点缺失，服务不会根据 Task 历史虚构目录条目。
 
+## 配置
+
+`SubagentRuntime` 在其插件行上接受以下服务配置键：
+
+| 键 | 默认值 | 含义 |
+|---|---|---|
+| `wakeCoalesceMs` | `150` | 面向决策形态 `next-step` 报告的合并窗口：窗口内的一批报告只向父 agent 投递一次唤醒型决策通知，而非每条报告一次。`0` 关闭合并（每条报告立即唤醒）。 |
+| `wedgeStaleMs` | `900000` | 驻留的 running child 在无活动模型调用时的无进展阈值：超过后以 `wedge:<childId>` 键向父 agent 提出决策（父 agent 应答以示确认，另以 interrupt 停止该 child）。 |
+| `supervisorTickMs` | `15000` | 楔子监督与陈旧决策再通知的轮询间隔。`0` 关闭该间隔（不提出楔子、不再通知）。 |
+| `wedgeCoolDownMs` | `3600000` | 楔子决策被应答后，若该 child 仍无进展，经过此时长前不再重复提出（毫秒）。 |
+| `staleDecisionNotifyMs` | `1800000` | 决策打开超过此时长后向父 agent 再通知（毫秒）。`0` 关闭陈旧再通知。 |
+
+开放决策账本可持久化：每次 `open`/`resolve` 变更都以仅日志的 `subagent/decision` 事件追加到父会话，投影在启动/恢复时从父会话日志重新水合，因此 `pending_decisions` 在主机重启后仍然正确。处于活动模型调用中的 child（长 prefill 或思考，或正排队等待模型槽位）绝不会被误判为楔子：只要其 `sessionId` 处于活动的 `llm/stream`，监督器就忽略它。
+
 ## 模型体验
 
 <a id="settlement-notice"></a>

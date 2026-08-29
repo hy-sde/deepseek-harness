@@ -695,6 +695,22 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 ### `subagent/*`
 
+<a id="subagentdecision--log-only"></a>
+
+#### `subagent/decision` — log-only
+
+```ts persistence-catalog
+/**
+ * One durable mutation of the keyed open-decisions ledger, appended to the
+ * PARENT session by the owning subagent runtime (and its wedge supervisor).
+ * `open` records or refreshes an unanswered decision; `resolve` closes it.
+ * Log-only: no `surfaceOp`, never part of derived model history.
+ */
+'subagent/decision': SubagentDecisionEventData
+```
+
+来源：[`packages/subagent/subagent/src/decisions.ts:32`](../packages/subagent/subagent/src/decisions.ts)
+
 <a id="subagentdescriptor--log-only"></a>
 
 #### `subagent/descriptor` — log-only
