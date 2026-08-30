@@ -1,6 +1,6 @@
 /**
  * Typed wiki API face over the mounted `ctx.remote.wiki` namespace. Keeps every
- * wire call in one place (page list, page read, search, upsert, remove,
+ * wire call in one place (page list, page read, search, upsert, delete,
  * server) and converts the Remote result envelope into plain values or Errors
  * the store can surface. All shapes come from the controller's `./types`
  * export, so no host package leaks into this browser bundle.
@@ -14,8 +14,8 @@ import type {
   WikiPageRow,
   WikiPropertyRow,
   WikiQueryRequest,
-  WikiRemoveRequest,
-  WikiRemoveValue,
+  WikiDeleteRequest,
+  WikiDeleteValue,
   WikiSearchItem,
   WikiSearchRequest,
   WikiServerRequest,
@@ -112,8 +112,8 @@ export class WikiClient {
    * @param request - entity selector.
    * @returns the acknowledgement.
    */
-  remove(request: WikiRemoveRequest): Promise<WikiRemoveValue> {
-    return unwrap(this.wiki.remove(request))
+  remove(request: WikiDeleteRequest): Promise<WikiDeleteValue> {
+    return unwrap(this.wiki.delete(request))
   }
 
   /**

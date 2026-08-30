@@ -22,7 +22,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-在 web 组合中与 graph seam 及客户端 UI（[dsh-client-ui-wiki](../../client/ui-wiki/README.zh.md)）一起挂载本包。每个 Remote 方法与 `ctx.wikiGraph` 的一项能力一一对应：`wiki.listPages` / `wiki.getPage`（页面行与带反向链接的块树）、`wiki.listTags` / `wiki.listProperties`、`wiki.search`（文本搜索）、`wiki.query`（原始 Datalog 行）、`wiki.upsert` / `wiki.remove`（变更），以及 `wiki.server`（图/服务器生命周期状态）。值形状在此声明，因此浏览器端永远不依赖 logseq-graph 的线路类型。
+在 web 组合中与 graph seam 及客户端 UI（[dsh-client-ui-wiki](../../client/ui-wiki/README.zh.md)）一起挂载本包。每个 Remote 方法与 `ctx.wikiGraph` 的一项能力一一对应：`wiki.listPages` / `wiki.getPage`（页面行与带反向链接的块树）、`wiki.listTags` / `wiki.listProperties`、`wiki.search`（文本搜索）、`wiki.query`（原始 Datalog 行）、`wiki.upsert` / `wiki.delete`（变更），以及 `wiki.server`（图/服务器生命周期状态）。值形状在此声明，因此浏览器端永远不依赖 logseq-graph 的线路类型。
 
 -----
 

@@ -3396,8 +3396,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'an acknowledgement; `dryRun` returns what would be run.',
       },
       {
-        signature: '@Remote async remove(request: WikiRemoveRequest): Promise<WikiRemoveValue>',
-        description: 'Remove a page/block/tag/property. Destruction is permanent.',
+        signature: '@Remote async delete(request: WikiDeleteRequest): Promise<WikiDeleteValue>',
+        description: 'Delete a page/block/tag/property. Destruction is permanent.',
         parameters: [{ name: 'request', description: 'entityType + one selector.' }],
         returns: 'an acknowledgement.',
       },
@@ -7106,6 +7106,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WikiBlockNode {\n    id: number;\n    uuid: string | null;\n    content: string;\n    order: string | null;\n    createdAt: number | null;\n    updatedAt: number | null;\n    tags: WikiTagRef[];\n    children: WikiBlockNode[];\n}',
   },
   {
+    name: 'WikiDeleteRequest',
+    declaration: 'export interface WikiDeleteRequest {\n    entityType?: \'block\' | \'page\' | \'tag\' | \'property\';\n    id?: number;\n    uuid?: string;\n    page?: string;\n    name?: string;\n}',
+  },
+  {
+    name: 'WikiDeleteValue',
+    declaration: 'export interface WikiDeleteValue {\n    entityType: string;\n    detail: string;\n}',
+  },
+  {
     name: 'WikiGetPageRequest',
     declaration: 'export interface WikiGetPageRequest {\n    page?: string;\n    id?: number;\n    uuid?: string;\n}',
   },
@@ -7156,14 +7164,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WikiQueryValue',
     declaration: 'export interface WikiQueryValue {\n    rows: WikiJson;\n}',
-  },
-  {
-    name: 'WikiRemoveRequest',
-    declaration: 'export interface WikiRemoveRequest {\n    entityType?: \'block\' | \'page\' | \'tag\' | \'property\';\n    id?: number;\n    uuid?: string;\n    page?: string;\n    name?: string;\n}',
-  },
-  {
-    name: 'WikiRemoveValue',
-    declaration: 'export interface WikiRemoveValue {\n    entityType: string;\n    detail: string;\n}',
   },
   {
     name: 'WikiSearchItem',

@@ -14,14 +14,16 @@ import { CountdownCell } from './CountdownCell.tsx'
 export const inject = ['slots']
 
 /**
- * Client plugin body: register the countdown cell beside Settings.
+ * Client plugin body: register the countdown cell beside Settings. Waits on
+ * the sidebar declaration through `slots.inject`, because the sidebar shell
+ * registers its children table in a later effect phase.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.slots.register({
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',
     id: 'countdown',
     order: 100,
     label: 'Countdown',
-  }, CountdownCell)
+  }, CountdownCell))
 }

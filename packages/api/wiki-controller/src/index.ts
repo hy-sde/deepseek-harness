@@ -22,8 +22,8 @@ import type {
   WikiListTagsValue,
   WikiQueryRequest,
   WikiQueryValue,
-  WikiRemoveRequest,
-  WikiRemoveValue,
+  WikiDeleteRequest,
+  WikiDeleteValue,
   WikiSearchRequest,
   WikiSearchValue,
   WikiServerRequest,
@@ -72,7 +72,7 @@ export class WikiController extends TypertRemoteService {
 
   /** The resolution seam; its absence is a deployment refusal, not an internal error. */
   private get graph(): LogseqGraphService {
-    const graph = this.ctx.get('wikiGraph') as LogseqGraphService | undefined
+    const graph = this.ctx.get('wikiGraph')
     if (graph === undefined) {
       throw new TypertRemoteFailure({
         code: 'wiki-unavailable',
@@ -152,17 +152,17 @@ export class WikiController extends TypertRemoteService {
    */
   @Remote
   async upsert(request: WikiUpsertRequest): Promise<WikiUpsertValue> {
-    return this.graph.upsert({ ...request } as Record<string, unknown>).then(success => success, this.reject('upsert'))
+    return this.graph.upsert({ ...request }).then(success => success, this.reject('upsert'))
   }
 
   /**
-   * Remove a page/block/tag/property. Destruction is permanent.
+   * Delete a page/block/tag/property. Destruction is permanent.
    * @param request - entityType + one selector.
    * @returns an acknowledgement.
    */
   @Remote
-  async remove(request: WikiRemoveRequest): Promise<WikiRemoveValue> {
-    return this.graph.remove(request).then(success => success, this.reject('remove'))
+  async delete(request: WikiDeleteRequest): Promise<WikiDeleteValue> {
+    return this.graph.remove(request).then(success => success, this.reject('delete'))
   }
 
   /**
@@ -173,7 +173,7 @@ export class WikiController extends TypertRemoteService {
   @Remote
   async server(request: WikiServerRequest): Promise<WikiServerRequestValue> {
     return this.graph.server(request.action ?? 'list', request).then(
-      success => success as WikiServerRequestValue,
+      success => success,
       this.reject('server'),
     )
   }

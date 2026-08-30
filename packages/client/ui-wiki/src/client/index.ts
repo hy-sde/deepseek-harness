@@ -18,8 +18,7 @@ import { wikiStore } from './store.ts'
 import { WikiDrawer } from './WikiDrawer.tsx'
 import { WikiToggle } from './WikiToggle.tsx'
 
-/** Required services: the slot system and the Client Remote wire face. */
-export const inject = ['slots', 'remote']
+export const inject = ['slots', 'remote', 'remote.wiki']
 
 /**
  * Client plugin body: register the toggle beside Settings and the floating
@@ -34,16 +33,16 @@ export function apply(ctx: ClientContext): void {
   ctx.on('connection/reset', bind)
   if (ctx.get('remote')) bind()
 
-  ctx.slots.register({
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',
     id: 'wiki',
     order: 90,
     label: 'Wiki',
-  }, WikiToggle)
-  ctx.slots.register({
+  }, WikiToggle))
+  ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: 'wiki-drawer',
     order: 10,
     label: 'Wiki drawer',
-  }, WikiDrawer)
+  }, WikiDrawer))
 }

@@ -959,7 +959,6 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
         ['agent-spine', '@deepseek-ai/dsh-agent-spine-demo'],
         ['persistent-bash', '@deepseek-ai/dsh-tool-bash-persistent'],
         ['persistent-pwsh', '@deepseek-ai/dsh-tool-pwsh-persistent'],
-        ['str-replace-editor', '@deepseek-ai/dsh-tool-str-replace-editor'],
         ['sessions', '@deepseek-ai/dsh-session-persistence-jsonl'],
       ])
       expect(stdout).toContain('# == @deepseek-ai/dsh-sdk-minimal')

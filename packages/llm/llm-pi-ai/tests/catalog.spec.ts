@@ -814,6 +814,26 @@ describe('compat switches', () => {
     expect(models.get(responses.id)?.compat).toEqual(responses.compat)
   })
 
+  it('ignores schema-materialized empty compat defaults a protocol does not take', () => {
+    // The settings schema materializes an absent `compat` as its empty values
+    // (`allowedFallbackModels: []`, `chatTemplateArgs: {}`, ...). An empty
+    // value is no configured switch — the field falls through to the next
+    // layer — so a route whose protocol offers none of them must still
+    // resolve instead of rejecting the anthropic-only name against
+    // openai-completions.
+    expect(() => resolveProfiles({
+      'local-gateway': {
+        api: 'openai-completions',
+        baseURL: 'http://127.0.0.1:8000/v1',
+        compat: { chatTemplateArgs: {}, chatTemplateKwargs: {}, allowedFallbackModels: [] },
+        models: [{
+          id: 'model-a',
+          compat: { chatTemplateArgs: {}, chatTemplateKwargs: {}, allowedFallbackModels: [] },
+        }],
+      },
+    })).not.toThrow()
+  })
+
   it('rejects a model-level switch on a protocol that has no such field, naming what it offers', () => {
     expect(() => resolveProfiles({
       anthropic: {

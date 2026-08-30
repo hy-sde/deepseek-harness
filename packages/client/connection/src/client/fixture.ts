@@ -3607,11 +3607,11 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         ] } })
         case 'wiki/query': return Promise.resolve({ ok: true, value: { rows: [] } })
         case 'wiki/upsert': return Promise.resolve({ ok: true, value: {
-          entityType: (request as { entityType: string }).entityType ?? 'block',
+          entityType: (request as { entityType?: string }).entityType ?? 'block',
           status: 'ok' as const,
           detail: 'upserted (fixture)',
         } })
-        case 'wiki/remove': return Promise.resolve({ ok: true, value: {
+        case 'wiki/delete': return Promise.resolve({ ok: true, value: {
           entityType: (request as { entityType?: string }).entityType ?? 'block',
           detail: 'removed (fixture)',
         } })

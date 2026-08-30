@@ -40,9 +40,9 @@ function scriptedWiki(calls: { method: string; args: unknown[] }[]): WikiRemoteN
     search: async (payload) => { calls.push({ method: 'search', args: [payload] }); return ok({ items: [] }) },
     query: async (payload) => { calls.push({ method: 'query', args: [payload] }); return ok({ rows: [] }) },
     upsert: async (payload) => { calls.push({ method: 'upsert', args: [payload] }); return ok({ entityType: payload.entityType, status: 'ok', detail: 'ok' }) },
-    remove: async (payload) => { calls.push({ method: 'remove', args: [payload] }); return ok({ entityType: payload.entityType ?? 'block', detail: 'removed' }) },
+    delete: async (payload) => { calls.push({ method: 'delete', args: [payload] }); return ok({ entityType: payload.entityType ?? 'block', detail: 'removed' }) },
     server: async (payload) => { calls.push({ method: 'server', args: [payload] }); return ok({ servers: [] }) },
-  } as WikiRemoteNamespace
+  }
 }
 
 async function bench(): Promise<{ ctx: Context }> {
@@ -56,6 +56,7 @@ async function bench(): Promise<{ ctx: Context }> {
     },
   } as never, (() => null) as never)
   ctx.provide('remote', { wiki: scriptedWiki(calls) } as unknown as ClientRemote)
+  ctx.provide('remote.wiki', scriptedWiki(calls))
   await ctx.plugin({ inject, apply }).await()
   return { ctx }
 }

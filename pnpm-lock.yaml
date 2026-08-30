@@ -165,6 +165,9 @@ importers:
       '@deepseek-ai/dsh-cmdline':
         specifier: workspace:^
         version: link:../../packages/boot/cmdline
+      '@deepseek-ai/dsh-code-runtime-kernels':
+        specifier: workspace:^
+        version: link:../../packages/code-runtime/code-runtime-kernels
       '@deepseek-ai/dsh-command-compact':
         specifier: workspace:^
         version: link:../../packages/compaction/command-compact
@@ -282,12 +285,21 @@ importers:
       '@deepseek-ai/dsh-tool-ast':
         specifier: workspace:^
         version: link:../../packages/ast/tool-ast
+      '@deepseek-ai/dsh-tool-av':
+        specifier: workspace:^
+        version: link:../../packages/av/tool-av
       '@deepseek-ai/dsh-tool-bash':
         specifier: workspace:^
         version: link:../../packages/shell/tool-bash
       '@deepseek-ai/dsh-tool-bash-persistent':
         specifier: workspace:^
         version: link:../../packages/shell/tool-bash-persistent
+      '@deepseek-ai/dsh-tool-browser':
+        specifier: workspace:^
+        version: link:../../packages/browser/tool-browser
+      '@deepseek-ai/dsh-tool-codebase-memory':
+        specifier: workspace:^
+        version: link:../../packages/codebase-memory/tool-codebase-memory
       '@deepseek-ai/dsh-tool-cordis':
         specifier: workspace:^
         version: link:../../packages/extensions/tool-cordis
@@ -303,15 +315,27 @@ importers:
       '@deepseek-ai/dsh-tool-fs-search':
         specifier: workspace:^
         version: link:../../packages/fs/tool-fs-search
+      '@deepseek-ai/dsh-tool-git':
+        specifier: workspace:^
+        version: link:../../packages/git/tool-git
       '@deepseek-ai/dsh-tool-goal':
         specifier: workspace:^
         version: link:../../packages/goal/tool-goal
       '@deepseek-ai/dsh-tool-jobs':
         specifier: workspace:^
         version: link:../../packages/jobs/tool-jobs
+      '@deepseek-ai/dsh-tool-logseq':
+        specifier: workspace:^
+        version: link:../../packages/logseq/tool-logseq
       '@deepseek-ai/dsh-tool-lsp':
         specifier: workspace:^
         version: link:../../packages/lsp/tool-lsp
+      '@deepseek-ai/dsh-tool-memory':
+        specifier: workspace:^
+        version: link:../../packages/memory/tool-memory
+      '@deepseek-ai/dsh-tool-openwiki':
+        specifier: workspace:^
+        version: link:../../packages/openwiki/tool-openwiki
       '@deepseek-ai/dsh-tool-pwsh':
         specifier: workspace:^
         version: link:../../packages/shell/tool-pwsh
@@ -321,6 +345,9 @@ importers:
       '@deepseek-ai/dsh-tool-ralph':
         specifier: workspace:^
         version: link:../../packages/workflow/tool-ralph
+      '@deepseek-ai/dsh-tool-session-query':
+        specifier: workspace:^
+        version: link:../../packages/session-query/tool-session-query
       '@deepseek-ai/dsh-tool-skill':
         specifier: workspace:^
         version: link:../../packages/skill/tool-skill
@@ -916,6 +943,9 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:^
@@ -1280,6 +1310,9 @@ importers:
       '@deepseek-ai/dsh-browser':
         specifier: workspace:^
         version: link:../../browser/browser
+      '@deepseek-ai/dsh-code-runtime-kernels':
+        specifier: workspace:^
+        version: link:../../code-runtime/code-runtime-kernels
       '@deepseek-ai/dsh-command-compact':
         specifier: workspace:^
         version: link:../../compaction/command-compact
@@ -1457,30 +1490,54 @@ importers:
       '@deepseek-ai/dsh-tool-ast':
         specifier: workspace:^
         version: link:../../ast/tool-ast
+      '@deepseek-ai/dsh-tool-av':
+        specifier: workspace:^
+        version: link:../../av/tool-av
       '@deepseek-ai/dsh-tool-bash':
         specifier: workspace:^
         version: link:../../shell/tool-bash
+      '@deepseek-ai/dsh-tool-browser':
+        specifier: workspace:^
+        version: link:../../browser/tool-browser
       '@deepseek-ai/dsh-tool-call-timeout-policy':
         specifier: workspace:^
         version: link:../../guard/timeout-policy
+      '@deepseek-ai/dsh-tool-codebase-memory':
+        specifier: workspace:^
+        version: link:../../codebase-memory/tool-codebase-memory
       '@deepseek-ai/dsh-tool-fs':
         specifier: workspace:^
         version: link:../../fs/tool-fs
       '@deepseek-ai/dsh-tool-fs-search':
         specifier: workspace:^
         version: link:../../fs/tool-fs-search
+      '@deepseek-ai/dsh-tool-git':
+        specifier: workspace:^
+        version: link:../../git/tool-git
       '@deepseek-ai/dsh-tool-goal':
         specifier: workspace:^
         version: link:../../goal/tool-goal
       '@deepseek-ai/dsh-tool-jobs':
         specifier: workspace:^
         version: link:../../jobs/tool-jobs
+      '@deepseek-ai/dsh-tool-logseq':
+        specifier: workspace:^
+        version: link:../../logseq/tool-logseq
+      '@deepseek-ai/dsh-tool-memory':
+        specifier: workspace:^
+        version: link:../../memory/tool-memory
+      '@deepseek-ai/dsh-tool-openwiki':
+        specifier: workspace:^
+        version: link:../../openwiki/tool-openwiki
       '@deepseek-ai/dsh-tool-pwsh':
         specifier: workspace:^
         version: link:../../shell/tool-pwsh
       '@deepseek-ai/dsh-tool-ralph':
         specifier: workspace:^
         version: link:../../workflow/tool-ralph
+      '@deepseek-ai/dsh-tool-session-query':
+        specifier: workspace:^
+        version: link:../../session-query/tool-session-query
       '@deepseek-ai/dsh-tool-skill':
         specifier: workspace:^
         version: link:../../skill/tool-skill

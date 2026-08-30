@@ -133,8 +133,8 @@ export interface WikiUpsertRequest {
   dryRun?: boolean
 }
 
-/** `wiki.remove` request payload. */
-export interface WikiRemoveRequest {
+/** `wiki.delete` request payload. */
+export interface WikiDeleteRequest {
   entityType?: 'block' | 'page' | 'tag' | 'property'
   id?: number
   uuid?: string
@@ -142,8 +142,8 @@ export interface WikiRemoveRequest {
   name?: string
 }
 
-/** `wiki.remove` acknowledgement. */
-export interface WikiRemoveValue {
+/** `wiki.delete` acknowledgement. */
+export interface WikiDeleteValue {
   entityType: string
   detail: string
 }

@@ -21,6 +21,15 @@ const HOOKS_DIRECTORY = 'dsh-hooks'
 const OWNERSHIP_MARKER = '.dsh-lefthook-owned'
 const OWNERSHIP_MARKER_VERSION = 1
 const OWNERSHIP_MARKER_OWNER = 'deepseek-harness worktree-local lefthook hooks'
+// Lefthook's hook shims are plain `sh` that eventually spawn the tsx-backed
+// jobs; those need `node`, which interactive terminals expose only because
+// they source nvm. GUI git clients and other launchd-spawned processes start
+// with a sanitized PATH, so `node` is unresolvable there and every job dies
+// with `node: not found` (status 127). The installer bakes the installing
+// node's bin dir into each hook; the value is per-machine and re-applied on
+// every install (lefthook rewrites the shims with --force each run).
+const HOOK_NODE_PATH_MARKER = 'dsh-node-path-bake'
+const HOOK_NAMES = ['pre-commit', 'pre-merge-commit', 'pre-push']
 const INSTALL_LOCK = 'dsh-lefthook-install.lock'
 const INSTALL_LOCK_TIMEOUT_MS = 30_000
 const INSTALL_LOCK_INITIALIZATION_TIMEOUT_MS = 5_000
@@ -562,6 +571,42 @@ function runLefthook(root, lefthook) {
   if (result.status !== 0) throw commandFailure(lefthook, args, result)
 }
 
+// See HOOK_NODE_PATH_MARKER: prepend the installing node's bin dir to each
+// generated hook's PATH so its jobs resolve `node` regardless of how git was
+// launched. Inserted right after the shebang line; idempotent per marker.
+function bakeNodePathIntoLefthookHooks(hooksPath) {
+  if (process.platform === 'win32') return
+  const nodeBinDirectory = dirname(process.execPath)
+  if (!isAbsolute(nodeBinDirectory) || !existsSync(join(nodeBinDirectory, 'node'))) return
+  const bootstrap = [
+    `# ${HOOK_NODE_PATH_MARKER}: resolve node for hook jobs under sanitized (GUI) PATHs`,
+    'case ":$PATH:" in',
+    `  *":${nodeBinDirectory}:"*) ;;`,
+    `  *) PATH="${nodeBinDirectory}:$PATH" ;;`,
+    'esac',
+    'export PATH',
+  ].join('\n')
+  for (const name of HOOK_NAMES) {
+    const hookPath = join(hooksPath, name)
+    let stat
+    try {
+      stat = lstatSync(hookPath)
+    } catch (error) {
+      if (errorCode(error) === 'ENOENT') continue
+      throw error
+    }
+    if (!stat.isFile()) continue
+    const content = readFileSync(hookPath, 'utf8')
+    if (content.includes(HOOK_NODE_PATH_MARKER)) continue
+    if (!content.startsWith('#!')) continue
+    const firstNewline = content.indexOf('\n')
+    const updated = firstNewline === -1
+      ? `${content}\n${bootstrap}\n`
+      : `${content.slice(0, firstNewline + 1)}${bootstrap}\n${content.slice(firstNewline + 1)}`
+    writeFileSync(hookPath, updated, { mode: stat.mode & 0o777 })
+  }
+}
+
 function configSource(entry) {
   return `${entry.origin}: ${JSON.stringify(entry.value)}`
 }
@@ -791,6 +836,7 @@ async function main() {
         throw new Error('new worktree-local core.hooksPath did not become the effective direct worktree value')
       }
       runLefthook(root, lefthook)
+      bakeNodePathIntoLefthookHooks(hooksPath)
       updateOwnershipMarker(ownedHooksDirectory.markerPath, hooksPath)
     } catch (error) {
       const rollbackErrors = []

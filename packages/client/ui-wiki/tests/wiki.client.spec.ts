@@ -2,7 +2,7 @@
  * ui-wiki unit coverage: property parsing and the store's state machine over
  * a scripted wiki wire face (no DOM needed — jsdom-free).
  * The store is the single source of wire traffic, so these tests pin the
- * upsert/remove argument shapes the drawer's actions produce.
+ * upsert/delete argument shapes the drawer's actions produce.
  */
 
 import { describe, expect, it, beforeEach } from 'vitest'
@@ -33,9 +33,9 @@ function scriptedWiki(calls: { method: string; args: unknown[] }[]): WikiRemoteN
     search: async (payload) => { calls.push({ method: 'search', args: [payload] }); return ok({ items: [{ id: 273, title: 'Systems language', pageName: 'rust' }] }) },
     query: async (payload) => { calls.push({ method: 'query', args: [payload] }); return ok({ rows: [] }) },
     upsert: async (payload) => { calls.push({ method: 'upsert', args: [payload] }); return ok({ entityType: payload.entityType, status: 'ok', detail: 'ok' }) },
-    remove: async (payload) => { calls.push({ method: 'remove', args: [payload] }); return ok({ entityType: payload.entityType ?? 'block', detail: 'removed' }) },
+    delete: async (payload) => { calls.push({ method: 'delete', args: [payload] }); return ok({ entityType: payload.entityType ?? 'block', detail: 'removed' }) },
     server: async (payload) => { calls.push({ method: 'server', args: [payload] }); return payload?.action === 'list' ? ok({ servers: [] }) : ok({ action: payload?.action ?? 'list', message: 'ok' }) },
-  } as WikiRemoteNamespace
+  }
 }
 
 beforeEach(resetStore)
@@ -104,13 +104,13 @@ describe('wikiStore state machine', () => {
     expect(wikiStore.getState().searchResults).toHaveLength(1)
   })
 
-  it('deleteBlock/deletePage route to remove with the right selector', async () => {
+  it('deleteBlock/deletePage route to delete with the right selector', async () => {
     await wikiStore.openPage('Rust')
     await wikiStore.deleteBlock(273)
     await wikiStore.deletePage('Rust')
-    const removes = stub.filter(call => call.method === 'remove').map(call => call.args[0])
-    expect(removes[0]).toMatchObject({ entityType: 'block', id: 273 })
-    expect(removes[1]).toMatchObject({ entityType: 'page', page: 'Rust' })
+    const deletes = stub.filter(call => call.method === 'delete').map(call => call.args[0])
+    expect(deletes[0]).toMatchObject({ entityType: 'block', id: 273 })
+    expect(deletes[1]).toMatchObject({ entityType: 'page', page: 'Rust' })
   })
 
   it('surfaces errors in state instead of throwing', async () => {

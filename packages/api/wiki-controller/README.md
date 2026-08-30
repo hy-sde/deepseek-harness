@@ -8,7 +8,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`@deepseek-ai/dsh-api-wiki-controller` owns the Host `ctx.wikiController` service: the Typert `wiki` Remote namespace that GUI clients use to reach the embedded LLM-wiki graph. Its methods project the logseq-graph wire (`ctx.wikiGraph`, see [dsh-logseq-graph](../../logseq/logseq-graph/README.md)) onto declared request/value shapes — page rows, nested block trees with linked references, tag and property listings, text search, raw Datalog query rows, and upsert/remove/server actions. The controller also classifies failures (`wiki-unavailable` when the graph seam is missing, `wiki-cli-error` carrying the CLI detail, `internal` otherwise).
+`@deepseek-ai/dsh-api-wiki-controller` owns the Host `ctx.wikiController` service: the Typert `wiki` Remote namespace that GUI clients use to reach the embedded LLM-wiki graph. Its methods project the logseq-graph wire (`ctx.wikiGraph`, see [dsh-logseq-graph](../../logseq/logseq-graph/README.md)) onto declared request/value shapes — page rows, nested block trees with linked references, tag and property listings, text search, raw Datalog query rows, and upsert/delete/server actions. The controller also classifies failures (`wiki-unavailable` when the graph seam is missing, `wiki-cli-error` carrying the CLI detail, `internal` otherwise).
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount the package in a web composition alongside the graph seam and the client UI ([dsh-client-ui-wiki](../../client/ui-wiki/README.md)). Each Remote method maps one-to-one onto a `ctx.wikiGraph` capability: `wiki.listPages` / `wiki.getPage` (page rows and block trees with linked references), `wiki.listTags` / `wiki.listProperties`, `wiki.search` (text search), `wiki.query` (raw Datalog rows), `wiki.upsert` / `wiki.remove` (mutations), and `wiki.server` (graph/server lifecycle status). The value shapes are declared here, so the browser half never depends on the logseq-graph wire type.
+Mount the package in a web composition alongside the graph seam and the client UI ([dsh-client-ui-wiki](../../client/ui-wiki/README.md)). Each Remote method maps one-to-one onto a `ctx.wikiGraph` capability: `wiki.listPages` / `wiki.getPage` (page rows and block trees with linked references), `wiki.listTags` / `wiki.listProperties`, `wiki.search` (text search), `wiki.query` (raw Datalog rows), `wiki.upsert` / `wiki.delete` (mutations), and `wiki.server` (graph/server lifecycle status). The value shapes are declared here, so the browser half never depends on the logseq-graph wire type.
 
 -----
 

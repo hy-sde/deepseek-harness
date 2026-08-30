@@ -75,11 +75,11 @@ Host service backing the generated `ctx.remote.wiki` namespace. Every `@Remote` 
 @Remote async upsert(request: WikiUpsertRequest): Promise<WikiUpsertValue>
 
 /**
- * Remove a page/block/tag/property. Destruction is permanent.
+ * Delete a page/block/tag/property. Destruction is permanent.
  * @param request - entityType + one selector.
  * @returns an acknowledgement.
  */
-@Remote async remove(request: WikiRemoveRequest): Promise<WikiRemoveValue>
+@Remote async delete(request: WikiDeleteRequest): Promise<WikiDeleteValue>
 
 /**
  * Server lifecycle: list the db-worker-node servers, or run start/stop/restart/cleanup.

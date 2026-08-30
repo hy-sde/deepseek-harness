@@ -39,6 +39,15 @@
     }
   },
   "dependencies": {
+    "@deepseek-ai/dsh-tool-session-query": "workspace:^",
+    "@deepseek-ai/dsh-tool-codebase-memory": "workspace:^",
+    "@deepseek-ai/dsh-tool-openwiki": "workspace:^",
+    "@deepseek-ai/dsh-tool-logseq": "workspace:^",
+    "@deepseek-ai/dsh-code-runtime-kernels": "workspace:^",
+    "@deepseek-ai/dsh-tool-memory": "workspace:^",
+    "@deepseek-ai/dsh-tool-git": "workspace:^",
+    "@deepseek-ai/dsh-tool-browser": "workspace:^",
+    "@deepseek-ai/dsh-tool-av": "workspace:^",
     "@deepseek-ai/cordis-plugin-hmr": "workspace:^",
     "@deepseek-ai/cordis-plugin-timer": "workspace:^",
     "@deepseek-ai/dsh-agent": "workspace:^",

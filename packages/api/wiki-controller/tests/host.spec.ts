@@ -27,7 +27,7 @@ function stubGraph(overrides: Partial<Record<
     remove: () => ({ entityType: 'block', detail: 'removed' }),
     server: () => ({ servers: [] }),
   }
-  const wire = (method: 'listPages' | 'getPage' | 'listTags' | 'listProperties' | 'search' | 'query' | 'upsert' | 'remove' | 'server') =>
+  const wire = (method: 'listPages' | 'getPage' | 'listTags' | 'listProperties' | 'search' | 'query' | 'upsert' | 'server') =>
     async (request: never) => {
       calls.push(method)
       const selected = overrides[method] ?? canned[method]
@@ -41,7 +41,12 @@ function stubGraph(overrides: Partial<Record<
     search: wire('search'),
     query: wire('query'),
     upsert: wire('upsert'),
-    remove: wire('remove'),
+    // The seam method is `remove`; the Remote wire vocabulary names it `delete`.
+    remove: async (request: never) => {
+      calls.push('delete')
+      const selected = overrides.remove ?? canned.remove
+      return (selected as (request: unknown) => unknown)(request)
+    },
     server: wire('server'),
   } as unknown as LogseqGraphService
   return { graph, calls }
@@ -78,14 +83,14 @@ describe('WikiController Remote face', () => {
     expect(calls).toEqual(['getPage'])
   })
 
-  it('search, query, upsert, remove and server all reach the seam', async () => {
+  it('search, query, upsert, delete and server all reach the seam', async () => {
     const { controller, calls } = host()
     await controller.search({ content: 'x' })
     await controller.query({ query: '[:find ?e]' })
     await controller.upsert({ entityType: 'page', name: 'Zig' })
-    await controller.remove({ entityType: 'block', id: 9 })
+    await controller.delete({ entityType: 'block', id: 9 })
     await controller.server({ action: 'list' })
-    expect(calls).toEqual(['search', 'query', 'upsert', 'remove', 'server'])
+    expect(calls).toEqual(['search', 'query', 'upsert', 'delete', 'server'])
   })
 
   it('classifies a CLI envelope error as wiki-cli-error', async () => {
@@ -104,8 +109,9 @@ describe('WikiController Remote face', () => {
 
   it('classifies a generic seam throw as internal carrying the method name', async () => {
     const { controller } = host({ query: () => { throw new Error('nope') } })
+    const message: unknown = expect.stringContaining('wiki.query')
     await expect(controller.query({ query: '[:find ?e]' })).rejects.toMatchObject({
-      failure: { code: 'internal', message: expect.stringContaining('wiki.query') },
+      failure: { code: 'internal', message },
     })
   })
 
