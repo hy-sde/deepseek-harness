@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { applyCodebaseMemoryTools, CodebaseMemoryCliError, renderPayload } from '../src/codebase-memory.ts'
 import { buildCodebaseMemoryPromptSection } from '../src/prompt.ts'
 
@@ -101,7 +101,7 @@ const agent = { session: { header: { id: 'cbm1', cwd: '' } } } as never
 async function call<T>(name: string, args: unknown): Promise<T> {
   const result = await ctx.tools.execute({
     signal: new AbortController().signal,
-    callId: CallId(`cbm-${++counter}`),
+    callId: ToolCallId(`cbm-${++counter}`),
     name,
     arguments: args,
     agent,

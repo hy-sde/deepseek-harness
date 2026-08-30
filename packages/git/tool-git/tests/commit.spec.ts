@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { Context } from '@deepseek-ai/cordis'
@@ -49,7 +49,7 @@ const agent = { session: { header: { id: 's1', cwd: '' } } } as never
 async function call(name: string, args: unknown): Promise<{ value: unknown }> {
   const result = await ctx.tools.execute({
     signal: new AbortController().signal,
-    callId: CallId(`call-${++counter}`),
+    callId: ToolCallId(`call-${++counter}`),
     name,
     arguments: args,
     agent,

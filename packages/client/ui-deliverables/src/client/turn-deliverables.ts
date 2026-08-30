@@ -1,14 +1,12 @@
 /**
  * Turn-scoped produced-file Definition and readers. Client-only and
- * model-free: the vocabulary is the mutation tools' own follow-along
- * `locations`, never the closing prose.
+ * model-free: the vocabulary comes from successful first-party mutation
+ * calls, never presentation data or the closing prose.
  */
-import type {
-  ConversationNodeDefinition, ToolResultNode,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-client-runtime/client'
+import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
+import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client'
+import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 
 interface ProducedPath {
   readonly seq: number
@@ -20,7 +18,7 @@ export interface DeliverablesTurnData {
   readonly produced: readonly ProducedPath[]
 }
 
-declare module '@deepseek-ai/dsh-client-runtime/client' {
+declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
   interface ConversationTurnDataMap {
     /** Successful mutation paths accumulated in this Turn. */
     deliverables: DeliverablesTurnData
@@ -29,7 +27,7 @@ declare module '@deepseek-ai/dsh-client-runtime/client' {
 
 interface DeliverablesState extends DeliverablesTurnData {
   readonly turn: number
-  readonly calls: ReadonlyMap<string, ToolResultNode['callView']>
+  readonly calls: ReadonlyMap<string, string | null>
 }
 
 /**
@@ -39,13 +37,68 @@ interface DeliverablesState extends DeliverablesTurnData {
  * terminal ran. Only root call views enter this Turn accumulator; nested Code Mode dispatches
  * preserve the pre-assembly behavior and do not contribute independently.
  */
-function producedPaths(view: ToolResultNode['callView']): readonly string[] {
-  if (view === null) return []
-  if (view.card === 'diff') return (view.locations ?? []).map(location => location.path)
-  if (view.card === 'generic' && view.kind === 'edit') {
-    return (view.locations ?? []).map(location => location.path)
+function mutationPath(name: string, argsRaw: string): string | null {
+  let args: unknown
+  try {
+    args = JSON.parse(argsRaw) as unknown
+  } catch {
+    return null
   }
-  return []
+  if (!isRecord(args)) return null
+  switch (name) {
+    case 'write':
+      return typeof args.content === 'string' ? pathValue(args.file_path) : null
+    case 'edit':
+      return validEditArgs(args) ? pathValue(args.file_path) : null
+    case 'str_replace_editor':
+      return editorMutationPath(args)
+    default:
+      return null
+  }
+}
+
+/** Validate the fields that an `edit` execution requires. */
+function validEditArgs(args: Readonly<Record<string, unknown>>): boolean {
+  return typeof args.old_string === 'string'
+    && args.old_string.length > 0
+    && typeof args.new_string === 'string'
+    && args.old_string !== args.new_string
+    && (args.replace_all === undefined || typeof args.replace_all === 'boolean')
+}
+
+/** Extract a path only from a complete mutating editor command. */
+function editorMutationPath(args: Readonly<Record<string, unknown>>): string | null {
+  const path = pathValue(args.path)
+  if (path === null) return null
+  switch (args.command) {
+    case 'create':
+      return typeof args.file_text === 'string' ? path : null
+    case 'str_replace':
+      return typeof args.old_str === 'string'
+        && args.old_str.length > 0
+        && (args.new_str === undefined || typeof args.new_str === 'string')
+        ? path
+        : null
+    case 'insert':
+      return typeof args.insert_line === 'number'
+        && Number.isInteger(args.insert_line)
+        && args.insert_line >= 0
+        && typeof args.new_str === 'string'
+        ? path
+        : null
+    default:
+      return null
+  }
+}
+
+/** A non-blank path preserves the exact spelling supplied to the tool. */
+function pathValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null
+}
+
+/** Narrow parsed JSON to an argument object. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**
@@ -112,7 +165,7 @@ export const deliverablesDefinition: ConversationNodeDefinition<DeliverablesStat
       const calls = new Map(context.state.calls)
       calls.set(
         String(match.event.data.callId),
-        match.view?.for === 'call' ? match.view.view : null,
+        mutationPath(match.event.data.name, match.event.data.arguments),
       )
       return { ...context.state, calls }
     }
@@ -120,11 +173,10 @@ export const deliverablesDefinition: ConversationNodeDefinition<DeliverablesStat
     const result = match.event.data.message.content[0]
     if (result.isError === true) return context.state
     const callId = String(match.event.data.message.source.callId)
-    const additions = producedPaths(context.state.calls.get(callId) ?? null)
-      .map(path => ({ seq: match.event.seq, path }))
-    return additions.length === 0
+    const path = context.state.calls.get(callId)
+    return path === null || path === undefined
       ? context.state
-      : { ...context.state, produced: [...context.state.produced, ...additions] }
+      : { ...context.state, produced: [...context.state.produced, { seq: match.event.seq, path }] }
   },
   buildLocationData: (context, scope) => scope !== 'turn' || context.state === undefined
     ? null

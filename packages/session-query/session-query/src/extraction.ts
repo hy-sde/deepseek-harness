@@ -2,6 +2,8 @@
 
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { CompactionResult } from '@deepseek-ai/dsh-compaction'
+// Type-only: includes the first-party todo event consumed below.
+import type {} from '@deepseek-ai/dsh-tool-todo'
 
 /**
  * Extract searchable semantic text from one first-party session event.

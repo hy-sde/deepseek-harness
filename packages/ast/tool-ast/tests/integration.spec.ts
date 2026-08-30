@@ -13,7 +13,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { TOOL_ABORTED_BEFORE_DISPATCH } from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
@@ -32,7 +32,7 @@ let callCounter = 0
 function call(name: string, args: unknown, agentObj?: object) {
   return ctx.tools.execute({
     signal: testToolSignal,
-    callId: CallId(`it-${++callCounter}`),
+    callId: ToolCallId(`it-${++callCounter}`),
     name,
     arguments: args,
     ...agentObj ? { agent: agentObj as never } : {},
@@ -188,7 +188,7 @@ describe('ast tools over the real subprocess service + the packaged ast-grep', (
         await sandboxCtx.plugin(ToolAst, {})
         const result = await sandboxCtx.tools.execute({
           signal: testToolSignal,
-          callId: CallId(`sbx-${++callCounter}`),
+          callId: ToolCallId(`sbx-${++callCounter}`),
           name: 'ast_edit',
           arguments: {
             pat: 'run($A, $B)',
@@ -213,7 +213,7 @@ describe('ast tools over the real subprocess service + the packaged ast-grep', (
       controller.abort()
       const result = await ctx.tools.execute({
         signal: controller.signal,
-        callId: CallId(`abort-${++callCounter}`),
+        callId: ToolCallId(`abort-${++callCounter}`),
         name: 'ast_grep',
         arguments: { pat: 'x($A)', path: '.' },
         agent: { session: { header: { id: 'session-ast', cwd: dir } } } as never,

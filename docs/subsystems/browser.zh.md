@@ -2,7 +2,7 @@
 
 [English](browser.md) | 中文
 
-浏览器 seam 分为宿主服务（[dsh-browser](../../packages/browser/browser)，`ctx.browser`）与消费方（[dsh-tool-browser](../../packages/browser/tool-browser)，`browser` 工具）。服务经 Playwright Core CDP 持有真实浏览器连接 — 移植自 omp 的浏览器工具（stealth＋relay／CDP-attach，见 [port_omp.md](../../port_omp.md)）。工具层掌管模型方契约；relay 与 `omp browser-relay`（MIT）同一设计。
+浏览器 seam 分为宿主服务（[dsh-browser](../../packages/browser/browser)，`ctx.browser`）与消费方（[dsh-tool-browser](../../packages/browser/tool-browser)，`browser` 工具）。服务经 Playwright Core CDP 持有真实浏览器连接 — 移植自 omp 的浏览器工具（stealth＋relay／CDP-attach）。工具层掌管模型方契约；relay 与 `omp browser-relay`（MIT）同一设计。
 
 源码：[`packages/browser/browser/src/service.ts`](../../packages/browser/browser/src/service.ts)
 

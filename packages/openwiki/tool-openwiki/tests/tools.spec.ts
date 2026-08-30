@@ -163,14 +163,14 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { access, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { Context as CordisContext } from '@deepseek-ai/cordis'
 
 type ToolOutcome = { status: string } & Record<string, unknown>
 
 /** One registry dispatch returning the parsed tool output value. */
 async function runTool(ctx: CordisContext, signal: AbortSignal, name: string, args: unknown): Promise<ToolOutcome> {
-  const result = await ctx.tools.execute({ signal, callId: CallId(`it-${Math.random()}`), name, arguments: args })
+  const result = await ctx.tools.execute({ signal, callId: ToolCallId(`it-${Math.random()}`), name, arguments: args })
   if (result.error) throw new Error(`tool ${name} failed: ${result.error.message}`)
   const text = result.content.filter(b => b.type === 'text').map(b => 'text' in b ? b.text : '').join('')
   return JSON.parse(text) as { status: string; [k: string]: unknown }

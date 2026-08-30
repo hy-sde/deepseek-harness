@@ -55,11 +55,17 @@ export const name = 'stream-rules'
 
 /** One inline rule supplied through plugin config instead of a rules file. */
 export interface InlineRuleConfig {
+  /** Display name of the rule, surfaced in listings and diagnostics. */
   name: string
+  /** Rule body in the stream-rules language. */
   content: string
+  /** Optional condition on which inputs the rule applies to. */
   condition?: string | string[]
+  /** Optional scope narrowing doctor/module/category matches. */
   scope?: string | string[]
+  /** Optional override of the composed interrupt mode for this rule. */
   interruptMode?: RuleInterruptMode
+  /** Optional glob list restricting the rule to matching file paths. */
   globs?: string[]
 }
 

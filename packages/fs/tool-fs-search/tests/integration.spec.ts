@@ -16,7 +16,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { TOOL_ABORTED_BEFORE_DISPATCH } from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
@@ -57,7 +57,7 @@ let callCounter = 0
 function call(name: string, args: unknown, agentObj?: object) {
   return ctx.tools.execute({
     signal: testToolSignal,
-    callId: CallId(`it-${++callCounter}`),
+    callId: ToolCallId(`it-${++callCounter}`),
     name,
     arguments: args,
     ...agentObj ? { agent: agentObj as never } : {},
@@ -229,7 +229,7 @@ describe('search tools over the real subprocess service + the packaged rg', () =
       const controller = new AbortController()
       controller.abort()
       const result = await ctx.tools.execute({
-        callId: CallId(`it-${++callCounter}`),
+        callId: ToolCallId(`it-${++callCounter}`),
         name: 'grep',
         arguments: { pattern: 'x' },
         signal: controller.signal,

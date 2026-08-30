@@ -54,6 +54,7 @@ describe('shipped code-edit preset', () => {
       default: 'code-edit',
       roots: [{ path: SHIPPED_ROOT, trust: 'system' }],
       includeUserRoot: false,
+      includeShippedRoot: false,
     })
 
     // The standing mount the host reader uses — same validation a session start performs.
@@ -110,6 +111,7 @@ describe('shipped code-edit preset', () => {
       default: 'minimal',
       roots: [{ path: SHIPPED_ROOT, trust: 'system' }],
       includeUserRoot: false,
+      includeShippedRoot: false,
     })
 
     const key = await ctx.agentPresets.standingKeyFor('minimal')

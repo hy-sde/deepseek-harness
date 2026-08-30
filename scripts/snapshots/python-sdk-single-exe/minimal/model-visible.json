@@ -23,86 +23,87 @@
       {
         "type": "function",
         "function": {
-          "name": "edit",
-          "description": "Single-file edit tool. The mode is fixed by configuration, not per-call;\nthe appropriate argument shape is documented in <parameters>.\n\nMode \"replace\" (default) — literal string replacement with fuzzy whitespace\nmatching. MUST use the smallest old_string uniquely identifying the change.\nA non-unique old_string MUST add context or use replace_all: true for all\noccurrences. Renaming a string across the file → replace_all: true.\n\nMode \"patch\" — apply diff hunks. Hunk headers: bare `@@` when context lines\nare unique, else `@@ $ANCHOR` copied verbatim from the file. Each hunk body\ncontains only lines starting with ' ' | '+' | '-', and at least one change\n(+ or -). Use enough ` `-prefixed context lines to make the match unique\n(usually 2–8). When editing structured blocks, include the opening and\nclosing lines so the edit stays inside the block. NEVER use line numbers\nas anchors. If a patch fails, re-read the file and produce a fresh patch —\nnever retry the same diff.\n\nMode \"apply_patch\" — Codex-style envelope:\n*** Begin Patch\n*** Add File: <path>\n+<initial contents lines>\n*** Update File: <path> [*** Move to: <new path>]\n@@ <optional anchor/class/function>\n- <old line>\n+ <new line>\n  <context line>\n*** Delete File: <path>\n*** End Patch\nFile references relative, never absolute. New-file lines MUST start `+`.\n\nMode \"hashline\" — a line-anchored patch language. <guidance>\nSection: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.\nHEADER FORMS:\n- PUT N.=M: — replace original inclusive lines N–M with body (body rows)\n- PUT N*: — replace the syntactic block beginning N (closing line resolved)\n- PUT <N: — insert body rows before line N (PUT <1: = file head)\n- PUT >N: — insert body rows after line N (PUT >$: = file tail)\n- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register\n- REM — delete section file; MV DEST — move/rename section file\n- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).\n  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.\n- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.\n- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.\n- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.\n- NEVER format/restyle with this tool; run the project formatter.\nFull prompt guidance lives in the package's hashline prompt (not duplicated here).\n</guidance>\n\n<parameters>\nreplace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }\npatch mode:   { path: string, edits: Array<{ op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }> }\napply_patch / hashline mode: { input: string }\n</parameters>\n\n<critical>You MUST read the target file before editing it.\nMissing reads are caught by the fs-observation-policy when mounted;\notherwise the edit proceeds from whatever content the tool can read.</critical>",
+          "name": "str_replace_editor",
+          "description": "Custom editing tool for viewing, creating and editing files\n* State is persistent across command calls and discussions with the user\n* If `path` is a file, `view` displays the result of applying `cat -n`. If `path` is a directory, `view` lists non-hidden files and directories up to 2 levels deep\n* The `create` command cannot be used if the specified `path` already exists as a file\n* If a `command` generates a long output, it will be truncated and marked with `<response clipped>`\n* A null placeholder for a parameter unused by the selected command is treated as omitted. Required parameters still need values; omit `str_replace.new_str` rather than setting it to null when deleting a match\n\nNotes for using the `str_replace` command:\n* The `old_str` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n* If the `old_str` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `old_str` to make it unique\n* The `new_str` parameter should contain the edited lines that should replace the `old_str`",
           "parameters": {
             "type": "object",
             "properties": {
+              "command": {
+                "type": "string",
+                "description": "The commands to run. Allowed options are: `view`, `create`, `str_replace`, `insert`.",
+                "enum": [
+                  "view",
+                  "create",
+                  "str_replace",
+                  "insert"
+                ]
+              },
               "path": {
                 "type": "string",
-                "description": "the file path (relative to the working directory)"
+                "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`."
               },
-              "old_string": {
-                "type": "string",
-                "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
+              "file_text": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `create` command, with the content of the file to be created. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "new_string": {
-                "type": "string",
-                "description": "the replacement text"
+              "insert_line": {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required integer parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "replace_all": {
-                "type": "boolean",
-                "description": "when true, replaces every occurrence."
+              "new_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional string parameter of `str_replace` command containing the new string (if omitted, no string will be added). Required string parameter of `insert` command containing the string to insert. A null placeholder is accepted only by commands that do not use this parameter."
               },
-              "edits": {
-                "type": "array",
-                "description": "list of edit entries: { op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }"
+              "old_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `str_replace` command containing the string in `path` to replace. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "input": {
-                "type": "string",
-                "description": "a full *** Begin Patch ... *** End Patch envelope. a hashline patch document ([path#tag] sections)"
-              }
-            }
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "read",
-          "description": "Read a UTF-8 text file and return line-numbered content.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to read, resolved by the filesystem backend."
-              },
-              "offset": {
-                "type": "number",
-                "description": "1-based first line to return. Defaults to 1."
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum number of lines to return. Defaults to 2000."
-              }
-            },
-            "required": [
-              "file_path"
-            ]
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "write",
-          "description": "Create or fully replace a UTF-8 text file.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to write, resolved by the filesystem backend."
-              },
-              "content": {
-                "type": "string",
-                "description": "Full UTF-8 text content to write."
+              "view_range": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional parameter of `view` command when `path` points to a file. If omitted or null, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file."
               }
             },
             "required": [
-              "file_path",
-              "content"
+              "command",
+              "path"
             ]
           }
         }
@@ -111,11 +112,11 @@
     "messages": [
       {
         "role": "system",
-        "text": "You are a helpful software engineer assistant.\n\nUse the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.\n\nUse the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.\n\nUse the edit tool for targeted changes to existing UTF-8 text files. It replaces text in files after a mandatory read of the file first (the default fs-observation-policy requires it, unless you just created or edited it in this session). The tool runs in a fixed mode (see its description); call it with the argument shape for that mode."
+        "text": "You are a helpful software engineer assistant."
       },
       {
         "role": "user",
-        "text": "Exercise the packaged minimal agent's persistent Bash and rich edit tool.\nEditor path: {{cwd}}/created.txt"
+        "text": "Exercise the packaged minimal agent's persistent shell and string-replacement editor.\nEditor path: {{cwd}}/created.txt"
       }
     ]
   },
@@ -143,86 +144,87 @@
       {
         "type": "function",
         "function": {
-          "name": "edit",
-          "description": "Single-file edit tool. The mode is fixed by configuration, not per-call;\nthe appropriate argument shape is documented in <parameters>.\n\nMode \"replace\" (default) — literal string replacement with fuzzy whitespace\nmatching. MUST use the smallest old_string uniquely identifying the change.\nA non-unique old_string MUST add context or use replace_all: true for all\noccurrences. Renaming a string across the file → replace_all: true.\n\nMode \"patch\" — apply diff hunks. Hunk headers: bare `@@` when context lines\nare unique, else `@@ $ANCHOR` copied verbatim from the file. Each hunk body\ncontains only lines starting with ' ' | '+' | '-', and at least one change\n(+ or -). Use enough ` `-prefixed context lines to make the match unique\n(usually 2–8). When editing structured blocks, include the opening and\nclosing lines so the edit stays inside the block. NEVER use line numbers\nas anchors. If a patch fails, re-read the file and produce a fresh patch —\nnever retry the same diff.\n\nMode \"apply_patch\" — Codex-style envelope:\n*** Begin Patch\n*** Add File: <path>\n+<initial contents lines>\n*** Update File: <path> [*** Move to: <new path>]\n@@ <optional anchor/class/function>\n- <old line>\n+ <new line>\n  <context line>\n*** Delete File: <path>\n*** End Patch\nFile references relative, never absolute. New-file lines MUST start `+`.\n\nMode \"hashline\" — a line-anchored patch language. <guidance>\nSection: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.\nHEADER FORMS:\n- PUT N.=M: — replace original inclusive lines N–M with body (body rows)\n- PUT N*: — replace the syntactic block beginning N (closing line resolved)\n- PUT <N: — insert body rows before line N (PUT <1: = file head)\n- PUT >N: — insert body rows after line N (PUT >$: = file tail)\n- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register\n- REM — delete section file; MV DEST — move/rename section file\n- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).\n  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.\n- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.\n- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.\n- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.\n- NEVER format/restyle with this tool; run the project formatter.\nFull prompt guidance lives in the package's hashline prompt (not duplicated here).\n</guidance>\n\n<parameters>\nreplace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }\npatch mode:   { path: string, edits: Array<{ op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }> }\napply_patch / hashline mode: { input: string }\n</parameters>\n\n<critical>You MUST read the target file before editing it.\nMissing reads are caught by the fs-observation-policy when mounted;\notherwise the edit proceeds from whatever content the tool can read.</critical>",
+          "name": "str_replace_editor",
+          "description": "Custom editing tool for viewing, creating and editing files\n* State is persistent across command calls and discussions with the user\n* If `path` is a file, `view` displays the result of applying `cat -n`. If `path` is a directory, `view` lists non-hidden files and directories up to 2 levels deep\n* The `create` command cannot be used if the specified `path` already exists as a file\n* If a `command` generates a long output, it will be truncated and marked with `<response clipped>`\n* A null placeholder for a parameter unused by the selected command is treated as omitted. Required parameters still need values; omit `str_replace.new_str` rather than setting it to null when deleting a match\n\nNotes for using the `str_replace` command:\n* The `old_str` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n* If the `old_str` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `old_str` to make it unique\n* The `new_str` parameter should contain the edited lines that should replace the `old_str`",
           "parameters": {
             "type": "object",
             "properties": {
+              "command": {
+                "type": "string",
+                "description": "The commands to run. Allowed options are: `view`, `create`, `str_replace`, `insert`.",
+                "enum": [
+                  "view",
+                  "create",
+                  "str_replace",
+                  "insert"
+                ]
+              },
               "path": {
                 "type": "string",
-                "description": "the file path (relative to the working directory)"
+                "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`."
               },
-              "old_string": {
-                "type": "string",
-                "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
+              "file_text": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `create` command, with the content of the file to be created. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "new_string": {
-                "type": "string",
-                "description": "the replacement text"
+              "insert_line": {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required integer parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "replace_all": {
-                "type": "boolean",
-                "description": "when true, replaces every occurrence."
+              "new_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional string parameter of `str_replace` command containing the new string (if omitted, no string will be added). Required string parameter of `insert` command containing the string to insert. A null placeholder is accepted only by commands that do not use this parameter."
               },
-              "edits": {
-                "type": "array",
-                "description": "list of edit entries: { op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }"
+              "old_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `str_replace` command containing the string in `path` to replace. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "input": {
-                "type": "string",
-                "description": "a full *** Begin Patch ... *** End Patch envelope. a hashline patch document ([path#tag] sections)"
-              }
-            }
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "read",
-          "description": "Read a UTF-8 text file and return line-numbered content.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to read, resolved by the filesystem backend."
-              },
-              "offset": {
-                "type": "number",
-                "description": "1-based first line to return. Defaults to 1."
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum number of lines to return. Defaults to 2000."
-              }
-            },
-            "required": [
-              "file_path"
-            ]
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "write",
-          "description": "Create or fully replace a UTF-8 text file.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to write, resolved by the filesystem backend."
-              },
-              "content": {
-                "type": "string",
-                "description": "Full UTF-8 text content to write."
+              "view_range": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional parameter of `view` command when `path` points to a file. If omitted or null, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file."
               }
             },
             "required": [
-              "file_path",
-              "content"
+              "command",
+              "path"
             ]
           }
         }
@@ -231,11 +233,11 @@
     "messages": [
       {
         "role": "system",
-        "text": "You are a helpful software engineer assistant.\n\nUse the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.\n\nUse the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.\n\nUse the edit tool for targeted changes to existing UTF-8 text files. It replaces text in files after a mandatory read of the file first (the default fs-observation-policy requires it, unless you just created or edited it in this session). The tool runs in a fixed mode (see its description); call it with the argument shape for that mode."
+        "text": "You are a helpful software engineer assistant."
       },
       {
         "role": "user",
-        "text": "Exercise the packaged minimal agent's persistent Bash and rich edit tool.\nEditor path: {{cwd}}/created.txt"
+        "text": "Exercise the packaged minimal agent's persistent shell and string-replacement editor.\nEditor path: {{cwd}}/created.txt"
       },
       {
         "role": "assistant",
@@ -277,86 +279,87 @@
       {
         "type": "function",
         "function": {
-          "name": "edit",
-          "description": "Single-file edit tool. The mode is fixed by configuration, not per-call;\nthe appropriate argument shape is documented in <parameters>.\n\nMode \"replace\" (default) — literal string replacement with fuzzy whitespace\nmatching. MUST use the smallest old_string uniquely identifying the change.\nA non-unique old_string MUST add context or use replace_all: true for all\noccurrences. Renaming a string across the file → replace_all: true.\n\nMode \"patch\" — apply diff hunks. Hunk headers: bare `@@` when context lines\nare unique, else `@@ $ANCHOR` copied verbatim from the file. Each hunk body\ncontains only lines starting with ' ' | '+' | '-', and at least one change\n(+ or -). Use enough ` `-prefixed context lines to make the match unique\n(usually 2–8). When editing structured blocks, include the opening and\nclosing lines so the edit stays inside the block. NEVER use line numbers\nas anchors. If a patch fails, re-read the file and produce a fresh patch —\nnever retry the same diff.\n\nMode \"apply_patch\" — Codex-style envelope:\n*** Begin Patch\n*** Add File: <path>\n+<initial contents lines>\n*** Update File: <path> [*** Move to: <new path>]\n@@ <optional anchor/class/function>\n- <old line>\n+ <new line>\n  <context line>\n*** Delete File: <path>\n*** End Patch\nFile references relative, never absolute. New-file lines MUST start `+`.\n\nMode \"hashline\" — a line-anchored patch language. <guidance>\nSection: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.\nHEADER FORMS:\n- PUT N.=M: — replace original inclusive lines N–M with body (body rows)\n- PUT N*: — replace the syntactic block beginning N (closing line resolved)\n- PUT <N: — insert body rows before line N (PUT <1: = file head)\n- PUT >N: — insert body rows after line N (PUT >$: = file tail)\n- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register\n- REM — delete section file; MV DEST — move/rename section file\n- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).\n  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.\n- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.\n- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.\n- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.\n- NEVER format/restyle with this tool; run the project formatter.\nFull prompt guidance lives in the package's hashline prompt (not duplicated here).\n</guidance>\n\n<parameters>\nreplace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }\npatch mode:   { path: string, edits: Array<{ op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }> }\napply_patch / hashline mode: { input: string }\n</parameters>\n\n<critical>You MUST read the target file before editing it.\nMissing reads are caught by the fs-observation-policy when mounted;\notherwise the edit proceeds from whatever content the tool can read.</critical>",
+          "name": "str_replace_editor",
+          "description": "Custom editing tool for viewing, creating and editing files\n* State is persistent across command calls and discussions with the user\n* If `path` is a file, `view` displays the result of applying `cat -n`. If `path` is a directory, `view` lists non-hidden files and directories up to 2 levels deep\n* The `create` command cannot be used if the specified `path` already exists as a file\n* If a `command` generates a long output, it will be truncated and marked with `<response clipped>`\n* A null placeholder for a parameter unused by the selected command is treated as omitted. Required parameters still need values; omit `str_replace.new_str` rather than setting it to null when deleting a match\n\nNotes for using the `str_replace` command:\n* The `old_str` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n* If the `old_str` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `old_str` to make it unique\n* The `new_str` parameter should contain the edited lines that should replace the `old_str`",
           "parameters": {
             "type": "object",
             "properties": {
+              "command": {
+                "type": "string",
+                "description": "The commands to run. Allowed options are: `view`, `create`, `str_replace`, `insert`.",
+                "enum": [
+                  "view",
+                  "create",
+                  "str_replace",
+                  "insert"
+                ]
+              },
               "path": {
                 "type": "string",
-                "description": "the file path (relative to the working directory)"
+                "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`."
               },
-              "old_string": {
-                "type": "string",
-                "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
+              "file_text": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `create` command, with the content of the file to be created. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "new_string": {
-                "type": "string",
-                "description": "the replacement text"
+              "insert_line": {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required integer parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "replace_all": {
-                "type": "boolean",
-                "description": "when true, replaces every occurrence."
+              "new_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional string parameter of `str_replace` command containing the new string (if omitted, no string will be added). Required string parameter of `insert` command containing the string to insert. A null placeholder is accepted only by commands that do not use this parameter."
               },
-              "edits": {
-                "type": "array",
-                "description": "list of edit entries: { op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }"
+              "old_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `str_replace` command containing the string in `path` to replace. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "input": {
-                "type": "string",
-                "description": "a full *** Begin Patch ... *** End Patch envelope. a hashline patch document ([path#tag] sections)"
-              }
-            }
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "read",
-          "description": "Read a UTF-8 text file and return line-numbered content.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to read, resolved by the filesystem backend."
-              },
-              "offset": {
-                "type": "number",
-                "description": "1-based first line to return. Defaults to 1."
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum number of lines to return. Defaults to 2000."
-              }
-            },
-            "required": [
-              "file_path"
-            ]
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "write",
-          "description": "Create or fully replace a UTF-8 text file.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to write, resolved by the filesystem backend."
-              },
-              "content": {
-                "type": "string",
-                "description": "Full UTF-8 text content to write."
+              "view_range": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional parameter of `view` command when `path` points to a file. If omitted or null, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file."
               }
             },
             "required": [
-              "file_path",
-              "content"
+              "command",
+              "path"
             ]
           }
         }
@@ -365,11 +368,11 @@
     "messages": [
       {
         "role": "system",
-        "text": "You are a helpful software engineer assistant.\n\nUse the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.\n\nUse the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.\n\nUse the edit tool for targeted changes to existing UTF-8 text files. It replaces text in files after a mandatory read of the file first (the default fs-observation-policy requires it, unless you just created or edited it in this session). The tool runs in a fixed mode (see its description); call it with the argument shape for that mode."
+        "text": "You are a helpful software engineer assistant."
       },
       {
         "role": "user",
-        "text": "Exercise the packaged minimal agent's persistent Bash and rich edit tool.\nEditor path: {{cwd}}/created.txt"
+        "text": "Exercise the packaged minimal agent's persistent shell and string-replacement editor.\nEditor path: {{cwd}}/created.txt"
       },
       {
         "role": "assistant",
@@ -425,86 +428,87 @@
       {
         "type": "function",
         "function": {
-          "name": "edit",
-          "description": "Single-file edit tool. The mode is fixed by configuration, not per-call;\nthe appropriate argument shape is documented in <parameters>.\n\nMode \"replace\" (default) — literal string replacement with fuzzy whitespace\nmatching. MUST use the smallest old_string uniquely identifying the change.\nA non-unique old_string MUST add context or use replace_all: true for all\noccurrences. Renaming a string across the file → replace_all: true.\n\nMode \"patch\" — apply diff hunks. Hunk headers: bare `@@` when context lines\nare unique, else `@@ $ANCHOR` copied verbatim from the file. Each hunk body\ncontains only lines starting with ' ' | '+' | '-', and at least one change\n(+ or -). Use enough ` `-prefixed context lines to make the match unique\n(usually 2–8). When editing structured blocks, include the opening and\nclosing lines so the edit stays inside the block. NEVER use line numbers\nas anchors. If a patch fails, re-read the file and produce a fresh patch —\nnever retry the same diff.\n\nMode \"apply_patch\" — Codex-style envelope:\n*** Begin Patch\n*** Add File: <path>\n+<initial contents lines>\n*** Update File: <path> [*** Move to: <new path>]\n@@ <optional anchor/class/function>\n- <old line>\n+ <new line>\n  <context line>\n*** Delete File: <path>\n*** End Patch\nFile references relative, never absolute. New-file lines MUST start `+`.\n\nMode \"hashline\" — a line-anchored patch language. <guidance>\nSection: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.\nHEADER FORMS:\n- PUT N.=M: — replace original inclusive lines N–M with body (body rows)\n- PUT N*: — replace the syntactic block beginning N (closing line resolved)\n- PUT <N: — insert body rows before line N (PUT <1: = file head)\n- PUT >N: — insert body rows after line N (PUT >$: = file tail)\n- CUT N.=M / CUT N* — delete and capture lines / block; optional @name register\n- REM — delete section file; MV DEST — move/rename section file\n- Body rows ONLY below `:` headers; row is verbatim +TEXT (leading whitespace preserved).\n  Literal initial dash/plus: `- item` → `+- item`; `+ item` → `++ item`.\n- Numbers are original, never shifted by hunks. Each edit renumbers and changes #TAG.\n- Touch displayed lines only; undisplayed hunks rejected. Elisions (…, .., collapsed N-M: rows) unseen.\n- Ranges: changed lines only; never widen over keepers. Separate changes → separate hunks.\n- NEVER format/restyle with this tool; run the project formatter.\nFull prompt guidance lives in the package's hashline prompt (not duplicated here).\n</guidance>\n\n<parameters>\nreplace mode: { path: string, old_string: string, new_string: string, replace_all?: boolean }\npatch mode:   { path: string, edits: Array<{ op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }> }\napply_patch / hashline mode: { input: string }\n</parameters>\n\n<critical>You MUST read the target file before editing it.\nMissing reads are caught by the fs-observation-policy when mounted;\notherwise the edit proceeds from whatever content the tool can read.</critical>",
+          "name": "str_replace_editor",
+          "description": "Custom editing tool for viewing, creating and editing files\n* State is persistent across command calls and discussions with the user\n* If `path` is a file, `view` displays the result of applying `cat -n`. If `path` is a directory, `view` lists non-hidden files and directories up to 2 levels deep\n* The `create` command cannot be used if the specified `path` already exists as a file\n* If a `command` generates a long output, it will be truncated and marked with `<response clipped>`\n* A null placeholder for a parameter unused by the selected command is treated as omitted. Required parameters still need values; omit `str_replace.new_str` rather than setting it to null when deleting a match\n\nNotes for using the `str_replace` command:\n* The `old_str` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n* If the `old_str` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `old_str` to make it unique\n* The `new_str` parameter should contain the edited lines that should replace the `old_str`",
           "parameters": {
             "type": "object",
             "properties": {
+              "command": {
+                "type": "string",
+                "description": "The commands to run. Allowed options are: `view`, `create`, `str_replace`, `insert`.",
+                "enum": [
+                  "view",
+                  "create",
+                  "str_replace",
+                  "insert"
+                ]
+              },
               "path": {
                 "type": "string",
-                "description": "the file path (relative to the working directory)"
+                "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`."
               },
-              "old_string": {
-                "type": "string",
-                "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
+              "file_text": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `create` command, with the content of the file to be created. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "new_string": {
-                "type": "string",
-                "description": "the replacement text"
+              "insert_line": {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required integer parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "replace_all": {
-                "type": "boolean",
-                "description": "when true, replaces every occurrence."
+              "new_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional string parameter of `str_replace` command containing the new string (if omitted, no string will be added). Required string parameter of `insert` command containing the string to insert. A null placeholder is accepted only by commands that do not use this parameter."
               },
-              "edits": {
-                "type": "array",
-                "description": "list of edit entries: { op: \"create\"|\"delete\"|\"update\", rename?: string, diff?: string }"
+              "old_str": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Required string parameter of `str_replace` command containing the string in `path` to replace. A null placeholder is treated as omitted by commands that do not use this parameter."
               },
-              "input": {
-                "type": "string",
-                "description": "a full *** Begin Patch ... *** End Patch envelope. a hashline patch document ([path#tag] sections)"
-              }
-            }
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "read",
-          "description": "Read a UTF-8 text file and return line-numbered content.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to read, resolved by the filesystem backend."
-              },
-              "offset": {
-                "type": "number",
-                "description": "1-based first line to return. Defaults to 1."
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum number of lines to return. Defaults to 2000."
-              }
-            },
-            "required": [
-              "file_path"
-            ]
-          }
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-          "name": "write",
-          "description": "Create or fully replace a UTF-8 text file.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "file_path": {
-                "type": "string",
-                "description": "Path to write, resolved by the filesystem backend."
-              },
-              "content": {
-                "type": "string",
-                "description": "Full UTF-8 text content to write."
+              "view_range": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional parameter of `view` command when `path` points to a file. If omitted or null, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file."
               }
             },
             "required": [
-              "file_path",
-              "content"
+              "command",
+              "path"
             ]
           }
         }
@@ -513,11 +517,11 @@
     "messages": [
       {
         "role": "system",
-        "text": "You are a helpful software engineer assistant.\n\nUse the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.\n\nUse the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.\n\nUse the edit tool for targeted changes to existing UTF-8 text files. It replaces text in files after a mandatory read of the file first (the default fs-observation-policy requires it, unless you just created or edited it in this session). The tool runs in a fixed mode (see its description); call it with the argument shape for that mode."
+        "text": "You are a helpful software engineer assistant."
       },
       {
         "role": "user",
-        "text": "Exercise the packaged minimal agent's persistent Bash and rich edit tool.\nEditor path: {{cwd}}/created.txt"
+        "text": "Exercise the packaged minimal agent's persistent shell and string-replacement editor.\nEditor path: {{cwd}}/created.txt"
       },
       {
         "role": "assistant",
@@ -552,7 +556,7 @@
         "toolCalls": [
           {
             "id": "minimal-editor",
-            "name": "write"
+            "name": "str_replace_editor"
           }
         ]
       },

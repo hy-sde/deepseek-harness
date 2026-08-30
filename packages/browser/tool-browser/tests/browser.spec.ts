@@ -12,7 +12,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { Context } from '@deepseek-ai/cordis'
@@ -39,7 +39,7 @@ const agent = { session: { header: { id: 'b1', cwd: '' } } } as never
 async function call(args: unknown): Promise<{ value: unknown }> {
   const result = await ctx.tools.execute({
     signal: new AbortController().signal,
-    callId: CallId(`br-${++counter}`),
+    callId: ToolCallId(`br-${++counter}`),
     name: 'browser',
     arguments: args,
     agent,

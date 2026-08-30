@@ -6,17 +6,20 @@
  * and re-binds on connection resets.
  */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the SlotRegistry service merge (ctx.slots), the Client
+// Remote assembly (ctx.remote) that mounts the generated `wiki` namespace,
+// and the layout shell's SlotMap declaration (shell.overlay).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 import { WikiClient } from './api.ts'
 import { wikiStore } from './store.ts'
 import { WikiDrawer } from './WikiDrawer.tsx'
 import { WikiToggle } from './WikiToggle.tsx'
 
-/** Required services: the slot system and the connection handle (wire face). */
-export const inject = ['slots', 'connection']
+/** Required services: the slot system and the Client Remote wire face. */
+export const inject = ['slots', 'remote']
 
 /**
  * Client plugin body: register the toggle beside Settings and the floating
@@ -25,22 +28,22 @@ export const inject = ['slots', 'connection']
  */
 export function apply(ctx: ClientContext): void {
   const bind = (): void => {
-    const connection = ctx.get('connection') as ConnectionHandle
-    void wikiStore.bind(new WikiClient(connection.api.wiki))
+    const wiki = (ctx.get('remote') as ClientRemote).wiki
+    void wikiStore.bind(new WikiClient(wiki))
   }
   ctx.on('connection/reset', bind)
-  if (ctx.get('connection')) bind()
+  if (ctx.get('remote')) bind()
 
-  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+  ctx.slots.register({
     name: 'sidebar.footer.action',
     id: 'wiki',
     order: 90,
     label: 'Wiki',
-  }, WikiToggle))
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+  }, WikiToggle)
+  ctx.slots.register({
     name: 'shell.overlay',
     id: 'wiki-drawer',
     order: 10,
     label: 'Wiki drawer',
-  }, WikiDrawer))
+  }, WikiDrawer)
 }

@@ -6,8 +6,8 @@
  */
 
 import { describe, expect, it, beforeEach } from 'vitest'
-import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
-import { WikiClient } from '../src/client/api.ts'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { WikiClient, type WikiRemoteNamespace } from '../src/client/api.ts'
 import { wikiStore } from '../src/client/store.ts'
 
 async function resetStore(): Promise<void> {
@@ -20,30 +20,22 @@ async function resetStore(): Promise<void> {
 
 let stub: { method: string; args: unknown[] }[] = []
 
-/** A scripted IApiClient['wiki'] that records every call. */
-function scriptedWiki(calls: { method: string; args: unknown[] }[]): IApiClient['wiki'] {
-  const wire = <T>(method: string, produce: () => T) => async (): Promise<{ rpcId: string; result: { ok: true; value: T } }> => {
-    calls.push({ method, args: [] })
-    return { rpcId: '', result: { ok: true, value: produce() } }
-  }
-  const wirePayload = <T>(method: string, produce: (payload: unknown) => T) =>
-    async (payload: unknown): Promise<{ rpcId: string; result: { ok: true; value: T } }> => {
-      calls.push({ method, args: [payload] })
-      return { rpcId: '', result: { ok: true, value: produce(payload) } }
-    }
+/** A scripted wiki Remote namespace that records every call. */
+function scriptedWiki(calls: { method: string; args: unknown[] }[]): WikiRemoteNamespace {
+  const ok = <T>(value: T): RemoteResult<T> => ({ ok: true as const, value })
   const pageRow = { id: 240, title: 'Rust', updatedAt: 1787808165009, createdAt: 1787808086650 }
   const root = { id: 240, name: 'rust', title: 'Rust', uuid: null, createdAt: 1, updatedAt: 2, tags: [], props: {}, children: [] }
   return {
-    listPages: wirePayload('listPages', () => ({ pages: [pageRow] })),
-    getPage: wirePayload('getPage', () => ({ root, linked: [] })),
-    listTags: wire('listTags', () => ({ tags: [] })),
-    listProperties: wire('listProperties', () => ({ properties: [] })),
-    search: wirePayload('search', () => ({ items: [{ id: 273, title: 'Systems language', pageName: 'rust' }] })),
-    query: wirePayload('query', () => ({ rows: [] })),
-    upsert: wirePayload('upsert', payload => ({ entityType: (payload as { entityType: string }).entityType, status: 'ok' as const, detail: 'ok' })),
-    remove: wirePayload('remove', payload => ({ entityType: (payload as { entityType?: string }).entityType ?? 'block', detail: 'removed' })),
-    server: wirePayload('server', () => ({ servers: [] })),
-  } as unknown as IApiClient['wiki']
+    listPages: async (payload) => { calls.push({ method: 'listPages', args: [payload] }); return ok({ pages: [pageRow] }) },
+    getPage: async (payload) => { calls.push({ method: 'getPage', args: [payload] }); return ok({ root, linked: [] }) },
+    listTags: async () => { calls.push({ method: 'listTags', args: [] }); return ok({ tags: [] }) },
+    listProperties: async () => { calls.push({ method: 'listProperties', args: [] }); return ok({ properties: [] }) },
+    search: async (payload) => { calls.push({ method: 'search', args: [payload] }); return ok({ items: [{ id: 273, title: 'Systems language', pageName: 'rust' }] }) },
+    query: async (payload) => { calls.push({ method: 'query', args: [payload] }); return ok({ rows: [] }) },
+    upsert: async (payload) => { calls.push({ method: 'upsert', args: [payload] }); return ok({ entityType: payload.entityType, status: 'ok', detail: 'ok' }) },
+    remove: async (payload) => { calls.push({ method: 'remove', args: [payload] }); return ok({ entityType: payload.entityType ?? 'block', detail: 'removed' }) },
+    server: async (payload) => { calls.push({ method: 'server', args: [payload] }); return payload?.action === 'list' ? ok({ servers: [] }) : ok({ action: payload?.action ?? 'list', message: 'ok' }) },
+  } as WikiRemoteNamespace
 }
 
 beforeEach(resetStore)
@@ -53,7 +45,7 @@ describe('WikiClient face', () => {
     const calls: { method: string; args: unknown[] }[] = []
     const wiki = scriptedWiki(calls)
     // Swap one method to an error envelope.
-    const failing = { ...wiki, listPages: async () => ({ rpcId: '', result: { ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } } }) } as unknown as IApiClient['wiki']
+    const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as WikiRemoteNamespace
     await wikiStore.bind(new WikiClient(failing))
   })
 })
@@ -124,7 +116,7 @@ describe('wikiStore state machine', () => {
   it('surfaces errors in state instead of throwing', async () => {
     const calls: { method: string; args: unknown[] }[] = []
     const wiki = scriptedWiki(calls)
-    const failing = { ...wiki, listPages: async (payload: { includeBuiltIn?: boolean; limit?: number; offset?: number }) => { void payload; return { rpcId: '', result: { ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } } } } } as unknown as IApiClient['wiki']
+    const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as WikiRemoteNamespace
     await wikiStore.bind(new WikiClient(failing))
     expect(wikiStore.getState().error).toMatch(/graph down/)
   })

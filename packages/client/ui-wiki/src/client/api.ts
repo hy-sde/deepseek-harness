@@ -1,50 +1,58 @@
 /**
- * Typed wiki API face over the connection's IApiClient. Keeps every wire call
- * in one place (page list, page read, search, upsert, remove,
- * server) and converts the RpcResponse envelope into plain values or Errors
- * the store can surface. All shapes are derived from IApiClient so no host
- * package leaks into this browser bundle.
+ * Typed wiki API face over the mounted `ctx.remote.wiki` namespace. Keeps every
+ * wire call in one place (page list, page read, search, upsert, remove,
+ * server) and converts the Remote result envelope into plain values or Errors
+ * the store can surface. All shapes come from the controller's `./types`
+ * export, so no host package leaks into this browser bundle.
  */
 
-import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@deepseek-ai/dsh-api-wiki-controller/remote'
+import type {
+  WikiGetPageRequest,
+  WikiGetPageValue,
+  WikiListPagesRequest,
+  WikiPageRow,
+  WikiPropertyRow,
+  WikiQueryRequest,
+  WikiRemoveRequest,
+  WikiRemoveValue,
+  WikiSearchItem,
+  WikiSearchRequest,
+  WikiServerRequest,
+  WikiServerRequestValue,
+  WikiTagRow,
+  WikiUpsertRequest,
+  WikiUpsertValue,
+} from '@deepseek-ai/dsh-api-wiki-controller/types'
+import type { RemoteResult, TypertRemoteNamespaceMap } from '@deepseek-ai/dsh-typert-protocol'
 
-/** Payload type of one wiki client method (the IApiClient unary form takes the business payload directly). */
-type Payload<K extends keyof IApiClient['wiki']> = Parameters<IApiClient['wiki'][K]>[0]
+export type { WikiPageRow } from '@deepseek-ai/dsh-api-wiki-controller/types'
+export type { WikiSearchItem } from '@deepseek-ai/dsh-api-wiki-controller/types'
+export type { WikiGetPageValue } from '@deepseek-ai/dsh-api-wiki-controller/types'
+export type { WikiBlockNode } from '@deepseek-ai/dsh-api-wiki-controller/types'
 
-/** Success value type of one wiki client method. */
-type Value<K extends keyof IApiClient['wiki']> =
-  Extract<Awaited<ReturnType<IApiClient['wiki'][K]>>['result'], { ok: true }> extends { value: infer V } ? V : never
+/** The mounted `wiki` Remote namespace as the generated map declares it. */
+export type WikiRemoteNamespace = TypertRemoteNamespaceMap['wiki']
 
-/** Flat page row over the wire. */
-export type WikiPageRow = Value<'listPages'>['pages'][number]
-/** One search hit over the wire. */
-export type WikiSearchItem = Value<'search'>['items'][number]
-/** getPage result: root tree + linked references. */
-export type WikiGetPageValue = Value<'getPage'>
-/** upsert acknowledgement over the wire. */
-export type WikiUpsertValue = Value<'upsert'>
-/** server response: table or action acknowledgement. */
-export type WikiServerValue = Value<'server'>
-/** Recursive outliner node: one block of the getPage tree. */
-export type WikiBlockNode = NonNullable<WikiGetPageValue['root']['children']>[number]
-
-/** Result of a unary wiki call after unwrapping the RpcResponse envelope. */
-function unwrap<T>(response: { result: { ok: boolean; value?: T; error?: { code: string; message: string } } }): T {
-  if (response.result.ok) return response.result.value as T
-  throw new Error(`${String(response.result.error?.code)}: ${response.result.error?.message ?? 'unknown error'}`)
+/** Result of one wiki Remote call after unwrapping the result envelope. */
+function unwrap<T>(response: Promise<RemoteResult<T>>): Promise<T> {
+  return response.then((result) => {
+    if (result.ok) return result.value
+    throw new Error(`${result.error.code}: ${result.error.message}`)
+  })
 }
 
 /** One bound wiki client (safe to construct once per connection). */
 export class WikiClient {
-  constructor(private readonly api: IApiClient['wiki']) {}
+  constructor(private readonly wiki: WikiRemoteNamespace) {}
 
   /**
    * List pages.
    * @param options - paging/filter options.
    * @returns page rows.
    */
-  listPages(options?: Payload<'listPages'>): Promise<Value<'listPages'>> {
-    return this.api.listPages(options ?? {}).then(unwrap)
+  listPages(options?: WikiListPagesRequest): Promise<{ pages: WikiPageRow[] }> {
+    return unwrap(this.wiki.listPages(options ?? {}))
   }
 
   /**
@@ -52,16 +60,24 @@ export class WikiClient {
    * @param options - page/id/uuid selector.
    * @returns the page value.
    */
-  getPage(options: Payload<'getPage'>): Promise<Value<'getPage'>> {
-    return this.api.getPage(options).then(unwrap)
+  getPage(options: WikiGetPageRequest): Promise<WikiGetPageValue> {
+    return unwrap(this.wiki.getPage(options))
   }
 
   /**
    * List user tags.
    * @returns tag rows.
    */
-  listTags(): Promise<Value<'listTags'>> {
-    return this.api.listTags({}).then(unwrap)
+  listTags(): Promise<{ tags: WikiTagRow[] }> {
+    return unwrap(this.wiki.listTags())
+  }
+
+  /**
+   * List properties.
+   * @returns property rows.
+   */
+  listProperties(): Promise<{ properties: WikiPropertyRow[] }> {
+    return unwrap(this.wiki.listProperties())
   }
 
   /**
@@ -69,8 +85,17 @@ export class WikiClient {
    * @param options - type/content/limit.
    * @returns hits.
    */
-  search(options: Payload<'search'>): Promise<Value<'search'>> {
-    return this.api.search(options).then(unwrap)
+  search(options: WikiSearchRequest): Promise<{ items: WikiSearchItem[] }> {
+    return unwrap(this.wiki.search(options))
+  }
+
+  /**
+   * Run a Datascript query.
+   * @param request - query text + optional inputs/limit.
+   * @returns the raw result rows.
+   */
+  query(request: WikiQueryRequest): Promise<{ rows: unknown }> {
+    return unwrap(this.wiki.query(request))
   }
 
   /**
@@ -78,8 +103,8 @@ export class WikiClient {
    * @param request - entity args.
    * @returns the acknowledgement.
    */
-  upsert(request: Payload<'upsert'>): Promise<Value<'upsert'>> {
-    return this.api.upsert(request).then(unwrap)
+  upsert(request: WikiUpsertRequest): Promise<WikiUpsertValue> {
+    return unwrap(this.wiki.upsert(request))
   }
 
   /**
@@ -87,8 +112,8 @@ export class WikiClient {
    * @param request - entity selector.
    * @returns the acknowledgement.
    */
-  remove(request: Payload<'remove'>): Promise<Value<'remove'>> {
-    return this.api.remove(request).then(unwrap)
+  remove(request: WikiRemoveRequest): Promise<WikiRemoveValue> {
+    return unwrap(this.wiki.remove(request))
   }
 
   /**
@@ -96,7 +121,7 @@ export class WikiClient {
    * @param request - action + optional graph name.
    * @returns table or ack.
    */
-  server(request?: Payload<'server'>): Promise<Value<'server'>> {
-    return this.api.server(request ?? {}).then(unwrap)
+  server(request?: WikiServerRequest): Promise<WikiServerRequestValue> {
+    return unwrap(this.wiki.server({ action: 'list', ...request }))
   }
 }

@@ -1,17 +1,18 @@
 // @vitest-environment jsdom
 /**
  * ui-wiki browser half over a real cordis Context with a SlotRegistry and a
- * scripted connection: apply() registers the sidebar toggle and the overlay
+ * scripted Remote: apply() registers the sidebar toggle and the overlay
  * drawer, and the rendered toggle opens the panel which lists pages and
- * navigates into a page through the wiki face.
+ * navigates into a page through the wiki wire face.
  */
 
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, afterEach } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
-import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import type { WikiRemoteNamespace } from '../src/client/api.ts'
 import { wikiStore } from '../src/client/store.ts'
 import { apply, inject } from '../src/client/index.ts'
 import { WikiToggle } from '../src/client/WikiToggle.tsx'
@@ -22,29 +23,26 @@ afterEach(() => {
   wikiStore.close()
 })
 
-function scriptedWiki(calls: { method: string; args: unknown[] }[]): IApiClient['wiki'] {
-  const wire = (method: string, value: unknown) => async () => {
-    calls.push({ method, args: [] })
-    return { rpcId: '', result: { ok: true as const, value } }
-  }
+function scriptedWiki(calls: { method: string; args: unknown[] }[]): WikiRemoteNamespace {
+  const ok = <T,>(value: T): RemoteResult<T> => ({ ok: true as const, value })
   return {
-    listPages: wire('listPages', { pages: [{ id: 240, title: 'Rust', updatedAt: 1787808165009, createdAt: 1787808086650 }] }) as unknown as IApiClient['wiki']['listPages'],
-    getPage: wire('getPage', {
+    listPages: async (payload) => { calls.push({ method: 'listPages', args: [payload] }); return ok({ pages: [{ id: 240, title: 'Rust', updatedAt: 1787808165009, createdAt: 1787808086650 }] }) },
+    getPage: async (payload) => { calls.push({ method: 'getPage', args: [payload] }); return ok({
       root: {
         id: 240, name: 'rust', title: 'Rust', uuid: null, createdAt: 1, updatedAt: 1, tags: [], props: {}, children: [
           { id: 273, uuid: null, content: 'Systems language in the LLM-era vibe shift', order: 'a0', createdAt: 1, updatedAt: 1, tags: [], children: [] },
         ],
       },
       linked: [],
-    }) as unknown as IApiClient['wiki']['getPage'],
-    listTags: wire('listTags', { tags: [] }) as unknown as IApiClient['wiki']['listTags'],
-    listProperties: wire('listProperties', { properties: [] }) as unknown as IApiClient['wiki']['listProperties'],
-    search: wire('search', { items: [] }) as unknown as IApiClient['wiki']['search'],
-    query: wire('query', { rows: [] }) as unknown as IApiClient['wiki']['query'],
-    upsert: wire('upsert', { entityType: 'block', status: 'ok' as const, detail: 'ok' }) as unknown as IApiClient['wiki']['upsert'],
-    remove: wire('remove', { entityType: 'block', detail: 'removed' }) as unknown as IApiClient['wiki']['remove'],
-    server: wire('server', { servers: [] }) as unknown as IApiClient['wiki']['server'],
-  }
+    }) },
+    listTags: async () => { calls.push({ method: 'listTags', args: [] }); return ok({ tags: [] }) },
+    listProperties: async () => { calls.push({ method: 'listProperties', args: [] }); return ok({ properties: [] }) },
+    search: async (payload) => { calls.push({ method: 'search', args: [payload] }); return ok({ items: [] }) },
+    query: async (payload) => { calls.push({ method: 'query', args: [payload] }); return ok({ rows: [] }) },
+    upsert: async (payload) => { calls.push({ method: 'upsert', args: [payload] }); return ok({ entityType: payload.entityType, status: 'ok', detail: 'ok' }) },
+    remove: async (payload) => { calls.push({ method: 'remove', args: [payload] }); return ok({ entityType: payload.entityType ?? 'block', detail: 'removed' }) },
+    server: async (payload) => { calls.push({ method: 'server', args: [payload] }); return ok({ servers: [] }) },
+  } as WikiRemoteNamespace
 }
 
 async function bench(): Promise<{ ctx: Context }> {
@@ -57,8 +55,7 @@ async function bench(): Promise<{ ctx: Context }> {
       'sidebar.footer.action': { kind: 'list', scope: 'root' },
     },
   } as never, (() => null) as never)
-  const connection = { api: { wiki: scriptedWiki(calls) } } as unknown as ConnectionHandle
-  ctx.provide('connection', connection)
+  ctx.provide('remote', { wiki: scriptedWiki(calls) } as unknown as ClientRemote)
   await ctx.plugin({ inject, apply }).await()
   return { ctx }
 }

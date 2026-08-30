@@ -43,7 +43,14 @@ export interface BrowserConfig {
   /** Headless mode for launched browsers (default true). */
   headless?: boolean
   /** Default viewport for launched browsers. */
-  viewport?: { width: number; height: number; deviceScaleFactor?: number }
+  viewport?: {
+    /** Viewport width in CSS pixels (default 1280). */
+    width: number
+    /** Viewport height in CSS pixels (default 720). */
+    height: number
+    /** Device scale factor — values above 1 simulate high-DPI displays (default 1). */
+    deviceScaleFactor?: number
+  }
   /** Relay endpoint (default `http://127.0.0.1:9224`). */
   relayUrl?: string
   /** Token the extension must present at `ws://…/ext?token=` (unset = open). */

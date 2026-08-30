@@ -2,7 +2,7 @@
 
 English | [中文](browser.zh.md)
 
-The browser seam is split across a Host Service ([dsh-browser](../../packages/browser/browser), `ctx.browser`) and a Consumer ([dsh-tool-browser](../../packages/browser/tool-browser), the `browser` tool). The service owns real browser connections over Chrome DevTools Protocol through Playwright Core CDP — ported from omp's browser tool with stealth + relay/CDP-attach (see [port_omp.md](../../port_omp.md)). The tool layer owns the model-facing contract; the relay shares its design with `omp browser-relay` (MIT).
+The browser seam is split across a Host Service ([dsh-browser](../../packages/browser/browser), `ctx.browser`) and a Consumer ([dsh-tool-browser](../../packages/browser/tool-browser), the `browser` tool). The service owns real browser connections over Chrome DevTools Protocol through Playwright Core CDP — ported from omp's browser tool with stealth + relay/CDP-attach. The tool layer owns the model-facing contract; the relay shares its design with `omp browser-relay` (MIT).
 
 Source: [`packages/browser/browser/src/service.ts`](../../packages/browser/browser/src/service.ts)
 

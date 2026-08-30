@@ -18,9 +18,6 @@
       "path": "../../api/remotes/tsconfig.client.json"
     },
     {
-      "path": "../runtime"
-    },
-    {
       "path": "../ui-layout"
     },
     {

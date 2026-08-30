@@ -7,7 +7,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { assembleContextFor } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { CallId, LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { ToolCallId, LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
@@ -118,7 +118,7 @@ let calls = 0
 function callReport(ctx: Context, child: Agent, output: string, signal = testSignal) {
   return ctx.tools.execute({
     signal,
-    callId: CallId(`report-${++calls}`),
+    callId: ToolCallId(`report-${++calls}`),
     name: 'report',
     arguments: { output },
     agent: child,
@@ -620,7 +620,7 @@ describe('dsh-tool-subagent-report keyed decisions', () => {
 
     const result = await ctx.tools.execute({
       signal: testSignal,
-      callId: CallId(`report-decision-${++calls}`),
+      callId: ToolCallId(`report-decision-${++calls}`),
       name: 'report',
       arguments: {
         output: 'approach A works; approach B needs your call',
@@ -653,7 +653,7 @@ describe('dsh-tool-subagent-report keyed decisions', () => {
     // Re-reporting the same key refreshes the record instead of duplicating it.
     const again = await ctx.tools.execute({
       signal: testSignal,
-      callId: CallId(`report-decision-${++calls}`),
+      callId: ToolCallId(`report-decision-${++calls}`),
       name: 'report',
       arguments: {
         status: 'needs-decision',
@@ -676,7 +676,7 @@ describe('dsh-tool-subagent-report keyed decisions', () => {
 
     const result = await ctx.tools.execute({
       signal: testSignal,
-      callId: CallId(`report-blocked-${++calls}`),
+      callId: ToolCallId(`report-blocked-${++calls}`),
       name: 'report',
       arguments: {
         status: 'blocked',
@@ -708,7 +708,7 @@ describe('dsh-tool-subagent-report keyed decisions', () => {
 
     const missingKey = await ctx.tools.execute({
       signal: testSignal,
-      callId: CallId(`report-bad-${++calls}`),
+      callId: ToolCallId(`report-bad-${++calls}`),
       name: 'report',
       arguments: { status: 'blocked', summary: 'stuck' },
       agent: child,
@@ -717,7 +717,7 @@ describe('dsh-tool-subagent-report keyed decisions', () => {
 
     const missingSummary = await ctx.tools.execute({
       signal: testSignal,
-      callId: CallId(`report-bad-${++calls}`),
+      callId: ToolCallId(`report-bad-${++calls}`),
       name: 'report',
       arguments: { status: 'needs-decision', decisionKey: 'k' },
       agent: child,
@@ -726,7 +726,7 @@ describe('dsh-tool-subagent-report keyed decisions', () => {
 
     const empty = await ctx.tools.execute({
       signal: testSignal,
-      callId: CallId(`report-bad-${++calls}`),
+      callId: ToolCallId(`report-bad-${++calls}`),
       name: 'report',
       arguments: {},
       agent: child,

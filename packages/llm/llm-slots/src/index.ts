@@ -216,17 +216,26 @@ export class ModelSlotsService extends Service {
     this.track = gate
   }
 
-  /** Transient admission snapshot for operators and the GUI. */
+  /**
+   * Transient admission snapshot for operators and the GUI.
+   * @returns the current slot-gate stats.
+   */
   stats(): ModelSlotsStats {
     return this.track.snapshot()
   }
 
-  /** Toggle admission enforcement (independent of capacity). */
+  /**
+   * Toggle admission enforcement (independent of capacity).
+   * @param enabled - whether admission is enforced.
+   */
   setEnabled(enabled: boolean): void {
     this.track.reconfigure({ enabled, capacity: this.track.capacity })
   }
 
-  /** Change the host-wide slot budget; a shrink takes effect as calls drain. */
+  /**
+   * Change the host-wide slot budget; a shrink takes effect as calls drain.
+   * @param capacity - the new slot budget (clamped to >= 1).
+   */
   setCapacity(capacity: number): void {
     const clamped = Math.max(1, Math.trunc(capacity))
     this.track.reconfigure({ enabled: this.track.enabled, capacity: clamped })

@@ -4,7 +4,9 @@
  * Settings seat at the sidebar foot. All timer state lives in the module
  * store (`./timer.ts`); this file only mounts the seat.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the SlotRegistry service merge (ctx.slots).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import { CountdownCell } from './CountdownCell.tsx'
 
@@ -16,10 +18,10 @@ export const inject = ['slots']
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+  ctx.slots.register({
     name: 'sidebar.footer.action',
     id: 'countdown',
     order: 100,
     label: 'Countdown',
-  }, CountdownCell))
+  }, CountdownCell)
 }
