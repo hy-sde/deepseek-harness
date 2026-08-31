@@ -34,15 +34,27 @@ export function parseNumstat(output: string): NumstatEntry[] {
 export function parseFileDiffs(diff: string): FileDiff[] {
   const sections: FileDiff[] = []
   const parts = diff.split('\ndiff --git ')
-  for (let index = 0; index < parts.length; index += 1) {
-    const part = index === 0 ? parts[index] ?? '' : `diff --git ${parts[index] ?? ''}`
+  const matched: Array<{ part: string; lines: string[] }> = []
+  for (const rawPart of parts) {
+    const part = rawPart.startsWith('diff --git ') ? rawPart : `diff --git ${rawPart}`
     if (!part.trim()) continue
     const lines = part.split('\n')
     const header = lines[0] ?? ''
     const match = header.match(/diff --git a\/(.+?) b\/(.+)$/)
     if (!match) continue
-    const filename = match[2] ?? ''
-    const content = part
+    matched.push({ part, lines })
+  }
+  for (let index = 0; index < matched.length; index += 1) {
+    const entry = matched[index]
+    if (!entry) continue
+    const { part, lines } = entry
+    const filename = lines[0]?.match(/diff --git a\/(.+?) b\/(.+)$/)?.[2] ?? ''
+    // The `\ndiff --git ` split delimiter consumed the `\n` that terminated
+    // every non-final file block. Restore it so each section's content is
+    // byte-exact — load-bearing for `GIT binary patch` terminators that are
+    // followed by another file, whose closing blank line must survive a
+    // verbatim `joinPatches` (#8899).
+    const content = index < matched.length - 1 ? `${part}\n` : part
     const isBinary = lines.some(line => line.startsWith('Binary files '))
     let additions = 0
     let deletions = 0

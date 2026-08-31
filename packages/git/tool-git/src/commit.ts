@@ -22,13 +22,14 @@ import {
   computeDependencyOrder,
   validateHunkSelections,
   EXCLUDED_LOCK_FILES,
+  withRepoLock,
+  vcs,
+  conventional,
 } from '@deepseek-ai/dsh-git'
 import type { CommitType, NumstatEntry, SplitCommitGroup, SplitCommitPlan } from '@deepseek-ai/dsh-git'
 
-/** Commit-type vocabulary for schema + validation (kept in sync with types). */
-const COMMIT_TYPES: readonly CommitType[] = [
-  'feat', 'fix', 'refactor', 'perf', 'docs', 'test', 'build', 'ci', 'chore', 'style', 'revert',
-]
+/** Commit-type vocabulary for schema + validation (llm-git canonical, 22 types). */
+const COMMIT_TYPES: readonly CommitType[] = [...conventional.COMMIT_TYPE_ORDER]
 
 /** Call working directory resolution shared by the git tools. */
 export function resolveCwd(exec: ToolExecution, cwdArg: string | undefined): string {
@@ -370,6 +371,41 @@ function validateGroupFields(commits: readonly SplitCommitGroup[]): string[] {
   return errors
 }
 
+/**
+ * Advisory conventional-commit quality checks (llm-git rules) for a split
+ * plan. Never blocks: returns one readable line per issue so the model can
+ * refine summaries/types in its next round. `warnings` is mutated for
+ * stat-free cross-checks (type/file extension consistency).
+ */
+function collectConventionalAdvisories(
+  commits: readonly SplitCommitGroup[],
+  _warnings: string[],
+): string[] {
+  const lines: string[] = []
+  for (const [i, group] of commits.entries()) {
+    const label = `group ${i + 1}`
+    const commitMessage = {
+      type: group.type,
+      scope: group.scope ?? null,
+      summary: group.summary,
+      body: (group.details ?? []).map(detail => detail.text),
+      footers: (group.issueRefs ?? []).map(ref => `Refs: ${ref}`),
+    }
+    const report = conventional.validateSummaryQuality(group.summary, group.type)
+    for (const issue of report.errors) {
+      lines.push(`${label} [${issue.code}] ${issue.message}`)
+    }
+    // Validate the full message shape too (lengths, trailing period, scope).
+    const full = conventional.validateCommitMessage(commitMessage, conventional.DEFAULT_CONVENTIONAL_CONFIG)
+    for (const issue of full.errors) {
+      if (!lines.includes(`${label} [${issue.code}] ${issue.message}`)) {
+        lines.push(`${label} [${issue.code}] ${issue.message}`)
+      }
+    }
+  }
+  return lines
+}
+
 export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number } = {}): void {
   ctx.tools.register(defineTool({
     name: 'commit_apply',
@@ -470,6 +506,9 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
       if (!(await git.isRepo(cwd, exec.signal))) {
         throw new Error(`commit_apply requires a git repository: ${cwd} is not inside a working tree`)
       }
+      // Discovery-based repo identity for the advisory layer and the write
+      // lock (VcsError NotARepository taxonomy at the tool boundary).
+      vcs.requireGit(cwd)
       if (!Array.isArray(args.commits) || args.commits.length === 0) {
         throw new Error('commit_apply requires a non-empty commits plan (call `commit` first to analyze)')
       }
@@ -515,6 +554,13 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
         throw new Error(fieldErrors.map(error => `- ${error}`).join('\n'))
       }
 
+      // Advisory conventional-commit quality checks (llm-git rules): never
+      // block execution — surface past-tense/limit hints as warnings so the
+      // model can refine the plan in the next round.
+      const advisory = collectConventionalAdvisories(plan.commits, warnings)
+      const advisoryText = advisory.map(item => `- ${item}`)
+      if (advisoryText.length > 0) warnings.push(...advisoryText)
+
       const order = computeDependencyOrder(plan.commits)
       if ('error' in order) {
         throw new Error(`Plan rejected before anything was written: ${order.error}`)
@@ -540,57 +586,61 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
           dryRun: true,
         } satisfies CommitApplyValue
       }
-
       const created: CommitCreated[] = []
-      await git.resetIndex(cwd, [], exec.signal)
-      try {
-        for (let position = 0; position < order.length; position++) {
-          const index = order[position]
-          const group = index === undefined ? undefined : plan.commits[index]
-          if (index === undefined || group === undefined) {
-            throw new Error('Plan rejected before anything was written: commit order references an unknown group')
-          }
-          try {
-            await git.stageHunks(cwd, group.changes, { rawDiff: stagedDiff, signal: exec.signal })
-          } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error)
-            throw new Error(
-              `${position} of ${order.length} commits created so far; failed to stage group ${position + 1}: ${message}. `
-              + 'No changes were lost — remaining changes are unstaged.',
+      // Serialize this multi-step mutation against other in-process callers
+      // on the same repo (git's O_EXCL lock files have no waiter). Keyed by
+      // the primary repo root so worktrees of the same repo share one queue.
+      await withRepoLock(cwd, async () => {
+        await git.resetIndex(cwd, [], exec.signal)
+        try {
+          for (let position = 0; position < order.length; position++) {
+            const index = order[position]
+            const group = index === undefined ? undefined : plan.commits[index]
+            if (index === undefined || group === undefined) {
+              throw new Error('Plan rejected before anything was written: commit order references an unknown group')
+            }
+            try {
+              await git.stageHunks(cwd, group.changes, { rawDiff: stagedDiff, signal: exec.signal })
+            } catch (error: unknown) {
+              const message = error instanceof Error ? error.message : String(error)
+              throw new Error(
+                `${position} of ${order.length} commits created so far; failed to stage group ${position + 1}: ${message}. `
+                 + 'No changes were lost — remaining changes are unstaged.',
+              )
+            }
+            const message = formatCommitMessage(
+              { type: group.type, scope: group.scope, details: group.details ?? [], issueRefs: group.issueRefs ?? [] },
+              normalizeSummary(group.summary),
             )
+            try {
+              await git.commit(cwd, message, { signal: exec.signal })
+            } catch (error: unknown) {
+              const detail = error instanceof Error ? error.message : String(error)
+              throw new Error(
+                `Commit ${position + 1} of ${order.length} failed: ${detail}. `
+                 + `${position} of ${order.length} commits created; no changes were lost.`,
+              )
+            }
+            const hash = (await git.log(cwd, { max: 1, signal: exec.signal }))[0]?.hash ?? ''
+            created.push({
+              position: position + 1,
+              hash,
+              message,
+              changes: group.changes.map(change => change.path),
+            })
+            await git.resetIndex(cwd, [], exec.signal)
           }
-          const message = formatCommitMessage(
-            { type: group.type, scope: group.scope, details: group.details ?? [], issueRefs: group.issueRefs ?? [] },
-            normalizeSummary(group.summary),
-          )
-          try {
-            await git.commit(cwd, message, { signal: exec.signal })
-          } catch (error: unknown) {
-            const detail = error instanceof Error ? error.message : String(error)
-            throw new Error(
-              `Commit ${position + 1} of ${order.length} failed: ${detail}. `
-              + `${position} of ${order.length} commits created; no changes were lost.`,
-            )
-          }
-          const hash = (await git.log(cwd, { max: 1, signal: exec.signal }))[0]?.hash ?? ''
-          created.push({
-            position: position + 1,
-            hash,
-            message,
-            changes: group.changes.map(change => change.path),
-          })
-          await git.resetIndex(cwd, [], exec.signal)
+        } catch (error: unknown) {
+          // Leave the index empty so the user's worktree changes stay intact and
+          // inspectable; nothing was lost, no partial staging is leaked.
+          await git.resetIndex(cwd, [], exec.signal).catch(() => undefined)
+          throw error
         }
-      } catch (error: unknown) {
-        // Leave the index empty so the user's worktree changes stay intact and
-        // inspectable; nothing was lost, no partial staging is leaked.
-        await git.resetIndex(cwd, [], exec.signal).catch(() => undefined)
-        throw error
-      }
 
-      if (args.push) {
-        await git.push(cwd, { signal: exec.signal })
-      }
+        if (args.push) {
+          await git.push(cwd, { signal: exec.signal })
+        }
+      }, exec.signal)
 
       return {
         mode: created.length === 1 ? 'single' : 'split',

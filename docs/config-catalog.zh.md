@@ -892,8 +892,7 @@ export interface Config {
   graceMs?: number
 }
 ```
-
-来源：[`packages/git/git/src/service.ts:38`](../packages/git/git/src/service.ts)
+来源：[`packages/git/git/src/service.ts:39`](../packages/git/git/src/service.ts)
 
 <a id="deepseek-aidsh-goal"></a>
 

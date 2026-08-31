@@ -33,6 +33,7 @@ import type {
   GitStatusSummary,
   NumstatEntry,
 } from './types.ts'
+import { joinPatches } from './vcs.ts'
 
 /** Plugin configuration for the git service. */
 export interface Config {
@@ -541,10 +542,12 @@ function splitLines(text: string): string[] {
   return lines
 }
 
-/** Join patch parts the way `git apply` expects (omp `patch.join`). */
-function patchJoin(parts: string[]): string {
-  return `${parts
-    .map(part => (part.endsWith('\n') ? part : `${part}\n`))
-    .join('\n')
-    .replace(/\n+$/, '')}\n`
+/**
+ * Join patch parts the way `git apply` expects. Delegates to the pi-vcs
+ * contract `vcs.joinPatches`: parts are concatenated verbatim with a final
+ * newline added only when absent — trailing newlines are never collapsed,
+ * so a `GIT binary patch` terminator survives byte-exact (#8899).
+ */
+function patchJoin(parts: readonly string[]): string {
+  return joinPatches(parts)
 }

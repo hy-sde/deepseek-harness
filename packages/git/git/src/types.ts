@@ -17,6 +17,17 @@ export type CommitType =
   | 'chore'
   | 'style'
   | 'revert'
+  | 'deps'
+  | 'security'
+  | 'config'
+  | 'ux'
+  | 'release'
+  | 'hotfix'
+  | 'infra'
+  | 'init'
+  | 'merge'
+  | 'hack'
+  | 'wip'
 
 /** One conventional-commit type list entry. */
 export interface ConventionalDetail {

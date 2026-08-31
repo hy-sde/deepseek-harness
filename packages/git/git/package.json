@@ -42,6 +42,18 @@
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
     },
+    "./vcs": {
+      "types": "./lib/types/vcs.d.ts",
+      "default": "./lib/types/vcs.js"
+    },
+    "./repo-lock": {
+      "types": "./lib/types/repo-lock.d.ts",
+      "default": "./lib/types/repo-lock.js"
+    },
+    "./conventional": {
+      "types": "./lib/types/conventional/index.d.ts",
+      "default": "./lib/types/conventional/index.js"
+    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },

@@ -891,7 +891,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/git/git/src/service.ts:38`](../packages/git/git/src/service.ts)
+Source: [`packages/git/git/src/service.ts:39`](../packages/git/git/src/service.ts)
 
 <a id="deepseek-aidsh-goal"></a>
 
