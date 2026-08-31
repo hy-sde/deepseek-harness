@@ -49,6 +49,10 @@ export interface InstanceSpec extends ConnectionSpec {
   readonly shutdownTimeoutMs: number
   /** Bounded wait for a `textDocument/publishDiagnostics` notification during collection (ms). */
   readonly diagnosticsTimeoutMs: number
+  /** Project-aware server: read-path diagnostics get the longer wait and timeouts surface as errors. */
+  readonly projectAware: boolean
+  /** Read-path publish-diagnostics wait budget for project-aware servers (ms). */
+  readonly projectDiagnosticsWaitMs: number
 }
 
 /**
@@ -191,7 +195,11 @@ export class LspInstance {
     }
     const uri = source.fileUrl
     const version = 1
-    const deadlineSignal = deadline(signal, this.spec.diagnosticsTimeoutMs, 'LSP_DIAGNOSTICS_TIMEOUT')
+    // Project-aware servers (tsserver, Roslyn, …) compute first-pass diagnostics on demand and
+    // routinely overrun the base collection budget; an explicit read-path query can afford a longer
+    // bounded wait, so give project-aware servers their own budget (still capped by tool timeout).
+    const waitBudgetMs = this.spec.projectAware ? this.spec.projectDiagnosticsWaitMs : this.spec.diagnosticsTimeoutMs
+    const deadlineSignal = deadline(signal, waitBudgetMs, 'LSP_DIAGNOSTICS_TIMEOUT')
     let opened = false
     let removeListener: (() => void) | undefined
     try {
@@ -218,6 +226,12 @@ export class LspInstance {
         if (timeoutOf(deadlineSignal.signal) !== undefined) return undefined
         throw error
       })
+      if (payload === undefined && this.spec.projectAware) {
+        // A publish-wait timeout on a project-aware server leaves the file's state unknown — the
+        // server advertised diagnostics but produced none within an extended budget. Never let it
+        // collapse into a clean empty report the caller renders as "OK".
+        throw new LspError(`server did not publish diagnostics for ${uri} within ${waitBudgetMs}ms`, 'LSP_DIAGNOSTICS_TIMEOUT')
+      }
       return {
         kind: 'diagnostics' as const,
         diagnostics: normalizeDiagnostics(payload, uri, version),

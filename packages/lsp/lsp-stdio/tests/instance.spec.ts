@@ -57,6 +57,8 @@ function makeInstance(
     shutdownTimeoutMs: 200,
     killGraceMs: 200,
     diagnosticsTimeoutMs: 400,
+    projectAware: false,
+    projectDiagnosticsWaitMs: 1000,
     ...overrides,
   }, spawnSubprocess, writer)
   live.push(instance)
@@ -93,6 +95,8 @@ function scriptInstance(script: string, overrides: Partial<InstanceSpec> = {}): 
     shutdownTimeoutMs: 150,
     killGraceMs: 150,
     diagnosticsTimeoutMs: 400,
+    projectAware: false,
+    projectDiagnosticsWaitMs: 1000,
     ...overrides,
   }, spawnSubprocess)
   live.push(instance)
@@ -424,6 +428,61 @@ describe('LspInstance write path', () => {
       pathToFileURL(join(ws, 'a.ts')).href,
       'typescript',
     )).resolves.toEqual({ diagnostics: [] })
+  })
+
+  it('read path: a non-project-aware server that never publishes still reports empty (clean)', async () => {
+    const instance = makeInstance({})
+    const workspace = {
+      target: await fs.resolve(ws),
+      canonicalPath: ws,
+      fileUrl: pathToFileURL(ws).href,
+    }
+    const source = await readHostSource(fs, 'a.ts', workspace, 4_000_000)
+    await expect(instance.diagnostics(query('diagnostics'), source)).resolves.toEqual({
+      kind: 'diagnostics',
+      diagnostics: [],
+      resolvedWorkspaceUri: pathToFileURL(ws).href,
+    })
+  })
+
+  it('read path: a project-aware server that never publishes times out into an error, never a clean report', async () => {
+    const instance = makeInstance({}, { projectAware: true, projectDiagnosticsWaitMs: 400 })
+    const workspace = {
+      target: await fs.resolve(ws),
+      canonicalPath: ws,
+      fileUrl: pathToFileURL(ws).href,
+    }
+    const source = await readHostSource(fs, 'a.ts', workspace, 4_000_000)
+    await expect(instance.diagnostics(query('diagnostics'), source)).rejects.toThrow(
+      expect.objectContaining({ code: 'LSP_DIAGNOSTICS_TIMEOUT' }),
+    )
+  })
+
+  it('read path: a project-aware server gets the extended wait budget for on-demand analysis', async () => {
+    const plan = {
+      uri: pathToFileURL(join(ws, 'a.ts')).href,
+      diagnostics: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, severity: 1, message: 'slow analysis' }],
+      version: 'open',
+    }
+    // The base write-path budget is 400ms; an on-demand first pass taking 700ms would be reported
+    // clean under it. The project-aware read path waits up to projectDiagnosticsWaitMs instead.
+    const instance = makeInstance(
+      { LSP_FAKE_PUBLISH_DIAGNOSTICS: JSON.stringify(plan), LSP_FAKE_PUBLISH_DELAY_MS: '700' },
+      { projectAware: true, projectDiagnosticsWaitMs: 2000 },
+    )
+    const workspace = {
+      target: await fs.resolve(ws),
+      canonicalPath: ws,
+      fileUrl: pathToFileURL(ws).href,
+    }
+    const source = await readHostSource(fs, 'a.ts', workspace, 4_000_000)
+    const result = await instance.diagnostics(query('diagnostics'), source)
+    if (result.kind !== 'diagnostics') {
+      throw new Error(`expected diagnostics result, got ${result.kind}`)
+    }
+    expect(result.diagnostics).toEqual([
+      { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, severity: 1, message: 'slow analysis' },
+    ])
   })
 
   it('tears down when the collect didOpen write fails', async () => {

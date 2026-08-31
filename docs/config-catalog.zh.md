@@ -67,7 +67,7 @@ export interface Config {
   /** Maximum UTF-8 bytes read from one instruction file; larger files are ignored. */
   maxSourceBytes?: number
   /**
-   * Ordered same-directory project candidates; every existing file loads, with
+   * Ordered same-directory base candidates; every existing file loads, with
    * per-directory trimmed-content duplicates collapsed to the earliest candidate.
    */
   instructionFileCandidates?: string[]
@@ -76,6 +76,14 @@ export interface Config {
    * under the same per-directory trimmed-content dedup; empty disables the overlay.
    */
   localInstructionFileCandidates?: string[]
+  /**
+   * When true (default), discover foreign-agent rule formats alongside the
+   * native candidates: Cursor `.cursor/rules/*.mdc`, Cline `.clinerules`,
+   * Copilot `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`.
+   * Each is normalized (frontmatter stripped, applicability annotated) into the
+   * AGENTS.md-compatible chain under its own root-relative scope.
+   */
+  inheritForeignRules?: boolean
 }
 ```
 
@@ -1587,6 +1595,14 @@ export interface LspLocalServerConfig {
   killGraceMs?: number
   /** Bounded wait for a `textDocument/publishDiagnostics` notification during collection (ms). Default 4000. */
   diagnosticsTimeoutMs?: number
+  /** Project-aware servers (tsserver, Roslyn, …) compute first-pass diagnostics on demand and
+   * routinely overrun {@link diagnosticsTimeoutMs}; an explicit read-path `diagnostics` query can
+   * afford a longer bounded wait. When true, the read path uses {@link projectDiagnosticsWaitMs}
+   * and a publish-wait timeout survives as an error instead of collapsing into a clean empty
+   * result. The write path (edits/format) always keeps its degrade-to-empty contract. Default false. */
+  projectAware?: boolean
+  /** Read-path publish-diagnostics wait budget for {@link projectAware} servers (ms). Default 10000. */
+  projectDiagnosticsWaitMs?: number
 }
 ```
 
@@ -3154,6 +3170,8 @@ export interface Config {
   readMaxZstdBytes?: number
   /** Register the literal `edit` tool. Set false when a rich editor replaces it; default true. */
   enableEdit?: boolean
+  /** Render hashline `[path#TAG]` headers on eligible reads (default true). */
+  readSnapshotTags?: boolean
 }
 ```
 

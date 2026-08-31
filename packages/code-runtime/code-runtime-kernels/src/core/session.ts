@@ -170,9 +170,15 @@ export class SessionRegistry {
     let kernel = await this.#acquireKernel(sessionId, session)
     const first = await this.#executeOnce(kernel, sessionId, code, bindings, options)
     // A kernel that died or was killed settling the run is replaced once and
-    // the run retried; otherwise return what we got.
-    const needsRetry = first.killed && session === this.#sessions.get(sessionId)
-    if (!needsRetry) return first
+    // the run retried; otherwise return what we got. A result that came back
+    // `cancelled` with the caller still live and the kernel no longer alive is
+    // the same dead-kernel case: the runner died settling the cancellation, so
+    // a fresh kernel gets one retry (mirrors omp's dead-kernel recovery in
+    // `kernel-session-registry.executeOnSession`).
+    if (session !== this.#sessions.get(sessionId)) return first
+    const dead = !kernel.isAlive()
+    const cancelledButAlive = first.cancelled && !(options.signal?.aborted === true) && dead
+    if (!first.killed && !cancelledButAlive) return first
     await kernel.shutdown().catch(() => {})
     if (session !== this.#sessions.get(sessionId)) return first
     kernel = await this.#acquireKernel(sessionId, session)

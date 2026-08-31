@@ -18,7 +18,8 @@
  */
 
 import { Service, type Context } from '@deepseek-ai/cordis'
-import { chromium, type Browser as PlaywrightBrowser, type Page as PlaywrightPage } from 'playwright-core'
+import { chromium, type Browser as PlaywrightBrowser, type BrowserServer as PlaywrightServer, type Page as PlaywrightPage } from 'playwright-core'
+import { forgetOwnedBrowser, reapOrphanBrowsers, recordOwnedBrowser } from './orphan-registry.ts'
 import { captureAriaSnapshot, resolveAriaRefElement } from './aria.ts'
 import {
   DEFAULT_VIEWPORT,
@@ -52,6 +53,8 @@ export type CloseMode = 'single' | 'all' | 'kill'
 interface BrowserEntry {
   kind: BrowserKind
   browser: PlaywrightBrowser
+  /** The launch handle, present for launch-kind entries: owns the OS process (`.process().pid`) and a definitive kill. */
+  server?: PlaywrightServer
   headless: boolean
   cwd: string
 }
@@ -87,6 +90,11 @@ export class BrowserService extends Service {
     this.relayUrl = config.relayUrl?.replace(/\/+$/, '') ?? 'http://127.0.0.1:9224'
     this.relayToken = config.relayToken
     this.timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
+    // Boot-time reap: a previously crashed/killed host leaves its spawned
+    // Chromium behind (reparented to PID 1). Sweep the ownership registry for
+    // browsers whose recorded owner is gone before opening anything new.
+    // Fire-and-forget: cleanup must never block browser open.
+    void reapOrphanBrowsers().catch(() => {})
   }
 
   /**
@@ -121,9 +129,22 @@ export class BrowserService extends Service {
         args: [...STEALTH_LAUNCH_ARGS],
         ignoreDefaultArgs: stealthIgnoreDefaultArgs(executablePath),
       } as never
-      const browser = await chromium.launch(launchOptions)
+      // launchServer (not bare launch): the returned server owns the real OS
+      // process, exposing its pid for the orphan registry and giving us a
+      // definitive kill handle. The connected Browser still serves pages, and
+      // newBrowserCDPSession (UA override) works over the connection.
+      const server = await chromium.launchServer(launchOptions)
+      const browser = await chromium.connect(server.wsEndpoint())
       void applyUserAgentOverride(browser, await resolveUserAgentOverride(browser))
-      return { kind, browser, headless: this.headless, cwd }
+      // Record our own spawned browser in the orphan registry so a later host
+      // can reap it if THIS process dies before closing it. `launch` pids only
+      // (attach/relay browsers belong to other owners and must never be
+      // touched by our reap sweep).
+      const launchedPid = server.process().pid
+      if (typeof launchedPid === 'number' && Number.isInteger(launchedPid)) {
+        void recordOwnedBrowser(launchedPid).catch(() => {})
+      }
+      return { kind, server, browser, headless: this.headless, cwd }
     }
 
     // attach + relay both speak Chrome CDP discovery; the relay impersonates it.
@@ -279,7 +300,8 @@ export class BrowserService extends Service {
         this.tabs.delete(tabName)
       }
       if (opts.kill && entry) {
-        await entry.browser.close().catch(() => {})
+        await this.#closeBrowser(entry)
+        this.#releaseBrowser(entry)
         this.browsers.delete(this.browserKeyFor(opts.kind, opts.cwd))
       }
       return
@@ -289,8 +311,29 @@ export class BrowserService extends Service {
     void tab.page.close().catch(() => {})
     this.tabs.delete(name)
     if (opts.kill && entry) {
-      void entry.browser.close().catch(() => {})
+      void this.#closeBrowser(entry)
+      this.#releaseBrowser(entry)
       this.browsers.delete(this.browserKeyFor(opts.kind, opts.cwd))
+    }
+  }
+
+  /** Close a browser: for launch-kind, kill the real OS process; otherwise close the connection. */
+  async #closeBrowser(entry: BrowserEntry): Promise<void> {
+    if (entry.server) {
+      // Server.close terminates the launched Chromium process — a definitive
+      // kill even if the page layer wedged. The connected Browser's own close
+      // would only drop the connection.
+      await entry.server.close().catch(() => {})
+      return
+    }
+    await entry.browser.close().catch(() => {})
+  }
+
+  /** Drop a closed browser from the orphan registry (we closed it ourselves, so it is not an orphan). */
+  #releaseBrowser(entry: BrowserEntry): void {
+    const launchedPid = entry.server?.process().pid
+    if (typeof launchedPid === 'number' && Number.isInteger(launchedPid)) {
+      void forgetOwnedBrowser(launchedPid).catch(() => {})
     }
   }
 
@@ -339,7 +382,10 @@ export class BrowserService extends Service {
   /** Close every browser connection and stop the relay (cleanup on ctx dispose). */
   stop(): void {
     for (const entry of this.browsers.values()) {
-      void entry.browser.close().catch(() => {})
+      // release from the orphan registry first: a graceful ctx dispose means
+      // WE are closing these, so no later host should treat them as orphans.
+      this.#releaseBrowser(entry)
+      void this.#closeBrowser(entry)
     }
     this.browsers.clear()
     this.tabs.clear()

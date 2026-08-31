@@ -10,6 +10,7 @@ import type { Message } from '@deepseek-ai/dsh-llm'
 import type { Session, UserMessage } from '@deepseek-ai/dsh-session'
 import type { FileSystem, FsVersion } from '@deepseek-ai/dsh-fs'
 import type { ResolvedConfig } from './config.ts'
+import { join } from 'node:path'
 import { instructionContentSha1, trimmedInstructionDigest } from './digest.ts'
 import {
   ancestorChain,
@@ -20,6 +21,7 @@ import {
   relativeDisplay,
   type LoadedInstructionFile,
 } from './files.ts'
+import { discoverForeignRuleFiles } from './importers.ts'
 import {
   candidateScopeKey,
   decodeScopeKey,
@@ -268,15 +270,24 @@ export async function reconcileInstructionContext(
     ?? await findProjectRoot(cwd, resolved.projectRootMarkers, fileSystem, options.signal)
   const scopes = new Set<string>()
   const baselineScopes = new Set<string>()
-  const addDirScopes = (target: Set<string>, directory: string): void => {
+  const addDirScopes = async (target: Set<string>, directory: string): Promise<void> => {
     for (const candidate of resolved.instructionFileCandidates) target.add(candidateScopeKey(directory, candidate))
     for (const candidate of resolved.localInstructionFileCandidates) target.add(candidateScopeKey(directory, candidate))
+    // Foreign-format rules scope by their own display directory (e.g.
+    // `.cursor/rules`), reconstructed by probeScopeInstruction from the scope
+    // key, so enumerating them here is all the probe machinery needs.
+    if (resolved.inheritForeignRules && directory !== USER_GLOBAL_DIRECTORY) {
+      const absolute = directory === '.' ? projectRoot : join(projectRoot, directory)
+      for (const file of await discoverForeignRuleFiles(absolute, projectRoot, fileSystem, options.signal)) {
+        target.add(instructionScopeKey(file.displayPath))
+      }
+    }
   }
-  const addProjectScopes = (target: Set<string>, dir: string): void => {
-    addDirScopes(target, relativeScope(projectRoot, dir))
+  const addProjectScopes = async (target: Set<string>, dir: string): Promise<void> => {
+    await addDirScopes(target, relativeScope(projectRoot, dir))
   }
   baselineScopes.add(candidateScopeKey(USER_GLOBAL_DIRECTORY, USER_GLOBAL_FILE))
-  for (const dir of ancestorChain(projectRoot, cwd)) addProjectScopes(baselineScopes, dir)
+  for (const dir of ancestorChain(projectRoot, cwd)) await addProjectScopes(baselineScopes, dir)
   if (options.includeBaselineScopes) {
     for (const scope of baselineScopes) scopes.add(scope)
   }
@@ -292,10 +303,10 @@ export async function reconcileInstructionContext(
     if (!options.includeBaselineScopes && baselineScopes.has(scope)) continue
     const { directory } = decodeScopeKey(scope)
     if (directory === USER_GLOBAL_DIRECTORY) scopes.add(candidateScopeKey(USER_GLOBAL_DIRECTORY, USER_GLOBAL_FILE))
-    else addDirScopes(scopes, directory)
+    else await addDirScopes(scopes, directory)
   }
   for (const touchedPath of options.touchedPaths) {
-    for (const dir of descendantDirsBetween(cwd, touchedPath)) addProjectScopes(scopes, dir)
+    for (const dir of descendantDirsBetween(cwd, touchedPath)) await addProjectScopes(scopes, dir)
   }
 
   const versions = versionStatesFor(session, versionCache)

@@ -63,6 +63,7 @@ const DEFAULT_MAX_DOCUMENT_BYTES = 4_000_000
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 5_000
 const DEFAULT_KILL_GRACE_MS = 2_000
 const DEFAULT_DIAGNOSTICS_TIMEOUT_MS = 4_000
+const DEFAULT_PROJECT_DIAGNOSTICS_WAIT_MS = 10_000
 
 /** One configured local language server and its host bounds. */
 export interface LspLocalServerConfig {
@@ -90,6 +91,14 @@ export interface LspLocalServerConfig {
   killGraceMs?: number
   /** Bounded wait for a `textDocument/publishDiagnostics` notification during collection (ms). Default 4000. */
   diagnosticsTimeoutMs?: number
+  /** Project-aware servers (tsserver, Roslyn, …) compute first-pass diagnostics on demand and
+   * routinely overrun {@link diagnosticsTimeoutMs}; an explicit read-path `diagnostics` query can
+   * afford a longer bounded wait. When true, the read path uses {@link projectDiagnosticsWaitMs}
+   * and a publish-wait timeout survives as an error instead of collapsing into a clean empty
+   * result. The write path (edits/format) always keeps its degrade-to-empty contract. Default false. */
+  projectAware?: boolean
+  /** Read-path publish-diagnostics wait budget for {@link projectAware} servers (ms). Default 10000. */
+  projectDiagnosticsWaitMs?: number
 }
 
 /** Plugin configuration: provider id → local language-server configuration. */
@@ -115,6 +124,8 @@ const LspLocalServerConfig: z<LspLocalServerConfig> = z.object({
   shutdownTimeoutMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_SHUTDOWN_TIMEOUT_MS),
   killGraceMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_KILL_GRACE_MS),
   diagnosticsTimeoutMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_DIAGNOSTICS_TIMEOUT_MS),
+  projectAware: z.boolean().default(false),
+  projectDiagnosticsWaitMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_PROJECT_DIAGNOSTICS_WAIT_MS),
 })
 
 export const Config: z<Config> = z.object({
@@ -470,6 +481,8 @@ class LocalLspProvider implements LspProvider {
       shutdownTimeoutMs: this.config.shutdownTimeoutMs,
       killGraceMs: this.config.killGraceMs,
       diagnosticsTimeoutMs: this.config.diagnosticsTimeoutMs,
+      projectAware: this.config.projectAware,
+      projectDiagnosticsWaitMs: this.config.projectDiagnosticsWaitMs,
     }
     return new LspInstance(spec, this.spawner)
   }

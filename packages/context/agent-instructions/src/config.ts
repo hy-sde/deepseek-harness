@@ -25,7 +25,7 @@ export interface Config {
   /** Maximum UTF-8 bytes read from one instruction file; larger files are ignored. */
   maxSourceBytes?: number
   /**
-   * Ordered same-directory project candidates; every existing file loads, with
+   * Ordered same-directory base candidates; every existing file loads, with
    * per-directory trimmed-content duplicates collapsed to the earliest candidate.
    */
   instructionFileCandidates?: string[]
@@ -34,6 +34,14 @@ export interface Config {
    * under the same per-directory trimmed-content dedup; empty disables the overlay.
    */
   localInstructionFileCandidates?: string[]
+  /**
+   * When true (default), discover foreign-agent rule formats alongside the
+   * native candidates: Cursor `.cursor/rules/*.mdc`, Cline `.clinerules`,
+   * Copilot `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`.
+   * Each is normalized (frontmatter stripped, applicability annotated) into the
+   * AGENTS.md-compatible chain under its own root-relative scope.
+   */
+  inheritForeignRules?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -43,6 +51,7 @@ export const Config: z<Config> = z.object({
   maxSourceBytes: z.number().step(1).min(1).default(DEFAULT_MAX_SOURCE_BYTES),
   instructionFileCandidates: z.array(z.string()).default([...DEFAULT_INSTRUCTION_FILE_CANDIDATES]),
   localInstructionFileCandidates: z.array(z.string()).default([...DEFAULT_LOCAL_INSTRUCTION_FILE_CANDIDATES]),
+  inheritForeignRules: z.boolean().default(true),
 })
 
 /** Normalized instruction discovery configuration. */
@@ -51,7 +60,9 @@ export interface ResolvedDiscoveryConfig {
   projectRootMarkers: string[]
   instructionFileCandidates: string[]
   localInstructionFileCandidates: string[]
+  inheritForeignRules: boolean
 }
+
 
 /** Normalized configuration used by discovery and reconciliation. */
 export interface ResolvedConfig extends ResolvedDiscoveryConfig {
@@ -78,6 +89,7 @@ export function workspaceBaselineIdentity(
     maxSourceBytes: config.maxSourceBytes,
     instructionFileCandidates: config.instructionFileCandidates,
     localInstructionFileCandidates: config.localInstructionFileCandidates,
+    inheritForeignRules: config.inheritForeignRules,
   })
 }
 
@@ -100,7 +112,7 @@ export function resolveConfig(config: Config): ResolvedConfig {
  * @returns normalized home, root markers, and instruction candidates.
  */
 export function resolveDiscoveryConfig(
-  config: Pick<Config, 'dshHome' | 'projectRootMarkers' | 'instructionFileCandidates' | 'localInstructionFileCandidates'>,
+  config: Pick<Config, 'dshHome' | 'projectRootMarkers' | 'instructionFileCandidates' | 'localInstructionFileCandidates' | 'inheritForeignRules'>,
 ): ResolvedDiscoveryConfig {
   return {
     dshHome: resolveDshHome(config.dshHome),
@@ -113,6 +125,7 @@ export function resolveDiscoveryConfig(
       config.localInstructionFileCandidates,
       DEFAULT_LOCAL_INSTRUCTION_FILE_CANDIDATES,
     ),
+    inheritForeignRules: config.inheritForeignRules ?? true,
   }
 }
 

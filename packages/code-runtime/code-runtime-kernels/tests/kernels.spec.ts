@@ -174,6 +174,30 @@ describe('persistent kernels — failure taxonomy', () => {
       }, { maxOutputBytes: 64 })
     })
 
+    it(`recovers a session whose kernel died mid-flight (${language})`, async () => {
+      await withManager(async (manager) => {
+        const sessionId = `dead-${language}-${Math.random().toString(36).slice(2)}`
+        // The program kills the kernel process itself (a hard death, no `done`
+        // frame): the host sees the pipe close and classifies the run as
+        // killed, exactly like a spontaneous interpreter crash.
+        const killer = language === 'python'
+          ? 'import os, sys\nsys.stdout.flush()\nos._exit(137)'
+          : 'process.stdout.write("")\nprocess.exit(137)'
+        const dead = await manager.run({ language, sessionId, code: killer })
+        // A killed kernel surfaces as an abort with the exit message.
+        expect(dead.error?.kind).toBe('abort')
+        // The registry replaced the dead kernel and retried once; the next run
+        // on the SAME session must come back alive with fresh state.
+        const alive = await manager.run({
+          language,
+          sessionId,
+          code: language === 'python' ? '21 * 2' : 'return 21 * 2',
+        })
+        expect(alive.error).toBeUndefined()
+        expect(alive.value).toBe(42)
+      })
+    })
+
     it(`spills the full output on an output overrun (${language})`, async () => {
       await withManager(async (manager) => {
         const spilled: string[] = []

@@ -12,6 +12,7 @@ import { assertNever } from '@deepseek-ai/dsh-llm'
 import { dshHomeDisplay } from '@deepseek-ai/dsh-home-paths'
 import { resolveConfig, resolveDiscoveryConfig, type ResolvedConfig } from './config.ts'
 import { trimmedInstructionDigest } from './digest.ts'
+import { discoverForeignRuleFiles, normalizeForeignContent } from './importers.ts'
 import {
   decodeScopeKey,
   renderWorkspaceInstructionSet,
@@ -52,6 +53,8 @@ interface DiscoverOptions {
   projectRootMarkers?: string[]
   instructionFileCandidates?: string[]
   localInstructionFileCandidates?: string[]
+  /** When set, overrides the resolved {@link Config} default: false disables foreign-format rule discovery. */
+  inheritForeignRules?: boolean
   projectRoot?: string
   signal?: AbortSignal
 }
@@ -304,6 +307,11 @@ async function discoverInstructionFiles(
         addFile(file)
       }
     }
+    if (config.inheritForeignRules) {
+      for (const file of await discoverForeignRuleFiles(dir, projectRoot, fileSystem, options.signal)) {
+        addFile(file)
+      }
+    }
   }
   return files
 }
@@ -412,12 +420,12 @@ export async function loadBaselineInstructionSet(
   const discovered = await discoverInstructionFiles(options, fileSystem)
   const loaded: LoadedInstructionFile[] = []
   for (const file of discovered) {
-    const content = await readBounded(file, config.maxSourceBytes, fileSystem, options.signal)
-    if (content !== undefined) {
+    const raw = await readBounded(file, config.maxSourceBytes, fileSystem, options.signal)
+    if (raw !== undefined) {
       loaded.push({
         absolutePath: file.absolutePath,
         displayPath: file.displayPath,
-        content,
+        content: normalizeForeignContent(file.displayPath, raw),
         ...file.version === undefined ? {} : { version: file.version },
       })
     }
@@ -506,12 +514,12 @@ export async function readScopeInstruction(
   fileSystem: FileSystem,
   signal?: AbortSignal,
 ): Promise<LoadedInstructionFile | undefined> {
-  const content = await readBounded(file, maxSourceBytes, fileSystem, signal)
-  if (content === undefined) return undefined
+  const raw = await readBounded(file, maxSourceBytes, fileSystem, signal)
+  if (raw === undefined) return undefined
   return {
     absolutePath: file.absolutePath,
     displayPath: file.displayPath,
-    content,
+    content: normalizeForeignContent(file.displayPath, raw),
     version: file.version,
   }
 }
