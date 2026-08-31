@@ -1,0 +1,7 @@
+# Build debris: tsc/tsdown occasionally emits compiled JS + declarations into
+# this source directory. They are NOT part of the package (output goes to lib/)
+# and staging them breaks the pre-commit lint (max-len on generated lines).
+src/*.js
+src/*.js.map
+src/*.d.ts
+src/*.d.ts.map
