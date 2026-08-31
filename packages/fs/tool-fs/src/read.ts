@@ -11,6 +11,7 @@ import type {} from '@deepseek-ai/dsh-fs'
 import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-internal-urls'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
+import { SNAPSHOT_MAX_BYTES, getSessionSnapshotStore, normalizeToLF, stripBom } from '@deepseek-ai/dsh-hashline'
 import { tryReadArchive } from './read-archive.ts'
 import { tryReadNative } from './read-native.ts'
 import { tryReadZstd } from './read-zstd.ts'
@@ -46,6 +47,8 @@ export interface ReadToolCaps {
   maxArchiveBytes: number
   /** Maximum bytes of a zstd file loaded into memory for decoded reads. */
   maxZstdBytes: number
+  /** Render hashline `[path#TAG]` headers for eligible reads (whole small files recorded into the session snapshot store). */
+  snapshotTags: boolean
 }
 
 /** Validated `read` arguments after defaulting. */
@@ -92,7 +95,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
   ctx.tools.register(defineTool({
     name: 'read',
     description:
-      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window.',
+      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool\'s hashline sections so edits anchor on the exact content you saw.',
     parameters: {
       file_path: { type: 'string', required: true, description: 'Path to read, resolved by the filesystem backend.' },
       offset: { type: 'number', description: '1-based first line to return. Defaults to 1.' },
@@ -119,6 +122,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
           },
           totalLines: { type: 'integer', required: true },
           notice: { type: 'string', description: 'Optional model-facing footer appended after the file body (e.g. a conflict-resolution notice).' },
+          snapshotTag: { type: 'string', description: 'Hashline content-hash tag recorded for this file; when present the rendered text carries a [path#TAG] header.' },
         },
       },
       render: (args, value) => {
@@ -133,6 +137,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
             totalLines: value.totalLines,
             ...truncatedByBytes ? { truncatedByBytes: true } : {},
             ...value.notice !== undefined ? { notice: value.notice } : {},
+            ...value.snapshotTag !== undefined ? { snapshotTag: value.snapshotTag } : {},
           }),
         }]
       },
@@ -213,20 +218,45 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
 
       // Stream when the file is large OR size is unknown, so a size-less backend
       // never buffers an arbitrarily large file.
+      let fullText: string | undefined
       const chunks = info.size === undefined || info.size >= caps.streamMinSize
         ? await ctx.fs.streamText(target, exec.signal)
-        : [await ctx.fs.readText(target, exec.signal)]
+        : [(fullText = await ctx.fs.readText(target, exec.signal))]
       const window = await buildWindow(
         chunks,
         { offset: input.offset, limit: input.limit, maxLineLength: caps.maxLineLength, maxBytes: caps.maxBytes },
         target.displayPath,
       )
 
+      // Hashline snapshot: when we hold the whole small UTF-8 file in memory,
+      // record it (with the displayed window lines as seen-line provenance)
+      // into the session's hashline snapshot store and surface its content-hash
+      // tag as a [path#TAG] header, so the model anchors a follow-up edit on
+      // exactly the content it saw. Windowed/streamed reads never snapshot:
+      // the tag hashes the WHOLE normalized file, which a partial read cannot
+      // attest to (and an oversized file would evict the session's budget).
+      let snapshotTag: string | undefined
+      if (caps.snapshotTags && fullText !== undefined && info.size !== undefined && info.size < SNAPSHOT_MAX_BYTES) {
+        // Normalization mirrors the edit patcher's read convention (BOM-strip,
+        // LF), so this tag is byte-identical to the one hashline computes on
+        // its own re-read — a copied header validates on the first edit.
+        const normalized = normalizeToLF(stripBom(fullText).text)
+        if (normalized.length > 0) {
+          const sessionKey = (exec.agent?.session as object | undefined)
+          snapshotTag = getSessionSnapshotStore(sessionKey).record(
+            target.displayPath,
+            normalized,
+            window.lines.map(line => line.number),
+          )
+        }
+      }
+
       const outcome = {
         path: target.displayPath,
         offset: input.offset,
         lines: window.lines,
         totalLines: window.totalLines,
+        ...(snapshotTag === undefined ? {} : { snapshotTag }),
       }
       // Conflict surfacing: register any conflict block inside this read's
       // window with the session history so `write({ path: "conflict://<N>" })`

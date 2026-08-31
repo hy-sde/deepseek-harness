@@ -37,6 +37,8 @@ export interface Config {
   readMaxZstdBytes?: number
   /** Register the literal `edit` tool. Set false when a rich editor replaces it; default true. */
   enableEdit?: boolean
+  /** Render hashline `[path#TAG]` headers on eligible reads (default true). */
+  readSnapshotTags?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -47,6 +49,7 @@ export const Config: z<Config> = z.object({
   readMaxArchiveBytes: z.number().default(READ_MAX_ARCHIVE_BYTES),
   readMaxZstdBytes: z.number().default(READ_MAX_ZSTD_BYTES),
   enableEdit: z.boolean().default(true),
+  readSnapshotTags: z.boolean().default(true),
 })
 
 /** The shape after schemastery applied the defaults. */
@@ -74,6 +77,7 @@ export function apply(ctx: Context, config: Config): void {
     streamMinSize: resolved.readStreamMinSize,
     maxArchiveBytes: resolved.readMaxArchiveBytes,
     maxZstdBytes: resolved.readMaxZstdBytes,
+    snapshotTags: resolved.readSnapshotTags,
   })
   // read_image is composition-conditional: without a mounted attachment store
   // the deployment cannot durably commit image bytes, so the tool never

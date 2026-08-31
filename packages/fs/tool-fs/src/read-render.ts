@@ -6,6 +6,7 @@
  */
 
 import { FsError } from '@deepseek-ai/dsh-fs'
+import { formatHashlineHeader } from '@deepseek-ai/dsh-hashline'
 
 /** Default maximum characters returned for a single line (the `readMaxLineLength` config). */
 export const READ_MAX_LINE_LENGTH = 2000
@@ -58,6 +59,13 @@ export interface FileReadOutcome {
    * conflict-resolution notice produced by scanning this read's lines).
    */
   notice?: string
+  /**
+   * Optional hashline snapshot tag for this file's content (`[path#TAG]`), set
+   * when the read recorded a session snapshot for the whole normalized file.
+   * When present, the envelope's `<content>` starts with the header so the
+   * model can copy it verbatim into a later hashline `edit` section.
+   */
+  snapshotTag?: string
 }
 
 interface WindowAccumulator {
@@ -167,11 +175,15 @@ export function formatReadOutput(displayPath: string, outcome: FileReadOutcome):
   const body = outcome.lines.length > 0
     ? `${outcome.lines.map(line => `${line.number}: ${line.text}`).join('\n')}\n\n${footer}`
     : footer
+  // Hashline anchor header: render `[path#TAG]` on its own first line so the
+  // model can copy the tag into a hashline `edit` section verbatim (omit when
+  // the read did not snapshot, e.g. oversized, binary, or agentless reads).
+  const header = outcome.snapshotTag !== undefined ? `${formatHashlineHeader(displayPath, outcome.snapshotTag)}\n` : ''
   const notice = outcome.notice !== undefined ? `\n${outcome.notice}` : ''
   return `<path>${displayPath}</path>
 <type>file</type>
 <content>
-${body}${notice}
+${header}${body}${notice}
 </content>`
 }
 

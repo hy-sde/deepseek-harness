@@ -23,6 +23,7 @@ import type {
   FsWriteOutcome,
 } from '@deepseek-ai/dsh-fs'
 import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
+import { computeFileHash } from '@deepseek-ai/dsh-hashline'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import { STREAM_MIN_SIZE } from '../src/read.ts'
 import { formatReadOutput } from '../src/read-render.ts'
@@ -213,10 +214,12 @@ describe('read tool', () => {
       offset: 1,
       lines: [{ number: 1, text: 'hello' }, { number: 2, text: 'world' }],
       totalLines: 2,
+      snapshotTag: computeFileHash('hello\nworld'),
     })
     expect(text(result)).toBe(`<path>/abs/a.txt</path>
 <type>file</type>
 <content>
+[/abs/a.txt#${computeFileHash('hello\nworld')}]
 1: hello
 2: world
 
@@ -354,7 +357,10 @@ describe('read tool', () => {
       lines: [{ number: 1, text: 'const x = 1' }, { number: 2, text: 'const y = 2' }],
       totalLines: 2,
       lang: 'ts',
-      content: [{ type: 'text', text: '1: const x = 1\n2: const y = 2\n\n(End of file - total 2 lines)' }],
+      content: [{
+        type: 'text',
+        text: `[/abs/a.ts#${computeFileHash('const x = 1\nconst y = 2')}]\n1: const x = 1\n2: const y = 2\n\n(End of file - total 2 lines)`,
+      }],
     })
   })
 

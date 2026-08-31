@@ -5083,6 +5083,9 @@ importers:
       '@deepseek-ai/dsh-system-prompt':
         specifier: workspace:^
         version: link:../../core/system-prompt
+      '@deepseek-ai/dsh-tool-fs':
+        specifier: workspace:^
+        version: link:../../fs/tool-fs
       '@deepseek-ai/dsh-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -6006,6 +6009,9 @@ importers:
       '@deepseek-ai/dsh-fs-observation-policy':
         specifier: workspace:^
         version: link:../fs-observation-policy
+      '@deepseek-ai/dsh-hashline':
+        specifier: workspace:^
+        version: link:../../edit/hashline
       '@deepseek-ai/dsh-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants

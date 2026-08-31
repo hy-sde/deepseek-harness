@@ -8,9 +8,11 @@ import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
+import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import { computeFileHash } from '@deepseek-ai/dsh-hashline'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
 
 const contexts: Context[] = []
@@ -121,5 +123,82 @@ describe('tool-edit (hashline mode)', () => {
     const result = await call(ctx, owner, { input })
     expect(result.isError).toBe(true)
     expect(await readFile(sample, 'utf8')).toBe(before)
+  })
+})
+
+describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => {
+  /** Full composition the GUI mounts: real backend + policy + read tool + rich editor. */
+  async function fullStack() {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-firsttry-'))
+    roots.push(root)
+    const ctx = new Context()
+    contexts.push(ctx)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(FsPolicy)
+    // read/write only from tool-fs; the literal `edit` slot is owned by tool-edit.
+    await ctx.plugin(ToolFs, { enableEdit: false })
+    const fiber = await ctx.plugin(ToolEdit)
+    return { ctx, root, fiber, owner: agent(ctx, root) }
+  }
+
+  async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
+    return ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: ToolCallId(`tool-edit-firsttry-${++callNumber}`),
+      name,
+      arguments: args,
+      agent: owner,
+    })
+  }
+
+  function modelText(result: { content: { type: string; text?: string }[] }): string {
+    return result.content.filter(b => b.type === 'text').map(b => b.text).join('')
+  }
+
+  it('the read tool supplies the [path#tag] header and the edit lands on the first attempt', async () => {
+    const { ctx, root, owner } = await fullStack()
+    const sample = join(root, 'greet.py')
+    const before = 'def greet(name):\n    print(f"Hi, {name}")\ngreet("world")\n'
+    await writeFile(sample, before)
+
+    // One read: the model must be able to copy the anchor out of the output.
+    const readResult = await run(ctx, owner, 'read', { file_path: 'greet.py' })
+    expect(readResult.isError).toBe(false)
+    const output = modelText(readResult)
+    const tag = computeFileHash(before)
+    expect(output).toContain(`[${sample}#${tag}]`)
+
+    // First edit attempt, tag copied verbatim from the read: no rejection,
+    // no extra read round-trip — this is the omp "edit landed on first try"
+    // contract that the observation policy must not break.
+    const input = [
+      `[${sample}#${tag}]`,
+      'PUT 1.=2:',
+      '+def greet(name):',
+      '+    print(f"Hello, {name}")',
+      '',
+    ].join('\n')
+    const editResult = await run(ctx, owner, 'edit', { input })
+    expect(editResult.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe('def greet(name):\n    print(f"Hello, {name}")\ngreet("world")\n')
+  })
+
+  it('a blind hashline edit lands in one call: the executor self-observes under the policy', async () => {
+    const { ctx, root, owner } = await fullStack()
+    const sample = join(root, 'blind.txt')
+    const before = 'alpha\nbeta\n'
+    await writeFile(sample, before)
+
+    // No read tool call at all. The prepare-time read by the hashline executor
+    // itself records the presence observation, so the guarded write passes
+    // with the version CAS intact — omp self-contained semantics.
+    const tag = computeFileHash(before)
+    const input = `[${sample}#${tag}]\nPUT 1.=1:\n+ALPHA\n`
+    const result = await run(ctx, owner, 'edit', { input })
+    expect(result.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe('ALPHA\nbeta\n')
   })
 })

@@ -597,9 +597,7 @@ patch mode:   { path: string, edits: Array<{ op: "create"|"delete"|"update", ren
 apply_patch / hashline mode: { input: string }
 &lt;/parameters&gt;
 
-&lt;critical&gt;You MUST read the target file before editing it.
-Missing reads are caught by the fs-observation-policy when mounted;
-otherwise the edit proceeds from whatever content the tool can read.&lt;/critical&gt;
+&lt;critical&gt;如有可能，先读取目标文件：read 工具会返回当前 [path#tag] 头部及行号，hashline 锚点正是基于该标记内容校验的。缺失或过期的标签会被拒绝——请重读以获取新的头部，切勿臆造或复用旧标签。执行器自身的读取同样满足本会话的 fs-observation-policy，因此只要观察到的内容与锚点一致，一次调用即可落地编辑。&lt;/critical&gt;
 
 ```json
 {
@@ -702,7 +700,7 @@ otherwise the edit proceeds from whatever content the tool can read.&lt;/critica
 
 ### `read`
 
-读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL。
+读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL。对完整的小型 UTF-8 文件，读取会在内容前加一行 hashline 锚头（[path#TAG]）——请逐字复制该标签到 edit 工具的 hashline 段，使编辑精确锚定在你看到的内容上。
 
 ```json
 {

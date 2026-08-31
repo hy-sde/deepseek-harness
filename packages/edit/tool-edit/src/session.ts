@@ -6,9 +6,13 @@
  *
  * Reads and writes go through the harness filesystem seam (`ctx.fs`): the
  * session exposes a {@link FileReader} and a {@link FileWriter} that the mode
- * executors use exclusively. Writes flow through the `fs/edit-intent`
- * waterfall and record `fs/observed`, so the fs-observation-policy layer can
- * enforce read-before-edit when mounted.
+ * executors use exclusively. Reads record an `fs/observed` presence record for
+ * the version they probed, and writes flow through the `fs/edit-intent`
+ * waterfall — an edit of a file the executor just verified lands even without
+ * a prior model-facing `read` (omp self-contained semantics), while the write's
+ * `replaceIfVersion` CAS still rejects a concurrent mutation between read and
+ * write. The fs-observation-policy layer (when mounted) combines the two into
+ * a freshness-guarded mutation, exactly as the bare seam intended.
  * Ported from @oh-my-pi/pi-coding-agent (https://github.com/can1357/oh-my-pi). MIT License. Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük.
  */
 import * as fsp from 'node:fs/promises'
@@ -124,7 +128,17 @@ export function createEditSession(args: CreateEditSessionArgs): EditSession {
       return fs.stat(target, signal)
     },
     async readText(target, signal): Promise<string> {
-      return fs.readText(target, signal)
+      // Authoritative read: probe the version first, then read, then record the
+      // presence observation. This is what makes the editor self-contained the
+      // way omp's ToolSession is — an edit whose executor already read and
+      // verified the full content satisfies the fs-observation-policy without
+      // a separate model-facing `read` call, while the write's
+      // `replaceIfVersion` CAS (built from `info.version`) still rejects a
+      // concurrent mutation between this read and the guarded write.
+      const info = await fs.stat(target, signal)
+      const content = await fs.readText(target, signal)
+      if (info !== undefined) ctx.emit('fs/observed', target, { kind: 'present', version: info.version }, exec)
+      return content
     },
   }
 

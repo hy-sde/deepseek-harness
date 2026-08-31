@@ -52,6 +52,9 @@
       "path": "../fs-archive"
     },
     {
+      "path": "../../edit/hashline"
+    },
+    {
       "path": "../../util/zstd"
     }
   ]

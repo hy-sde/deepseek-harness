@@ -606,9 +606,7 @@ patch mode:   { path: string, edits: Array&lt;{ op: "create"|"delete"|"update", 
 apply_patch / hashline mode: { input: string }
 &lt;/parameters&gt;
 
-&lt;critical&gt;You MUST read the target file before editing it.
-Missing reads are caught by the fs-observation-policy when mounted;
-otherwise the edit proceeds from whatever content the tool can read.&lt;/critical&gt;
+&lt;critical&gt;Read the target file before editing when you can: the read tool returns the current [path#tag] header plus line numbers, and hashline anchors are verified against that tagged content. A missing or stale tag is rejected — re-read for a fresh header, never invent or reuse an old tag. The executor's own reads also satisfy this session's fs-observation-policy, so an edit whose observed content matches your anchors lands in a single call.&lt;/critical&gt;
 
 ```json
 {
@@ -714,7 +712,7 @@ Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts
 
 ### `read`
 
-Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window.
+Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool's hashline sections so edits anchor on the exact content you saw.
 
 ```json
 {
