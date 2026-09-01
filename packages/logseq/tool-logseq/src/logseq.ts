@@ -253,6 +253,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_list',
+    device: true,
     description:
       'List Logseq graph entities (pages, tags, properties, tasks, nodes, assets) from the db graph via the `logseq list <entity>` CLI.',
     parameters: {
@@ -308,6 +309,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_search',
+    device: true,
     description:
       'Search Logseq blocks/pages/properties/tags by content text (`logseq search <type> --content <text>`). Returns matching items.',
     parameters: {
@@ -341,6 +343,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_query',
+    device: true,
     description:
       'Run a Datascript query against the graph (`logseq query --query <EDN>`), or a saved query by name with optional inputs. Use for structural questions page/blocks/tags cannot answer in one hop.',
     parameters: {
@@ -380,6 +383,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_show',
+    device: true,
     description:
       'Show the block/page tree (`logseq show --page <name>` or `--id`/`--uuid`), optionally with hierarchy: returns the CLI human tree text.',
     parameters: {
@@ -418,6 +422,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_upsert',
+    device: true,
     description:
       'Create or update a Logseq entity (block/page/tag/property/task). Update mode when id/uuid is given; tags/properties/task status are structured options, never embedded in content.',
     parameters: {
@@ -509,6 +514,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_remove',
+    device: true,
     description:
       'Permanently remove entities from the graph (`logseq remove <entity>`). Destruction is real — only use when certain; prefer flagging with status/superseded where the wiki schema allows.',
     parameters: {
@@ -548,6 +554,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_graph',
+    device: true,
     description:
       'Graph lifecycle ops (`logseq graph ...`): validate, info, export (edn/sqlite to a file), import, backup list/create/restore/remove. Use export/backup before destructive passes.',
     parameters: {
@@ -596,6 +603,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
 
   ctx.tools.register(defineTool({
     name: 'logseq_server',
+    device: true,
     description:
       'Manage the db-worker-node server(s) (`logseq server ...`): list/start/stop/restart/cleanup. Needed for headless use: start once per graph, then any read/write tool works without the desktop app.',
     parameters: {

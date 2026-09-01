@@ -38,17 +38,18 @@ export const inject = ['tools']
 export interface Config {
   /**
    * The form this agent's model sees. `native` sends every visible schema,
-   * `ptc` sends only `run_code` plus a generated SDK, `both` sends both.
-   * Required rather than defaulted: the deployment default is what a preset
-   * without this row already gets, so an omitted value would mean the row was
-   * composed for nothing.
+   * `ptc` sends only `run_code` plus a generated SDK, `both` sends both,
+   * and `catalog` sends eager schemas plus the discoverable `dyn` device
+   * transport. Required rather than defaulted: the deployment default is what
+   * a preset without this row already gets, so an omitted value would mean the
+   * row was composed for nothing.
    */
   mode: ToolPresentationMode
 }
 
 /** Runtime schema. */
 export const Config: z<Config> = z.object({
-  mode: z.union(['native', 'ptc', 'both'] as const).required(),
+  mode: z.union(['native', 'ptc', 'both', 'catalog'] as const).required(),
 })
 
 /**
@@ -62,6 +63,12 @@ export function apply(ctx: Context, config: Config): void {
   // with this row without a second wrapper owning it.
   if (config.mode === 'native') {
     ctx.tools.presentAs('native')
+    return
+  }
+  // `catalog` carries its own `dyn` transport definition on the tools service:
+  // nothing beyond the registry is needed for its presentation.
+  if (config.mode === 'catalog') {
+    ctx.tools.presentAs('catalog')
     return
   }
   // The wait is the loud failure: an entry still pending on `codeRuntime` is

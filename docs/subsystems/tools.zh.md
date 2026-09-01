@@ -28,6 +28,14 @@ interface ToolDefinition extends ToolSchema {
   /** Mandatory canonical output declaration. */
   readonly output: ToolOutputDefinition
   /**
+   * Mount this tool as a catalog DEVICE: under `mode: 'catalog'` its full
+   * schema is withheld from the prompt and it is reachable only through the
+   * reserved `dyn` transport (`search` / `docs` / `invoke`) at zero schema
+   * slots. Inert under native/ptc/both presentation. Keep `description`'s
+   * first line short — the catalog renders it as the device's one-line summary.
+   */
+  readonly device?: boolean
+  /**
    * Run one accepted call and return only its canonical lossless-JSON value.
    * Async work must observe or forward `exec.signal` and settle only after its
    * owned work reaches quiescence. The registry preserves caller cancellation
@@ -94,6 +102,14 @@ interface ToolDefinition extends ToolSchema {
 ```
 
 `execute` 接收 `args: unknown`——原始的 `ToolDefinition` 自行校验输入。第一方工具不需要手写校验；它们使用 `defineTool`，由后者代为校验并收窄参数类型、根据 `output.schema` 推导函数体返回类型，并为两个输出投影器提供类型约束。`finalizeContent` 特意接收不可变的执行对象而非类型化参数，因为无效输入和外层流水线失败也会到达该回调；它可以施加工具自有的内容限制，同时保留 `isError`、规范值、结构化错误身份、延迟上下文与展示元数据。
+
+## 目录模式——经由 `dyn` 传输的设备工具
+
+`mode: 'catalog'`（tools 行的配置）是除 `native` 与 `ptc` 之外的第三种展示形态，与其他形态一样可通过 `ctx.tools.presentAs('catalog')` 按代理作用域启用。它用 omp 的 `dyn` 设计回答“长尾”预算问题：作者将某个工具标记为 `device: true`；在目录模式下，该工具的完整 schema 从提示词中保留，只能经由保留的 `dyn` 传输以零 schema 槽位触达。在其他任何模式下该标记均无作用，工具照常投影。
+
+注册表投影急载（非设备）工具的完整 schema 以及 `dyn` 元工具；设备名称被保留，并且被排除在 `toolOrder` 校验背后的 `knownNames` 集合之外，因此 `toolOrder` 中出现设备名会像 `ptc` 下的原生名一样在装配时响亮失败。提示词中携带 `tools:catalog` 小节：固定的传输指引，加上每台已挂载设备一条有界（200 个 UTF-8 字节）的单行摘要，由描述首行保持简短。
+
+`dyn` 接受三个操作：`search`（对设备名与摘要做不区分大小写的过滤，支持 `offset`/`limit`，默认 50，并带有 `truncated` 标志）、`docs`（单个设备的完整描述、参数 schema 与输出 schema——这是唯一按需揭示输出 schema 的表面）以及 `invoke`（作为嵌套分发，让设备穿过完整受守卫流水线执行：`callId` 为 `<outer>:catalog:<name>`、沿用 `rootCallId`、以外层传输的 `token` 作为 `parent`、沿用同一 `signal`）。对设备名的模型直接调用会在策略之前以 `UNKNOWN_TOOL` 拒绝，并提示经由 `dyn` 调用；嵌套（带父 token）调用则绕过折叠。`dyn` 本身与 `run_code` 一样被保留：不可注册、不可限制、不可遮蔽，并且不存在于全局层，因此原生代理永远不会解析到它。限制沿用同一可见性解析器，因此某个作用域限制掉的设备会同时从目录与分发中消失。注册表公开的 `schemas()` 与 `ptc` 保持一致不变：它返回包含被折叠工具在内的完整可见集合，供内省使用。
 
 ## 统一的 JSON 值 schema DSL
 

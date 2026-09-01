@@ -499,6 +499,14 @@ export interface DefineToolOptions<S extends ParameterSchemaSpec, O extends Valu
   /** Optional positive cooperative timeout budget in milliseconds. */
   readonly timeoutMs?: number
   /**
+   * Mount this tool as a catalog DEVICE: under `mode: 'catalog'` its full
+   * schema is withheld from the prompt and it is reachable only through the
+   * reserved `dyn` transport (`search` / `docs` / `invoke`) at zero schema
+   * slots. Inert under native/ptc/both presentation. Keep `description`'s
+   * first line short — the catalog renders it as the device's one-line summary.
+   */
+  readonly device?: boolean
+  /**
    * Pure classifier for sibling overlap.
    * @param args - typed validated arguments.
    * @returns Whether the call may join a parallel group.
@@ -582,6 +590,7 @@ export function defineTool<const S extends ParameterSchemaSpec, const O extends 
       } : {},
     },
     ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+    ...(options.device === true ? { device: true } : {}),
     async execute(args: unknown, exec: ToolRunContext): Promise<JsonValue> {
       const violations = validate(args)
       if (violations.length > 0) throw new ToolArgsError(violations)

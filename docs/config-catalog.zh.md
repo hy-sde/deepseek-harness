@@ -271,10 +271,11 @@ export interface GoalConfig {
 export interface Config {
   /**
    * The form this agent's model sees. `native` sends every visible schema,
-   * `ptc` sends only `run_code` plus a generated SDK, `both` sends both.
-   * Required rather than defaulted: the deployment default is what a preset
-   * without this row already gets, so an omitted value would mean the row was
-   * composed for nothing.
+   * `ptc` sends only `run_code` plus a generated SDK, `both` sends both,
+   * and `catalog` sends eager schemas plus the discoverable `dyn` device
+   * transport. Required rather than defaulted: the deployment default is what
+   * a preset without this row already gets, so an omitted value would mean the
+   * row was composed for nothing.
    */
   mode: ToolPresentationMode
 }
@@ -3678,10 +3679,13 @@ export interface Config {
    * sends only `run_code` plus a generated SDK prompt and collapses the
    * executor to the same surface (a model-direct call may only name
    * `run_code`; `run_code` SDK sub-dispatches keep every visible tool); `both`
-   * sends both forms. PTC mode requires a `ctx.codeRuntime` whose `language`
-   * has a registered SDK renderer (TypeScript or Python) and fail prompt
-   * assembly when it is absent or has no renderer. Under `ptc`, native names
-   * in `toolOrder` are invalid.
+   * sends both forms. `catalog` sends eager tools' full schemas plus the
+   * reserved `dyn` transport, while `device: true` tools ride `dyn` at zero
+   * schema slots (search / docs / invoke). PTC mode requires a
+   * `ctx.codeRuntime` whose `language` has a registered SDK renderer
+   * (TypeScript or Python) and fail prompt assembly when it is absent or has
+   * no renderer. Under `ptc`, native names in `toolOrder` are invalid; under
+   * `catalog`, device names in `toolOrder` are invalid.
    */
   mode?: ToolPresentationMode
   /**
@@ -3695,7 +3699,7 @@ export interface Config {
 }
 
 /** How the registry presents its tools to the model (see {@link Config.mode}). */
-export type ToolPresentationMode = 'native' | 'ptc' | 'both'
+export type ToolPresentationMode = 'native' | 'ptc' | 'both' | 'catalog'
 ```
 
 来源：[`packages/core/tools/src/index.ts:654`](../packages/core/tools/src/index.ts)

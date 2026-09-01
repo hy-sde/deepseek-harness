@@ -78,6 +78,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   fileReferences: 'session-reference.md',
   fs: 'filesystem.md',
   git: 'git.md',
+  vcs: 'git.md',
   browser: 'browser.md',
   av: 'av.md',
   goals: 'goal.md',
@@ -815,6 +816,12 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   RemoveResult: 'wiki remove result is owned by packages/logseq/logseq-graph/README.md',
   ServerActionResult: 'wiki action result is owned by packages/logseq/logseq-graph/README.md',
   ServerListResult: 'wiki server result is owned by packages/logseq/logseq-graph/README.md',
+  VcsProbe: 'vcs probe contract is owned by packages/vcs/vcs/README.md',
+  VcsRepoInfo: 'vcs repository contract is owned by packages/vcs/vcs/README.md',
+  VcsDiffMode: 'vcs diff-mode union is owned by packages/vcs/vcs/README.md',
+  VcsDiffOptions: 'vcs diff options are owned by packages/vcs/vcs/README.md',
+  VcsStatusSummary: 'vcs status summary is owned by packages/vcs/vcs/README.md',
+  VcsWatchEvent: 'vcs watch event payload is owned by packages/vcs/vcs/README.md',
 }
 
 /** Repository data policy consumed by the Cordis catalog projector. */

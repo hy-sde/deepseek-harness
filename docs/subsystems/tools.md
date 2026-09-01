@@ -8,7 +8,7 @@ Source: [`packages/core/tools/src/index.ts`](../../packages/core/tools/src/index
 
 ## `ToolDefinition` — a registered tool
 
-A `ToolSchema` (the model-facing fields) plus a mandatory canonical output declaration, the `execute` function, host-only scheduler metadata, an optional final-content callback, and optional UI presenters. The registry holds these; the loop dispatches calls through them. The registry's `schemas()` builds the model-facing `ToolSchema[]` by an explicit allowlist — `output`/`execute`/`finalizeContent`/`timeoutMs`/`isConcurrencySafe`/`presentCall`/`presentResult` must never leak into a model request.
+A `ToolSchema` (the model-facing fields) plus a mandatory canonical output declaration, the `execute` function, host-only scheduler metadata, an optional final-content callback, and optional UI presenters. The registry holds these; the loop dispatches calls through them. The registry's `schemas()` builds the model-facing `ToolSchema[]` by an explicit allowlist — `output`/`execute`/`finalizeContent`/`timeoutMs`/`isConcurrencySafe`/`device`/`presentCall`/`presentResult` must never leak into a model request.
 
 ```ts type-equiv
 /** Tool-owned canonical output contract used after the body returns a JSON value. */
@@ -27,6 +27,14 @@ interface ToolOutputDefinition {
 interface ToolDefinition extends ToolSchema {
   /** Mandatory canonical output declaration. */
   readonly output: ToolOutputDefinition
+  /**
+   * Mount this tool as a catalog DEVICE: under `mode: 'catalog'` its full
+   * schema is withheld from the prompt and it is reachable only through the
+   * reserved `dyn` transport (`search` / `docs` / `invoke`) at zero schema
+   * slots. Inert under native/ptc/both presentation. Keep `description`'s
+   * first line short — the catalog renders it as the device's one-line summary.
+   */
+  readonly device?: boolean
   /**
    * Run one accepted call and return only its canonical lossless-JSON value.
    * Async work must observe or forward `exec.signal` and settle only after its
@@ -94,6 +102,14 @@ interface ToolDefinition extends ToolSchema {
 ```
 
 `execute` receives `args: unknown` — a raw `ToolDefinition` validates its own input. First-party tools don't write that by hand; they use `defineTool`, which validates and narrows the arguments, infers the body return from `output.schema`, and types both output projectors. `finalizeContent` deliberately receives the immutable execution instead of typed arguments because invalid-input and outer pipeline failures reach it too; it may enforce a tool-owned content bound while preserving `isError`, canonical value, structured error identity, deferred contexts, and presentation metadata.
+
+## Catalog mode — device tools over the `dyn` transport
+
+`mode: 'catalog'` (the tools row's config) is a THIRD presentation form beside `native` and `ptc`, available per agent scope through `ctx.tools.presentAs('catalog')` exactly like the others. It answers the "long tail" budget problem with the omp `dyn` design: an author marks a tool `device: true`; under catalog its full schema is withheld from the prompt and it is reachable only through the reserved `dyn` transport at zero schema slots. In every other mode the flag is inert and the tool is projected like any other.
+
+The registry projects eager (non-device) tools' full schemas plus the `dyn` meta-tool; device names are withheld AND excluded from the `knownNames` set behind `toolOrder` validation, so a `toolOrder` entry naming a device fails assembly loudly, exactly as a native name does under `ptc`. The prompt carries a `tools:catalog` section: the fixed transport guidance plus one bounded (200 UTF-8 bytes) one-line summary per mounted device, kept short by the description's first line.
+
+`dyn` accepts three operations: `search` (case-insensitive filter over device names and summaries, with `offset`/`limit`, default 50, and a `truncated` flag), `docs` (one device's full description, parameter schema, and output schema — the ONLY surface that reveals an output schema, on demand), and `invoke` (calls the device through the full guarded pipeline as a nested dispatch: `callId` `<outer>:catalog:<name>`, same `rootCallId`, the outer transport's `token` as `parent`, the same `signal`). A model-direct call to a device name is denied before policy as `UNKNOWN_TOOL` with a hint to invoke it through `dyn`; a nested (parent-token) call bypasses the collapse. `dyn` itself is reserved like `run_code`: un-registrable, un-restrictable, un-shadowable, and absent from the global layer so a native agent never resolves it. Restrictions follow the same visibility resolver, so a device a scope restricts away disappears from both the catalog and dispatch. The registry's public `schemas()` is unchanged, consistent with `ptc`: it returns the full visible set including collapsed tools for introspection.
 
 ## The unified JSON-value schema DSL
 

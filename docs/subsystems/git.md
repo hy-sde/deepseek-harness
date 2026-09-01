@@ -179,6 +179,138 @@ async log(cwd: string, options: { max?: number; signal?: AbortSignal; color?: 'n
 ```
 
 Source: [`packages/git/git/src/service.ts`](../../packages/git/git/src/service.ts)
+
+<a id="ctxvcs--vcsservice"></a>
+
+### `ctx.vcs` — `VcsService`
+
+The `ctx.vcs` service.
+
+```ts cordis-catalog
+/**
+ * Check whether the `pi-vcs` CLI is reachable and answering
+ * `pi-vcs --version`. Never throws: an unavailable binary, launch failure,
+ * or timeout surfaces as `{ available: false, reason }`. Feature-detection
+ * gate for the read surfaces and the watch companion.
+ * @returns reachability, CLI version when present, and a human reason on failure.
+ */
+async probe(): Promise<VcsProbe>
+
+/**
+ * Resolve repository discovery metadata (`pi-vcs repo-info <dir>`).
+ * @param dir - any directory inside the checkout (walked toward the root).
+ * @returns repo metadata, or `null` when `dir` is outside any git
+ * repository (`NotARepository` is data, not an error).
+ */
+async repoInfo(dir: string): Promise<VcsRepoInfo | null>
+
+/**
+ * Render the git patch between two revisions (`pi-vcs rev-diff <dir> <base>
+ * [<head>]`). Output is git-compatible unified diff text, byte-compatible
+ * with the git service's rendering, so existing diff parsers keep working.
+ * @param dir - directory inside the checkout.
+ * @param base - base revision (rev-parse spec).
+ * @param head - head revision; `base`→worktree when omitted.
+ * @returns the unified diff text (empty string when the range is clean).
+ */
+async revDiff(dir: string, base: string, head?: string): Promise<string>
+
+/**
+ * Render the staged patch (index vs HEAD) (`pi-vcs staged-diff <dir>`).
+ * @param dir - directory inside the checkout.
+ * @returns the unified diff text (empty string when nothing is staged).
+ */
+async stagedDiff(dir: string): Promise<string>
+
+/**
+ * Render the worktree patch (index vs worktree) (`pi-vcs worktree-diff <dir>`),
+ * the native counterpart to `git diff`. Untracked files are excluded, like
+ * git itself.
+ * @param dir - directory inside the checkout.
+ * @param signal - optional abort.
+ * @returns the unified diff text (empty string when the worktree is clean).
+ */
+async worktreeDiff(dir: string, signal?: AbortSignal): Promise<string>
+
+/**
+ * Render one diff range in any CLI output mode. It picks the CLI verb from
+ * the selectors (base+head → `rev-diff`, base only → base→worktree, cached →
+ * `staged-diff`, none → `worktree-diff`) and appends the mode flag.
+ * @param dir - directory inside the checkout.
+ * @param options - range/mode selectors (see {@link VcsDiffOptions}).
+ * @param signal - optional abort.
+ * @returns the raw CLI text: unified diff, one path per line (`name-only`),
+ * or `added\tremoved\tpath` lines (`numstat`), byte-compatible with the
+ * corresponding `git diff` output.
+ */
+async diff( dir: string, options: VcsDiffOptions & { mode?: VcsDiffMode } = {}, signal?: AbortSignal, ): Promise<string>
+
+/**
+ * Changed-file names (`git diff --name-only`), one per line with the
+ * destination path for renames and git's C-quoting preserved.
+ * @param dir - directory inside the checkout.
+ * @param options - range selectors (see {@link VcsDiffOptions}).
+ * @param signal - optional abort.
+ * @returns the changed paths, relative to the checkout root.
+ */
+async changedFiles(dir: string, options: VcsDiffOptions = {}, signal?: AbortSignal): Promise<string[]>
+
+/**
+ * Raw `git diff --numstat` text. Callers parse with the git package's
+ * `parseNumstat` (already byte-compatible with this output) when they need
+ * typed entries.
+ * @param dir - directory inside the checkout.
+ * @param options - range selectors (see {@link VcsDiffOptions}).
+ * @param signal - optional abort.
+ * @returns `added\tremoved\tpath` lines (binary rows show `-`).
+ */
+async numstat(dir: string, options: VcsDiffOptions = {}, signal?: AbortSignal): Promise<string>
+
+/**
+ * Plain status summary counts, mirroring `ctx.git.status` by counting the
+ * same `git status --porcelain` columns natively.
+ * @param dir - directory inside the checkout.
+ * @param signal - optional abort.
+ * @returns staged/unstaged/untracked counts.
+ */
+async status(dir: string, signal?: AbortSignal): Promise<VcsStatusSummary>
+
+/**
+ * The current branch name (`pi-vcs repo-info <dir>`), or undefined on a
+ * detached HEAD / outside any checkout.
+ * @param dir - directory inside the checkout.
+ * @returns the current branch name, or undefined when detached or outside
+ * any checkout.
+ */
+async branch(dir: string): Promise<string | undefined>
+
+/**
+ * Watch a repository for HEAD changes (`pi-vcs watch` companion).
+ *
+ * Spawns a long-running `pi-vcs watch <dir>` process, decodes its JSON-lines
+ * protocol incrementally through the subprocess seam's offset-based reader,
+ * and invokes `onChange` per `head` event. The returned disposer
+ * terminates the process tree (SIGTERM → grace → SIGKILL) and stops
+ * decoding; the process exits 0 on the signal, keeping
+ * {@link VcsCommandError} out of the watch surface.
+ * @param dir - directory inside the checkout.
+ * @param onChange - called once per reported HEAD change.
+ * @returns a disposer that stops the companion process and its decoders.
+ */
+watch(dir: string, onChange: (event: VcsWatchEvent) => void): () => void
+
+/**
+ * Run one `pi-vcs` command. A non-zero exit code is returned as data on the
+ * run (callers decide whether it is an error); only a launch failure, a
+ * signal kill, or a timeout throws {@link VcsCommandError}.
+ * @param argv - pi-vcs arguments (never shell-interpreted).
+ * @param options - cwd (required), abort signal, stdin text, timeout override.
+ * @returns exit code, collected stdout/stderr, and killed flag; throws {@link VcsCommandError} on launch/timeout/signal failures.
+ */
+async run( argv: readonly string[], options: { cwd: string signal?: AbortSignal | undefined stdin?: string | undefined timeoutMs?: number }, ): Promise<CommandRun>
+```
+
+Source: [`packages/vcs/vcs/src/service.ts`](../../packages/vcs/vcs/src/service.ts)
 <!-- END GENERATED cordis-surface -->
 
 ## Review fan-out

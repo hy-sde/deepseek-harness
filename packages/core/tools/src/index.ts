@@ -8,8 +8,8 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { AnonymousEntries, NamedEntries, ScopedLayers, scopeOf, scopeTarget } from '@deepseek-ai/dsh-scope'
 import type { ScopeKey, ScopeLayer, Scoped } from '@deepseek-ai/dsh-scope'
-import type { ToolCallId, ContentBlock, ToolSchema } from '@deepseek-ai/dsh-llm'
-import { assertNever, deepFreeze, HarnessError } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, ToolSchema } from '@deepseek-ai/dsh-llm'
+import { ToolCallId, assertNever, deepFreeze, HarnessError } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { snapshotJsonValue } from '@deepseek-ai/dsh-session'
 import type { JsonValue, UserMessage } from '@deepseek-ai/dsh-session'
@@ -26,6 +26,8 @@ import type { CodeSdkLanguage } from './ptc.ts'
 import { renderToolsSdk } from './ts-types.ts'
 import type { ToolSdkSchema } from './ts-types.ts'
 import { renderToolsSdkPy } from './py-types.ts'
+import { CATALOG_GUIDANCE, CATALOG_SECTION_ORDER, DYN_NAME, catalogSummary, createDynTool } from './catalog.ts'
+import type { CatalogEntry } from './catalog.ts'
 
 /**
  * Language → SDK-section renderer. The registry looks up the loaded
@@ -102,6 +104,8 @@ export type { JsonValue } from '@deepseek-ai/dsh-session'
 export type { PtcDispatchEventData, PtcDispatchStartEventData } from './types.ts'
 
 export { CodeRunFailedError, RUN_CODE_NAME } from './ptc.ts'
+export { CATALOG_GUIDANCE, CATALOG_SEARCH_LIMIT, CATALOG_SECTION_ORDER, DEVICE_SUMMARY_CAP, DYN_NAME, catalogSummary, createDynTool, truncateUtf8 } from './catalog.ts'
+export type { CatalogEntry, DynBridgeOptions, DynOutput } from './catalog.ts'
 export { jsonSchemaToTs, renderToolsSdk } from './ts-types.ts'
 export { jsonSchemaToPy, renderToolsSdkPy } from './py-types.ts'
 export { defineContentToolFixture, type ContentToolFixtureOptions } from './testing.ts'
@@ -222,6 +226,14 @@ export interface ToolOutputDefinition {
 export interface ToolDefinition extends ToolSchema {
   /** Mandatory canonical output declaration. */
   readonly output: ToolOutputDefinition
+  /**
+   * Mount this tool as a catalog DEVICE: under `mode: 'catalog'` its full
+   * schema is withheld from the prompt and it is reachable only through the
+   * reserved `dyn` transport (`search` / `docs` / `invoke`) at zero schema
+   * slots. Inert under native/ptc/both presentation. Keep `description`'s
+   * first line short — the catalog renders it as the device's one-line summary.
+   */
+  readonly device?: boolean
   /**
    * Run one accepted call and return only its canonical lossless-JSON value.
    * Async work must observe or forward `exec.signal` and settle only after its
@@ -649,7 +661,7 @@ function errorInfo(error: unknown): ToolErrorInfo | undefined {
 }
 
 /** How the registry presents its tools to the model (see {@link Config.mode}). */
-export type ToolPresentationMode = 'native' | 'ptc' | 'both'
+export type ToolPresentationMode = 'native' | 'ptc' | 'both' | 'catalog'
 
 /** Plugin config: how the registered tools are presented to the model. */
 export interface Config {
@@ -658,10 +670,13 @@ export interface Config {
    * sends only `run_code` plus a generated SDK prompt and collapses the
    * executor to the same surface (a model-direct call may only name
    * `run_code`; `run_code` SDK sub-dispatches keep every visible tool); `both`
-   * sends both forms. PTC mode requires a `ctx.codeRuntime` whose `language`
-   * has a registered SDK renderer (TypeScript or Python) and fail prompt
-   * assembly when it is absent or has no renderer. Under `ptc`, native names
-   * in `toolOrder` are invalid.
+   * sends both forms. `catalog` sends eager tools' full schemas plus the
+   * reserved `dyn` transport, while `device: true` tools ride `dyn` at zero
+   * schema slots (search / docs / invoke). PTC mode requires a
+   * `ctx.codeRuntime` whose `language` has a registered SDK renderer
+   * (TypeScript or Python) and fail prompt assembly when it is absent or has
+   * no renderer. Under `ptc`, native names in `toolOrder` are invalid; under
+   * `catalog`, device names in `toolOrder` are invalid.
    */
   mode?: ToolPresentationMode
   /**
@@ -789,7 +804,7 @@ export class ToolRuntime extends Service {
   static inject = ['systemPrompt']
 
   static Config: z<Config> = z.object({
-    mode: z.union(['native', 'ptc', 'both'] as const).default('native'),
+    mode: z.union(['native', 'ptc', 'both', 'catalog'] as const).default('native'),
     maxParallelSubCalls: z.natural().min(1).default(10),
   })
 
@@ -823,6 +838,12 @@ export class ToolRuntime extends Service {
    * transport is stateless beyond its closures over `this`.
    */
   private ptcTransport: ToolDefinition | undefined
+  /**
+   * Reserved catalog device transport, kept outside the filterable registration
+   * layers for the same reason as {@link ptcTransport}. Built on first need: an
+   * agent's catalog mode is not known when the service is constructed.
+   */
+  private dynTransport: ToolDefinition | undefined
 
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'tools')
@@ -832,8 +853,12 @@ export class ToolRuntime extends Service {
     this.maxParallelSubCalls = resolveMaxParallelSubCalls(config.maxParallelSubCalls)
     ctx.systemPrompt.tools(context => this.wireSchemas(context.scope))
     if (this.defaultMode !== 'native') {
-      ctx.systemPrompt.section(this.collapseSection())
-      ctx.systemPrompt.section(this.sdkSection())
+      if (this.defaultMode === 'catalog') {
+        ctx.systemPrompt.section(this.catalogSection())
+      } else {
+        ctx.systemPrompt.section(this.collapseSection())
+        ctx.systemPrompt.section(this.sdkSection())
+      }
     }
   }
 
@@ -879,7 +904,7 @@ export class ToolRuntime extends Service {
       // Regenerate from the calling scope's visible tools in stable order.
       text: (context) => {
         const mode = this.modeFor(context.scope)
-        if (mode === 'native') return ''
+        if (mode === 'native' || mode === 'catalog') return ''
         const runtime = this.requireCodeRuntime(mode)
         // Own-property read: a language like `toString`/`constructor` would
         // otherwise resolve an inherited Object.prototype member as a renderer.
@@ -889,6 +914,96 @@ export class ToolRuntime extends Service {
         return render(this.sdkSchemas(context.scope))
       },
     }
+  }
+
+  /**
+   * The catalog-mode prompt section: fixed `dyn` guidance plus the bounded
+   * one-line catalog of mounted device tools. Registered wherever the catalog
+   * mode is active and rendering empty outside an effective `catalog`, the
+   * {@link collapseSection} pattern — so an agent that opted out under a
+   * catalog deployment still carries the global registration harmlessly.
+   * @returns the section registration.
+   */
+  private catalogSection(): { name: string; order: number; text: (context: { scope?: ScopeKey }) => string } {
+    return {
+      name: 'tools:catalog',
+      order: CATALOG_SECTION_ORDER,
+      text: (context) => {
+        if (this.modeFor(context.scope) !== 'catalog') return ''
+        const devices = this.catalogDevices(context.scope)
+        if (devices.length === 0) return CATALOG_GUIDANCE
+        return `${CATALOG_GUIDANCE}\n\nMounted device tools (${devices.length})\n${devices
+          .map(entry => `- ${entry.name} — ${entry.summary}`)
+          .join('\n')}`
+      },
+    }
+  }
+
+  /**
+   * The reserved `dyn` catalog transport, built on first need. It never enters
+   * the filterable registration layers; the visibility resolver appends it only
+   * for scopes whose mode presents it, mirroring {@link requireCodeTransport}.
+   * @returns the shared transport definition.
+   */
+  private requireCatalogTransport(): ToolDefinition {
+    this.dynTransport ??= createDynTool({
+      entries: agent => this.catalogDevices(agent),
+      docsFor: (name, agent) => this.deviceDocs(name, agent),
+      invoke: (name, args, exec) => this.invokeDevice(name, args, exec),
+    })
+    return this.dynTransport
+  }
+
+  /**
+   * The bounded one-line catalog of a scope's visible device tools, sorted by
+   * name. Shared by the prompt section and the `dyn` `search` operation, so the
+   * model can never be advertised a device the registry would not resolve.
+   */
+  private catalogDevices(scope?: ScopeKey): CatalogEntry[] {
+    return [...this.view(scope).visible.values()]
+      .filter(definition => definition.device === true)
+      .map(definition => ({ name: definition.name, summary: catalogSummary(definition) }))
+      .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+  }
+
+  /**
+   * Full docs + JSON schema for one device, or undefined when the name is
+   * absent, restricted away, or not mounted as a device. The doc is the ONLY
+   * surface that reveals a device's output schema — the native prompt never
+   * carries it.
+   */
+  private deviceDocs(name: string, scope: ScopeKey | undefined): string | undefined {
+    const definition = this.get(name, scope)
+    if (definition === undefined || definition.device !== true) return undefined
+    const schema = this.schemaOf(definition, true)
+    const output = snapshotJsonValue(definition.output.schema)
+    const outputText = output === undefined
+      ? ''
+      : `\n\n## Output schema\n\n${JSON.stringify(output, null, 2)}`
+    return `# ${name}\n\n${definition.description}\n\n## Parameters (JSON schema)\n\n${JSON.stringify(schema.parameters, null, 2)}${outputText}`
+  }
+
+  /**
+   * Run one device call as a NESTED transport dispatch through the complete
+   * guarded pipeline (pre-execute, guards, around-dispatch, post-execute,
+   * finalization, `tools/result`), carrying the outer `dyn` execution's
+   * identity as its parent token so the catalog collapse never double-denies
+   * it. The name must resolve to a visible device tool.
+   */
+  private async invokeDevice(name: string, args: JsonValue, exec: ToolRunContext): Promise<ToolExecutionResult> {
+    const definition = this.get(name, exec.agent)
+    if (definition === undefined || definition.device !== true) {
+      throw new Error(`no such device "${name}": run dyn search to list mounted devices`)
+    }
+    return this.execute({
+      callId: ToolCallId(`${exec.callId}:catalog:${name}`),
+      rootCallId: exec.rootCallId,
+      name,
+      arguments: args,
+      ...exec.agent !== undefined ? { agent: exec.agent } : {},
+      parent: exec.token,
+      signal: exec.signal,
+    })
   }
 
   /**
@@ -960,11 +1075,13 @@ export class ToolRuntime extends Service {
         },
         { label: 'tools.presentAs()' },
       )
-      // The SDK and collapse sections are per scope for the same reason the
-      // mode is. Under a deployment that already defaults to PTC mode this
-      // shadows the global registration with an identical body, which costs
-      // nothing and keeps one rule instead of a case analysis.
-      if (mode !== 'native') {
+      // The catalog / SDK and collapse sections are per scope for the same
+      // reason the mode is. Under a deployment that already defaults to the
+      // same mode this shadows the global registration with an identical body,
+      // which costs nothing and keeps one rule instead of a case analysis.
+      if (mode === 'catalog') {
+        yield ctx.systemPrompt.section(this.catalogSection())
+      } else if (mode !== 'native') {
         yield ctx.systemPrompt.section(this.collapseSection())
         yield ctx.systemPrompt.section(this.sdkSection())
       }
@@ -980,6 +1097,21 @@ export class ToolRuntime extends Service {
   private wireSchemas(scope?: ScopeKey): ToolProviderResult {
     const view = this.view(scope)
     const mode = this.modeFor(scope)
+    if (mode === 'catalog') {
+      // Eager tools project full schemas; device tools are WITHHELD and reach
+      // the model only through the `dyn` transport. `view` already appended the
+      // transport, so the loop projects it exactly once. Device names stay out
+      // of the knownNames set so a `toolOrder` entry naming one fails loudly,
+      // exactly as native names do under `ptc`.
+      const schemas: ToolSchema[] = []
+      const knownNames: string[] = []
+      for (const definition of view.visible.values()) {
+        if (definition.device === true) continue
+        schemas.push(this.schemaOf(definition, false))
+        knownNames.push(definition.name)
+      }
+      return { schemas, knownNames }
+    }
     if (mode === 'native') {
       const schemas = [...view.visible.values()].map(definition => this.schemaOf(definition, false))
       return { schemas, knownNames: [...view.knownNames] }
@@ -1047,11 +1179,14 @@ export class ToolRuntime extends Service {
       && (!Number.isFinite(timeoutMs) || timeoutMs <= 0)) {
       throw new TypeError(`tool "${name}" timeoutMs must be a positive finite number`)
     }
-    // Reserved unconditionally: any agent may select a code mode for itself,
-    // so a name free to take under the deployment default would become a
-    // collision the moment a preset mounted.
+    // Reserved unconditionally: any agent may select a code or catalog mode for
+    // itself, so a name free to take under the deployment default would become
+    // a collision the moment a preset mounted.
     if (name === RUN_CODE_NAME) {
       throw new Error(`tool name "${RUN_CODE_NAME}" is reserved for the PTC mode presentation transport and cannot be registered or shadowed`)
+    }
+    if (name === DYN_NAME) {
+      throw new Error(`tool name "${DYN_NAME}" is reserved for the catalog device transport and cannot be registered or shadowed`)
     }
     return this.layers.effect(
       this.ctx,
@@ -1083,6 +1218,9 @@ export class ToolRuntime extends Service {
     }
     if ([...allow ?? [], ...deny ?? []].includes(RUN_CODE_NAME)) {
       throw new Error(`tools.restrict() cannot name reserved PTC mode presentation transport "${RUN_CODE_NAME}"; restrict end-capability tools instead`)
+    }
+    if ([...allow ?? [], ...deny ?? []].includes(DYN_NAME)) {
+      throw new Error(`tools.restrict() cannot name reserved catalog device transport "${DYN_NAME}"; restrict end-capability tools instead`)
     }
     const known = this.view(scope).restrictableNames
     const unknown = [...allow ?? [], ...deny ?? []].filter(name => !known.has(name))
@@ -1181,12 +1319,17 @@ export class ToolRuntime extends Service {
       }
     }
     // Presentation infrastructure is resolved last and outside capability
-    // filtering. Registration rejects this reserved name, so the insertion is
+    // filtering. Registration rejects these reserved names, so the insertion is
     // an invariant assertion as well as protection against future layer
-    // changes. Per scope: a native agent must not find `run_code` in its
-    // dispatch table because some other agent in the process presents it.
-    if (this.modeFor(scope) !== 'native') {
-      visible.set(RUN_CODE_NAME, this.requireCodeTransport())
+    // changes. Per scope: a native agent must not find `run_code` or `dyn` in
+    // its dispatch table because some other agent in the process presents them.
+    const mode = this.modeFor(scope)
+    if (mode !== 'native') {
+      if (mode === 'catalog') {
+        visible.set(DYN_NAME, this.requireCatalogTransport())
+      } else {
+        visible.set(RUN_CODE_NAME, this.requireCodeTransport())
+      }
     }
     return { visible, knownNames, restrictableNames }
   }
@@ -1305,8 +1448,10 @@ export class ToolRuntime extends Service {
   }
 
   /**
-   * Whether the `ptc` mode collapse denies a model-direct call: only the
-   * reserved `run_code` transport may be named. Nested sub-dispatches (a
+   * Whether a mode collapse denies a model-direct call. Under `ptc` only the
+   * reserved `run_code` transport may be named; under `catalog` a device tool
+   * (withheld from the prompt) may not be named directly — it is reachable
+   * only as a NESTED dispatch through `dyn invoke`. Nested sub-dispatches (a
    * `parent` token set) bypass the collapse. One home for the
    * security-relevant predicate, shared by {@link resolveExecution} and
    * {@link createExecution} so the two can never drift apart.
@@ -1317,11 +1462,15 @@ export class ToolRuntime extends Service {
    * leave exactly that agent uncollapsed — announcing one surface while
    * executing another, which is the bypass this collapse closes.
    * @param name - the tool name as registered.
-   * @param scope - the viewing scope whose effective presentation mode applies.
+   * @param scope - the calling scope whose effective presentation mode applies.
    * @param nested - whether the call is a transport sub-dispatch, not a model-direct call.
    */
   private collapses(name: string, scope: ScopeKey | undefined, nested: boolean): boolean {
-    return !nested && this.modeFor(scope) === 'ptc' && name !== RUN_CODE_NAME
+    if (nested) return false
+    const mode = this.modeFor(scope)
+    if (mode === 'ptc') return name !== RUN_CODE_NAME
+    if (mode === 'catalog') return this.get(name, scope)?.device === true
+    return false
   }
 
   /**
@@ -1437,7 +1586,9 @@ export class ToolRuntime extends Service {
           exec: execution,
           result: toolErrorResult(new ToolNotFoundError(
             name,
-            `only \`${RUN_CODE_NAME}\` is callable directly — call \`${name}\` from inside a \`${RUN_CODE_NAME}\` program instead`,
+            this.modeFor(agent) === 'catalog'
+              ? `device tools are callable only through \`${DYN_NAME}\` — invoke \`${name}\` with \`{"op":"invoke","name":"${name}",…}\` instead`
+              : `only \`${RUN_CODE_NAME}\` is callable directly — call \`${name}\` from inside a \`${RUN_CODE_NAME}\` program instead`,
           )),
         }
       }

@@ -220,6 +220,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_list_projects',
+    device: true,
     description:
       'List every project indexed into the codebase-memory knowledge graph (name, root path, git state). Use before any other codebase_* tool to learn the canonical `project` name for the repository in question, then pass it to the other tools.',
     parameters: {},
@@ -232,6 +233,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_index_repository',
+    device: true,
     description:
       'Index a repository into the codebase-memory knowledge graph. Use INSTEAD of ad-hoc greps when you need structural answers (callers/callees, routes, architectures, cross-service links) that the filesystem tools would need many read/grep cycles to piece together. Runs in the daemon; repos are indexed once and queried repeatedly afterwards.',
     parameters: {
@@ -257,6 +259,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_index_status',
+    device: true,
     description:
       'Report indexing status and coverage for a project: node/edge counts, freshness, skipped and partially-parsed files, and any logfile of the last index run. Use before trusting an answer about a recently-changed repo.',
     parameters: {
@@ -272,6 +275,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_search_graph',
+    device: true,
     description:
       'Search the codebase-memory knowledge graph for functions, classes, routes, and variables. Preferred over plain grep/glob when finding definitions, implementations, or relationships: three independent modes — query (BM25 full-text with camelCase splitting and structural label boosting), namePattern (exact regex on symbol names), semanticQuery (vector cosine; fills the vocabulary gap, e.g. find "publish" when you search "send"). Responds with prefix-grouped tree rows of qn/label/file/lines and in/out degrees.',
     parameters: {
@@ -302,6 +306,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_query_graph',
+    device: true,
     description:
       'Execute a raw Cypher query against the codebase-memory knowledge graph for multi-hop patterns, aggregations, and cross-service analysis the curated tools cannot express. Response carries total (returned row count); the graph enforces a hard 100k row ceiling, so add LIMIT for broad queries. Each Function/Method node also carries complexity/cognitive/loop/recursion hot-path properties.',
     parameters: {
@@ -322,6 +327,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_trace_path',
+    device: true,
     description:
       'Trace call/dataflow/cross-service paths through the codebase-memory knowledge graph. callers/callees (calls mode), value propagation with argument expressions (data_flow), or through HTTP/async route nodes and across repos (cross_service). Callers surface the declaration plus every inbound edge.',
     parameters: {
@@ -345,6 +351,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_get_code_snippet',
+    device: true,
     description:
       'Read the source of one symbol from an indexed project — full qualified name from codebase_search_graph, or a short function name. Use instead of several file read + grep cycles when you already know the symbol (from codebase_search_graph / codebase_trace_path).',
     parameters: {
@@ -365,6 +372,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_get_graph_schema',
+    device: true,
     description:
       'Return the node labels and edge types available in a project\'s knowledge graph — the vocabulary for codebase_query_graph Cypher and the labels accepted by codebase_search_graph.',
     parameters: {
@@ -380,6 +388,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_get_architecture',
+    device: true,
     description:
       'High-level architecture overview of a project from the knowledge graph: packages, services, dependencies, and de-facto modules (Leiden clusters over the call/import graph) with cohesion and representative nodes. Use before diving into traversal code, and to validate refactors against the real seams. Optional directory prefix scopes the analysis.',
     parameters: {
@@ -397,6 +406,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_search_code',
+    device: true,
     description:
       'Grep-augmented code search: finds text patterns, then enriches matches into containing functions ranked by structural importance (definitions first, popular functions next, tests last). Modes: compact (default, signatures), full (with source), files (just file paths). Use when you need to find code by literal text within one indexed project.',
     parameters: {
@@ -419,6 +429,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_detect_changes',
+    device: true,
     description:
       'Detect code changes and their impact on an indexed project\'s knowledge graph: git diff from a base branch/ref mapped onto the graph, telling you which symbols/routes/clusters a change touches. Use before and after edits to plan and review work.',
     parameters: {
@@ -438,6 +449,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_manage_adr',
+    device: true,
     description:
       'Read or write Architecture Decision Records for an indexed project. Modes: get (list ADRs), update (create/replace an ADR), sections (read individual ADR sections). Use to persist load-bearing architectural choices next to the code.',
     parameters: {
@@ -456,6 +468,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_ingest_traces',
+    device: true,
     description:
       'Fold runtime call traces into an indexed project\'s knowledge graph so queries and analysis reflect observed behavior, not just static structure. Accepts an array of {caller, callee, count} and returns the accepted/imported counts.',
     parameters: {
@@ -474,6 +487,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
 
   ctx.tools.register(defineTool({
     name: 'codebase_delete_project',
+    device: true,
     description:
       'Delete a project\'s index from the codebase-memory graph store. Destructive and permanent: the graph is rebuilt only by re-running codebase_index_repository. Use only for cleanup of superseded indexes (e.g. to free disk).',
     parameters: {

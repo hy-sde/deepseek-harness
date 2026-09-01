@@ -52,6 +52,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
   /* openwiki_begin — start or resume a durable repository run. */
   ctx.tools.register(defineTool({
     name: 'openwiki_begin',
+    device: true,
     description:
       'Start or resume OpenWiki repository generation. Returns status=noop for a clean update, otherwise the durable planning/generation run state. An unrecognized `language` fails the call with invalid_input instead of starting a run.',
     parameters: {
@@ -97,6 +98,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
   /* openwiki_submit_plan — validate and durably persist the ordered queue. */
   ctx.tools.register(defineTool({
     name: 'openwiki_submit_plan',
+    device: true,
     description:
       'Submit the final canonical page plan. OpenWiki validates it and durably persists the ordered PageJob queue before accepting it.',
     parameters: {
@@ -155,6 +157,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
   /* openwiki_next_page — current pending job and its existing Claims. */
   ctx.tools.register(defineTool({
     name: 'openwiki_next_page',
+    device: true,
     description:
       'Return the first pending page job and its current Claims, or status=complete when no jobs remain.',
     parameters: {
@@ -214,6 +217,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
   /* openwiki_submit_page — complete the current job with its Claim set. */
   ctx.tools.register(defineTool({
     name: 'openwiki_submit_page',
+    device: true,
     description:
       'Complete the current page job after its Markdown is written by submitting that page\'s complete intended repository-grounded Claim set. Preserve the id, exact statement, and evidence resource values of each unchanged existing Claim; reuse its id for a necessary revision; omit it to retract it; and omit id for a genuinely new Claim. The final page and Claim set must agree.',
     parameters: {
@@ -277,6 +281,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
   /* openwiki_finish — strict deterministic finalization of a complete run. */
   ctx.tools.register(defineTool({
     name: 'openwiki_finish',
+    device: true,
     description:
       'Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, provenance, Claims finalization, and run metadata persistence.',
     parameters: {

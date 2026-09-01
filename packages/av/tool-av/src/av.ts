@@ -148,6 +148,7 @@ export function applyAvTools(ctx: Context, config: AvToolConfig = {}): void {
 
   ctx.tools.register(defineTool({
     name: 'av_scan',
+    device: true,
     description:
       'Audit the Mac for supported credential exposures and security hazards using Automic Vault (runs `av scan --json`): '
       + 'files/lines where developer-tool secrets are exposed in plaintext config, keychains, or ambient helpers, with an '
@@ -219,6 +220,7 @@ export function applyAvTools(ctx: Context, config: AvToolConfig = {}): void {
 
   ctx.tools.register(defineTool({
     name: 'av_doctor',
+    device: true,
     description:
       'Verify Automic Vault hardening status of installed developer tools (runs `av doctor [tool] --json`): which '
       + 'hardened tools are healthy and which have issues, with the remediation step per issue (stub/target paths). '
@@ -280,6 +282,7 @@ export function applyAvTools(ctx: Context, config: AvToolConfig = {}): void {
 
   ctx.tools.register(defineTool({
     name: 'av_catalog',
+    device: true,
     description:
       'List which tools Automic Vault knows: detectors (scan coverage; names feed `av_scan` `detector`) and hardeners '
       + '(hardening status; names feed `av_doctor` `tool`), each with its docs link. Read-only metadata from '
@@ -372,6 +375,7 @@ export function applyAvTools(ctx: Context, config: AvToolConfig = {}): void {
 
   ctx.tools.register(defineTool({
     name: 'av_list',
+    device: true,
     description:
       'List the names of secrets stored in Automic Vault (`av list`). Returns NAMES ONLY — never values, and never '
       + 'releases a secret. Use it to tell the user what the vault holds, then let the user decide what to do.',

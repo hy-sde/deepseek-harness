@@ -3250,6 +3250,85 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'vcs',
+    summary: 'The `ctx.vcs` service.',
+    description: 'The `ctx.vcs` service.',
+    methods: [
+      {
+        signature: 'async probe(): Promise<VcsProbe>',
+        description: 'Check whether the `pi-vcs` CLI is reachable and answering `pi-vcs --version`. Never throws: an unavailable binary, launch failure, or timeout surfaces as `{ available: false, reason }`. Feature-detection gate for the read surfaces and the watch companion.',
+        parameters: [],
+        returns: 'reachability, CLI version when present, and a human reason on failure.',
+      },
+      {
+        signature: 'async repoInfo(dir: string): Promise<VcsRepoInfo | null>',
+        description: 'Resolve repository discovery metadata (`pi-vcs repo-info <dir>`).',
+        parameters: [{ name: 'dir', description: 'any directory inside the checkout (walked toward the root).' }],
+        returns: 'repo metadata, or `null` when `dir` is outside any git repository (`NotARepository` is data, not an error).',
+      },
+      {
+        signature: 'async revDiff(dir: string, base: string, head?: string): Promise<string>',
+        description: 'Render the git patch between two revisions (`pi-vcs rev-diff <dir> <base> [<head>]`). Output is git-compatible unified diff text, byte-compatible with the git service\'s rendering, so existing diff parsers keep working.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'base', description: 'base revision (rev-parse spec).' }, { name: 'head', description: 'head revision; `base`→worktree when omitted.' }],
+        returns: 'the unified diff text (empty string when the range is clean).',
+      },
+      {
+        signature: 'async stagedDiff(dir: string): Promise<string>',
+        description: 'Render the staged patch (index vs HEAD) (`pi-vcs staged-diff <dir>`).',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }],
+        returns: 'the unified diff text (empty string when nothing is staged).',
+      },
+      {
+        signature: 'async worktreeDiff(dir: string, signal?: AbortSignal): Promise<string>',
+        description: 'Render the worktree patch (index vs worktree) (`pi-vcs worktree-diff <dir>`), the native counterpart to `git diff`. Untracked files are excluded, like git itself.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'the unified diff text (empty string when the worktree is clean).',
+      },
+      {
+        signature: 'async diff( dir: string, options: VcsDiffOptions & { mode?: VcsDiffMode } = {}, signal?: AbortSignal, ): Promise<string>',
+        description: 'Render one diff range in any CLI output mode. It picks the CLI verb from the selectors (base+head → `rev-diff`, base only → base→worktree, cached → `staged-diff`, none → `worktree-diff`) and appends the mode flag.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'options', description: 'range/mode selectors (see {@link VcsDiffOptions}).' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'the raw CLI text: unified diff, one path per line (`name-only`), or `added\\tremoved\\tpath` lines (`numstat`), byte-compatible with the corresponding `git diff` output.',
+      },
+      {
+        signature: 'async changedFiles(dir: string, options: VcsDiffOptions = {}, signal?: AbortSignal): Promise<string[]>',
+        description: 'Changed-file names (`git diff --name-only`), one per line with the destination path for renames and git\'s C-quoting preserved.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'options', description: 'range selectors (see {@link VcsDiffOptions}).' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'the changed paths, relative to the checkout root.',
+      },
+      {
+        signature: 'async numstat(dir: string, options: VcsDiffOptions = {}, signal?: AbortSignal): Promise<string>',
+        description: 'Raw `git diff --numstat` text. Callers parse with the git package\'s `parseNumstat` (already byte-compatible with this output) when they need typed entries.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'options', description: 'range selectors (see {@link VcsDiffOptions}).' }, { name: 'signal', description: 'optional abort.' }],
+        returns: '`added\\tremoved\\tpath` lines (binary rows show `-`).',
+      },
+      {
+        signature: 'async status(dir: string, signal?: AbortSignal): Promise<VcsStatusSummary>',
+        description: 'Plain status summary counts, mirroring `ctx.git.status` by counting the same `git status --porcelain` columns natively.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'signal', description: 'optional abort.' }],
+        returns: 'staged/unstaged/untracked counts.',
+      },
+      {
+        signature: 'async branch(dir: string): Promise<string | undefined>',
+        description: 'The current branch name (`pi-vcs repo-info <dir>`), or undefined on a detached HEAD / outside any checkout.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }],
+        returns: 'the current branch name, or undefined when detached or outside any checkout.',
+      },
+      {
+        signature: 'watch(dir: string, onChange: (event: VcsWatchEvent) => void): () => void',
+        description: 'Watch a repository for HEAD changes (`pi-vcs watch` companion).\n\nSpawns a long-running `pi-vcs watch <dir>` process, decodes its JSON-lines protocol incrementally through the subprocess seam\'s offset-based reader, and invokes `onChange` per `head` event. The returned disposer terminates the process tree (SIGTERM → grace → SIGKILL) and stops decoding; the process exits 0 on the signal, keeping VcsCommandError out of the watch surface.',
+        parameters: [{ name: 'dir', description: 'directory inside the checkout.' }, { name: 'onChange', description: 'called once per reported HEAD change.' }],
+        returns: 'a disposer that stops the companion process and its decoders.',
+      },
+      {
+        signature: 'async run( argv: readonly string[], options: { cwd: string signal?: AbortSignal | undefined stdin?: string | undefined timeoutMs?: number }, ): Promise<CommandRun>',
+        description: 'Run one `pi-vcs` command. A non-zero exit code is returned as data on the run (callers decide whether it is an error); only a launch failure, a signal kill, or a timeout throws VcsCommandError.',
+        parameters: [{ name: 'argv', description: 'pi-vcs arguments (never shell-interpreted).' }, { name: 'options', description: 'cwd (required), abort signal, stdin text, timeout override.' }],
+        returns: 'exit code, collected stdout/stderr, and killed flag; throws {@link VcsCommandError} on launch/timeout/signal failures.',
+      },
+    ],
+  },
+  {
     key: 'web',
     summary: 'The web access service.',
     description: 'The web access service. Registered as `ctx.web` (one instance per context).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
@@ -6763,7 +6842,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ToolDefinition',
-    declaration: 'export interface ToolDefinition extends ToolSchema {\n    readonly output: ToolOutputDefinition;\n    execute(args: unknown, exec: ToolRunContext): Promise<unknown>;\n    finalizeContent?(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): ContentBlock[] | undefined;\n    timeoutMs?: number;\n    isConcurrencySafe?(args: unknown): boolean;\n    presentCall?(args: unknown): ToolCallView | undefined;\n    presentResult?(args: unknown, result: ToolResult): ToolResultView | undefined;\n}',
+    declaration: 'export interface ToolDefinition extends ToolSchema {\n    readonly output: ToolOutputDefinition;\n    readonly device?: boolean;\n    execute(args: unknown, exec: ToolRunContext): Promise<unknown>;\n    finalizeContent?(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): ContentBlock[] | undefined;\n    timeoutMs?: number;\n    isConcurrencySafe?(args: unknown): boolean;\n    presentCall?(args: unknown): ToolCallView | undefined;\n    presentResult?(args: unknown, result: ToolResult): ToolResultView | undefined;\n}',
   },
   {
     name: 'ToolDispatchExecution',
@@ -6819,7 +6898,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ToolPresentationMode',
-    declaration: 'export type ToolPresentationMode = \'native\' | \'ptc\' | \'both\';',
+    declaration: 'export type ToolPresentationMode = \'native\' | \'ptc\' | \'both\' | \'catalog\';',
   },
   {
     name: 'ToolProviderResult',
@@ -6980,6 +7059,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'UserMessage',
     declaration: 'export interface UserMessage extends Message {\n    readonly role: \'user\';\n}',
+  },
+  {
+    name: 'VcsDiffMode',
+    declaration: 'export type VcsDiffMode = \'text\' | \'name-only\' | \'numstat\';',
+  },
+  {
+    name: 'VcsDiffOptions',
+    declaration: 'export interface VcsDiffOptions {\n    cached?: boolean;\n    base?: string;\n    head?: string;\n}',
+  },
+  {
+    name: 'VcsProbe',
+    declaration: 'export interface VcsProbe {\n    available: boolean;\n    version?: string;\n    reason?: string;\n}',
+  },
+  {
+    name: 'VcsRepoInfo',
+    declaration: 'export interface VcsRepoInfo {\n    root: string;\n    gitDir: string;\n    branch?: string | null;\n}',
+  },
+  {
+    name: 'VcsStatusSummary',
+    declaration: 'export interface VcsStatusSummary {\n    staged: number;\n    unstaged: number;\n    untracked: number;\n}',
+  },
+  {
+    name: 'VcsWatchEvent',
+    declaration: 'export interface VcsWatchEvent {\n    event: \'head\';\n    seq: number;\n}',
   },
   {
     name: 'VerifiedWebhookDelivery',
