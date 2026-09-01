@@ -3,7 +3,9 @@
  * sidebar-foot toggle (`sidebar.footer.action`) and the frame-wide floating
  * drawer (`shell.overlay`, rendered by the layout shell's overlay layer). The
  * drawer binds the wire face to the shared store when the connection is up
- * and re-binds on connection resets.
+ * and re-binds on connection resets. Binding is wire-lazy: no `listPages`
+ * call happens at page load — the page list loads on the drawer's first
+ * open, so GUI startup never pays the graph CLI cost.
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'

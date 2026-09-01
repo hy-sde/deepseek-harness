@@ -39,6 +39,13 @@ export type { JsonlCompression } from './format.ts'
 const DEFAULT_PACK_CHUNKS = true
 const DEFAULT_COMPRESSION: JsonlCompression = 'zstd'
 /**
+ * Bounded parallelism for cold listing reads. Listing is I/O-bound (one
+ * header probe per stored log), so serializing every probe costs linearly
+ * with session count; 16 concurrent file guards keep startup latency flat
+ * while staying under the chunk scheduler's yield budget.
+ */
+const LIST_ARTIFACT_CONCURRENCY = 16
+/**
  * Internal scheduling constant, not deployment configuration: balance
  * frame-boundary event-loop yields against `setImmediate` overhead. One frame
  * remains an indivisible synchronous decode.
@@ -489,39 +496,88 @@ export class JsonlSessionPersistence extends SessionPersistence implements Persi
     signal?.throwIfAborted()
     await this.ensureRootEncoding()
     signal?.throwIfAborted()
-    const artifacts: Array<{ header: SessionHeader; path: string }> = []
-    const ids = new Set<SessionId>()
+    // Collect candidate session directories first (cheap readdirs), then read
+    // each header with bounded concurrency: per-log probes are I/O-bound, and
+    // a serial scan makes listing cost grow linearly with session count.
+    const candidates: string[] = []
     for (const project of await this.listProjectDirs(signal)) {
       signal?.throwIfAborted()
       for (const dir of await this.listSessionDirs(project, signal)) {
         signal?.throwIfAborted()
-        const opposite = join(dir, `session${logSuffix(this.oppositeCompression())}`)
-        const oppositeExists = await this.exists(opposite)
-        signal?.throwIfAborted()
-        if (oppositeExists) throw this.encodingMismatch(opposite)
-        const path = join(dir, `session${logSuffix(this.compression)}`)
-        const pathExists = await this.exists(path)
-        signal?.throwIfAborted()
-        if (!pathExists) continue
-        // Read only headers so listing scales with session count, not log size.
-        const first = this.compression === 'zstd'
-          ? await this.readFirstZstdLine(path, signal)
-          : await this.readFirstLine(path, signal)
-        signal?.throwIfAborted()
-        if (first === undefined) continue // empty/half-written file
-        const meta = parseHeaderMeta(first)
-        if (meta === undefined) continue // not a session header
-        await this.assertStoredIdentity(path, meta, undefined, signal)
-        signal?.throwIfAborted()
-        if (ids.has(meta.id)) {
-          throw new Error(`duplicate JSONL session id "${meta.id}" appears in multiple project directories`)
-        }
-        ids.add(meta.id)
-        artifacts.push({ header: meta, path })
+        candidates.push(dir)
       }
     }
     signal?.throwIfAborted()
-    return artifacts
+    const resolved: Array<{ header: SessionHeader; path: string } | undefined> = new Array(candidates.length)
+    const ids = new Set<SessionId>()
+    let failure: unknown
+    let next = 0
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        signal?.throwIfAborted()
+        if (failure !== undefined) return
+        const index = next++
+        const dir = candidates[index]
+        if (dir === undefined) return
+        try {
+          const artifact = await this.readArtifact(dir, signal)
+          signal?.throwIfAborted()
+          if (artifact === undefined) continue
+          if (ids.has(artifact.header.id)) {
+            throw new Error(`duplicate JSONL session id "${artifact.header.id}" appears in multiple project directories`)
+          }
+          ids.add(artifact.header.id)
+          resolved[index] = artifact
+        } catch (error) {
+          if (signal?.aborted) signal.throwIfAborted()
+          if (failure === undefined) failure = error
+        }
+      }
+    }
+    await Promise.all(Array.from(
+      { length: Math.min(LIST_ARTIFACT_CONCURRENCY, candidates.length) },
+      () => worker(),
+    ))
+    signal?.throwIfAborted()
+    if (failure !== undefined) throw failure
+    return resolved.filter(
+      (artifact): artifact is { header: SessionHeader; path: string } => artifact !== undefined,
+    )
+  }
+
+  /** Read and validate one session directory's log, or `undefined` when absent/incomplete. */
+  private async readArtifact(
+    dir: string,
+    signal?: AbortSignal,
+  ): Promise<{ header: SessionHeader; path: string } | undefined> {
+    const opposite = join(dir, `session${logSuffix(this.oppositeCompression())}`)
+    const oppositeExists = await this.exists(opposite)
+    signal?.throwIfAborted()
+    if (oppositeExists) throw this.encodingMismatch(opposite)
+    const path = join(dir, `session${logSuffix(this.compression)}`)
+    const first = await this.readLogHeader(path, signal)
+    if (first === undefined) return undefined
+    const meta = parseHeaderMeta(first)
+    if (meta === undefined) return undefined
+    await this.assertStoredIdentity(path, meta, undefined, signal)
+    signal?.throwIfAborted()
+    return { header: meta, path }
+  }
+
+  /** Read the header line of one log, treating only absence as no artifact. */
+  private async readLogHeader(path: string, signal?: AbortSignal): Promise<string | undefined> {
+    try {
+      return this.compression === 'zstd'
+        ? await this.readFirstZstdLine(path, signal)
+        : await this.readFirstLine(path, signal)
+    } catch (error) {
+      signal?.throwIfAborted()
+      if (isENOENT(error)) {
+        await this.assertLogParentAllowsAbsence(path)
+        return undefined
+      }
+      throw error
+    }
   }
 
   // --- materialization / append / repair (file mechanics) ---

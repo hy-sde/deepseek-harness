@@ -11,11 +11,14 @@ import { WikiClient, type WikiRemoteNamespace } from '../src/client/api.ts'
 import { wikiStore } from '../src/client/store.ts'
 
 async function resetStore(): Promise<void> {
-  // Re-bind a scripted client after each test so recorded calls reset, and
-  // await the initial page load so every test starts from a settled store.
+  // Re-bind a scripted client after each test so recorded calls reset, close
+  // the drawer from the previous test, and materialize the page list via the
+  // lazy path so every test starts from a settled store.
   const calls: { method: string; args: unknown[] }[] = []
   stub = calls
   await wikiStore.bind(new WikiClient(scriptedWiki(calls)))
+  wikiStore.close()
+  await wikiStore.ensurePages()
 }
 
 let stub: { method: string; args: unknown[] }[] = []
@@ -47,12 +50,13 @@ describe('WikiClient face', () => {
     // Swap one method to an error envelope.
     const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as WikiRemoteNamespace
     await wikiStore.bind(new WikiClient(failing))
+    await wikiStore.ensurePages()
   })
 })
 
 describe('wikiStore state machine', () => {
-  it('loads pages on bind and navigates into a page', async () => {
-    // beforeEach already awaited the initial load.
+  it('loads pages lazily on first open and navigates into a page', async () => {
+    // beforeEach already awaited the lazy first load.
     expect(wikiStore.getState().pages[0]?.title).toBe('Rust')
     await wikiStore.openPage('Rust')
     expect(wikiStore.getState().current?.root.title).toBe('Rust')
@@ -67,6 +71,15 @@ describe('wikiStore state machine', () => {
     expect(wikiStore.getState().open).toBe(true)
     wikiStore.close()
     expect(wikiStore.getState().open).toBe(false)
+  })
+
+  it('issues no wire call on bind; the first open loads exactly once', async () => {
+    const calls: { method: string; args: unknown[] }[] = []
+    await wikiStore.bind(new WikiClient(scriptedWiki(calls)))
+    expect(calls).toEqual([])
+    wikiStore.toggleOpen() // fire-and-forget load, as the UI does
+    await wikiStore.ensurePages()
+    expect(calls.map(call => call.method)).toEqual(['listPages'])
   })
 
   it('createPage upserts then opens the new page', async () => {
@@ -118,6 +131,7 @@ describe('wikiStore state machine', () => {
     const wiki = scriptedWiki(calls)
     const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as WikiRemoteNamespace
     await wikiStore.bind(new WikiClient(failing))
+    await wikiStore.ensurePages()
     expect(wikiStore.getState().error).toMatch(/graph down/)
   })
 })

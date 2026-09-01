@@ -46,14 +46,17 @@ class WikiStore {
   private state: WikiState = { ...INITIAL }
   private listeners = new Set<Listener>()
   private client: WikiClient | null = null
+  private pagesLoad: Promise<void> | undefined
 
   /**
-   * Bind the wire face once the connection exists. Returns the initial page
-   * load so callers/tests can await it.
+   * Bind the wire face once the connection exists. No network I/O happens
+   * here: the page list loads lazily when the drawer first opens (see
+   * {@link ensurePages}), so a GUI page load never waits on the graph CLI.
+   * Returns a settled promise so callers/tests can await binding.
    */
   bind(client: WikiClient): Promise<void> {
     this.client = client
-    return this.refreshPages()
+    return Promise.resolve()
   }
 
   getState(): WikiState {
@@ -77,7 +80,9 @@ class WikiStore {
   // ---- navigation ----
 
   toggleOpen(): void {
-    this.set({ open: !this.state.open })
+    const opening = !this.state.open
+    if (opening) void this.ensurePages()
+    this.set({ open: opening })
   }
 
   close(): void {
@@ -86,6 +91,19 @@ class WikiStore {
 
   clearError(): void {
     this.set({ error: null })
+  }
+
+  /**
+   * Load the page list on first use of the drawer, single-flight across
+   * concurrent openers and re-binds. Refreshes on every open so external
+   * graph edits stay visible, but never starts two loads at once.
+   */
+  ensurePages(): Promise<void> {
+    if (this.client === null) return Promise.resolve()
+    if (this.pagesLoad !== undefined) return this.pagesLoad
+    this.pagesLoad = this.refreshPages()
+      .finally(() => { this.pagesLoad = undefined })
+    return this.pagesLoad
   }
 
   async refreshPages(): Promise<void> {
