@@ -37,7 +37,11 @@ async function writeVcsShim(dir: string, script: string): Promise<string> {
   return path
 }
 
-const REPO_INFO_FIXTURE = JSON.stringify({ root: '/work/checkout', gitDir: '/work/checkout/.git' })
+const REPO_INFO_FIXTURE = JSON.stringify({
+  root: '/work/checkout',
+  gitDir: '/work/checkout/.git',
+  branch: 'main',
+})
 
 const REV_DIFF_FIXTURE = `diff --git a/a.txt b/a.txt
 index 1111111..2222222 100644
@@ -56,6 +60,21 @@ index 0000000..3333333
 @@ -0,0 +1 @@
 +staged content
 `
+
+const WORKTREE_DIFF_FIXTURE = `diff --git a/c.txt b/c.txt
+index 4444444..5555555 100644
+--- a/c.txt
++++ b/c.txt
+@@ -1 +1,2 @@
+ worktree line
++added
+`
+
+const NAME_ONLY_FIXTURE = 'a.txt\nb.txt\n'
+
+const NUMSTAT_FIXTURE = '2\t1\ta.txt\n-\t-\tb.dat\n'
+
+const STATUS_FIXTURE = JSON.stringify({ staged: 2, unstaged: 1, untracked: 3 })
 
 const SHIM = `#!/bin/bash
 case "\$1" in
@@ -81,7 +100,27 @@ case "\$1" in
     exit 0
     ;;
   staged-diff)
+    if [ "$3" = "--name-only" ]; then
+      printf '%s' '${NAME_ONLY_FIXTURE}'
+      exit 0
+    fi
+    if [ "$3" = "--numstat" ]; then
+      printf '%s' '${NUMSTAT_FIXTURE}'
+      exit 0
+    fi
     printf '%s' '${STAGED_DIFF_FIXTURE}'
+    exit 0
+    ;;
+  worktree-diff)
+    if [ "$3" = "--name-only" ]; then
+      printf '%s' '${NAME_ONLY_FIXTURE}'
+      exit 0
+    fi
+    printf '%s' '${WORKTREE_DIFF_FIXTURE}'
+    exit 0
+    ;;
+  status)
+    printf '%s' '${STATUS_FIXTURE}'
     exit 0
     ;;
   watch)
@@ -136,7 +175,12 @@ describe('VcsService', () => {
     const dir = await makeDir('repo-info')
     const { service } = await makeService(await writeVcsShim(dir, SHIM))
     const info = await service.repoInfo('/work/checkout')
-    expect(info).toEqual({ root: '/work/checkout', gitDir: '/work/checkout/.git' })
+    expect(info).toEqual({
+      root: '/work/checkout',
+      gitDir: '/work/checkout/.git',
+      branch: 'main',
+    })
+    await expect(service.branch('/work/checkout')).resolves.toBe('main')
   })
 
   it('returns null for NotARepository instead of throwing', async () => {
@@ -216,6 +260,59 @@ describe('VcsService', () => {
       { event: 'head', seq: 1 },
       { event: 'head', seq: 2 },
     ])
+  })
+
+  it('renders a git-compatible worktree-diff as text', async () => {
+    const dir = await makeDir('worktree-diff')
+    const { service } = await makeService(await writeVcsShim(dir, SHIM))
+    const text = await service.worktreeDiff('/work/checkout')
+    expect(text).toContain('worktree line')
+    expect(text).toContain('+added')
+  })
+
+  it('routes cached/range/worktree surprises through the diff verbs', async () => {
+    const dir = await makeDir('diff-router')
+    const { service } = await makeService(await writeVcsShim(dir, SHIM))
+    // cached -> staged-diff
+    await expect(service.diff('/work/checkout', { cached: true })).resolves.toContain(
+      'staged content',
+    )
+    // none -> worktree-diff
+    await expect(service.diff('/work/checkout', {})).resolves.toContain('worktree line')
+    // base+head -> rev-diff
+    await expect(service.diff('/work/checkout', { base: 'HEAD~1', head: 'HEAD' })).resolves.toContain(
+      'diff --git a/a.txt b/a.txt',
+    )
+    // base only -> rev-diff (base vs worktree)
+    await expect(service.diff('/work/checkout', { base: 'HEAD' })).resolves.toContain(
+      'diff --git a/a.txt b/a.txt',
+    )
+    // head without base is rejected
+    await expect(service.diff('/work/checkout', { head: 'HEAD' })).rejects.toMatchObject({
+      message: expect.stringContaining('base'),
+    })
+  })
+
+  it('collects changed file names and numstat rows', async () => {
+    const dir = await makeDir('derived')
+    const { service } = await makeService(await writeVcsShim(dir, SHIM))
+    await expect(service.changedFiles('/work/checkout', { cached: true })).resolves.toEqual([
+      'a.txt',
+      'b.txt',
+    ])
+    await expect(service.numstat('/work/checkout', { cached: true })).resolves.toBe(
+      '2\t1\ta.txt\n-\t-\tb.dat\n',
+    )
+  })
+
+  it('reports status summary counts and branch name', async () => {
+    const dir = await makeDir('status')
+    const { service } = await makeService(await writeVcsShim(dir, SHIM))
+    await expect(service.status('/work/checkout')).resolves.toEqual({
+      staged: 2,
+      unstaged: 1,
+      untracked: 3,
+    })
   })
 
   it('registers ctx.vcs through the Cordis plugin', async () => {

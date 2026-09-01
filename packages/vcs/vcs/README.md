@@ -4,7 +4,7 @@ English | [中文](README.zh.md)
 
 Native vcs plumbing for the DeepSeek Harness: `ctx.vcs`, a host-plane service over the `pi-vcs` CLI — the narrow native slice of the oh-my-pi vcs surface — via the `ctx.subprocess` seam. Modeled on `ctx.av`.
 
-The service resolves the `pi-vcs` executable (config → `DSH_VCS_PATH` → PATH), probes it with `pi-vcs --version`, and exposes the narrow slice: git rev-diffs and staged diffs rendered **in-process by gitoxide** (git-compatible unified patch text, byte-compatible with the git service's rendering), repository discovery, and a HEAD-change watch companion.
+The service resolves the `pi-vcs` executable (config → `DSH_VCS_PATH` → PATH), probes it with `pi-vcs --version`, and exposes the narrow slice: changeless read surfaces over gitoxide — rev-diffs, staged diffs, worktree diffs, `--name-only`/`--numstat` modes, status summary counts, branch name, and repository discovery — plus a HEAD-change watch companion. Every text surface is byte-compatible with the corresponding `git diff` output, so existing diff parsers keep working.
 
 ## Additive and feature-detected
 
@@ -28,8 +28,14 @@ It is a faithful, MIT-attributed port of oh-my-pi's `crates/pi-vcs` git backend 
 |---|---|---|
 | `probe` | `pi-vcs --version` | reachability + version, never throws |
 | `repoInfo` | `pi-vcs repo-info <dir>` | repository discovery (JSON); `NotARepository` returns `null` |
-| `revDiff` | `pi-vcs rev-diff <dir> <base> [<head>]` | git-compatible unified patch between revisions |
+| `revDiff` | `pi-vcs rev-diff <dir> <base> [<head>]` | git-compatible unified patch between revisions (`base`→worktree when `<head>` omitted) |
 | `stagedDiff` | `pi-vcs staged-diff <dir>` | git-compatible unified staged patch |
+| `worktreeDiff` | `pi-vcs worktree-diff <dir>` | git-compatible unified worktree patch (index vs worktree) |
+| `diff` | `rev-diff`/`staged-diff`/`worktree-diff` + `--name-only`/`--numstat` | one surface for any range in any output mode |
+| `changedFiles` | `--name-only` | changed paths, rename destination, git C-quoting |
+| `numstat` | `--numstat` | raw added/removed/path rows for `parseNumstat` |
+| `status` | `pi-vcs status <dir>` | staged/unstaged/untracked counts like `ctx.git.status` |
+| `branch` | `pi-vcs repo-info <dir>` | current branch (undefined on detached HEAD) |
 | `watch` | `pi-vcs watch <dir> [--interval-ms N]` | long-running JSON-lines HEAD-change companion |
 
 All commands run through `ctx.subprocess` with bounded stdout/stderr collection, a wall-clock timeout, and SIGTERM→SIGKILL grace. A non-zero exit is returned as data on the run with a structured `code` (the VcsError taxonomy: `NotARepository`, `RefNotFound`, `ObjectNotFound`, `Backend`, `Unsupported`, …) parsed from the CLI's JSON stderr; only launch failure, signal kill, or timeout throws `VcsCommandError`. `watch` returns a disposer that terminates the process tree.
@@ -56,6 +62,6 @@ ctx.plugin(vcsPackage, {
 ## Known Limitations and Deferred Work
 
 - **Binary patches render as the marker only** — the `GIT binary patch` body machinery (delta/base85) is dropped; binary changes emit `Binary files … differ`, matching the harness diff parser's expectations.
-- **Worktree diffs stay on the git service** — `pi-vcs` covers revisions and the index; uncommitted worktree diffs still route through `ctx.git`.
+- **Conflicted merged states** — during an in-progress merge, `git diff` switches to a combined (`diff --cc`) form; the native renderer matches omp by skipping conflict entries, so review of a conflicted tree best targets the staged/range surfaces. Status still reports `UU` exactly like git.
 - **No jj backend** — the harness fork is git-only (`isPureJj=false`); jj-lib compiled into omp's native addons is not a callable binary and is deliberately out of scope.
 - **Per-call shell-out** — no persistent native process for batch verbs; each call spawns `pi-vcs` and collects bounded output. `watch` is the one long-lived companion.

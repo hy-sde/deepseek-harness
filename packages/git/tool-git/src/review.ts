@@ -16,9 +16,9 @@ import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { parseFileDiffs } from '@deepseek-ai/dsh-git'
-import type { GitService } from '@deepseek-ai/dsh-git'
 import type { SubagentRun } from '@deepseek-ai/dsh-subagent'
 import { resolveCwd } from './commit.ts'
+import { openReads, type ReadSurface } from './reads.ts'
 
 /** Configuration consumed by the review tool. */
 export interface ReviewToolConfig {
@@ -226,9 +226,9 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
     },
     isConcurrencySafe: () => false,
     async execute(args: ReviewArgs, exec) {
-      const git = ctx.git
       const cwd = resolveCwd(exec, args.cwd)
-      if (!(await git.isRepo(cwd, exec.signal))) {
+      const reads = await openReads(ctx, cwd, exec.signal)
+      if (!(await reads.isRepo())) {
         throw new Error(`review requires a git repository: ${cwd} is not inside a working tree`)
       }
       const parent = exec.agent
@@ -241,7 +241,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
       }
 
       const target = args.target ?? 'worktree'
-      const diffText = await resolveReviewDiff(git, cwd, target, args.range, exec.signal)
+      const diffText = await resolveReviewDiff(reads, target, args.range)
       const allFiles = Array.from(new Set(parseFileDiffs(diffText).map(file => file.filename)))
 
       const focus = (args.focus ?? []).map(prefix => prefix.replace(/\/+$/, ''))
@@ -439,13 +439,11 @@ function toReviewerFinding(value: unknown): ReviewerFinding {
 
 /** Which diff to review for the given target. */
 async function resolveReviewDiff(
-  git: GitService,
-  cwd: string,
+  reads: ReadSurface,
   target: 'worktree' | 'staged' | 'commits',
   range: string | undefined,
-  signal: AbortSignal | undefined,
 ): Promise<string> {
-  if (target === 'staged') return git.diffText(cwd, { cached: true, binary: true }, signal)
+  if (target === 'staged') return reads.diffText({ cached: true })
   if (target === 'commits') {
     if (range === undefined || range.length === 0) {
       throw new Error('review target "commits" requires a range, e.g. HEAD~3..HEAD')
@@ -456,11 +454,11 @@ async function resolveReviewDiff(
     }
     const base = range.slice(0, dash)
     const head = range.slice(dash + 2)
-    return git.diffText(cwd, { base, ...(head.length > 0 ? { head } : {}), binary: true }, signal)
+    return reads.diffText({ base, ...(head.length > 0 ? { head } : {}) })
   }
   // worktree: everything vs HEAD (staged + unstaged; untracked files are
   // excluded — reviewers judge tracked changes).
-  return git.diffText(cwd, { base: 'HEAD', binary: true }, signal)
+  return reads.diffText({ base: 'HEAD' })
 }
 
 /** Split `files` into at most `budget` slices balanced by diff size. */

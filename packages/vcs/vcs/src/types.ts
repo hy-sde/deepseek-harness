@@ -12,6 +12,31 @@ export interface VcsRepoInfo {
   root: string
   /** Resolved git directory (worktree-private for linked worktrees). */
   gitDir: string
+  /** Current branch name, or `null` on a detached HEAD. */
+  branch?: string | null
+}
+
+/** Plain status summary, mirroring the harness `ctx.git.status` shape. */
+export interface VcsStatusSummary {
+  /** Line counts from `git status --porcelain` column 1 (renames count too). */
+  staged: number
+  /** Line counts from `git status --porcelain` column 2. */
+  unstaged: number
+  /** `??` entries; untracked directories collapse to one entry like git. */
+  untracked: number
+}
+
+/** CLI diff output mode (`--name-only`/`--numstat` flags on the diff verbs). */
+export type VcsDiffMode = 'text' | 'name-only' | 'numstat'
+
+/** Diff target selectors shared by the read surfaces. */
+export interface VcsDiffOptions {
+  /** True for index→HEAD when `base`/`head` are unset. */
+  cached?: boolean
+  /** Base revision; head omitted → base→worktree. */
+  base?: string
+  /** Head revision (only with `base`). */
+  head?: string
 }
 
 /** One `pi-vcs watch` event (JSON-lines on stdout). */

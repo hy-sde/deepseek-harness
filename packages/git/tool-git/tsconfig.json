@@ -4,7 +4,9 @@
     "rootDir": "src",
     "outDir": "lib/types"
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
     {
       "path": "../../../vendor/cordis"
@@ -26,6 +28,9 @@
     },
     {
       "path": "../../../packages/core/tools"
+    },
+    {
+      "path": "../../../packages/vcs/vcs"
     }
   ]
 }

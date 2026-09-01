@@ -4,6 +4,11 @@
 
 面向模型方的 `commit`、`commit_apply`、`review` 三个工具——agent 化 git 提交与评审工作流，移植自 omp (oh-my-pi)。其底层宿主服务为 [`@deepseek-ai/dsh-git`](../git/README.zh.md)（`ctx.git`）。
 
+## 读取偏好路由
+
+`commit` 分析与 `review` 的每一项**读取**（仓库检查、变更文件、状态计数、numstat、diff 文本、分支）在宿主 bundle 注册了 [`@deepseek-ai/dsh-vcs`](../../vcs/vcs/README.zh.md)（`ctx.vcs`）且其 `pi-vcs` 探测干净时，都通过它解析——每次调用按需解析，每次工具执行只探测一次——否则回退到 `ctx.git`。**变更输入始终留在 `ctx.git`**（`addAll` 自动暂存、`commit_apply` 供 `stageHunks` 使用的原始暂存 diff），因此写入路径逐字节不变。门面位于 `./reads.ts`（`openReads` → `ReadSurface`），测试通过临时真实仓库旁的假 `pi-vcs` shim 加以验证（读取走 vcs 动词，自动暂存仍走 git）。
+
+
 ## 功能
 
 在 `ctx.tools` 上注册三个工具，一个带提交／评审协商语法的 `git:` 系统提示词 section，并注入 `ctx.git`：

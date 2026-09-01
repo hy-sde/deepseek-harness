@@ -1,18 +1,36 @@
 //! Git-compatible patch generation over gitoxide — faithful port of
 //! oh-my-pi `crates/pi-vcs/src/git/diff.rs` (MIT), restricted to the narrow
-//! slice: two-revision diffs, staged (cached) diffs, and their unified-text
-//! rendering. The `GIT binary patch` body machinery (delta/base85) is dropped:
-//! binary changes render as the `Binary files … differ` marker, matching the
-//! harness parser's expectations.
+//! slice: two-revision diffs, staged (cached) diffs, worktree diffs (index vs
+//! worktree and base vs worktree), and their unified-text / name-only /
+//! numstat rendering. The `GIT binary patch` body machinery (delta/base85) is
+//! dropped: binary changes render as the `Binary files … differ` marker,
+//! matching the harness parser's expectations.
 
-use std::{fmt::Write as _, path::Path};
+use std::fmt::Write as _;
+use std::path::Path;
 
 use gix::bstr::{BStr, BString, ByteSlice};
 
 use crate::{
-	discovery::{GitRepoInfo, normalize_path},
+	discovery::normalize_path,
 	error::{Error, Result},
 };
+
+/// Diff output mode: unified text (git-compatible), name-only, or numstat.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum OutputMode {
+	Text,
+	NameOnly,
+	Numstat,
+}
+
+/// Plain status summary counts, matching the harness `ctx.git.status` shape.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct StatusSummary {
+	pub staged: u32,
+	pub unstaged: u32,
+	pub untracked: u32,
+}
 
 /// Diff options: which comparison to render and with how much context.
 pub struct DiffOptions {
@@ -47,14 +65,81 @@ struct FileChange {
 }
 
 /// Render the selected changes as a git patch (unified diff text).
-pub fn diff_text(
-	repo: &gix::Repository,
-	_info: &GitRepoInfo,
-	options: &DiffOptions,
-) -> Result<String> {
+pub fn diff_text(repo: &gix::Repository, options: &DiffOptions) -> Result<String> {
 	let changes = collect_changes(repo, options)?;
 	let rendered = render_changes(repo, changes, options.context)?;
 	Ok(rendered.into_iter().map(|item| item.text).collect())
+}
+
+/// Dispatch one diff request to the requested output mode.
+pub fn render_diff(
+	repo: &gix::Repository,
+	options: &DiffOptions,
+	mode: OutputMode,
+) -> Result<String> {
+	match mode {
+		OutputMode::Text => diff_text(repo, options),
+		OutputMode::NameOnly => diff_name_only(repo, options),
+		OutputMode::Numstat => diff_numstat(repo, options),
+	}
+}
+
+/// Render just the changed file names (`git diff --name-only`), one per line,
+/// quoting paths the way git does.
+pub fn diff_name_only(repo: &gix::Repository, options: &DiffOptions) -> Result<String> {
+	let changes = collect_changes(repo, options)?;
+	let mut out = String::new();
+	for change in changes {
+		out.push_str(&quote_c_style(&change.new_path));
+		out.push('\n');
+	}
+	Ok(out)
+}
+
+/// Render per-file line counts (`git diff --numstat`): `added\tremoved\tpath`
+/// with `-` for binary and git's compact `{old => new}` rename form.
+pub fn diff_numstat(repo: &gix::Repository, options: &DiffOptions) -> Result<String> {
+	let changes = collect_changes(repo, options)?;
+	let rendered = render_changes(repo, changes.clone(), 0)?;
+	let mut out = String::new();
+	for (change, item) in changes.iter().zip(rendered.iter()) {
+		match (item.added, item.removed) {
+			(None, None) => out.push_str("-\t-\t"),
+			(Some(added), Some(removed)) => {
+				let _ = write!(out, "{added}\t{removed}\t");
+			},
+			_ => return Err(Error::backend("git diff --numstat", "inconsistent diff counts")),
+		}
+		if change.old_path != change.new_path {
+			out.push_str(&pprint_rename(&change.old_path, &change.new_path));
+		} else {
+			out.push_str(&quote_c_style(&change.new_path));
+		}
+		out.push('\n');
+	}
+	Ok(out)
+}
+
+/// Porcelain-derived status summary counts (`git status --porcelain`), one
+/// entry per line: staged/unstaged from the two state columns, untracked from
+/// `??`, with untracked directories collapsed to one entry.
+pub fn status_summary(repo: &gix::Repository) -> Result<StatusSummary> {
+	let text = status_porcelain(repo)?;
+	let mut summary = StatusSummary { staged: 0, unstaged: 0, untracked: 0 };
+	for line in text.lines().filter(|line| line.len() >= 2) {
+		let bytes = line.as_bytes();
+		if bytes[0] == b'?' && bytes[1] == b'?' {
+			summary.untracked += 1;
+		} else {
+			if bytes[0] != b' ' {
+				summary.staged += 1;
+			}
+			if bytes[1] != b' ' {
+				summary.unstaged += 1;
+			}
+		}
+	}
+	Ok(summary)
 }
 
 fn collect_changes(repo: &gix::Repository, options: &DiffOptions) -> Result<Vec<FileChange>> {
@@ -64,14 +149,12 @@ fn collect_changes(repo: &gix::Repository, options: &DiffOptions) -> Result<Vec<
 			let new = revision_tree(repo, head)?;
 			return tree_changes(repo, Some(&old), Some(&new), &options.files);
 		}
-		return tree_changes(repo, Some(&old), None, &options.files);
+		return base_worktree_changes(repo, old.id, &options.files);
 	}
 	if options.cached {
 		return cached_changes(repo, &options.files);
 	}
-	// Worktree diffs (base None, cached false) are out of the CLI slice:
-	// the harness renders them through the git service.
-	Ok(Vec::new())
+	worktree_changes(repo, &options.files)
 }
 
 fn revision_tree<'repo>(repo: &'repo gix::Repository, rev: &str) -> Result<gix::Tree<'repo>> {
@@ -282,6 +365,443 @@ fn index_change(repo: &gix::Repository, change: gix::diff::index::Change) -> Res
 	Ok(result)
 }
 
+fn base_worktree_changes(
+	repo: &gix::Repository,
+	base_tree: gix::ObjectId,
+	files: &[String],
+) -> Result<Vec<FileChange>> {
+	let staged = index_changes(repo, base_tree, files)?;
+	let worktree = worktree_changes(repo, files)?;
+	let mut combined = std::collections::BTreeMap::new();
+	for change in staged {
+		combined.insert(change.new_path.clone(), change);
+	}
+	for change in worktree {
+		if let Some(previous) = combined.get_mut(&change.old_path) {
+			previous.new_id = change.new_id;
+			previous.new_mode = change.new_mode;
+			previous.new_path = change.new_path;
+			previous.worktree_new = true;
+		} else {
+			combined.insert(change.new_path.clone(), change);
+		}
+	}
+	let mut out = combined
+		.into_values()
+		.filter(|change| change.old_id != change.new_id || change.old_mode != change.new_mode)
+		.collect::<Vec<_>>();
+	sort_changes(&mut out);
+	Ok(out)
+}
+
+fn worktree_changes(repo: &gix::Repository, files: &[String]) -> Result<Vec<FileChange>> {
+	let patterns = bstring_patterns(files);
+	let mut iter = status_with_fresh_index(repo, "git diff")?
+		.untracked_files(gix::status::UntrackedFiles::None)
+		.index_worktree_options_mut(|options| options.dirwalk_options = None)
+		.into_index_worktree_iter(patterns)
+		.map_err(|err| Error::backend("git diff", err))?;
+	let mut pending = Vec::new();
+	for item in &mut iter {
+		let item = item.map_err(|err| Error::backend("git diff", err))?;
+		if let gix::status::index_worktree::Item::Modification { entry, rela_path, status, .. } = item
+		{
+			pending.push((entry, rela_path, status));
+		}
+	}
+
+	let (mut filter, filter_index) = repo
+		.filter_pipeline(None)
+		.map_err(|err| Error::backend("git diff filter", err))?;
+	let null = repo.object_hash().null();
+	let mut out = Vec::with_capacity(pending.len());
+	for (entry, path, status) in pending {
+		use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};
+		let mut old_id = entry.id;
+		let mut old_mode = index_mode(entry.mode)?;
+		let mut new_id = null;
+		let mut new_mode = None;
+		match status {
+			EntryStatus::Change(Change::Removed) => {},
+			EntryStatus::Change(Change::Type { .. } | Change::Modification { .. }) => {
+				if let Some((id, kind, _)) = filter
+					.worktree_file_to_object(path.as_ref(), &filter_index)
+					.map_err(|err| Error::backend("git diff filter", err))?
+				{
+					new_id = id;
+					new_mode = Some(kind.into());
+				}
+			},
+			EntryStatus::IntentToAdd => {
+				old_id = null;
+				old_mode = None;
+				if let Some((id, kind, _)) = filter
+					.worktree_file_to_object(path.as_ref(), &filter_index)
+					.map_err(|err| Error::backend("git diff filter", err))?
+				{
+					new_id = id;
+					new_mode = Some(kind.into());
+				}
+			},
+			EntryStatus::Conflict { .. }
+			| EntryStatus::NeedsUpdate(_)
+			| EntryStatus::Change(Change::SubmoduleModification(_)) => continue,
+		}
+		if new_mode.is_some() && old_id == new_id && old_mode == new_mode {
+			continue;
+		}
+		let path = path_string(path.as_ref());
+		out.push(FileChange {
+			old_path: path.clone(),
+			new_path: path,
+			old_id,
+			new_id,
+			old_mode,
+			new_mode,
+			similarity: None,
+			worktree_new: true,
+		});
+	}
+	sort_changes(&mut out);
+	Ok(out)
+}
+
+/// `git status --porcelain` (untracked=normal) built from a fresh index; the
+/// byte-level shape mirrors git, including path quoting, untracked-directory
+/// collapse, and empty-directory invisibility. Port of omp's `status_porcelain`.
+fn status_porcelain(repo: &gix::Repository) -> Result<String> {
+	let platform = status_with_fresh_index(repo, "git status")?
+		.untracked_files(gix::status::UntrackedFiles::Collapsed);
+	let iter = platform
+		.into_iter(std::iter::empty::<gix::bstr::BString>())
+		.map_err(|err| Error::backend("git status", err))?;
+	let mut states: std::collections::BTreeMap<String, (char, char, Option<String>)> =
+		std::collections::BTreeMap::new();
+	let mut untracked_paths: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+	for item in iter {
+		let item = item.map_err(|err| Error::backend("git status", err))?;
+		use gix::status::{Item, index_worktree};
+		match item {
+			Item::TreeIndex(change) => {
+				use gix::diff::index::ChangeRef;
+				match change {
+					ChangeRef::Addition { location, .. } => {
+						set_index(&mut states, &location, 'A', None);
+					},
+					ChangeRef::Deletion { location, .. } => {
+						set_index(&mut states, &location, 'D', None);
+					},
+					ChangeRef::Modification { location, .. } => {
+						set_index(&mut states, &location, 'M', None);
+					},
+					ChangeRef::Rewrite { source_location, location, copy, .. } => {
+						set_index(
+							&mut states,
+							&location,
+							if copy { 'C' } else { 'R' },
+							Some(bytes_to_path(&source_location)),
+						);
+					},
+				}
+			},
+			Item::IndexWorktree(change) => match change {
+				index_worktree::Item::Modification { rela_path, status, .. } => {
+					use gix::status::plumbing::index_as_worktree::{Change, EntryStatus};
+					// git renders a conflicted path as `UU`: both the index
+					// (stage entries) and the worktree are marked unresolved.
+					if let EntryStatus::Conflict { .. } = status {
+						states
+							.entry(bytes_to_path(rela_path.as_bstr()))
+							.and_modify(|s| {
+								s.0 = 'U';
+								s.1 = 'U';
+							})
+							.or_insert(('U', 'U', None));
+						continue;
+					}
+					let code = match status {
+						EntryStatus::Change(Change::Removed) => 'D',
+						EntryStatus::Change(Change::Type { .. }) => 'T',
+						EntryStatus::Change(
+							Change::Modification { .. } | Change::SubmoduleModification(_),
+						) => 'M',
+						EntryStatus::IntentToAdd => 'A',
+						EntryStatus::NeedsUpdate(_) => continue,
+						EntryStatus::Conflict { .. } => unreachable!(),
+					};
+					set_worktree(&mut states, rela_path.as_bstr(), code);
+				},
+				index_worktree::Item::DirectoryContents { entry, .. }
+					if entry.status == gix::dir::entry::Status::Untracked =>
+				{
+					let mut path = bytes_to_path(entry.rela_path.as_bstr());
+					if entry.disk_kind == Some(gix::dir::entry::Kind::Directory) {
+						let joined = repo
+							.workdir()
+							.ok_or_else(|| Error::backend("git status", "worktree has no workdir"))?
+							.join(&path);
+						if !dir_contains_file(&joined) {
+							continue;
+						}
+						path.push('/');
+					}
+					untracked_paths.insert(path);
+				},
+				index_worktree::Item::Rewrite { source, dirwalk_entry, copy, .. } => {
+					let old = match source {
+						index_worktree::RewriteSource::RewriteFromIndex { source_rela_path, .. } => {
+							bytes_to_path(source_rela_path.as_bstr())
+						},
+						index_worktree::RewriteSource::CopyFromDirectoryEntry {
+							source_dirwalk_entry,
+							..
+						} => bytes_to_path(source_dirwalk_entry.rela_path.as_bstr()),
+					};
+					let new = bytes_to_path(dirwalk_entry.rela_path.as_bstr());
+					states.insert(new, (' ', if copy { 'C' } else { 'R' }, Some(old)));
+				},
+				_ => {},
+			},
+		}
+	}
+	let mut out = String::new();
+	for (path, (x, y, old)) in states.into_iter().chain(
+		untracked_paths
+			.into_iter()
+			.map(|path| (path, ('?', '?', None))),
+	) {
+		out.push(x);
+		out.push(y);
+		out.push(' ');
+		if let Some(old) = old {
+			out.push_str(&quote_path_status(&old));
+			out.push_str(" -> ");
+		}
+		out.push_str(&quote_path_status(&path));
+		out.push('\n');
+	}
+	Ok(out)
+}
+
+fn set_index(
+	states: &mut std::collections::BTreeMap<String, (char, char, Option<String>)>,
+	path: &gix::bstr::BStr,
+	code: char,
+	old: Option<String>,
+) {
+	states
+		.entry(bytes_to_path(path))
+		.and_modify(|s| {
+			s.0 = code;
+			s.2.clone_from(&old);
+		})
+		.or_insert((code, ' ', old));
+}
+
+fn set_worktree(
+	states: &mut std::collections::BTreeMap<String, (char, char, Option<String>)>,
+	path: &gix::bstr::BStr,
+	code: char,
+) {
+	states
+		.entry(bytes_to_path(path))
+		.and_modify(|s| s.1 = code)
+		.or_insert((' ', code, None));
+}
+
+/// Whether any regular file (or symlink) exists beneath `dir`; git omits
+/// untracked directories that hold nothing but empty directories.
+fn dir_contains_file(dir: &std::path::Path) -> bool {
+	let Ok(entries) = std::fs::read_dir(dir) else {
+		return false;
+	};
+	for entry in entries.flatten() {
+		match entry.file_type() {
+			Ok(kind) if kind.is_dir() => {
+				if dir_contains_file(&entry.path()) {
+					return true;
+				}
+			},
+			Ok(_) => return true,
+			Err(_) => {},
+		}
+	}
+	false
+}
+
+/// A fresh-index status platform: the persisted index loaded straight from
+/// disk (bypassing gix's mtime-gated snapshot), then status walking from it.
+fn status_with_fresh_index<'repo>(
+	repo: &'repo gix::Repository,
+	op: &'static str,
+) -> Result<gix::status::Platform<'repo, gix::progress::Discard>> {
+	let index = load_index_or_empty(repo, op)?;
+	Ok(repo
+		.status(gix::progress::Discard)
+		.map_err(|err| Error::backend(op, err))?
+		.index(index.into()))
+}
+
+fn bytes_to_path(value: &gix::bstr::BStr) -> String {
+	value.to_str_lossy().into_owned()
+}
+
+/// Whether a path needs C-quoting under git's `core.quotePath` (default on):
+/// any byte outside printable ASCII, plus `"` and `\`. A plain space never
+/// triggers quoting — that matches git's diff outputs (`quote_c_style`).
+fn needs_quote(path: &str) -> bool {
+	path
+		.bytes()
+		.any(|b| !(0x20..0x7f).contains(&b) || b == b'"' || b == b'\\')
+}
+
+/// Push the C-quoted body of `path` (escapes but no surrounding quotes),
+/// matching git's `quote_c_style`: named escapes for `\b \t \n \v \f \r`,
+/// `\\` and `\"`, octal for every other non-printable byte (and for every
+/// byte of multi-byte UTF-8, exactly like git).
+fn push_quoted_body(out: &mut String, path: &str) {
+	let mut pending = 0;
+	for (index, ch) in path.char_indices() {
+		if ch.is_ascii() {
+			let byte = ch as u8;
+			if (0x20..0x7f).contains(&byte) && byte != b'"' && byte != b'\\' {
+				continue;
+			}
+			out.push_str(&path[pending..index]);
+			pending = index + 1;
+			match byte {
+				b'\\' => out.push_str("\\\\"),
+				b'"' => out.push_str("\\\""),
+				b'\n' => out.push_str("\\n"),
+				b'\r' => out.push_str("\\r"),
+				b'\t' => out.push_str("\\t"),
+				0x08 => out.push_str("\\b"),
+				0x0b => out.push_str("\\v"),
+				0x0c => out.push_str("\\f"),
+				_ => {
+					let _ = write!(out, "\\{byte:03o}");
+				},
+			}
+		} else {
+			// Every byte of a multi-byte char is escaped as octal, like git.
+			out.push_str(&path[pending..index]);
+			pending = index + ch.len_utf8();
+			for byte in path[index..index + ch.len_utf8()].bytes() {
+				let _ = write!(out, "\\{byte:03o}");
+			}
+		}
+	}
+	out.push_str(&path[pending..]);
+}
+
+/// git's `quote_c_style(path)`: the path C-quoted with surrounding double
+/// quotes when any byte needs it, else the bare path.
+fn quote_c_style(path: &str) -> String {
+	if !needs_quote(path) {
+		return path.to_owned();
+	}
+	let mut out = String::from("\"");
+	push_quoted_body(&mut out, path);
+	out.push('"');
+	out
+}
+
+/// git's `quote_two(prefix, path)` used for `a/`/`b/` header labels: when
+/// either needs quoting both are joined inside one pair of quotes, and each
+/// is escaped verbatim (`"a/sp \304\203ce.txt"`), else `prefix + path` plainly.
+fn quote_two(prefix: &str, path: &str) -> String {
+	if needs_quote(prefix) || needs_quote(path) {
+		let mut out = String::from("\"");
+		out.push_str(prefix);
+		push_quoted_body(&mut out, path);
+		out.push('"');
+		out
+	} else {
+		let mut out = String::with_capacity(prefix.len() + path.len());
+		out.push_str(prefix);
+		out.push_str(path);
+		out
+	}
+}
+
+/// git's `quote_path()` for porcelain status: like `quote_c_style` but a
+/// space anywhere forces the quoted form (`QUOTE_PATH_QUOTE_SP`).
+fn quote_path_status(path: &str) -> String {
+	if !needs_quote(path) && !path.contains(' ') {
+		return path.to_owned();
+	}
+	let mut out = String::from("\"");
+	push_quoted_body(&mut out, path);
+	out.push('"');
+	out
+}
+
+/// git's `pprint_rename`: `pfx{mid-a => mid-b}sfx` when a common directory
+/// prefix or slash-bounded suffix exists, else `a => b`. When either path
+/// needs C-quoting, both full paths are quoted and the compact form is
+/// skipped (git fast-paths to that), matching numstat output.
+fn pprint_rename(a: &str, b: &str) -> String {
+	if a
+		.bytes()
+		.any(|byte| !(0x20..0x7f).contains(&byte) || byte == b'"' || byte == b'\\')
+		|| b
+			.bytes()
+			.any(|byte| !(0x20..0x7f).contains(&byte) || byte == b'"' || byte == b'\\')
+	{
+		return format!("{} => {}", quote_c_style(a), quote_c_style(b));
+	}
+	let len_a = a.len();
+	let len_b = b.len();
+	let a_bytes = a.as_bytes();
+	let b_bytes = b.as_bytes();
+	// git's pfx_length: longest common prefix, remembered through the LAST
+	// `/` seen (the prefix always ends at a directory boundary).
+	let mut pfx_length = 0;
+	let mut i = 0;
+	while i < len_a && i < len_b && a_bytes[i] == b_bytes[i] {
+		if a_bytes[i] == b'/' {
+			pfx_length = i + 1;
+		}
+		i += 1;
+	}
+	// git's sfx_length: common suffix scanned from the end; every `/` seen
+	// overwrites it (the LAST, leftmost slash-bounded suffix wins), and the
+	// walk may run one position into the common prefix when one exists, so
+	// `p/q` -> `r/q` yields `{p => r}/q` and `p/q/r` -> `s/q/r` yields
+	// `{p => s}/q/r`.
+	let pfx_adjust = i32::from(pfx_length > 0);
+	let mut sfx_length = 0;
+	let mut ai = len_a;
+	let mut bi = len_b;
+	while ai > 0
+		&& bi > 0
+		&& ai as i32 - pfx_adjust >= pfx_length as i32
+		&& bi as i32 - pfx_adjust >= pfx_length as i32
+		&& a_bytes[ai - 1] == b_bytes[bi - 1]
+	{
+		ai -= 1;
+		bi -= 1;
+		if a_bytes[ai] == b'/' {
+			sfx_length = len_a - ai;
+		}
+	}
+	let a_midlen = len_a - pfx_length - sfx_length;
+	let b_midlen = len_b - pfx_length - sfx_length;
+	if pfx_length + sfx_length > 0 {
+		let mut out = String::new();
+		out.push_str(&a[..pfx_length]);
+		out.push('{');
+		out.push_str(&a[pfx_length..pfx_length + a_midlen]);
+		out.push_str(" => ");
+		out.push_str(&b[pfx_length..pfx_length + b_midlen]);
+		out.push('}');
+		out.push_str(&a[len_a - sfx_length..]);
+		out
+	} else {
+		format!("{a} => {b}")
+	}
+}
+
 fn render_changes(
 	repo: &gix::Repository,
 	changes: Vec<FileChange>,
@@ -308,9 +828,7 @@ fn render_changes(
 
 struct Rendered {
 	text: String,
-	#[allow(dead_code)]
 	added: Option<u32>,
-	#[allow(dead_code)]
 	removed: Option<u32>,
 }
 
@@ -353,10 +871,10 @@ fn render_change(
 		.map_err(|err| Error::backend("git diff", err))?;
 
 	let mut text = String::new();
-	text.push_str("diff --git a/");
-	text.push_str(&change.old_path);
-	text.push_str(" b/");
-	text.push_str(&change.new_path);
+	text.push_str("diff --git ");
+	text.push_str(&quote_two("a/", &change.old_path));
+	text.push(' ');
+	text.push_str(&quote_two("b/", &change.new_path));
 	text.push('\n');
 	let is_binary = matches!(
 		prepared.operation,
@@ -374,10 +892,11 @@ fn render_change(
 
 	match prepared.operation {
 		gix::diff::blob::platform::prepare_diff::Operation::SourceOrDestinationIsBinary => {
+			let (old_label, new_label) = pair_labels(change);
 			text.push_str("Binary files ");
-			push_old_path(&mut text, change);
+			text.push_str(&old_label);
 			text.push_str(" and ");
-			push_new_path(&mut text, change);
+			text.push_str(&new_label);
 			text.push_str(" differ\n");
 			Ok(Rendered { text, added: None, removed: None })
 		},
@@ -395,11 +914,14 @@ fn render_change(
 			let added = diff.count_additions();
 			let removed = diff.count_removals();
 			if added != 0 || removed != 0 {
+				let (old_label, new_label) = pair_labels(change);
 				text.push_str("--- ");
-				push_old_path(&mut text, change);
+				text.push_str(&old_label);
+				text.push_str(if old_label.contains(' ') { "\t" } else { "" });
 				text.push('\n');
 				text.push_str("+++ ");
-				push_new_path(&mut text, change);
+				text.push_str(&new_label);
+				text.push_str(if new_label.contains(' ') { "\t" } else { "" });
 				text.push('\n');
 				let old_data = prepared.old.data.as_slice().unwrap_or_default();
 				let sink = GitHunks { out: &mut text, old_data };
@@ -424,10 +946,10 @@ fn append_metadata(out: &mut String, change: &FileChange, similarity: Option<u8>
 	if let Some(similarity) = similarity {
 		let _ = writeln!(out, "similarity index {similarity}%");
 		out.push_str("rename from ");
-		out.push_str(&change.old_path);
+		out.push_str(&quote_c_style(&change.old_path));
 		out.push('\n');
 		out.push_str("rename to ");
-		out.push_str(&change.new_path);
+		out.push_str(&quote_c_style(&change.new_path));
 		out.push('\n');
 	}
 	match (change.old_mode, change.new_mode) {
@@ -559,22 +1081,21 @@ fn sort_changes(changes: &mut [FileChange]) {
 	});
 }
 
-fn push_old_path(out: &mut String, change: &FileChange) {
-	if change.old_mode.is_some() {
-		out.push_str("a/");
-		out.push_str(&change.old_path);
+/// The `---`/`+++`/`Binary files` header labels for one change, mirroring
+/// git's `lbl[0..2]`: `quote_two("a/", path)` (or `/dev/null` when a side is
+/// absent) with the whole label inside one pair of quotes when escaped.
+fn pair_labels(change: &FileChange) -> (String, String) {
+	let old = if change.old_mode.is_some() {
+		quote_two("a/", &change.old_path)
 	} else {
-		out.push_str("/dev/null");
-	}
-}
-
-fn push_new_path(out: &mut String, change: &FileChange) {
-	if change.new_mode.is_some() {
-		out.push_str("b/");
-		out.push_str(&change.new_path);
+		String::from("/dev/null")
+	};
+	let new = if change.new_mode.is_some() {
+		quote_two("b/", &change.new_path)
 	} else {
-		out.push_str("/dev/null");
-	}
+		String::from("/dev/null")
+	};
+	(old, new)
 }
 
 fn index_mode(mode: gix::index::entry::Mode) -> Result<Option<gix::objs::tree::EntryMode>> {

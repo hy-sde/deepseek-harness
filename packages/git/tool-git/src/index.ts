@@ -39,6 +39,8 @@ export {
 } from './prompt.ts'
 export type { GitPromptConfig } from './prompt.ts'
 export { applyCommitTool, applyCommitApplyTool, resolveCwd } from './commit.ts'
+export { openReads } from './reads.ts'
+export type { ReadSurface, ReadRange } from './reads.ts'
 export type { CommitToolConfig, CommitAnalysisValue, CommitApplyValue } from './commit.ts'
 export { applyReviewTool } from './review.ts'
 export type { ReviewToolConfig, SliceResult } from './review.ts'
@@ -51,7 +53,7 @@ export const inject = ['tools', 'systemPrompt', 'git']
 
 /**
  * Register the three git tools and the `git:tools` prompt section.
- * @param ctx - the agent-plane plugin context (injects `tools`, `systemPrompt`, `git`).
+ * @param ctx - the agent-plane plugin context (injects `tools`, `systemPrompt`, `git`; `vcs` is resolved opportunistically).
  * @param config - resolved plugin configuration.
  */
 export function apply(ctx: Context, config: Config = {}): void {

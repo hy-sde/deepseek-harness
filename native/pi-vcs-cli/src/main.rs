@@ -1,7 +1,8 @@
 //! `pi-vcs` — thin pi-vcs CLI front for the DeepSeek Harness `ctx.vcs` host
 //! service (port_omp.md: adopt the AV pattern for the narrow native slice).
 //!
-//! Narrow slice only: `repo-info`, `rev-diff`, `staged-diff`, `watch`, and
+//! Narrow slice only: `repo-info`, `rev-diff`, `staged-diff`, `worktree-diff`,
+//! `status`, `watch`, and
 //! `--version`. No jj backend, no mutation verbs — those stay on the harness
 //! git service (the TS path remains the default).
 //!
@@ -61,38 +62,66 @@ fn run(args: Vec<String>) -> Result<()> {
 		"repo-info" => {
 			let dir = arg(&args, 1, "repo-info <dir>")?;
 			let r = repo::require(&dir)?;
-			let info = r.info();
-			let root = info.repo_root.to_string_lossy();
-			let git_dir = info.git_dir.to_string_lossy();
-			println!("{}", serde_json::json!({ "root": root, "gitDir": git_dir }));
+			let root = r.info().repo_root.to_string_lossy().into_owned();
+			let git_dir = r.info().git_dir.to_string_lossy().into_owned();
+			let branch = r.branch();
+			println!("{}", serde_json::json!({ "root": root, "gitDir": git_dir, "branch": branch }));
 			Ok(())
 		},
 		"rev-diff" => {
-			// rev-diff <dir> <base> [<head>]
-			let dir = arg(&args, 1, "rev-diff <dir> <base> [<head>]")?;
-			let base = arg_str(&args, 2, "rev-diff <dir> <base> [<head>]")?;
-			let head = args.get(3).cloned();
+			// rev-diff <dir> <base> [<head>] [--name-only|--numstat]
+			let dir = arg(&args, 1, "rev-diff <dir> <base> [<head>] [--name-only|--numstat]")?;
+			let base = arg_str(&args, 2, "rev-diff <dir> <base> [<head>] [--name-only|--numstat]")?;
+			let head = args.get(3).filter(|a| !a.starts_with("--")).cloned();
+			let mode = output_mode(&args)?;
 			let mut r = repo::require(&dir)?;
 			let gix = r.gix()?;
-			let text = diff::diff_text(
+			let text = diff::render_diff(
 				&gix,
-				r.info(),
 				&diff::DiffOptions { base: Some(base), head, ..Default::default() },
+				mode,
 			)?;
 			print!("{text}");
 			Ok(())
 		},
 		"staged-diff" => {
-			// staged-diff <dir>
-			let dir = arg(&args, 1, "staged-diff <dir>")?;
+			// staged-diff <dir> [--name-only|--numstat]
+			let dir = arg(&args, 1, "staged-diff <dir> [--name-only|--numstat]")?;
+			let mode = output_mode(&args)?;
 			let mut r = repo::require(&dir)?;
 			let gix = r.gix()?;
-			let text = diff::diff_text(
+			let text = diff::render_diff(
 				&gix,
-				r.info(),
 				&diff::DiffOptions { cached: true, ..Default::default() },
+				mode,
 			)?;
 			print!("{text}");
+			Ok(())
+		},
+		"worktree-diff" => {
+			// worktree-diff <dir> [--name-only|--numstat]
+			let dir = arg(&args, 1, "worktree-diff <dir> [--name-only|--numstat]")?;
+			let mode = output_mode(&args)?;
+			let mut r = repo::require(&dir)?;
+			let gix = r.gix()?;
+			let text = diff::render_diff(&gix, &diff::DiffOptions::default(), mode)?;
+			print!("{text}");
+			Ok(())
+		},
+		"status" => {
+			// status <dir>
+			let dir = arg(&args, 1, "status <dir>")?;
+			let mut r = repo::require(&dir)?;
+			let gix = r.gix()?;
+			let summary = diff::status_summary(&gix)?;
+			println!(
+				"{}",
+				serde_json::json!({
+					"staged": summary.staged,
+					"unstaged": summary.unstaged,
+					"untracked": summary.untracked,
+				})
+			);
 			Ok(())
 		},
 		"watch" => {
@@ -114,6 +143,24 @@ fn run(args: Vec<String>) -> Result<()> {
 	}
 }
 
+/// Parse the optional `--name-only` / `--numstat` output-mode flag (default
+/// unified text); a mode flag appearing twice is an error.
+fn output_mode(args: &[String]) -> Result<diff::OutputMode> {
+	let mut mode = None;
+	for flag in args.iter().skip(1) {
+		let candidate = match flag.as_str() {
+			"--name-only" => Some(diff::OutputMode::NameOnly),
+			"--numstat" => Some(diff::OutputMode::Numstat),
+			_ => None,
+		};
+		if let Some(candidate) = candidate {
+			if mode.replace(candidate).is_some() {
+				return Err(Error::backend("diff", "conflicting output mode flags"));
+			}
+		}
+	}
+	Ok(mode.unwrap_or(diff::OutputMode::Text))
+}
 fn arg(args: &[String], index: usize, usage: &str) -> Result<PathBuf> {
 	args
 		.get(index)
@@ -190,6 +237,8 @@ USAGE:\n\
   pi-vcs repo-info <dir>\n\
   pi-vcs rev-diff <dir> <base> [<head>]\n\
   pi-vcs staged-diff <dir>\n\
+  pi-vcs worktree-diff <dir> [--name-only|--numstat]
+  pi-vcs status <dir>
   pi-vcs watch <dir> [--interval-ms N]\n"
 	);
 }

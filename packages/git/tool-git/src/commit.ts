@@ -15,6 +15,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { openReads } from './reads.ts'
 import {
   formatCommitMessage,
   assignLockFilesToPlan,
@@ -153,25 +154,25 @@ export function applyCommitTool(ctx: Context, config: CommitToolConfig = {}): vo
     },
     isConcurrencySafe: () => false,
     async execute(args: CommitAnalyzeArgs, exec) {
-      const git = ctx.git
       const cwd = resolveCwd(exec, args.cwd)
-      if (!(await git.isRepo(cwd, exec.signal))) {
+      const reads = await openReads(ctx, cwd, exec.signal)
+      if (!(await reads.isRepo())) {
         throw new Error(`commit requires a git repository: ${cwd} is not inside a working tree`)
       }
       const warnings: string[] = []
-      let stagedFiles = await git.diff.changedFiles(cwd, { cached: true, signal: exec.signal })
+      let stagedFiles = await reads.changedFiles({ cached: true })
 
       if (stagedFiles.length === 0 && !args.stagedOnly) {
-        const status = await git.status(cwd, exec.signal)
+        const status = await reads.status()
         if (status.unstaged > 0 || status.untracked > 0) {
-          await git.addAll(cwd, [], exec.signal)
+          await ctx.git.addAll(cwd, [], exec.signal)
           warnings.push('nothing was staged; staged all working-tree changes automatically for analysis')
         }
-        stagedFiles = await git.diff.changedFiles(cwd, { cached: true, signal: exec.signal })
+        stagedFiles = await reads.changedFiles({ cached: true })
       }
 
       if (stagedFiles.length === 0) {
-        const status = await git.status(cwd, exec.signal)
+        const status = await reads.status()
         if (status.untracked > 0) {
           warnings.push(`detected ${status.untracked} untracked file(s) not included — rerun without stagedOnly to stage them`)
         }
@@ -189,10 +190,10 @@ export function applyCommitTool(ctx: Context, config: CommitToolConfig = {}): vo
         } satisfies CommitAnalysisValue
       }
 
-      const numstat = await git.diff.numstat(cwd, { cached: true, signal: exec.signal })
-      const branch = (await git.branch(cwd, exec.signal)) ?? undefined
+      const numstat = await reads.numstat({ cached: true })
+      const branch = (await reads.branch()) ?? undefined
 
-      let diffText = await git.diffText(cwd, { cached: true, binary: true }, exec.signal)
+      let diffText = await reads.diffText({ cached: true })
       let diffTruncated = false
       if (diffText.length > maxDiffChars) {
         diffText = diffText.slice(0, maxDiffChars)

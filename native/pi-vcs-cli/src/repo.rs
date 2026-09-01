@@ -64,6 +64,17 @@ impl Repo {
 		Ok(opened.to_thread_local())
 	}
 
+	/// Current branch name (the ref target when HEAD is symbolic), or `None`
+	/// on a detached HEAD.
+	pub fn branch(&self) -> Option<String> {
+		if self.info.is_reftable {
+			return None;
+		}
+		let content = std::fs::read_to_string(&self.info.head_path).ok()?;
+		let rest = content.trim().strip_prefix("ref: ")?;
+		rest.strip_prefix("refs/heads/").map(str::to_owned)
+	}
+
 	/// Filesystem targets whose metadata changes when HEAD moves: the `HEAD`
 	/// file plus, when HEAD is a symbolic ref and the ref file is writable,
 	/// the branch ref itself (a plain `git commit` only touches the latter).

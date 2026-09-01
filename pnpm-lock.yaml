@@ -6132,6 +6132,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:^
         version: link:../../core/tools
+      '@deepseek-ai/dsh-vcs':
+        specifier: workspace:^
+        version: link:../../vcs/vcs
 
   packages/goal/command-goal:
     devDependencies:

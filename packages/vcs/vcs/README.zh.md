@@ -28,8 +28,14 @@ cargo build --release --manifest-path native/pi-vcs-cli/Cargo.toml
 |---|---|---|
 | `probe` | `pi-vcs --version` | 可达性 + 版本，绝不抛出 |
 | `repoInfo` | `pi-vcs repo-info <dir>` | 仓库发现（JSON）；`NotARepository` 返回 `null` |
-| `revDiff` | `pi-vcs rev-diff <dir> <base> [<head>]` | 修订之间的 git 兼容统一补丁 |
+| `revDiff` | `pi-vcs rev-diff <dir> <base> [<head>]` | 修订之间的 git 兼容统一补丁（省略 `<head>` 时为 `base`→工作树） |
 | `stagedDiff` | `pi-vcs staged-diff <dir>` | git 兼容的统一暂存补丁 |
+| `worktreeDiff` | `pi-vcs worktree-diff <dir>` | git 兼容的统一工作树补丁（索引对工作树） |
+| `diff` | `rev-diff`/`staged-diff`/`worktree-diff` + `--name-only`/`--numstat` | 任意范围、任意输出模式的统一表面 |
+| `changedFiles` | `--name-only` | 变更路径、重命名目标、git C-引号 |
+| `numstat` | `--numstat` | 供 `parseNumstat` 使用的原始 added/removed/path 行 |
+| `status` | `pi-vcs status <dir>` | 与 `ctx.git.status` 相同的暂存/未暂存/未跟踪计数 |
+| `branch` | `pi-vcs repo-info <dir>` | 当前分支（分离 HEAD 时为 undefined） |
 | `watch` | `pi-vcs watch <dir> [--interval-ms N]` | 长驻 JSON-行 HEAD 变化伴生进程 |
 
 所有命令都通过 `ctx.subprocess` 执行，带受限的 stdout/stderr 采集、墙钟超时和 SIGTERM→SIGKILL 宽限。非零退出以数据形式返回在 run 上，并带结构化 `code`（VcsError 分类：`NotARepository`、`RefNotFound`、`ObjectNotFound`、`Backend`、`Unsupported` 等），从 CLI 的 JSON stderr 解析；只有启动失败、信号杀死或超时才抛出 `VcsCommandError`。`watch` 返回一个终止进程树的释放器。

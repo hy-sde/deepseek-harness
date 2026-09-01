@@ -4,6 +4,11 @@ English | [中文](README.zh.md)
 
 The model-facing `commit`, `commit_apply`, and `review` tools — the agentic git commit + review workflow, ported from omp (oh-my-pi). The underlying host service is [`@deepseek-ai/dsh-git`](../git/README.md) (`ctx.git`).
 
+## Read-preference routing
+
+Every `commit` analysis and `review` **read** (repository check, changed files, status counts, numstat, diff text, branch) resolves through [`@deepseek-ai/dsh-vcs`](../../vcs/vcs/README.md) (`ctx.vcs`) when the host bundle registered it and its `pi-vcs` probe is clean — resolved opportunistically per call, one probe per tool execution — and falls back to `ctx.git` otherwise. **Mutation inputs stay on `ctx.git`** (`addAll` auto-staging, `commit_apply`'s raw staged diff feeding `stageHunks`), so the write path is byte-for-byte unchanged. The facade lives in `./reads.ts` (`openReads` → `ReadSurface`), which tests exercise through a fake `pi-vcs` shim next to a real temp repo (reads hit the vcs verbs, the auto-stage still hits git).
+
+
 ## What it does
 
 Registers three tools on `ctx.tools`, a `git:` system-prompt section with the commit/review negotiation grammar, and an inject on `ctx.git`:

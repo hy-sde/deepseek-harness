@@ -24,7 +24,14 @@ import type {
   SubprocessRuntime,
   SubprocessSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
-import type { VcsProbe, VcsRepoInfo, VcsWatchEvent } from './types.ts'
+import type {
+  VcsDiffMode,
+  VcsDiffOptions,
+  VcsProbe,
+  VcsRepoInfo,
+  VcsStatusSummary,
+  VcsWatchEvent,
+} from './types.ts'
 
 /** Plugin configuration for the vcs service. */
 export interface Config {
@@ -183,6 +190,105 @@ export class VcsService extends Service {
   async stagedDiff(dir: string): Promise<string> {
     const run = await this.runChecked(['staged-diff', dir], { cwd: process.cwd() })
     return run.stdout
+  }
+
+  /**
+   * Render the worktree patch (index vs worktree) (`pi-vcs worktree-diff <dir>`),
+   * the native counterpart to `git diff`. Untracked files are excluded, like
+   * git itself.
+   * @param dir - directory inside the checkout.
+   * @param signal - optional abort.
+   * @returns the unified diff text (empty string when the worktree is clean).
+   */
+  async worktreeDiff(dir: string, signal?: AbortSignal): Promise<string> {
+    const run = await this.runChecked(['worktree-diff', dir], { cwd: process.cwd(), signal })
+    return run.stdout
+  }
+
+  /**
+   * Render one diff range in any CLI output mode. It picks the CLI verb from
+   * the selectors (base+head → `rev-diff`, base only → base→worktree, cached →
+   * `staged-diff`, none → `worktree-diff`) and appends the mode flag.
+   * @param dir - directory inside the checkout.
+   * @param options - range/mode selectors (see {@link VcsDiffOptions}).
+   * @param signal - optional abort.
+   * @returns the raw CLI text: unified diff, one path per line (`name-only`),
+   * or `added\tremoved\tpath` lines (`numstat`), byte-compatible with the
+   * corresponding `git diff` output.
+   */
+  async diff(
+    dir: string,
+    options: VcsDiffOptions & { mode?: VcsDiffMode } = {},
+    signal?: AbortSignal,
+  ): Promise<string> {
+    const modeFlag =
+      options.mode === 'name-only' ? '--name-only' : options.mode === 'numstat' ? '--numstat' : ''
+    if (options.base === undefined && options.head !== undefined) {
+      throw new VcsCommandError('pi-vcs diff: head requires a base revision', {
+        exitCode: null,
+        stderr: '',
+      })
+    }
+    const verbName =
+      options.base !== undefined ? 'rev-diff' : options.cached === true ? 'staged-diff' : 'worktree-diff'
+    const verbArgv: string[] = [verbName, dir]
+    if (verbName === 'rev-diff') {
+      verbArgv.push(options.base ?? '')
+      if (options.head !== undefined) verbArgv.push(options.head)
+    }
+    if (modeFlag.length > 0) verbArgv.push(modeFlag)
+    const run = await this.runChecked(verbArgv, { cwd: process.cwd(), signal })
+    return run.stdout
+  }
+
+  /**
+   * Changed-file names (`git diff --name-only`), one per line with the
+   * destination path for renames and git's C-quoting preserved.
+   * @param dir - directory inside the checkout.
+   * @param options - range selectors (see {@link VcsDiffOptions}).
+   * @param signal - optional abort.
+   * @returns the changed paths, relative to the checkout root.
+   */
+  async changedFiles(dir: string, options: VcsDiffOptions = {}, signal?: AbortSignal): Promise<string[]> {
+    const text = await this.diff(dir, { ...options, mode: 'name-only' }, signal)
+    return text.split('\n').filter(line => line.length > 0)
+  }
+
+  /**
+   * Raw `git diff --numstat` text. Callers parse with the git package's
+   * `parseNumstat` (already byte-compatible with this output) when they need
+   * typed entries.
+   * @param dir - directory inside the checkout.
+   * @param options - range selectors (see {@link VcsDiffOptions}).
+   * @param signal - optional abort.
+   * @returns `added\tremoved\tpath` lines (binary rows show `-`).
+   */
+  async numstat(dir: string, options: VcsDiffOptions = {}, signal?: AbortSignal): Promise<string> {
+    return this.diff(dir, { ...options, mode: 'numstat' }, signal)
+  }
+
+  /**
+   * Plain status summary counts, mirroring `ctx.git.status` by counting the
+   * same `git status --porcelain` columns natively.
+   * @param dir - directory inside the checkout.
+   * @param signal - optional abort.
+   * @returns staged/unstaged/untracked counts.
+   */
+  async status(dir: string, signal?: AbortSignal): Promise<VcsStatusSummary> {
+    const run = await this.runChecked(['status', dir], { cwd: process.cwd(), signal })
+    return this.parseJson(run.stdout, 'pi-vcs status') as VcsStatusSummary
+  }
+
+  /**
+   * The current branch name (`pi-vcs repo-info <dir>`), or undefined on a
+   * detached HEAD / outside any checkout.
+   * @param dir - directory inside the checkout.
+   * @returns the current branch name, or undefined when detached or outside
+   * any checkout.
+   */
+  async branch(dir: string): Promise<string | undefined> {
+    const info = await this.repoInfo(dir)
+    return info?.branch ?? undefined
   }
 
   /**
