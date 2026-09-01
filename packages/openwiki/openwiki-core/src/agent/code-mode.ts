@@ -11,7 +11,7 @@
  * @module @deepseek-ai/dsh-openwiki-core/agent
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readlink, realpath, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { OPEN_WIKI_DIR } from '../config/constants.ts'
 import { isFileNotFoundError } from '../platform/fs-errors.ts'
@@ -52,6 +52,32 @@ export async function ensureCodeModeRepoSetup(
   }
 }
 
+/**
+ * Resolve what `filePath` actually writes to: its real target when the file
+ * exists, or — for a dangling symlink — its link destination. Used so two
+ * managed agent files that are the same inode (e.g. a `CLAUDE.md` that
+ * symlinks `AGENTS.md`) are written exactly once instead of racing.
+ */
+async function resolveAgentFileTarget(filePath: string): Promise<string> {
+  try {
+    return await realpath(filePath)
+  } catch (error) {
+    if (isFileNotFoundError(error)) {
+      try {
+        const link = await readlink(filePath)
+        if (link.length > 0) {
+          return path.resolve(path.dirname(filePath), link)
+        }
+      } catch {
+        // Not a symlink (or already gone entirely): fall through and treat
+        // the path itself as the write target.
+      }
+      return path.resolve(filePath)
+    }
+    throw error
+  }
+}
+
 async function writeCodeModeAgentSnippets(cwd: string): Promise<void> {
   const agentsSnippet = createCodeModeAgentsSnippet()
   const claudeSnippet = createCodeModeClaudeSnippet()
@@ -59,21 +85,30 @@ async function writeCodeModeAgentSnippets(cwd: string): Promise<void> {
     'AGENTS.md': agentsSnippet,
     'CLAUDE.md': claudeSnippet,
   }
-  // Prepare and validate both files before writing either one.
-  const updates = await Promise.all(
-    CODE_MODE_AGENT_FILES.map(fileName =>
-      prepareCodeModeAgentSnippet(
-        path.join(cwd, fileName),
+  // Prepare and validate the files before writing either one, skipping a
+  // symlinked entry whose real target is already handled (the repo's root
+  // `CLAUDE.md` symlinks `AGENTS.md`).
+  const updates: Array<{ agentsPath: string; nextContent: string }> = []
+  const seenTargets = new Set<string>()
+  for (const fileName of CODE_MODE_AGENT_FILES) {
+    const agentsPath = path.join(cwd, fileName)
+    const target = await resolveAgentFileTarget(agentsPath)
+    if (seenTargets.has(target)) continue
+    seenTargets.add(target)
+    updates.push(
+      await prepareCodeModeAgentSnippet(
+        agentsPath,
         snippetByFile[fileName] ?? agentsSnippet,
       ),
-    ),
-  )
+    )
+  }
 
-  await Promise.all(
-    updates.map(({ agentsPath, nextContent }) =>
-      writeFile(agentsPath, nextContent, 'utf8'),
-    ),
-  )
+  // Write sequentially: concurrent writers over the same inode (two managed
+  // files that are hard links, or a file reached through a symlink) would
+  // truncate each other and tear the managed snippet.
+  for (const { agentsPath, nextContent } of updates) {
+    await writeFile(agentsPath, nextContent, 'utf8')
+  }
 }
 
 async function prepareCodeModeAgentSnippet(

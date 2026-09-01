@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtemp, mkdir, rm, writeFile, readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, symlink, writeFile, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -25,6 +25,7 @@ import {
   toClaimsSidecarRelativePath,
   resolveIndexLabels,
   synchronizeWikiIndexes,
+  ensureCodeModeRepoSetup,
   OPEN_WIKI_DIR,
   type RepositoryRunState,
 } from '@deepseek-ai/dsh-openwiki-core'
@@ -340,6 +341,38 @@ describe('platform helpers', () => {
       const fs = createNodeWikiFs({ root })
       await expect(synchronizeWikiIndexes(fs, 'repository')).resolves.toBeUndefined()
       expect(OPEN_WIKI_DIR).toBe('openwiki')
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('managed agent snippets', () => {
+  it('writes a single well-formed OpenWiki section when CLAUDE.md symlinks AGENTS.md', async () => {
+    const root = await makeRepo('snippet')
+    try {
+      // The repo convention: root CLAUDE.md is a symlink onto AGENTS.md, so
+      // both managed agent files are the same inode.
+      await symlink('AGENTS.md', join(root, 'CLAUDE.md'))
+
+      await ensureCodeModeRepoSetup(root)
+      const first = await readFile(join(root, 'AGENTS.md'), 'utf8')
+      // Exactly one ordered marker pair — no torn duplicate section.
+      expect(first.split('<!-- OPENWIKI:START -->').length - 1).toBe(1)
+      expect(first.split('<!-- OPENWIKI:END -->').length - 1).toBe(1)
+      // The agents snippet body won, not the shorter CLAUDE pointer body.
+      expect(first).toContain('optional just-in-time context')
+      expect(first).not.toContain('See [AGENTS.md](AGENTS.md)')
+      // Reading through the symlink yields the same file bytes.
+      const claude = await readFile(join(root, 'CLAUDE.md'), 'utf8')
+      expect(claude).toBe(first)
+
+      // A second run exercises the marker-replacement path and must stay
+      // idempotent instead of failing on malformed markers.
+      await ensureCodeModeRepoSetup(root)
+      const second = await readFile(join(root, 'AGENTS.md'), 'utf8')
+      expect(second).toBe(first)
+      expect(second.split('<!-- OPENWIKI:END -->').length - 1).toBe(1)
     } finally {
       await rm(root, { recursive: true, force: true })
     }
