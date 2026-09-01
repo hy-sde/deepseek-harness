@@ -1,0 +1,3 @@
+# Rust build output rides cargo, never git (same rule as native/landlock-run):
+# only checked-in sources ship.
+/target/

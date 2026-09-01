@@ -259,6 +259,7 @@
     { "path": "./packages/browser/tool-browser" },
     { "path": "./packages/av/av" },
     { "path": "./packages/av/tool-av" },
+    { "path": "./packages/vcs/vcs" },
     { "path": "./packages/logseq/logseq-graph" },
     { "path": "./packages/logseq/tool-logseq" },
     { "path": "./packages/codebase-memory/tool-codebase-memory" },

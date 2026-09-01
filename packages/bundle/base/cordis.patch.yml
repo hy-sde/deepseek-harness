@@ -332,6 +332,16 @@
     - id: av
       name: '@deepseek-ai/dsh-av'
 
+    # Narrow native vcs slice (ctx.vcs): git rev-diffs and staged diffs
+    # rendered in-process by a user-installed pi-vcs CLI (config →
+    # DSH_VCS_PATH → PATH), plus a HEAD-change watch companion — the AV
+    # pattern applied to the omp vcs surface. Purely additive and
+    # feature-detected: the git service (ctx.git, TS/git-CLI) stays the
+    # default path, and this row only adds the host service; the shell-out is
+    # stateless per call, so one instance serves every session.
+    - id: vcs
+      name: '@deepseek-ai/dsh-vcs'
+
     # AST structural search/rewrite over the packaged ast-grep binary, mountable
     # anywhere the subprocess + filesystem seams exist. ast_edit always PREVIEWS
     # first and only writes with apply: true, through the filesystem seam

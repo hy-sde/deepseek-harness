@@ -1,0 +1,61 @@
+# @deepseek-ai/dsh-vcs
+
+[English](README.md) | 中文
+
+DeepSeek Harness 的原生 vcs 管道：`ctx.vcs`，一个 host 平面服务，封装 `pi-vcs` CLI —— oh-my-pi vcs 数据面的窄原生切片 —— 通过 `ctx.subprocess` 通道执行，以 `ctx.av` 为模板。
+
+服务解析 `pi-vcs` 可执行文件（配置 → `DSH_VCS_PATH` → PATH），用 `pi-vcs --version` 探测，并暴露窄切片：git 修订差异与暂存差异由 **gitoxide 进程内渲染**（git 兼容的统一补丁文本，与 git 服务渲染逐字节兼容）、仓库发现、以及 HEAD 变化 watch 伴生进程。
+
+## 增量式且按功能探测
+
+`ctx.vcs` 在该 harness 约定下**纯属增量**：git 服务（`ctx.git`，TS/git-CLI）保持默认路径且不被改动。这些数据面仅在 `pi-vcs` 二进制可达且探测正常时解析；否则 `probe()` 报告 `available: false`，调用方降级到 git 服务。无 jj 后端、无变更动词 —— 这些保留在 git 服务上。
+
+## `pi-vcs` CLI
+
+该 CLI **像 `av` 一样由用户安装** —— 从本仓库的 `native/pi-vcs-cli/` 构建（一个基于 gitoxide 的 Rust crate）：
+
+```sh
+cargo build --release --manifest-path native/pi-vcs-cli/Cargo.toml
+```
+
+将 `native/pi-vcs-cli/target/release/pi-vcs-cli` 以 `pi-vcs` 安装到 PATH。
+
+它是 oh-my-pi `crates/pi-vcs` git 后端的一个忠实、MIT 署名的移植，限定于窄切片。其差异渲染器输出 git 兼容的统一文本（针对文本、二进制、重命名/复制与暂存数据面，均验证为与 `git diff` 逐字节一致）。
+
+## 执行的命令
+
+| 方法 | CLI 调用 | 用途 |
+|---|---|---|
+| `probe` | `pi-vcs --version` | 可达性 + 版本，绝不抛出 |
+| `repoInfo` | `pi-vcs repo-info <dir>` | 仓库发现（JSON）；`NotARepository` 返回 `null` |
+| `revDiff` | `pi-vcs rev-diff <dir> <base> [<head>]` | 修订之间的 git 兼容统一补丁 |
+| `stagedDiff` | `pi-vcs staged-diff <dir>` | git 兼容的统一暂存补丁 |
+| `watch` | `pi-vcs watch <dir> [--interval-ms N]` | 长驻 JSON-行 HEAD 变化伴生进程 |
+
+所有命令都通过 `ctx.subprocess` 执行，带受限的 stdout/stderr 采集、墙钟超时和 SIGTERM→SIGKILL 宽限。非零退出以数据形式返回在 run 上，并带结构化 `code`（VcsError 分类：`NotARepository`、`RefNotFound`、`ObjectNotFound`、`Backend`、`Unsupported` 等），从 CLI 的 JSON stderr 解析；只有启动失败、信号杀死或超时才抛出 `VcsCommandError`。`watch` 返回一个终止进程树的释放器。
+
+## 安全边界
+
+- **只读切片** —— `ctx.vcs` 从不变更仓库：无提交、无暂存、无引用写入。所有动词只渲染既有状态。
+- 无命令经过 shell 解释；argv 原样通过 subprocess 通道传递。
+- 发现是纯文件系统遍历（无子进程）；gix 打开时拒绝环境中的 `GIT_*` 位置覆盖，将每个操作绑定到已发现的仓库。
+
+## 配置
+
+```ts
+ctx.plugin(vcsPackage, {
+  vcsPath: '/usr/local/bin/pi-vcs',
+  timeoutMs: 120000,
+  maxStdoutBytes: 8 * 1024 * 1024,
+  maxStderrBytes: 64 * 1024,
+  graceMs: 5000,
+  watchIntervalMs: 1000,
+})
+```
+
+## 已知限制与延后工作
+
+- **二进制补丁仅渲染标记** —— 省去 `GIT binary patch` 正文机制（delta/base85）；二进制变更输出 `Binary files … differ`，与 harness 差异解析器的预期一致。
+- **工作树差异保留在 git 服务** —— `pi-vcs` 覆盖修订与索引；未提交的工作树差异仍经由 `ctx.git`。
+- **无 jj 后端** —— harness fork 仅 git（`isPureJj=false`）；编译进 omp 原生 addon 的 jj-lib 不是可调用的二进制，且刻意不在范围内。
+- **逐调用 shell-out** —— 批量动词没有常驻原生进程；每次调用生成 `pi-vcs` 并采集受限输出。`watch` 是唯一的长驻伴生进程。

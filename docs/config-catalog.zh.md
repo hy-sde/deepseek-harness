@@ -3747,6 +3747,30 @@ export type ApprovalPolicy = 'ask' | 'never'
 
 来源：[`packages/interaction/user-approval/src/index.ts:177`](../packages/interaction/user-approval/src/index.ts)
 
+<a id="deepseek-aidsh-vcs"></a>
+
+## `@deepseek-ai/dsh-vcs`
+
+```ts config-catalog
+/** Plugin configuration for the vcs service. */
+export interface Config {
+  /** `pi-vcs` executable name or path (default `pi-vcs`, resolved through PATH). */
+  vcsPath?: string
+  /** Per-command wall-clock budget in ms (default 120000). */
+  timeoutMs?: number
+  /** In-memory cap on one collected stdout (default 8 MiB). */
+  maxStdoutBytes?: number
+  /** Retained stderr tail bytes (default 64 KiB). */
+  maxStderrBytes?: number
+  /** SIGTERM→SIGKILL grace in ms (default 5000). */
+  graceMs?: number
+  /** Poll interval for {@link watch} in ms (default 1000; forwarded to the CLI). */
+  watchIntervalMs?: number
+}
+```
+
+来源：[`packages/vcs/vcs/src/service.ts:30`](../packages/vcs/vcs/src/service.ts)
+
 <a id="deepseek-aidsh-web"></a>
 
 ## `@deepseek-ai/dsh-web`
