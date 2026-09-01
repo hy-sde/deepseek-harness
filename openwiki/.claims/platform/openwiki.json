@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:e57cb9f1671c11c1ea0f9b729eda8fb9049befcd76998a484c2abcdce2a3d5d4",
+  "claims": [
+    {
+      "id": "claim_979a8b91ef2340118f17b1379d0563ad",
+      "statement": "packages/openwiki/openwiki-core is an in-fork port of the openwiki 0.4.3 deterministic engine core (MIT-licensed, attribution preserved in the module headers): the fork removed the DeepAgents/CLI coupling so the engine runs in-process behind a minimal WikiFs filesystem seam with no external openwiki CLI, and repositories written by either engine are interoperable because the on-disk formats are identical.",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/openwiki-core/README.md#L5-L11",
+          "version": "repo-lines-v1:sha256:1df5f7e5a88263ea11affeaf7a182dc8f29cb67645b0944a4cb6800d0191505f:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTFjYWI0OWJhNDI1MDk0OWI4ODdlMTUyNTY4NzcyYjcwOGEyMmZiYjI5ZTA4MzM5YmRjNDViMDIxZTJlYmMwYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E4MDE3OWU0OWQzZmJiZTE4NWUwMDY4NDJiOTE2ZmQ1NDYxNDZhNDFiNjQxYTlmMDM2MmI5MTAyZmZjZmZiZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGFhMjRlMjA1ZGJjMzZmZDc3NDMzMGNhOWY2Y2EyNTc2NTE4YmQ0OWQxNWQxMTQ2ZDlkMmY1MTkyZjRmM2M1NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a85ccd295d804ddfa8e5e89bc01e91c9",
+      "statement": "The engine core is a pure TypeScript library (only zod + yaml deps) organized as src/*: Lifecycle (begin/submit_plan/next_page/submit_page/finish with a durable .run.json checkpoint, git source fingerprinting, update no-op detection, and a .page-manifest.json ledger), Claims (add/confirm/update/retract mutations, .claims/ sidecar persistence, and a repository evidence resolver mapping repo://path#L20-L48 resources to repo-lines-v1:sha256: versions), OKF (v0.2 front matter validation/repair, generated provenance, index sync), Validation (Mermaid fences with graceful heuristic fallback, wiki-internal-link validation with broken-link stamping), Setup + fs (.openwikiignore, INSTRUCTIONS.md goal, WikiFs/createNodeWikiFs seam), and Integration (HostSessionManager + zod protocol).",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/openwiki-core/README.md#L13-L38",
+          "version": "repo-lines-v1:sha256:f5a79740322071064e8da98f36464cb8c754e1e9495b19fb973d61808ab1f0b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNTU1MDcxYjBhYjMwYWYwY2M4ZDdmOTE0OGU0M2Y4ZTA0YTYyNjUyMDVkZmE2YTVmYzQwNTM4NjM5NzUzYmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwNDE0MDJlY2RlOTcxZjY2ZDZlNzNkN2U4OTY4NjM3OWJkYzg0ZjE4NDY5NzQyMDk3OTZhMDk5OWNmY2MwZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzNGFlZTNiMmZjMDE4NGE4MmY1MWJlOThjYjUyYzIxNDk4ODhhOTk5ZGU4MGFlMjA3NDJhMmJmZDc3MmVlYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1MTkwYmIxNDY4YTMxNTM4YTE5YTg5MWQ4NDUyZTM3YWNiYmQzZjA1MTFlNDM4NWVhMTAwNjgxOGI1MWY1ZjkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_979d5f1abb224d9e8060835f88375532",
+      "statement": "tool-openwiki is one Cordis agent-plane plugin mounting as a preset or profile-patch row that injects tools + systemPrompt and registers no service of its own, exposing the five lifecycle tools openwiki_begin, openwiki_submit_plan, openwiki_next_page, openwiki_submit_page, and openwiki_finish.",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/tool-openwiki/README.md#L5-L16",
+          "version": "repo-lines-v1:sha256:fd8e32b7880a18925092ebdca3fdf8a79e16b53e00328ab20e3d2072b163585b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4NmIzNTUyOGYxMGZkNjZiZTdlZmM1ZjhhYmJkYzk3MDhhZmUzYjU1MDQ3YTY2NTNhNzUxMjk3YWM1ODVkYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZGUwMjEwNjViMThiM2UwNjQ1NmRhNzVkZDIzMDM2ZWFhMTk2ZTcyMzdhMzY0NGUwYjU2YTgwYzk0OWEzYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MmNlMzE2OTA0ZjRmYTAyYThhOGIyZjVmNzgxMTRhMjdlOTIyMWVmZjVmYTIwY2JiN2E3NzgwNTg1NWY5MTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2MjFiYWUxZmIwNzhjMTU0ZjRlZDkwN2JiODFiZjBmNmRkMzliZmM0YmYwYzhmNWMzZjliZGNmODQ5ZGUzNDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9e597b37921f401092ff778003ce82a7",
+      "statement": "openwiki_begin starts or resumes a durable run (.run.json) over a Git repository root and returns status=noop for clean updates; openwiki_submit_plan validates and durably persists the ordered PageJob queue (init requires /openwiki/quickstart.md, paths normalized); openwiki_next_page returns the first pending job; openwiki_submit_page proves the complete Claim set against the written page (front matter repair, Claims resolution, durable verification); openwiki_finish performs deterministic finalization including deletions, Mermaid validation, index sync, link validation, provenance, Claims finalization, and .run.json removal.",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/tool-openwiki/README.md#L18-L29",
+          "version": "repo-lines-v1:sha256:1e92c87801e2e62c96564730fb96bf6398a228170160aec41f253b5dfd7ca9c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0NTA2NTFkMzQwZjAyODQ5YWY4YzI4MGQzMWQ5ZmVkN2M0ZTg0ZjE2YjIxMzkyNDE0MDQxY2M4YWIwN2JjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiODQ0Y2IzZWQxMjQyMDcyYzJlMWFjNWQ4ZDdjMDE3N2QwMTlmZjQ1YzRiYTlhODNkOGI4NzMxN2RjZjFjNWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI4NGE4NjRiMDBhYWRhMjMwYzcwMTk4MzZmYjg4ZDQwNTdmNTYxNjM2ZDEzNGUwMWZmYjg3NzEyMmM3MWJiNmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU3ZDdhZjM4MGMwZDZlNjhiN2Y0YTlhZWM1YzMwOTNkMzE3OWFkNjNkZGQzYmQyYmExNTNiZTZhMDEwZTYyNjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_245cdca396b54a65b1fc462b8de772f8",
+      "statement": "The tool configuration is id/name plus config host (stable host identity recorded in run metadata) and producerActor (provenance actor for engine-owned finalizers).",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/tool-openwiki/README.md#L32-L40",
+          "version": "repo-lines-v1:sha256:868eb510fb85e9e3292d4430158155f8525a2c21125c41a18021fb7a6793db94:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjNkNTQ0NmZiNGY3NzA2MWExMTgyNmU5M2IzODIzNjQ4OWMxYjU0ZWVmZDNjNWQ0MGI4Y2RmNDhmMzM3YzY3MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGFlYTJkZjVhNjg3M2MyYjg1MjM5M2MxMmYwZjY5MzBlYTkxOGMwMmMzNzgwN2NkYjM0MWFiM2ZiMGU0ZGI4OSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_6b2d0f8634a3402f934812e1452ef47e",
+      "statement": "The five lifecycle schemas encode the exact resumable protocol (explicit root+mode begin, a final non-replaceable ordered plan, per-job claims with id reuse/retraction conventions, and a finish that requires every job complete), and results are small JSON views (changedPaths, claimIssues, completions, no-op status).",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/tool-openwiki/README.md#L42-L58",
+          "version": "repo-lines-v1:sha256:44759168afee51596b2052a2445ff0410b40d763fff1c058ae829362f6bede66:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiNzRmMGExNmIwYmQ5MTI2ZGU2NzI5NDY3ZjNhNTQ2ZGFmY2FmYzc0YTJlOWIyMGUyNzU5NzljMDk3MGUyZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFlZDhjNjNiNWYyOTNmZGNmYzBiODg3ZmNkZjlkMTQ1YTJhMWY2YjRmN2ViMjdlZTNmNGIwOWI3NzU5NTFhOGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d6bf2fdb43964e568752b7c6732bfee3",
+      "statement": "The prompt section is one openwiki:tools card: the required lifecycle sequence, durable/resumable run semantics, the rule that every material Claim carries a repository evidence resource, exact claim reconciliation (preserve id/statement/evidence of unchanged claims, reuse id for revision, omit to retract), and the hook to use codebase-memory for structural discovery instead of file-by-file repository scans.",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/tool-openwiki/README.md#L60-L66",
+          "version": "repo-lines-v1:sha256:d71e4c1f5c642c21851535dc10707722353f4a7d73d53a70dd88b4b50ef1d039:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjkyNDk4ZDNlNzcwMzBlOTkzMDUzYzBmMWFiM2I5OGY5YmYzMDBmOGRiOWEwNjM3NGUyYTY1YmQzZDExNmYxZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjk0NWIzM2Y0Njk4ZTllOGZjZGI0NzIwNDdmMzEyMDQ4ZWYwNTgxMjY1NzAyOWY0NzIzNmU3YTNiOGFjMDU2OCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_76bf1c806561486e9c0911f334f3ef4e",
+      "statement": "Engine limitations: git is required (source fingerprinting, update windows, and root resolution shell out to git), Mermaid/jsdom peers are optional (without them validation degrades to heuristic fence checks), upstream's CI workflow and source connectors are intentionally not ported, and there is no home-directory onboarding store (the wiki goal is read from the repository's own openwiki/INSTRUCTIONS.md).",
+      "evidence": [
+        {
+          "resource": "repo://packages/openwiki/openwiki-core/README.md#L62-L76",
+          "version": "repo-lines-v1:sha256:9dd0bcefe9356d3562285c93da226865fdb4591beee0b9253a13c99121ad50cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzNzVjNGY5YTA4MDY1YmM3ZDg3ZTI5YTAxZjQ4ZGUxN2NmNjk4MjJkMzg0MjlhYTZkMmY5MWRmM2U4MGE2Y2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMzUxYjFhMThkMmIzZGEyOTIxMDJhYTMyOGNiMDZkMzU0ZTg2ZDVhNzFiYWZlOTJmMDY5NDkyNTgzOTE5NmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0YThkYmNlMDE4YTgwNTQ3MDcyOTM2Nzg1OWZmZmQ2ZjM3N2VlZGNhOGY4Mzk4MDVjZWUxMzM0NDU5ZDkxNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

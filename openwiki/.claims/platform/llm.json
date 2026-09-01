@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b934f858f1c16389068dbff87b91790dcb819398d702cd8257efa1586d84e4e7",
+  "claims": [
+    {
+      "id": "claim_9a6c39a3cc0a4df1ae5b1c7b340aea6d",
+      "statement": "The llm group provides the harness's model-call capability: one provider-neutral service through which any composition streams requests to a model provider, plus adapters, provider-specific request metadata, retry execution, and measurement; the core llm package defines the message, content-block, and stream-chunk vocabulary every plugin and the session log use.",
+      "evidence": [
+        {
+          "resource": "repo://packages/llm/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:52c1ba126dce6ac6650d716abaf079ddf5e7d2a688d5eab197c4010683f534e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTIzZDM1ZjFlM2ExZWU4ZmE5YTViY2QzM2JlZDdkMjE4ZWM1Yzc1YTQxODlmYzA4YzY0NTNlMTUyZDMzN2M0NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2ce3aaa9943b47f28cd3fb1d11f84724",
+      "statement": "The llm group packages are: llm/ (ctx.llm), llm-deepseek/ (the deepseek-official route with chat-completions, thinking, and image input), llm-pi-ai/ (configured provider routes through pi-ai catalogs and wire protocols), deepseek-llm-api-extensions/ (ctx.deepseekLlmApiExtensions top-level request fields), plugin-package-inventory-deepseek/ (the dsh_plugin_packages inventory), llm-retry/ (agent/request-error listener), and token-meter/ (ctx.tokenMeter).",
+      "evidence": [
+        {
+          "resource": "repo://packages/llm/README.md#L23-L32",
+          "version": "repo-lines-v1:sha256:1e769cc494a723e50d82f5c8273add74c70b65352325969cb19df5183a5c1d3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MWQwZThjN2NjMGNlYjgyODdmZjM1NGZkZjQyZjY1MmZkZTU1NjQ2N2FkNDlmMWNmMDlkN2VkOGVjZjAxNjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5Y2UyNDllMDdmM2ZhNmI2ZTg2NmQ5ZTAzODQ0YmMxYTM4N2ZkNjRiZjBiYmYyMzI2NzRkMDJhMGZhOTYwYTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjNmZiZTczZDc0MmE3MDg2Y2IwNDI5MWM5NjE4YjBjMzMzNWU2NjZjZTlhNTBjNzBlMTY0NGIzMjJhOTJkNGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5ZWFjNTc1NjVmODkzZGVlODI0N2IxMzI0YThjYmIwNDI2OGQ0NmU4MDI2YmI2MmQ4MThkYTQ0NDMzYzhjNjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_44caa19bab3149f086d5e4128ccbe7eb",
+      "statement": "dsh-llm is the provider-neutral model-call service: it registers provider adapters, streams one model call, lists and discovers models, resolves exact-model metadata and call defaults, and captures each provider's retry policy; it executes no retries and owns no provider wire logic, requests are deep-frozen before dispatch, and every request is logged so it stays reconstructable from the session log.",
+      "evidence": [
+        {
+          "resource": "repo://packages/llm/llm/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:e42cd52288f1d7efc9d56ab8bd4402d428fca486d32ef1066b3dde0eb98b2ef7:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTFkYzg4ZjcxNzRhNGRlNWQ4N2QzNDIyMmJkNjY0MGI4YWM2YjU4YTYzNTMxMzhlOWNkMmI0OWE0N2E0YzkxYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c64d11bd770c47dc891b89299ff0815b",
+      "statement": "A conversation is Messages and a message is an array of typed content blocks: the merge-extensible ContentBlockMap currently covers text, reasoning (thinking distinct from visible text), image (a durable image attachment), tool-call, and tool-result.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/llm-streaming.md#L11-L30",
+          "version": "repo-lines-v1:sha256:329565db38ac612b21966c02219df3b36eed93d65940a26bff94242ce1517890:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNDRlNGViMTkzMTRhODhlNTIzNDk2MWEyMGVhMWJlOWFmZTQ1Njg5MmI0MjM1NWNmZDU4Mzg5NTIxNjMyYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlMGU4NGExYmNjYTVhZDI0ZWZhNzUyOTBhOGNhMDEyNWFkZmQwZDBmYzlhZjYxZTA3MjU5NzU0NzA5NzY3OTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0NWYyMjJlNzU0NDgyYzk0OTYzNTg0NDkwYjM0MzFkNjVhMjIxOTAxYjVkNWVjMDU5ZTVmMjI0YzY1Njk5OWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_170ef6f998054daa9b2d6db6e4733c1c",
+      "statement": "StreamChunk is a closed discriminated union of the raw streaming protocol: block-start, text-delta, reasoning-delta, tool-call-delta, block-end (carrying the fully assembled ContentBlock), usage (emitted before the terminal finish), and finish with replayState; index ties each delta to its block, and LlmRuntime.stream() normalizes an adapter throw to a terminal error or aborted finish.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/llm-streaming.md#L168-L217",
+          "version": "repo-lines-v1:sha256:313fe7f34b8aeea902b61bc6dca38a2fed003101bd5b41fd069d52ba1521a8bf:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwZjAwZTIzMzg1NjE1ZDYwMTQyN2NmYmFjMzVmMGYwMjBhYWZkNDBjMzI4NmQ4N2EzMTdhNjQ4OWYwYjcwOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2MjEwNjgxZWZkNWI0OWEyNWNmM2M4ZDJmNWJlNWUzMjY4NzNmZGNmNDY5YjdlZWQ2NTE0MjlkM2YyY2Q4NjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ZTMxMTQxZjg5MTBjYmMzMzlkNTMxZDI5MDQ5ZGYyNWU1YWZjZDM0YmU5OWIxZmQ0ZjY2Y2FmYjdiOWQyZTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4e6010fce13349368b8d6579769cf54e",
+      "statement": "llm-pi-ai is the pi-ai-backed multi-provider adapter: one plugin instance owns a dictionary of provider routes each served through pi-ai, a route naming an installed pi-ai provider inherits its endpoint, wire protocol and model catalog as defaults, a route pi-ai does not ship is declared outright (an OpenAI-compatible gateway is configuration), profiles and credentials resolve per request over the settings and credential seams, and the plugin can mount dormant with zero routes.",
+      "evidence": [
+        {
+          "resource": "repo://packages/llm/llm-pi-ai/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:462081e6a4b2a31020b456a14babc235c4a0da6d772c364e40b14eeafcf7cb20:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDhhYzQzNTM1YWY0NTYxMDBhMjRjZTE2NzYxNTBjMWFjNDMyYWE0MTVmYzA5MTc2N2EzZTVlMDQ3ZTNiNTYyMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cdbbf5c40ed9448fa86a0aa0c7fafdba",
+      "statement": "llm-retry is the retry executor for failed model requests: it applies each provider's resolved retry policy at the agent loop's open-step agent/request-error extension point, does not wrap the streaming call itself, makes retry scheduling durable by appending llm/retry events before waiting, and runs normal mode (bounded failure codes up to maxRetries with exponential backoff) or always mode (downstream recovery first, then every failure without an attempt limit).",
+      "evidence": [
+        {
+          "resource": "repo://packages/llm/llm-retry/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:11c1d32e6936c3073cc0f0be1be8da2039ad2286309a8480401c44c53bfd9495:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzE3YmRkOTE2YjVlYjNlZDZjOGE3NmY0YmNiMWI4Y2JhMjMwODMyOTdjYjg0ZDg5ODY1Y2U4M2NhYjk5Yjc0NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b4db9731f944ce7a2bd1e07ce88c8ed",
+      "statement": "token-meter is the replay-aware token measurement service: ctx.tokenMeter advances one isolated fold per session from the durable event log, measures current request and context pressure, prices a single message, uses a fixed heuristic for text and routes without image pricing, applies adapter-declared visual-token pricing when available, and reuses provider-reported usage only when the request envelope matches exactly.",
+      "evidence": [
+        {
+          "resource": "repo://packages/llm/token-meter/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:502ccc0947f0004dc29dcfbc7fc7da9c31a784e41cc17be954b55054f8834d9f:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjFjYTQxMmVlMjVlM2M4ZjAzOTFiMjZkMThkMDNlMjQ5MDgxNDhiOTlmYzcwNjI0MGI0OThmOGFlMmQzYzliYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4b8d65ec0d6d40baa223dabe0b31ea86",
+      "statement": "The llm seam surface includes the llm/adapters-updated emit and the llm/stream waterfall.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/llm-streaming.md#L1017-L1040",
+          "version": "repo-lines-v1:sha256:f7d8e9ad68d6861d9f1f1844bc3c76bedb3e3d472f1085df9e39514536e35713:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5YjdlNWZhYjQ0NjE1MmRlZDdjZWFmOGIzNmRjZjkxYmJlMGM5MzViMTNlMTVjYjNhNTAzN2Q2MWUwOWQwN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhZGMxMDI1MjljZGY4OWQ3OTA1ZWYzNjM3MzJjNWM3MDc0NjYyMjk1NGQ0ODNlZTMwMGMzZTg2MTgxYzRlNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEwYTJjYWE1ZDI0MGEyOWVlMDMzNTNlZTdkNmRhZmRjZDY3YzRkZjlhODdlYWE2Y2I0MDNmNTA1YzA1NzE1NGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MDcyOGU0MWY4NTQ0MmVmNmRmNTRjNjJhZmVlZTE3Zjc4ZTU1ZDIwNDQxZDFlZjVkOGRiYjlhOTEzNTljOTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

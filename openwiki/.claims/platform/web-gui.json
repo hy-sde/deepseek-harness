@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:6ee629600f39fd9ec015ae3c9eb06f623beed7b0f10a94217df456b27f3ab62b",
+  "claims": [
+    {
+      "id": "claim_ae9d7f760d5e4bc1a37edf5c6b041440",
+      "statement": "The host group provides the web GUI's plain HTTP server, the SPA dist server that serves the built Web shell, the workspace-directory picking seam with its native, browse, and adaptive composition packages, and the read-only plugin inventory projection; the browser transport lives in client/, and the composed application is apps/cli booting the dsh-base bundle that serves the web app under apps/web/.",
+      "evidence": [
+        {
+          "resource": "repo://packages/host/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:5d7597bee9dfb50deb9440141dd00167ae0ebd627202f9bd645796b16c7a4ada:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQ3NTk3YmVlOWRmYjUwZGViOTQ0MDE0MWRkMDAxNjdhZTBlYmQ2MjcyMDJmOWJkNjQ1Nzk2YjE2YzdhNGFkYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQ3NTk3YmVlOWRmYjUwZGViOTQ0MDE0MWRkMDAxNjdhZTBlYmQ2MjcyMDJmOWJkNjQ1Nzk2YjE2YzdhNGFkYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cfd1b78815da4c9aba09807d264434c6",
+      "statement": "The host family is webserver/ (ctx.webServer), frontend-static/ (SPA dist server), directory-picker/ (ctx.directoryPicker seam), directory-picker-native/, directory-picker-browse/, directory-picker-auto/, and plugin-inventory/ (Remote pluginInventory/list projection).",
+      "evidence": [
+        {
+          "resource": "repo://packages/host/README.md#L26-L42",
+          "version": "repo-lines-v1:sha256:8177114993a91dd6a761988b44898ed9e83518b5419f0985d928525e2ae1f14a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2NjlhZTZmYTcyYzhjMjIyODRlMGExYTMzMmU4ZWNkZDQxYzcyMDEwMzc2ZTFkZmQ4M2MxMDY2ZjM3ZmQ1NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJlOTk4ODI2OWFiZTE2NzFiNjU5OGRmMTc5MTkwYjZlNjMzNTFmYmEzYjcwZDEwZmRlOTRlMzg0OGQ4ODhhZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2ZGExNGNhOWQ2ZjU3YTAzZjkwMGMxM2QzZjhkMTlhOWMzNzk0YjZhM2Y2MzgwMDgxZmU5NDFmYWY3Mzc1NzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_af4ec14703ea4dc6b6da0943f3d78e4f",
+      "statement": "dsh-host-webserver is a node:http server where other plugins register named routes, upgrade routes, index startup inputs, and one fallback handler; it knows no harness concepts and serves no files (the /api bridge, plugin bundles, the HMR event stream, and the SPA dist belong to the plugins), route matching is exact over the whole table then longest prefix then fallback, and it serves browsers only (Electron loads dist over file://).",
+      "evidence": [
+        {
+          "resource": "repo://packages/host/webserver/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:daa71dad2c94489b699af4d8e73469110516d8cd76f576918f8353a2025a0bcd:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGFhNzFkYWQyYzk0NDg5YjY5OWFmNGQ4ZTczNDY5MTEwNTE2ZDhjZDc2ZjU3NjkxOGY4MzUzYTIwMjVhMGJjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGFhNzFkYWQyYzk0NDg5YjY5OWFmNGQ4ZTczNDY5MTEwNTE2ZDhjZDc2ZjU3NjkxOGY4MzUzYTIwMjVhMGJjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_eac0a58d8c52458aa7376304c008399e",
+      "statement": "The api group provides the application's Remote layer: a Client environment can call the business capabilities running on the Host (manage goals, run commands, list the plugin inventory, discover file and session references) as typed method calls and receive results or forwarded Host events; remotes decides which capabilities are exposed, gateway carries the calls between Client and Host, and streaming session data is deliberately outside it.",
+      "evidence": [
+        {
+          "resource": "repo://packages/api/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:dd870cae99c6f2e30b6044d795c3cc797135ea2a4c1c57f5da689d2bb0ba4399:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ4NzBjYWU5OWM2ZjJlMzBiNjA0NGQ3OTVjM2NjNzk3MTM1ZWEyYTRjMWM1N2Y1ZGE2ODlkMmJiMGJhNDM5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ4NzBjYWU5OWM2ZjJlMzBiNjA0NGQ3OTVjM2NjNzk3MTM1ZWEyYTRjMWM1N2Y1ZGE2ODlkMmJiMGJhNDM5OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_bacf0d9f6922410cb2d38d64ca386735",
+      "statement": "The Remote layer is remotes/ (chooses which Host capabilities and events the Client can consume) and gateway/ (carries typed unary calls, multiplexed streams, and forwarded Host events with ctx.typertGateway / ctx.remote).",
+      "evidence": [
+        {
+          "resource": "repo://packages/api/README.md#L29-L30",
+          "version": "repo-lines-v1:sha256:c6c0790005add59016414ec054f69937f5819f6061d8bbb50830324775fea62c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmE0NTc5YTZjMTRjMjhjMmQ5NGRkNzQ0M2M0ZjUwODA5YTRhYzcxNDE1ZGNiOWU0ZGExZmU4MTkzYWU2MDhiNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDBiMzcxZDkxMWIxYzIwYjIyMTY4Njk4OWVhNzMwNWNjZjQzMjM1ODgwMTEyM2U1ZDdhY2YwOTMwMTEwOTcxYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWMzZjdhM2MwZWI0ZjE4NzEzNGY5ZTU0ZjFhZjNkODAxYmNkYTkwZGFhZjg3YmZhMGY2MzJkNjRkZGI2Zjg5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDliNjYzZTE4ZTA0NzA3YTcwN2IyYTVhZWViZDMzYjgyZTJiZjk0YmY3NmI4YTE5ZTkwZTUzYmM5NmZkMjgwNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4e89e41c08244346bdeb44662d44d57c",
+      "statement": "The client group runs the browser half of the dsh web GUI: it boots the web shell, loads browser-side plugin modules, keeps browser-to-host RPC and event delivery alive, and provides the shared client services and UI feature plugins; UI features compose through the slot system where each plugin fills declared extension slots with typed props and stores, and the shell renders the assembled tree.",
+      "evidence": [
+        {
+          "resource": "repo://packages/client/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:1fbdcfc09f5935510916b36264f58a09a84d4fe29eb13ee5d459e4cdc2ec95d2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZiZGNmYzA5ZjU5MzU1MTA5MTZiMzYyNjRmNThhMDlhODRkNGZlMjllYjEzZWU1ZDQ1OWU0Y2RjMmVjOTVkMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZiZGNmYzA5ZjU5MzU1MTA5MTZiMzYyNjRmNThhMDlhODRkNGZlMjllYjEzZWU1ZDQ1OWU0Y2RjMmVjOTVkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d07467fc671a488fbd534a62314ff6bf",
+      "statement": "The client packages are the kernel (web/ boots the browser shell, modules/ loads client modules, connection/ maintains browser-host RPC, store/ provides React-free observable primitives, hmr/ refreshes client plugins during development, locale/ provides localization) and the UI features (ui-renderer/ with ctx.uiRenderer, ui-slots/, ui-session/, ui-theme/, ui-primitives/, ui-attachment/, ui-layout/, ui-sidebar/, ui-brand-official/, ui-workspace/).",
+      "evidence": [
+        {
+          "resource": "repo://packages/client/README.md#L26-L46",
+          "version": "repo-lines-v1:sha256:cfc47a7bcb8029c462ed795357b88a72f7840914abf5bc8fa27af77b0a546241:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4ZDhlM2UxMDJlOGUwNWEzY2JkYjQ2MGZkYzQ2NzZlNjBmYzViMTBjYjU5ZTBjZjVjOTg3NzUyY2VjNzhmZjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1NDE5ZDM5OGE5NWE0YTU2MTk2NzhjNTJmMThhYWQ3ZDVjZDQ4Y2IzMzc0MzkzNjU1YWU1OTkwYzkwNGU3YmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1MjZiYzg1ZDVmOWM4ZTI0MTJiNGVhYjQ2YjNhZmUwYjVkZmE0M2Q2YzhjZTdkZjc2NjExYWJkYTRkZTczMjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7995554f1e1e482fb60d5d74c87832d1",
+      "statement": "All client packages are product packages named @deepseek-ai/dsh-client-<name>, and the host half that serves the page lives in the host/ group.",
+      "evidence": [
+        {
+          "resource": "repo://packages/client/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:1fbdcfc09f5935510916b36264f58a09a84d4fe29eb13ee5d459e4cdc2ec95d2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZiZGNmYzA5ZjU5MzU1MTA5MTZiMzYyNjRmNThhMDlhODRkNGZlMjllYjEzZWU1ZDQ1OWU0Y2RjMmVjOTVkMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZiZGNmYzA5ZjU5MzU1MTA5MTZiMzYyNjRmNThhMDlhODRkNGZlMjllYjEzZWU1ZDQ1OWU0Y2RjMmVjOTVkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

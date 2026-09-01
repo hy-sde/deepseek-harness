@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:2dfeba4d0c5ad1c67aaa9c3e37548492ee4e5eb046e747a10e40e82ced48600c",
+  "claims": [
+    {
+      "id": "claim_0f01ea8fbd054b6ea7037366a41929c0",
+      "statement": "A step is one model request plus the tools it calls, and a turn is zero or more steps that opens before its first input is claimed and closes once nothing is owed.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L76-L76",
+          "version": "repo-lines-v1:sha256:b856ba204cad81e0550bf1975d4ff4a1bace25693365d53afbad66148471995a:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg1NmJhMjA0Y2FkODFlMDU1MGJmMTk3NWQ0ZmY0YTFiYWNlMjU2OTMzNjVkNTNhZmJhZDY2MTQ4NDcxOTk1YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg1NmJhMjA0Y2FkODFlMDU1MGJmMTk3NWQ0ZmY0YTFiYWNlMjU2OTMzNjVkNTNhZmJhZDY2MTQ4NDcxOTk1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmYxYWZlZjg3YTU1NmU1MTYyZmQzZjg2MzA1Njc0YjVmZTI1NTBmNmIzODUxOTAyMjdmNTViMzdiOTFmYzZkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjFhODE1Yzc1NWQ1OTZiZjdkYWVkMGYwZjFiMGFjOWU5OTUzZjNhMDViMTZmNDRlOTA4NjUyMjNjNGI5OTMyMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1592788ab82c4d4382dd53be7d481fbd",
+      "statement": "The turn/step sequence is: turn/start, claim next-step input plus one queued message, assemble prompt sections and tool schemas, agent/pre-step (reject or enter), step/start, append entered messages as user/message, derive model history from the log, agent/request -> llm/stream -> assistant/chunk* -> assistant/message, tool/call* -> tools/pre-execute -> tools/execute -> tools/post-execute -> tool/result*, step/end, agent/turn-stopping, turn/end.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L78-L93",
+          "version": "repo-lines-v1:sha256:c082795420746ad7642c1c08d6ca01ebec11ec39608493fc2d87bc41b1e8a003:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZjFmYTdiNTczMzdhZmJiNjY3NTRmMmVkMWU3ZWI3YzFhZmI4MzBlOWVmZWY1MGIzMzgxMDViZjk0OGJhYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNTBlYTA4MmY2NGYzMTgxMDIyNWQ4YjVjNWRkZDdjMzRiYTc2ZjQwMGZkNGJjNGIwNGZmMGM3NTc0NTg5NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkxNzMyMjJiZGU2Njk1OWI0MWQ5NGJjMzBiMDgyMWRmMWUwYjIyZTRjMjQyYWJjMjA2YjkxMTk5NDY4MDA2ZTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5519de4806134dd1afd5580d22474017",
+      "statement": "turn/*, step/*, user/message, assistant/*, and tool/* are durable session events, while the rest are live extension points; agent/pre-step, agent/request, llm/stream and the three tools/* events are waterfalls whose listeners must call next() to delegate, and agent/turn-stopping is serial with no next().",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L95-L95",
+          "version": "repo-lines-v1:sha256:22afd04697a4b5b5c828a3655f8171280b2b39db4081e09b4d8365482bac61bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjJhZmQwNDY5N2E0YjViNWM4MjhhMzY1NWY4MTcxMjgwYjJiMzlkYjQwODFlMDliNGQ4MzY1NDgyYmFjNjFiYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjJhZmQwNDY5N2E0YjViNWM4MjhhMzY1NWY4MTcxMjgwYjJiMzlkYjQwODFlMDliNGQ4MzY1NDgyYmFjNjFiYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2E2MWVjNjA1NWZhMWM3MTFkMDg4MTZlOTdjNWE1ZmQxOWU4MDhlMmU4YzE5MDIxMjkyNzk5MzMwODNlOGQ2ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzY3MzdhN2FlNmJlZWVjY2VkMTMyZWQ4OGE1YTRhMGU0ZDc1ZmM1ZWUzODg3ODA1YThjYTIwZGI0OGY2Y2Y1ZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5b389ba251824ce0aded969e1b7dccb3",
+      "statement": "Input reaches the driver through one inbox: some messages wake it immediately, while injected context waits in the inbox until another message does.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L97-L97",
+          "version": "repo-lines-v1:sha256:437a24ea1645cc2f77277563a0b1e03dffb9aca2787fea5f7b53e0b572ef4fd8:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDM3YTI0ZWExNjQ1Y2MyZjc3Mjc3NTYzYTBiMWUwM2RmZmI5YWNhMjc4N2ZlYTVmN2I1M2UwYjU3MmVmNGZkOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDM3YTI0ZWExNjQ1Y2MyZjc3Mjc3NTYzYTBiMWUwM2RmZmI5YWNhMjc4N2ZlYTVmN2I1M2UwYjU3MmVmNGZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTE3MzIyMmJkZTY2OTU5YjQxZDk0YmMzMGIwODIxZGYxZTBiMjJlNGMyNDJhYmMyMDZiOTExOTk0NjgwMDZlOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2FhMjk5ZWE3NGYzNmZiMzg0MGZjZTIyYzI1NDMzNmM4M2MzZDEyNDAyMjRlMWJiZTA4ODZhNzNjZjQ4NzU2MCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c913358e9c7b42d794b204d1a409db81",
+      "statement": "agent/pre-step decides what the model sees: listeners may rewrite claimed messages or reject them outright, and a rejected or empty first claim still closes a durable turn that spent no step; an enter decision may set startsRequestSeries, causing the loop to log a fresh request/header.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L99-L99",
+          "version": "repo-lines-v1:sha256:7c5133051e88fe267431498fb5feed76feb27e665b05688df43bbb65b420bb43:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2M1MTMzMDUxZTg4ZmUyNjc0MzE0OThmYjVmZWVkNzZmZWIyN2U2NjViMDU2ODhkZjQzYmJiNjViNDIwYmI0MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2M1MTMzMDUxZTg4ZmUyNjc0MzE0OThmYjVmZWVkNzZmZWIyN2U2NjViMDU2ODhkZjQzYmJiNjViNDIwYmI0MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzY3MzdhN2FlNmJlZWVjY2VkMTMyZWQ4OGE1YTRhMGU0ZDc1ZmM1ZWUzODg3ODA1YThjYTIwZGI0OGY2Y2Y1ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTMxYTA4MjdjYjM0MWIxNDVkMTAwNjYyN2NmNTY1ZmJhZTA3M2U0N2M2N2Y1ZDM4NTliYWFiMjZiN2FhM2ZjMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9739cbc7bf4a402faae14eddd55166ec",
+      "statement": "The session log is the source of the context the model sees: deriveMessages() projects model history from it, raw assistant/chunk events preserve replay and UI fidelity, and fork, resume, transcripts, telemetry, and persistence all derive from this stream.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L105-L105",
+          "version": "repo-lines-v1:sha256:4bae67f5ae28551d11d591f76175ac1dd9fb4147c31c979ff33a426ec7d7a956:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGJhZTY3ZjVhZTI4NTUxZDExZDU5MWY3NjE3NWFjMWRkOWZiNDE0N2MzMWM5NzlmZjMzYTQyNmVjN2Q3YTk1NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGJhZTY3ZjVhZTI4NTUxZDExZDU5MWY3NjE3NWFjMWRkOWZiNDE0N2MzMWM5NzlmZjMzYTQyNmVjN2Q3YTk1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTMwOGU4OTA1ZGRjMzQ4YTNiMmY1NWY1ZGRhZjFlYmEwZjFjY2NlNTM3ZTk4NjYxMDljZDk1NjIyZjE4OTM2NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmI4M2IwMWViNTNlOTk3ZjM1MjE4OTM1ZmNhNmM0NDY3NTU3MmFjMDEwZWZhYTE5Y2IzN2Q3OGI5OTIyMzk5NyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c47a422a8f6746aa85d7e090672a6a66",
+      "statement": "Model-visible means logged: anything that reaches a model request must be reconstructable from the log, a runtime invariant asserts it, and a new model-visible input requires a new session event (extend SessionEventMap and render from the log).",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L107-L107",
+          "version": "repo-lines-v1:sha256:2b4fca58c56d678d1c1eceae953fca29319b056311e203270c3028edec5ecf8a:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmI0ZmNhNThjNTZkNjc4ZDFjMWVjZWFlOTUzZmNhMjkzMTliMDU2MzExZTIwMzI3MGMzMDI4ZWRlYzVlY2Y4YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmI0ZmNhNThjNTZkNjc4ZDFjMWVjZWFlOTUzZmNhMjkzMTliMDU2MzExZTIwMzI3MGMzMDI4ZWRlYzVlY2Y4YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjE1MzI0ODdiZGQxZjM4ODFiNTg2ZDQ2MDhlYzlhODcxMjk4YzgyNzJkNDNmZDYzY2EzYjI1NTQyN2NhYjhmNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmZlOWJlZDBkYmUyZTc3ZWI2ZjUyMDkzNzRmMmIxY2Y4YzUzMDlkMWM4N2FhMGYyOTkyZjI5MjgxYTI1YTMwYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e78c421443b04a729e5de7f328cad25b",
+      "statement": "dsh-session provides the append-only session log as the single source of truth every model-visible fact flows through: LLM message history is derived from the log (deriveMessages()), never stored separately, surface events must declare how they join the ordered surface, and persistence backends subscribe to session/event and flush on session/flush.",
+      "evidence": [
+        {
+          "resource": "repo://packages/core/session/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:86e3e8d3f443ef1151c5e9beadd7844324eb5e49a88398f818b75e70603629d1:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODZlM2U4ZDNmNDQzZWYxMTUxYzVlOWJlYWRkNzg0NDMyNGViNWU0OWE4ODM5OGY4MThiNzVlNzA2MDM2MjlkMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODZlM2U4ZDNmNDQzZWYxMTUxYzVlOWJlYWRkNzg0NDMyNGViNWU0OWE4ODM5OGY4MThiNzVlNzA2MDM2MjlkMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_be585d630bce4aa2b4eee368f13e94a9",
+      "statement": "session.append(type, data, opts?) commits one typed event that snapshots and freezes the payload, validates it as lossless JSON, and notifies observers, while session.deriveMessages() projects the log into the Message[] the model sees incrementally and cached.",
+      "evidence": [
+        {
+          "resource": "repo://packages/core/session/README.md#L42-L47",
+          "version": "repo-lines-v1:sha256:befa5130ba46e2322e7114733d916b8318ce17f24819aa76cf74b73d89979d5d:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI2ZmZmZmVlOTRiZjZlYTAwNTllMjA5ZDAyODE5ODQ1MTE4N2VmMTNmYTdkMmM1MTgyM2UzNWM3NzQzY2RkZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODk0ODNhYzMxYjdhZGQ1YTU3YjE3M2RkOWJkNmMwNGJjMWEwYmFjMTI1NzcwNTliOThiNjY4ZTIyNjNlYjQ4ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjk2ZGZlMjdkNWFmMzAwMTMzYjQ5YjViNDM1YzMyZDNjNTdiOGE2MzJlNDM0ZWVlZjI3NzQyMWI5OGNjOGM5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGY4ZDI0YTg2MWU2Y2ZkMzVjZDNlZWQwMzEwN2I5MDI0N2EzN2RjZDBlYzEwN2IxZmM5NjQ0OTlkZDIwZmEwOCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_6a2256d463e5439096fcac1ac48b3110",
+      "statement": "dsh-agent-loop creates agents (fresh or resumed from persisted history) and runs the turn and step lifecycle; as the default driver it implements the Agent interface from dsh-agent and registers its factory on ctx.agents, and it is the harness's only concrete loop — everything beyond 'call the model, run the tools, repeat' belongs to plugins listening on the event taxonomy.",
+      "evidence": [
+        {
+          "resource": "repo://packages/core/agent-loop/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:51b7aad32629b0be86ce739f35f3d79b4e72fefe9569c6faebf66f2f8e3fdf6b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTFiN2FhZDMyNjI5YjBiZTg2Y2U3MzlmMzVmM2Q3OWI0ZTcyZmVmZTk1NjljNmZhZWJmNjZmMmY4ZTNmZGY2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTFiN2FhZDMyNjI5YjBiZTg2Y2U3MzlmMzVmM2Q3OWI0ZTcyZmVmZTk1NjljNmZhZWJmNjZmMmY4ZTNmZGY2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_17cd35ab9d7a4a4bb23069818eeb47ab",
+      "statement": "Durable replay facts live on session/event while live control and status live on agent/*; SDK users that need replayable transcript data consume session/event while agent/* is the live coordination API for queue/status, prompt interception, request construction, steering, continuation, and errors.",
+      "evidence": [
+        {
+          "resource": "repo://docs/agent-lifecycle.md#L6-L6",
+          "version": "repo-lines-v1:sha256:fc82f9c9dc496c0db8272afa25ec4783ad408120b86d06abd69c49cd37249c69:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmM4MmY5YzlkYzQ5NmMwZGI4MjcyYWZhMjVlYzQ3ODNhZDQwODEyMGI4NmQwNmFiZDY5YzQ5Y2QzNzI0OWM2OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmM4MmY5YzlkYzQ5NmMwZGI4MjcyYWZhMjVlYzQ3ODNhZDQwODEyMGI4NmQwNmFiZDY5YzQ5Y2QzNzI0OWM2OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2JmMTY4NTBhOWY5OGFkZmUxODIwMGZkMTkzZjc5NmQwNzQ2NDU5NjUxMzc2ZTE5OThiNGUxODFkZjQyNGQ4MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGYyYzcwZWY2Yjc5NjM5ZWJjZTc5MTkzYzBjZTkzYzVhYjJjNTk1NjAxZTExYjY0OGRiZjM2MWFhMzIwN2E3NyJ9"
+        },
+        {
+          "resource": "repo://docs/agent-lifecycle.md#L80-L80",
+          "version": "repo-lines-v1:sha256:e4a0fa852a472d9c6d91e8fce2cc0c5188209b97ea19a3bd18a962b7efdaec07:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTRhMGZhODUyYTQ3MmQ5YzZkOTFlOGZjZTJjYzBjNTE4ODIwOWI5N2VhMTlhM2JkMThhOTYyYjdlZmRhZWMwNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTRhMGZhODUyYTQ3MmQ5YzZkOTFlOGZjZTJjYzBjNTE4ODIwOWI5N2VhMTlhM2JkMThhOTYyYjdlZmRhZWMwNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2Q4MWQ1Nzg1ZmFjMjliNzRhYzYzM2QyM2ZiNjEyYTUzMThhNjJlZjNiMWQ2MTczNjI5ZWM2OGU1MzdjNzUzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzQzYjA1NWRjZWQ0MjBiYjMzNGNkODNmNjg2ZjZkYzAzNDMxZGNkMGFmNGM1MzY5ZGFmOTg3NzBiMjYwNjRkOSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5d54d5978029d1ca20adb11afbc9948ef0efa03dce09629e9674f2cba7a7deff",
+  "claims": [
+    {
+      "id": "claim_868a4a064e704c1e8fd52f5500476796",
+      "statement": "The session group makes an agent's conversation durable and reusable outside the live loop: the persistence seam stores the event log and restores it on resume, the checkpoint policy keeps requests, tool side effects, and completed steps durable before the next action, projections serve whole log-derived values to client carriers, titles name each session from its content, and telemetry reports session activity; JSONL is the shipped persistence default and SQLite an opt-in single-database backend, while session-query is a sibling group.",
+      "evidence": [
+        {
+          "resource": "repo://packages/session/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:fa43261ada597b1666c56b53d753a82ee4487d1bca07f17430fbc34c0f92444a:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmJhODc1M2Q0MDI4YTI2MTg2ZWU3N2M5OWNiMjcyMjA1ZWMyMjE1YTZmNjMyZWI1YTg5N2M3Y2I5NTg1NWM1MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4ea3d8bfc49d40e3a21b750d4106f0db",
+      "statement": "The persistence family is session-persistence (ctx.sessionPersistence, the durable session-storage service), session-persistence-jsonl (append-only JSONL per session, optionally Zstandard-compressed), session-persistence-sqlite (all sessions in one SQLite database), session-checkpoint-policy (wraps ctx.llm and ctx.tools), and session-log-deepseek (contributes dsh_session_log); the projection family is session-projection (ctx.sessionProjections), session-projection-cache (ctx.sessionProjectionCache), and session-stats (the sessionStats unit).",
+      "evidence": [
+        {
+          "resource": "repo://packages/session/README.md#L31-L43",
+          "version": "repo-lines-v1:sha256:8740ffd1e9415661c21835054d43a4f8ccdf2d4cb66f7d6477ce1e16335e0e82:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkYWNlMTc2Y2VjZjc3ZDUxMTI0MmVmMGEzMTAwOTVhMzI5YzZmMjY0Y2E2ODZiMGM5ODMxMDI5ZjFjMGMwZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0NmViZmQzZDQ2MjgyZThjZjEzMmZiMGE0NTRkMTEzMDFlOTQ2NTEyOWQ4MzYxMmU5NWRkYzQ0ZmE4NzBmNGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjM2Y3YTNjMGViNGYxODcxMzRmOWU1NGYxYWYzZDgwMWJjZGE5MGRhYWY4N2JmYTBmNjMyZDY0ZGRiNmY4OWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQyMGM0ZGM5MDM3YzM3NDRiMmJhZjFmNWRkZmQzZjU3MWEyYTE2NWI2NmRiNDA4YjkxNDNiMTJhM2M0YWRkZDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7c1bad8047c7434c91ac06e4dd44ad4d",
+      "statement": "dsh-session-persistence-jsonl stores each session in its own append-only JSONL log (checksummed Zstandard frames by default, raw newline-delimited lines when compression is disabled), serves the same logical SessionEvent stream as any persistence backend, returns the transcript path from locate(meta), and requires only a root directory.",
+      "evidence": [
+        {
+          "resource": "repo://packages/session/session-persistence-jsonl/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:ff30cfa4882d6f6e73f603be6fdf711ad1d194e239637f9c413149e8f484b75f:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ZiZjZlZmY5MGVkYjg3NDRjZDU1NzI5NDVmM2M0NTZlNGM3ODM4MDQyNjNiZjQ1YmIyYmZkYzU5ZjM5OGEzNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_009f40771e6440edbffefb4d068a299b",
+      "statement": "dsh-session-projection serves whole current values of log-derived per-session state (history tail page and session/projection push frame) through a ctx.sessionProjections registry that folds every committed session event through registered projection units: a domain registers a pure computation unit (initial state, fold over events, optional client view), every served value is plain JSON validated against a schema, and a per-unit stateVersion anchors persisted-cache invalidation.",
+      "evidence": [
+        {
+          "resource": "repo://packages/session/session-projection/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:894705c930b2c95df270f95b6ed4f90ed7d5af71fc4ef54228413c8aff038da1:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjNkODgzNWZlODMyNjJlNDMwMzNlNGZhZjc3N2E5NjRlZDRkMTA2YmY1MjU1MWRiOTU3ZWMyYmE2MzZmNjkyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_29104cf0992449d3b71e62db30817f04",
+      "statement": "The titles family is session-title (log-backed session titles with a deterministic fallback and one optional provider, ctx.sessionTitle), session-title-llm (shared model-backed policy library), session-title-first-prompt-llm, and session-title-all-prompts-llm.",
+      "evidence": [
+        {
+          "resource": "repo://packages/session/README.md#L49-L53",
+          "version": "repo-lines-v1:sha256:82d1da410cc65af66b1d3a4b4847e03d08fe1b008cd9a8967812200fa9794897:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjY3ODkxNDU1YTliMzdhYWMwYjAxYTc1MGFjNTBkNzc4ZjNjMTgxMzdhZDU1ZTRhNGVlYmJmNDZmZjE2MmVhOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWMzZjdhM2MwZWI0ZjE4NzEzNGY5ZTU0ZjFhZjNkODAxYmNkYTkwZGFhZjg3YmZhMGY2MzJkNjRkZGI2Zjg5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NDFmMDc4MDA2NjQ3OGZhYTU4MWE2ZjUwMmE2NTllOTY4ZTU5ZDUwN2ZlYTViYmRmNDFiMDFiYmI2ODFkYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d505020ae46d4d0985cb7c8a2c1907b0",
+      "statement": "dsh-session-title gives every session a title clients can display: a deterministic fallback from the first eligible human message, an optional asynchronous provider, or an explicit user rename; every accepted revision is a log-only session/title event so titles survive replay, resume, and paging and never enter the model surface.",
+      "evidence": [
+        {
+          "resource": "repo://packages/session/session-title/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:84be3513a8daf5602acb695ac9fdd26b99c70b609a864bcc6945ddca089f9da9:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTFiYmY3ZWQ5OWNhNmYyMWYzZjlhMGVjYzNlMGFmYTc3MzE5ZDYxY2ZiZmU2Y2Y2YTQ2MzQ5ODc2ZDlhZDY1NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2518d6fcae40494aa4cf131c3f815397",
+      "statement": "The session-query group provides retrieval over live and durable session history independent of compaction: programmatic callers query one unified service for exact logs, filtered lists, relationship traces, and full-text search; a SQLite FTS5 backend powers the search; the model gets five workspace-authorized tools; and the Web UI gets an /export command that downloads a session ZIP.",
+      "evidence": [
+        {
+          "resource": "repo://packages/session-query/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:5a18f01c1da4c82cefecaa5c822417d95ca2dd93f7bb5eeceb494323671bbb46:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWU5MWYyZTc2YTllMjUzNjM4YmM1MjRmYjYwNGQ2MzgyMWRiOTVkMWRhYmFjNTEwN2Q4ZDhlNzZkNGM1OGVlMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_265119e1884a4506b47bbd4ce1284811",
+      "statement": "The retrieval family is session-query (the unified session-history query service with ctx.sessionQuery) and session-query-sqlite (full-text search backed by a SQLite FTS5 index).",
+      "evidence": [
+        {
+          "resource": "repo://packages/session-query/README.md#L24-L30",
+          "version": "repo-lines-v1:sha256:136565f007089e8a9fcc103474e0555661b901c4a65be7632ef42615ab25e5ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjU1NGJiMmM2MDkzZTA3M2QxZDBkMWRmNjgyYWU4N2M3NDZiN2ZhNDY1MTllNGQ1NzQ2NWEzM2ZiOWFiZWQ0YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGU2MDlmYTI0ZWJhOTg2YzRiOWFlZDUyODk0NzFiMGM3OGQyNGNlODhkMGNhOGMxMWJlNGVjMWZmMGU1MTg0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc3MTg3NWJhODgyMjYwZTEwMTI4NTViNTAxNTdjMTM1OTdiYzljOGZhNGE4YzY3ZTZhNDgxM2IyMDY1NjgzOSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

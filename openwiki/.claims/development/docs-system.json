@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:d49828c15045df4db2a0ba87e2da027302c8c1cef220d7c74515b2a6b83ff380",
+  "claims": [
+    {
+      "id": "claim_1cdcdb64c611466398565bd899b60aa6",
+      "statement": "The pairing contract: a pair is three sibling files (English foo.md, Chinese foo.zh.md, and a consistency record foo.i18n.yaml in the same directory), the consistency record holds the full git blob hash of each side as of the last confirmation, and the Chinese file always links back with `[English](foo.md) | 中文`.",
+      "evidence": [
+        {
+          "resource": "repo://docs/i18n/README.md#L21-L22",
+          "version": "repo-lines-v1:sha256:adc8db6695c981b3029b127fc22fbec6db1856e9e210cb495ac634ca795e784c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM3YzRiNTA4YmMyYjg5N2I1N2RhMGExYzFiMzM1ZjJjZWQ2NjdmNGQxYzY3YjUyYjM5NTRjMDZlNmRjYThkNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTM1ZmJhY2UxN2IxYjY5MmQ3OWRjOThlNDVkYjMwZTQ0YWExYzFjNDY5ZmZmZjI5MWMwMGFhYzNlMDQyZmFmZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDUxZjY5ZDAxM2ZhM2MwMGQ0NWViNjlmNzNiMTlkOTNlMTgzZjk5ZDNhODMzMzM4OWRiMmFjOGEyM2M3ZGZlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDUwN2FhMTRmODVkMzJjYzRhYzZkNTQwZmZmNzkwNDUyZjJiYTE0MGMxMWFkZDdkNTQwM2UxYmMwNzNmMDdiMyJ9"
+        },
+        {
+          "resource": "repo://docs/i18n/README.md#L7-L11",
+          "version": "repo-lines-v1:sha256:726021060c81a21858b304eb14461be27fa5a98ba6d83a0a33f1f768fdfa0544:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmIyMzdjOGQ1NmRiOWQ4Yjc4NGEwYzk4N2JkMGVhODE1ZTVhYTdlNWM4ZjljYjI3YzE3Y2VkYTRhOGVlYjVmNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDQyNjAwMTAwMjBmNzNkZDA4ZTIxNWQ0YmIzODhkNTdjMGQxMDQ3YmQ0ZDI4Yjg2MmNhOWVlYWQyY2IyNzc0ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGViYWU0ZDQ2MjE0Y2QyYTJjMDc2ZTNjMmYzZDNkOGEzNmIwOTdmZDk2ZjYwMWE3MjNjNjBmYjg0MWM3NTgzOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTQ4NDZkMjEyNzQ1NDhjY2RjNmEyMTUwMmI1YzdkMmU2NGQxNDlmMWM3ZGZmZTk3NTgyN2YwMDBhYTk2ZWRkNSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_16a9146a29b748aca537a710138c58ce",
+      "statement": "`pnpm run verify-translation-pairing` (part of doc-sync) enforces the contract mechanically: every in-scope document has a complete pair, every pair artifact is complete and consistent (blob hashes match, switchers present, structural signature matches in order), and `--list` prints the current pairing state of every document; `--write <pair>` re-records confirmed hashes.",
+      "evidence": [
+        {
+          "resource": "repo://docs/i18n/README.md#L24-L40",
+          "version": "repo-lines-v1:sha256:cd1e34e2f4d0354371d135574576c58f5ed68875ce1a21090bb09b75272f3919:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzYzhhMDA5YzkyMWNlMDY2YmI3YWYzNmJiYjg2ODkwMWE3NmE4MzdlZWFkMDg1ODU1NmI3ZGYyYmI4NWM4MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhODk2NWRjMjViZjRjNzYzMzljZmExNTUwODJmNGE5ZjAyMTYxNTc3NjRmMTI3NWZhMzUyMjI0Y2NjNjI1MjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiY2I0Y2JkMTMxM2ExMDMyYzUzNDZlYzI4MDM2YzQzYTQ3YTM4YTgxODgyOTRlYWRmMzRkYmQ0MDAyN2Y4NWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0ZWU1OWFhMmM3ZjhkYzk1YWI5ZmQ5MGVlOGU0NzJiMzVkMzdhMzcyOWQyNzU1OTgwNTk4ZTZiOTA1N2ZjZGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0a2eb7d588d438d88832dc3d58a0774",
+      "statement": "The pairing scope covers the root CONTRIBUTING.md, BRAND_GUIDELINES.md, and SAFETY.md, every non-vendor README, and every active document under .agents/notes/**, docs/**, and python/**.",
+      "evidence": [
+        {
+          "resource": "repo://docs/i18n/README.md#L42-L44",
+          "version": "repo-lines-v1:sha256:d8a6ef6ef5a21a7746331ecaee632f948a052136276e01863bc2709c78751c09:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2FmODMyZTQ3MmU2YmY5NWU2MzQ5YWJjYjYyMjBhNGJhNzliODIzYTM0NjExM2VlOWJlNWI5NDU4ZDM4ZGY2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjllNjBmNGViMjRjOWI0OWUwZDc4NjAwZTM3YTBjOGE2MmJiOTdlNjVjNzYyYzY2ZTg1ZDQzMmMxYmUwNDk1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTA1NDkzZTA5Mzc5MDIyMDQwNTA0OWQ2YTYyYWY2NGM1NjYzOTUzNThlM2Y5MjM2YjgzM2QxNDEwMDA4NTYxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOThiNTg2ZDc5ZWRiMDU4MzFiYWE0ZWZmYTI3YWFhNmUwNzNlNzc4MWRlZjdiMWVjYzBlY2RhN2RkYWRhMzc3MCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e4e5e1cf844a465c8b67687c106a0faf",
+      "statement": "Excluded from pairing (never paired, gate rejects a .zh.md or .i18n.yaml for them): cordis-api/inherited.md, docs/AGENTS.md and agent-instruction symlinks, docs/i18n/terminology.md and style-samples.md, translation-prompt.md, and the frozen .agents/notes/archived/ tree.",
+      "evidence": [
+        {
+          "resource": "repo://docs/i18n/README.md#L47-L52",
+          "version": "repo-lines-v1:sha256:29f613b0622b6782f04fc4c3090516cb15f52663f2b0085f947de886306e18ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTJiMzJkYWRkZjg0NDg5ZTJlMzBkMGI3MDhjNGNhNmUyOTM0Zjc5MzE1NmMwNGY5NTFkNTFhNDBjZGRhNDhlOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGI1MWQ5M2Q5ZmVhOTAwZTQ0ZjgyODhkOWY3OWRiYTg0ZGQ4MmFjYTNjNmViMWIxNTA1NzBjYjBiZDhlNjQ2NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2MwMDU3Zjg0ZjJjYjIzMGJjZWJjMDNiOTMyM2ZhNTY4YmM5ZWMwMjAzNTJhMWE5NTU1ZWVlYmY5YmI3NzJjOCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ac0ba268d1ad475e9c1929cf9e708582",
+      "statement": "docs/tool-catalog.md is generated by scripts/gen-tool-catalog.ts and verified fresh by verify-tool-catalog (part of doc-sync); the generator boots each tool plugin on a real context and reads ctx.tools.schemas() because a tool schema is not statically knowable, and a completeness guard globs packages/*/tool-* and fails if any package is missing from the boot manifest.",
+      "evidence": [
+        {
+          "resource": "repo://docs/tool-catalog.md#L1-L12",
+          "version": "repo-lines-v1:sha256:2cef4b713eb0e698af326b57774325ed562506419f29a3a78b18b238ca56966f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwOTI5YWY3ZmViNjBmOTdiOGVkZmNkOTBkNTZlMzhmZTNlMjk4ZDA4MjM5NWFkNjQ5YTJkOWI1ZWI1NDAyMTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3NjY0MTJkYjU4OGMxYTI3NDdhMDg2YjlmMmY2ZDYxOWQ3MGU2MmQwMjgzNjExZWRkZGU5OTVhZDgzOGU5OWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyNjhiNTgxMWUxNGZhZDk5ZDRhMjhlZTYxNjE4Y2JkYzVmMjMzMGQzYWM3YTYzOThjZWE5ODQwZWUyNWEyMzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fa31232e6b674f04b4fb3d33c3f8dec3",
+      "statement": "The generated catalogs pair a generator with a fresh-verification gate: gen-tool-catalog/verify-tool-catalog, gen-config-catalog/verify-config-catalog, gen-doc-graphs/verify-doc-graphs, and gen-persistence-catalog/verify-persistence-catalog.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L126-L133",
+          "version": "repo-lines-v1:sha256:d205154dba414249518620d53a8c8b1fbc287bf5c41ac1ef46df7b981e4804e8:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODQzY2ExYzZjOGVlMDE3MmVhOWFkMDk3NTZlZTFhN2QwNDBhNGNhZmUwNmVlYmYxZmE4ZmQ5NjM3ZTc0MjBlNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODZjZTRhNzQxOWJmODEyOWM2NWE3Y2JjMDljODBiMTY2ODcyNWEwODMxYWUwMGI3ZWRiOWM0YThlM2Y5ZmFhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDA4ODRkZDgzYTE5NWRlYjdhYTkyZjg5YTFiMzE5ZjMzOGNiNmFkZmNmMGMxMzgxODNiMzc1YjE1NDA0ZTUzYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzcyZTQwZjI3YjA1NGZiNGUxODUwNDJmZTdiYjU2Zjg1YWYzYjBlYzdmN2I4MGMwYmY5OTMwZDk1YTdkY2I0NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_19b5866578f74fa1843f0c586aa9bf28",
+      "statement": "The website is built from the same corpus: docs:build runs tsx website/build.ts followed by verify-doc-site-fragments, docs:dev runs the @deepseek-ai/website package dev server, and docs:check runs the doc-site specs plus the build.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L96-L100",
+          "version": "repo-lines-v1:sha256:332051a87838001610ea38ba0e91dd15445babb863066bad0f497530adfc37a8:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDZkODFjM2MyM2QzYmRmMDcwNzBiNDc1ZWYxNzQ5MzkzNmM2NTdhZGQwMzliNjBjODAwOGVkZWIxYzY0ODEzOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmM5ZDQyZWQ2Yzk5MzllN2RkNTFjZWJiYWQwMzE5MzU5MDg3ZGVlMzkzY2YzYzE1MjdjNmM4YzdiMzBkOTAyMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGNmNzk0ZTRmZDA5MzcyYTRjYTMwZWUyMTg1MDNmYzkzM2FhZDZhYjRhNjQzNjQ5YmFlZGE0ZWVjZDJlMTVhOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDMzNzEwYzEwNGQwN2Y1YjQyNDZlNmMzNzU4MjU0OGFkZjMxNWMyOGRjOWUyZDk5MjAzNTA5Njc2OTBlOWQxMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d6aa41e4bf504d1393e5df6e3fbbe8c5",
+      "statement": "Other documentation gates include verify-md-wrap, verify-md-links, verify-doc-site-fragments, verify-subsystem-pages, verify-mermaid, verify-translation-pairing, verify-doc-budgets, and test:docs (the doc-quick aggregate), with the doc-sync aggregate wrapping the corpus-wide gates.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L141-L141",
+          "version": "repo-lines-v1:sha256:3ec734b4064b8d2062d033260cd20cd2964f3367f7c2388746d8876983bed27f:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2VjNzM0YjQwNjRiOGQyMDYyZDAzMzI2MGNkMjBjZDI5NjRmMzM2N2Y3YzIzODg3NDZkODg3Njk4M2JlZDI3ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2VjNzM0YjQwNjRiOGQyMDYyZDAzMzI2MGNkMjBjZDI5NjRmMzM2N2Y3YzIzODg3NDZkODg3Njk4M2JlZDI3ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTk4ZDEzZGVjM2I4Y2RkYTU3NDg4MTllNmZiZDUyNmI0YTY4OGNlNTMwMmU3ZDI5YTM1NjU4MmFkNThmYzg0NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmY2OTU3NzEyZTAyMGZiZTZiODkxZmY2ZTZkMmNlNjAxMGMxZmQ5NjY4OTc3OWIxMWJiMDgwZDM2MTQzOTRiOSJ9"
+        },
+        {
+          "resource": "repo://package.json#L72-L92",
+          "version": "repo-lines-v1:sha256:40d7ff46201afca6b9b3d6da8637b1b10a78d3d1526621c59d516b45fa2f0d80:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjZDU3NDdmOTY2NTYyNzZhNGQ4MWY0NTI2ZDM1MGU1OTVlNGExMjY3Y2ZhYjdhYzcxNWI5YTUxM2NkODliYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhNjNhOGI0ZjI5ZjU3OTU3YWQxNzA0NTg2NjE0MDQ5ZDVlODk1YmYyZGQ3NGJhZWIzYTIzOGExNmI3YzIzOTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYzMxY2JjYmYwZTAyNzg0MTBkNTBhYmM2Yjk5Zjg3M2EwMWM4NTlmZThlMzQ2MjJkMDEzMTM2N2M4OWYxZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjZjc5NGU0ZmQwOTM3MmE0Y2EzMGVlMjE4NTAzZmM5MzNhYWQ2YWI0YTY0MzY0OWJhZWRhNGVlY2QyZTE1YTgifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

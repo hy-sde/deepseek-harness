@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3fcc1d1a57cd9261abce5c3ec9a2204e1cd70ae968f200c3bf7cbdbfc97a516f",
+  "claims": [
+    {
+      "id": "claim_082c33d018854f3c8f6c6aa53866fa92",
+      "statement": "The root build surface is: build = tsx scripts/build.ts, build:lib = build:lib:host && build:lib:client, build:lib:host = tsc -b tsconfig.host.json && tsdown --env.DSH_BUILD_FACE host, build:lib:client = tsc -b tsconfig.client.json && tsdown --env.DSH_BUILD_FACE client, and build:web = pnpm --filter @deepseek-ai/dsh-web-frontend run build.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L20-L25",
+          "version": "repo-lines-v1:sha256:bb9210886e45ac7b2d97d7a7b445e8cfe0593b45838f07f5639408a33ea5489d:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2VjN2VkN2I1ZjYwMTE0ODVlMzZkMGZhNGU3MjVhN2NhZTdlNTM5N2RmNzU5NDNjYTNmZmU1Y2IyMjkwMWViNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDZlMTMzMDUzYmFjYjgzZmNmMTE5OTQ0MTE0NWU2NTEzNDZlNTJmNzBiNDg5Zjc5ZTIxMDEyZGI5OWZmZGZmMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzNlZmI2ZTZkZTkwMzQxMzM5NjM3Y2FiZWM1ZjUzMTU3ZTU2MGQyNWI0NTI0NmNlNDA5Y2I1Y2FlNDE0MjBlZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDFlNGUyZTgxNDI2NTc4ZjgzY2I5MWJhZWI0NzY3MjRjYjQ0M2Q4OWU1MmJjODM0ZmYzMDA4NjdhZDhkMTVlYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f3bd33d04d514465ac25e269b816cdd2",
+      "statement": "typecheck runs build:lib:host then typecheck:contracts-ready, and lint similarly runs build:lib:host before lint:contracts-ready.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L28-L30",
+          "version": "repo-lines-v1:sha256:9ff37d735b9695134c8ed695eeb0c3432ede538746e9649ece41094031b91659:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTA3OGQ1Y2U3Njg1ZDQ3Y2Q0Mzc1MjIyYjk5M2UwYjdkYjcxNzc2NzIxMWYxZjVmODg5OTM1MWQwM2NjOGIwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTc0Yzk3ZmE0MjM4ZTI4YzA2Y2Q2OWJlNjBiMGNmN2U2Y2I3Nzc1NjQyZDI1Njc0M2RjYzc2MDU1ZmUyNzI4NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjg2MmYyNGY0MGQ2MTkzODc3NWFmZDlmOTNiZmE1NzkyYjBmM2JiMGU1N2ZjMWJiMjg4Yjk2NjE5Y2M3NGI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjk0NGRjMWQyYzZiOWYzMjg5ZGMzZmI5ZWNkZDVjYTg4ZmQ4ZmUwYWRlNTMzMjk4ODI4ODVjNTU1YjVjOGRlMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_98cd87cd480a4021b2d91eeab2c14453",
+      "statement": "The test surface includes test (vitest run), test:snapshot (vitest.snapshot.config.ts), test:e2e (vitest.e2e.config.ts), test:expected (vitest.expected.config.ts), test:web:built (vitest.web.config.ts), and test:gui (vitest run packages/client packages/host).",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L35-L35",
+          "version": "repo-lines-v1:sha256:241fc249efa71b0e7a97f7f4eb8b89494a59cb3f87d71be6aad63aa3ba5e3d3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjQxZmMyNDllZmE3MWIwZTdhOTdmN2Y0ZWI4Yjg5NDk0YTU5Y2IzZjg3ZDcxYmU2YWFkNjNhYTNiYTVlM2QzYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjQxZmMyNDllZmE3MWIwZTdhOTdmN2Y0ZWI4Yjg5NDk0YTU5Y2IzZjg3ZDcxYmU2YWFkNjNhYTNiYTVlM2QzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTBjNjc4ZDQ3NWRhY2FjMGNmMDk5NmRkZTBlNWI2OTEzZGE2NzNhNTQ2OWI4NWQzMzA2YjBjNDVhNjEyZDU0MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmVhNmU4Yzk4MWJjYmNiMWE1YjdhNTE2ZGRlODNjMmQ3NTEyNWE3ZjY3YWExYTAwZmJhOWE3Nzk1NjkzYzdhOCJ9"
+        },
+        {
+          "resource": "repo://package.json#L38-L39",
+          "version": "repo-lines-v1:sha256:8075090c83a01d6b4a3e74854248c87684be91e6acbef47addf1c435364b50e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTE0ZWJiZDllZmIxZjhjZDk4ZDY4NjJjZjcwOTY4Y2ZiMDU2N2IxZTNmODhiMGQ2OGQyMDUyYjI4N2JlNWE0NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjg1MTlhYjBhNjNkMjYwNWI0Yzc0MDc1Yzk0YWEyZDJkZDM0ODQzOTNhMGJjZDM5OTA2ZDBiZDRmNWQzODg0NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2M2MmNhZTE5ODdhMzNkNzc2OGYyNzkwNmVlNjcxMTA2ZmVhMjJiNDNkYjAxMjEzMWI4MzZiMGNiZTNhYjFkMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU5MTA2MTJhZjUxNTlmNDgyNTI1NDM3MmYyYjAxN2RlMGE2ZDgzNTYzODg5ZmVmNjZmNjExYzJjZjZlNGQ4NiJ9"
+        },
+        {
+          "resource": "repo://package.json#L42-L42",
+          "version": "repo-lines-v1:sha256:e3bc15d7644774f3f06162241a20f0f4bb9e530b52a6e4d254a932b35e1ce629:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNiYzE1ZDc2NDQ3NzRmM2YwNjE2MjI0MWEyMGYwZjRiYjllNTMwYjUyYTZlNGQyNTRhOTMyYjM1ZTFjZTYyOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNiYzE1ZDc2NDQ3NzRmM2YwNjE2MjI0MWEyMGYwZjRiYjllNTMwYjUyYTZlNGQyNTRhOTMyYjM1ZTFjZTYyOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2Q2N2U0NjM0N2M0MmM5MmEyMTY2ZjYzYTgxNGNmMDI5YzNjNzczZjkwMDIyMDMxN2U5YjdlZjlhMGZlMWE5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGY4NDMzMzBiZDAyZWQ4NjU1MjgzZGNlYTczYjEyYzM5MWI2MmYwNDEyNzkwODE3YmVlNWVlM2U2Y2Y4ZjEwZiJ9"
+        },
+        {
+          "resource": "repo://package.json#L48-L48",
+          "version": "repo-lines-v1:sha256:1e1a56f732b0b9ba417441409beef320176cb3858b4cdab3f30480d746d96edd:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWUxYTU2ZjczMmIwYjliYTQxNzQ0MTQwOWJlZWYzMjAxNzZjYjM4NThiNGNkYWIzZjMwNDgwZDc0NmQ5NmVkZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWUxYTU2ZjczMmIwYjliYTQxNzQ0MTQwOWJlZWYzMjAxNzZjYjM4NThiNGNkYWIzZjMwNDgwZDc0NmQ5NmVkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjAxYzhlNWRlOTQwNGI0NDMzYWZjMGE2ZWIwMDM4NmZiY2VjM2JlMmFlMDdkNjhkNzVkMWJmNWE3N2Q4YTM1ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzM0MjU1NDQ1NTliOTBiOWMzNzExNDA0ZTliYTY0ZTU2Mzk5NjRlMmFhZDBhOGM2Y2E1ZDk1YTFiNTdkOWYyMSJ9"
+        },
+        {
+          "resource": "repo://package.json#L53-L53",
+          "version": "repo-lines-v1:sha256:0ba7324f6081623681fe04be951a428ac12b30b150dacde05810e2d5f85c02d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGJhNzMyNGY2MDgxNjIzNjgxZmUwNGJlOTUxYTQyOGFjMTJiMzBiMTUwZGFjZGUwNTgxMGUyZDVmODVjMDJkOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGJhNzMyNGY2MDgxNjIzNjgxZmUwNGJlOTUxYTQyOGFjMTJiMzBiMTUwZGFjZGUwNTgxMGUyZDVmODVjMDJkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDQ5NjNhOWNiM2U1MzE5N2FlY2Q2YjQyMTk1NWNhYWVhNTM3NGNkYjNmODAyZmY4YjIyNTYxZDg0YzVkZDA3MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGEyZjIyODlkMTliY2VjMzk4N2JiMTJmYzdhNTZkZThhYTQxYzEwYTNmMGM4MjIxYTQ1YmE2OTJjZGQ2ZDczMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_545c401c70ef43749b01edf7ee65507a",
+      "statement": "scripts/run-gates.ts runs named aggregates (ci-primary, ci-static, ci-linux-primary, ci-lint-contracts-ready, ci-coverage, ci-snapshot, ci-artifacts, ci-consumers, ci-windows-blocking, ci-windows-complete, ci-windows-observational, node-compat, check-all, hygiene, doc-sync, doc-quick) over validated gate graphs with bounded in-process scheduling, and the check:all / check:ci / check:ci:static / check:ci:coverage scripts dispatch to it.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/run-gates.ts#L1-L39",
+          "version": "repo-lines-v1:sha256:e8c791eafb181cbc1be84e338d8898ca449728acea5b4137a52354c7b06fb5d6:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNDdmOTYxYzhjMzBhNGU4ZDEyYjczMjQ3MTAyMzkxOWQzOWQxMzlhMjU2ZmYwNWJiOThlNjMyMmU1ZWVlMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE3ZGIzYTlkNWVlZTNmYjNlYWYxMTAxNjNlMWNjZGI1NGFlY2NkYjA2ODYxZmJiNjA4NGQ1YjEzNmNjMDBkNzAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b95e1bd630554fcaa614767aea778a99",
+      "statement": "Lefthook pre-commit jobs are: translation pairing on staged *.i18n.yaml records, archived agent notes verification, staged oxlint lint with --fix and stage_fixed:true, third-party notices regeneration via gen-third-party-notices.ts followed by git add THIRD_PARTY_NOTICES.md, a whitespace check (git diff --cached --check), and the vendor manifest guard; pre-merge-commit repeats the translation pairing and archived agent notes jobs, and pre-push runs pnpm run typecheck.",
+      "evidence": [
+        {
+          "resource": "repo://lefthook.yml#L1-L55",
+          "version": "repo-lines-v1:sha256:8a8f8ab35455e8efbdc5e10961d0cca855eacd35469a7ce070c5efd2ff5984b3:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3NGI5YzM1NDA4MDhhYmMxYjNiOGQ2NDZlYjQwM2YwODI4MDI3NzI2MTMwODZjMWI3OTMxNDI1MzU3OGI4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkZTRkYTFkNzBiNDAyODUzZjgzYzFlZTliZDEzNDYwZmZhMDk2MDYyZTlkOGJiMGZmYjg5ZmE1OGFhMjRmZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_05e033b400534540844a9e0db199db80",
+      "statement": "The CI matrix separates node 24 / static (check:ci:static), node 24 / coverage (check:ci:coverage with bubblewrap prepared), and node 24 / snapshots and artifacts (check:ci:consumers including Playwright Chromium).",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L39-L60",
+          "version": "repo-lines-v1:sha256:959d30aaf4f85ee86c948efb5f5bf318ba48866578fefc7cad0a21c56ef913b4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiN2ViZjk3NmY0ZGExYWQyYzg4MzVjMzFmNTY2Mjk0OGE3OGJkMTgzZmYzZTg0NzVkNWZkNmQ4MTc2MGVkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MTU0Mzc4MzhlMjFmMGE3OTE1ZDdkNzM1ODZhMGY4MTUxMzdmY2RjNDBiNDNjY2NjNDY2YTFkOWNlMzFiYTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhMWJkM2YzZDgxNmY4ZGVhZGNhZGVjMGE2OGQ0NTExZWM1NWY2OWZiMzQ2MTAzZGQxOTkzNDg4MjYxYWFlZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0YjlmZjYwMjJjN2E3MmZmZTNkMDQ4MGYxMTg1ZmE5MDEyMzA3MTI2ZWU3NTJjMmYzNzVjYzI3YzJhMWVjZTUifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/ci.yml#L91-L151",
+          "version": "repo-lines-v1:sha256:5735df937bf9bd072c4af144749482528ade5314bb2341c9290c6d7a6696ec7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwZmI3MTZlYzA1OWQ1NWQ2MmZiMmMyYTM5ZGQwYWY4ZWM0NDhkZmRjMjUzZTBhN2UxOWQzZmFhMmIyMzVjYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNDAxNDE2ODFmNDg5MzI1OWJiNGViMDdlOTkyZjQ5M2M3YTQ5MTRjODViYmY4MWRmMWQ2ZmNlNWVhZGJiMjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhiNzY4MjMyOTM0M2E1OTI1MzVmZWY0YzMzZjA3NTM0YTNiNWRiODNjMDljYjA4MWZjNGUwMTgwMGU2MzI3ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhZDIyNGM4YmRhNTNjMTQwNGRhZjdiYmY5NDIwOTk5MDI4ZDlkMTY4MGM2MDQxMjk1NWJhZDBiNzVlZWJlNmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f9117b19b4f74c7fa352c45f207da993",
+      "statement": "CI also includes a node-compat lane running check:node-compat across a Node 22.19/26 matrix, Python SDK and Python runtime lanes, and Windows lanes: windows (Wine blocking gates), windows-build (check:ci:windows-blocking), and windows-coverage.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L239-L277",
+          "version": "repo-lines-v1:sha256:43cb714efad9e68a66bca5d89be13881624eef9709d4792237e3ccde9fd7dba1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2MTBiNGJiZGZiOWQ2OTUyMzU0NzBhNzhjYzdlMzAzMmJlODYyMTJlMDgwOWU2NjYxZjczMjZlMWY3NTIyMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxNTljZjVlYzYyZWRiZGY2MzQzMDRkYzEzNDc0MmMyYWRjMmUyMWQ4NzMwYzgyMTM3YmVlNTBkZDY1MmY2OGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJlMmNkZGU5ZTc0ZjllYmFkMzI4MjI2MDY5MDRiOTZkMWE1NmZiMzg5MWE2MTdkMTIzNmYzNjdkZTgzZTFkMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5MjEyZDllZGIzMjM1MzBlOTRjOGFhZWEzYzRiNjEzNzk3MTc0OWI3MWQ1Y2IwMWVhM2JmOGE4M2Q0MTE0MTAifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/ci.yml#L320-L435",
+          "version": "repo-lines-v1:sha256:0b58c7c23ab78914b813acfd2973f5ed9a8a074c103397ec4ca36eb798185591:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MmY0Y2I2MzQzOTdkNTc0MjQ1MDcwMTUyYjAwMTNmM2MwMGZhNTA5ZmM5YTZkZjk0YzgzY2U1NjBhODQxMDc4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2OTU5MmFmNmQ4NzdjM2EzMmE4NDU4M2I5NDdlODBkMDI4OTVhMTljNmE4YmM1MjBmMjM4MDQ2ZTUwZGMxZWM2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlNmNlMjQ0Mzg0YWIxN2Q2NjdmOTdiNGYxZTlhOTY1MWE2YzRmYTY5Y2Y0ZTk1NmVkYTc5ZDJlNWYxOGExMDA5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMDAyMzcyMGQ1YTdiNTM4NjI2MDU4MzM4Y2I3ZDNjNTlmNzEzZGRjMGMxOGM5MDJmMTliNGNiNmRiNzQyN2E2In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_3875f2997dd744fe9a0c7216ae3c4dc8",
+      "statement": "The dev CLI launcher is `dsh` = node --import tsx/esm apps/cli/src/bin.ts, and dev:web = tsx scripts/dev-web.ts --poll enables the live Web development server with polling.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L150-L150",
+          "version": "repo-lines-v1:sha256:a0362d26dade1ec05c7aca9f18af7749370953bad5681fc09d434dbd2727487b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTAzNjJkMjZkYWRlMWVjMDVjN2FjYTlmMThhZjc3NDkzNzA5NTNiYWQ1NjgxZmMwOWQ0MzRkYmQyNzI3NDg3YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTAzNjJkMjZkYWRlMWVjMDVjN2FjYTlmMThhZjc3NDkzNzA5NTNiYWQ1NjgxZmMwOWQ0MzRkYmQyNzI3NDg3YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODY4N2I3MDc0NzgyZTQ5ZmJmM2NkOTMwY2MwZTA2NDZkOTJiOWIyZWM4YTFjOTRmYjdiMzE4NjE2MTk2MjkxNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2U4NGZkNjRiYTE3Y2JhYTIzMmU2NTc0NDU0NGExNjg1ZTdmMTk0OTliMjY4NWFmNzk0OTUwNTc1Y2YyOTFmYiJ9"
+        },
+        {
+          "resource": "repo://package.json#L154-L154",
+          "version": "repo-lines-v1:sha256:934d44f0ba2793d60b8c370ae6600133d10881c44d3f6e3177f192ca80da02ef:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTM0ZDQ0ZjBiYTI3OTNkNjBiOGMzNzBhZTY2MDAxMzNkMTA4ODFjNDRkM2Y2ZTMxNzdmMTkyY2E4MGRhMDJlZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTM0ZDQ0ZjBiYTI3OTNkNjBiOGMzNzBhZTY2MDAxMzNkMTA4ODFjNDRkM2Y2ZTMxNzdmMTkyY2E4MGRhMDJlZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2U4NGZkNjRiYTE3Y2JhYTIzMmU2NTc0NDU0NGExNjg1ZTdmMTk0OTliMjY4NWFmNzk0OTUwNTc1Y2YyOTFmYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmJhMzRlOTMzMmU2ODNmYzcwY2JmOTZlNmE5OTM3NjNlOTgzOTUzMGE2NzI3Y2VkYmQ3NzJiM2YyYTU4Njc4ZiJ9"
+        },
+        {
+          "resource": "repo://package.json#L20-L20",
+          "version": "repo-lines-v1:sha256:3ec7ed7b5f6011485e36d0fa4e725a7cae7e5397df75943ca3ffe5cb22901eb4:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2VjN2VkN2I1ZjYwMTE0ODVlMzZkMGZhNGU3MjVhN2NhZTdlNTM5N2RmNzU5NDNjYTNmZmU1Y2IyMjkwMWViNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2VjN2VkN2I1ZjYwMTE0ODVlMzZkMGZhNGU3MjVhN2NhZTdlNTM5N2RmNzU5NDNjYTNmZmU1Y2IyMjkwMWViNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzNlZmI2ZTZkZTkwMzQxMzM5NjM3Y2FiZWM1ZjUzMTU3ZTU2MGQyNWI0NTI0NmNlNDA5Y2I1Y2FlNDE0MjBlZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTZjMTUyNzkzMzNiZDRmNmIwM2JlZGYyY2I4NjA1YjhiNzNjMjFiYTkyY2IxMGI2N2FlMGUyYWM3ZmFkNzA4NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

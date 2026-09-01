@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:71e99fff20dfdc0768d350985140a336c9d0145866f8bfb86b607597142a9e00",
+  "claims": [
+    {
+      "id": "claim_1c8476caaeb146d6bdbed23a53b1a125",
+      "statement": "The harness is assembled from npm packages under packages/, grouped by capability family; every package is scoped @deepseek-ai/dsh-* and lives in exactly one group, and each group README is the authoritative package map for its family.",
+      "evidence": [
+        {
+          "resource": "repo://packages/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:2b2390c9ac1ad80099f570c5c1949b9ce21f240cfa13cc7ddf2a9e1697ea792e:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmIyMzkwYzlhYzFhZDgwMDk5ZjU3MGM1YzE5NDliOWNlMjFmMjQwY2ZhMTNjYzdkZGYyYTllMTY5N2VhNzkyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmIyMzkwYzlhYzFhZDgwMDk5ZjU3MGM1YzE5NDliOWNlMjFmMjQwY2ZhMTNjYzdkZGYyYTllMTY5N2VhNzkyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0c1295fefb74781ba7dcf2b6314d0b0",
+      "statement": "The packages/README.md group table is the canonical map, covering core/ (product API spine: sessions, prompts, tools, agent services, the concrete loop), the capability families (llm/, subprocess/, shell/, terminal/, fs/, sandbox/, subagent/, web/, session/, session-query/, interaction/ and more), guard/, bundle/, boot/, host/, client/, sdk/, acp/, and support groups (examples/, test-support/, runtime-diagnostics/, util/).",
+      "evidence": [
+        {
+          "resource": "repo://packages/README.md#L25-L83",
+          "version": "repo-lines-v1:sha256:eaba0b36501141946abe47d0f32001dfa9ff81e5cd69b0212d43fcfbbcba3757:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhY2IxZGE0MWU3ZDBkNDg2NDA2ZjRjMDcyNjY5ZGRlN2M0ODI4MjljNTY4MjczNGUzYWZkMTkzMDE5M2RhOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0NjVmNzk1Njk0OWU1YzExZTk5YTUwNWNjODU2NDE2YjkzMmNmYjhjNzg3ZTI3YjdkMDE5NjAxNDAzODI4Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjNjI2ZTk2MTQwNWVkMjFlZTc2Y2MzY2ZmMDYzYzgxOGVlMzRjMWIwNWUwZGFhNGY2YTkyZmQ4NTQ5YWE2N2EifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c8c30557e244e3cabd4ed25411e81bc",
+      "statement": "Release expectations: most groups are product with stable API; e2b/ is a POC, experimental/ is unreleased, and examples/, test-support/, runtime-diagnostics/, and util/ are support with lower compatibility expectations.",
+      "evidence": [
+        {
+          "resource": "repo://packages/README.md#L85-L90",
+          "version": "repo-lines-v1:sha256:682455c6e5083c8a6f688347f1069b11184b1f7eda7a7473b2e38202d0a69349:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjJjYjU3ZGE4ZDUwOThlYWJiZGI4M2FhZjkzZjY2ODczYTI4ZmYwNThhNTYyMGNiYjI0MTAxNDUzOWY3YjI1OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjYwMjkwYzUzYzY2MjdjMDRjZTA5NmMxMzJhM2Q4NjcyNjIyMDI5YTNiMjVhODFjNzYyZjMyMDVmYjVjZGY4MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTVkYzEwNDBkM2ZjYjJiZTkyN2U2MDM0ZjQ5ZWZmYWMwMjMyYzk0OWQyNzRmZTJlODVlMGUxNWE3Yzk0ZWU1ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c698f2ee88534fae87b7ed1a3f6bbce6",
+      "statement": "The dependency graph is generated into docs/module-graph.md (gen-module-graph, freshness-gated in CI), extension plugins depend on Service Definitions never concrete providers, and capabilities separate Service Definition / Service Provider / Consumer roles when they evolve independently.",
+      "evidence": [
+        {
+          "resource": "repo://packages/README.md#L92-L97",
+          "version": "repo-lines-v1:sha256:8c6d142f160cff6360c885e78558013da6cd6fc0cc9ff76a26aeba95ce5cfe67:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjFkMTkzMWEzMzJkOWI3ZjUwOWQwNjM3YTQ1OTkyMjQyN2E2NjZlNDRiOGE3ZjE5ZDFhOTEyNjY0ZWRmNjZmNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjNhMjczZjM2NDdlZWU0ZDJkZDBlZmE5Mjk1M2JiNDQ3M2U1NWJiZjE2NmEwZTYwNjIyYjQzNzU2MWI0NTFkMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzM0ZDRmY2U4ZGMzNzNhZjA1ODdkNjkwNDNiZWY3YzYyNTQ5Mzg2NDk0Mzg3YjhmMjg2MDNiOWMxODRmZmQ5NCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_05ec4de8f1f24be1941ad13cc0ef8929",
+      "statement": "Every package README covers purpose, configuration, extension points, and Model Experience unless the model-agnostic omission allowlist exempts it, and carries ## Known Limitations and Deferred Work or uses its limitations allowlist.",
+      "evidence": [
+        {
+          "resource": "repo://packages/README.md#L101-L103",
+          "version": "repo-lines-v1:sha256:915e06ee2b5ac4d9d2ac714d880d58bf1438bd9af8d134864b335880530ed936:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmEyODJlMjk2MTg2MDkxZDVkYjE3YTVmZmE3OTJjMDIyNTc4M2UwYzBlMWI0ZjA3OGM5MWJhMWE1MzBmNGY4ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWIxZGU4NjJhMmVlODdjN2EwOTFjYWFjNjc3NGU5OTIzODIxNDkxZjcxM2E1ZDllMDM5MjBkOTMzYzJiYmMxYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzM0ZDRmY2U4ZGMzNzNhZjA1ODdkNjkwNDNiZWY3YzYyNTQ5Mzg2NDk0Mzg3YjhmMjg2MDNiOWMxODRmZmQ5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTgxY2I1OWViNzZjMWRhNmFlYWRkZTEzYjQxZDgzYWE2NjJlNWQ3NjgyMTA2ZTUyNjUyZTExZjg2YTgyODgzMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e9f918c2a5864875bb1d03189140e17c",
+      "statement": "The pnpm workspace packages are vendor/*, packages/*/*, native/landlock-run plus its packages, apps/*, and the website, with linkWorkspacePackages: true.",
+      "evidence": [
+        {
+          "resource": "repo://pnpm-workspace.yaml#L1-L9",
+          "version": "repo-lines-v1:sha256:2eb45b0fcc24f356ce918567306d92ca3f5d49b4c41c8e1aabc4b29ee82b06c4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWRiMDc2ZWI4MGFkZTE5ZmVhM2UwYTQzMTk4NmI2NTVmNWZhNTllZDYyNjdlMTA3ZDY4OGI2MWMzZjQyMTc5NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjc0N2QzYjczYjlkM2Q0ZjM2ZTQ1YTFiZmRkOWJlZGMwNDBmOTE0OTQ0NjBhMzA3NjIyMDRjYjJjZjg1ZjU1OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTVlNzhkNTM4NTY4ZmVjYTBkN2Q1Njg1ZTY2MzRlMDZkM2M4MDRiZGU5ZjYyYzNlMWM0OGY5MDQyNzFiNGJkNiJ9"
+        },
+        {
+          "resource": "repo://pnpm-workspace.yaml#L17-L17",
+          "version": "repo-lines-v1:sha256:039cc405c881b24fde3792cd33ee26d398cfacd8afff9d9ebef0b97d3f4371cf:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDM5Y2M0MDVjODgxYjI0ZmRlMzc5MmNkMzNlZTI2ZDM5OGNmYWNkOGFmZmY5ZDllYmVmMGI5N2QzZjQzNzFjZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDM5Y2M0MDVjODgxYjI0ZmRlMzc5MmNkMzNlZTI2ZDM5OGNmYWNkOGFmZmY5ZDllYmVmMGI5N2QzZjQzNzFjZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJiN2UyNjIwYjA3NzYyNTJiMTZkYWEzNmQxYzQzMmFhZjIwYzJhZjdiOTcwM2NkNGYwZTJlZTE5YmY1OTIyMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmZmYzgxNGEzODA1ZTkwNzA4ZTg5YzQ4YWY2YmM2ZmJhMWU0NWJlNjZiODQxNzJhZTY0MjJmMjkwOTcyZGI1ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f783921ceccf4e04acc479cc0414e2ce",
+      "statement": "The overrides map @deepseek-ai/cosmokit to link:vendor/cosmokit and @deepseek-ai/schemastery to link:vendor/schemastery so vendored framework packages keep upstream semver ranges while resolving to the workspace's pinned sources.",
+      "evidence": [
+        {
+          "resource": "repo://pnpm-workspace.yaml#L19-L22",
+          "version": "repo-lines-v1:sha256:9b94e64dace7801bcb37b05cf7add808ce426159bc09700d4112889b0e594de5:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmM0NjVhNjQ2MDJkZjZjOWFmY2Y5NTcxOWY4NDZkNWU5ODA0Y2M1YjczOWYzN2JiYTVlMDNjMWYwNDVmMDQ0NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWVmMDllN2YxM2Y2NzJhOTU1OGQyYTVmNjY4MGFlZmIxODExMGU5M2YzOTY4ZWZmMDVhNTMyNGUzMzg3YmZmMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQxOTg3YzVlNjg0NDU2MTNiYzQxOGRkZTU1NmMzZGFhMTZjNjliMTVjZTFkYzA0M2VmNDJkNTRiODQ2ZDQ3MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f412e0742ecc48b3b59b0d26671408f5",
+      "statement": "The allowBuilds list permits install/build scripts only for esbuild, lefthook, node-pty, koffi, @ast-grep/cli, and the @deepseek-ai/dsh-subprocess-local workspace postinstall, while explicitly denying the no-op scripts of @google/genai and protobufjs.",
+      "evidence": [
+        {
+          "resource": "repo://pnpm-workspace.yaml#L32-L47",
+          "version": "repo-lines-v1:sha256:9079fe87a1debfb791f3d8deb9ec26234db6ce42b56f414493eaf476f262c7c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5MmE2NzA3ZGVjZDE1OTE5OWM5MzQ1OTU4MGY4NjFjMDhlZjJkZWQ3ZTVkNzk1MGY2NzE1ZTE2NDZiYmE0MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwY2YzOTYxNDI4YThlNGVjMjQ1YThjMDVlOTVmYjZhMzVlNTFkZTcwODc4MTMyODAxYmM1MTk5NzkxYmRiMDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4OWFhYjk3YTk1OWExOTMxODY5YmI3YjhhZGE3NTJlNDVhMDc1YjczMGMwZTQwMTJiNWRmNzUxZjVlODUwNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjZDcxNGUzY2YwN2M0MDk0MjBkZmJjM2NiZGVmYzViMGY0MWRhODRmM2YyZjAyNjkyYmI5MjYyN2I5MzY5YmMifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

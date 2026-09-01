@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:471e8d1b8ec4fb23dd86320f5c56117f41a1417f65e443e57a4e57335c0e973d",
+  "claims": [
+    {
+      "id": "claim_1299b4c3787547b7afa0b6f3c7a4dedc",
+      "statement": "DeepSeek Harness (dsh) is an open-source agent harness developed by DeepSeek AI, built on an everything-is-a-plugin architecture powered by Cordis, and is in developer preview with compatibility-breaking changes expected.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L5-L13",
+          "version": "repo-lines-v1:sha256:f8b298c86eba6dc694c64c90fa8816618d532083c547d67a4c8b2c0bdb0ff094:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWY5ZGJhOWRlZDQ3MmVjNmU3MDE4NDhiOTgzOGJhYzQ2ODViN2EwY2VhMjY2NDg4OTUxNzI4NTUwNDE4ZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzlmZjc4MDAzMWFiMzY3NWIzNjE1NDJlOTIxNzA4ZTYwNDNlMGJiMmEzY2VkNTQ2MmU2NjU4OGZmYzhjZjFjMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTVmYTA5MGZjOWM5Njc5ZDg1ZDIxNmZiNjUxOWIxNmVhZGEwZGQ5M2RiNmEzYTQ0YjlkNDAxZjNiODAxYzJkZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5d35efeed9a94887a922f5a74559cbbe",
+      "statement": "Cordis is the framework under dsh: plugins contribute services, typed events, and reversible effects to a shared context, and every part of the product is a plugin including the model adapter, the tool registry, the session log, and the agent loop itself, so each is replaceable from configuration.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L9-L13",
+          "version": "repo-lines-v1:sha256:2ecbcad6eb421c28790b70050f498ae136ff260fbd4dfede797c6096ff4be1d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTBkMDU5OGNhNzlhNWFkZWY2NzA4NWNjNWFjYmQxMjJhZDg1N2M5Zjk3ODg5ZjIwNGY5NWE1YjIyYjRkZWNmYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmJiMDE3ZGIzYmIwZjMxZWNkYmExNTc0MDRkMWRlZTIzY2MzODU5OTUyODlmZTRiMzQ4MzI4M2MwOTgwYWZkNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWUyNzg1YmNjYWNjM2VjY2NkZTJkNDU4YWVmNjgwYTYyZDc5ZDcyOWMyYWUwNGJkZmQ4ZGU1YzZhMWUyNTkwMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQ5ZWIyM2M4YjI3ZDlkZDQ3ZjdhY2Y2Mjc3NWVlNTU4YWRiN2MzMWMyNGIwNTVkYjQwMTA0MjRhZGI2OTQwMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7b9ae630d5e8493a8b7f3256844a6105",
+      "statement": "A profile is a named composition stored in the Harness home listing the bundles it stacks, out-of-tree plugins it installs, and the user's cordis.patch.yml (web, headless, sdk, sdk-minimal, and acp ship as templates); a bundle is a distribution format for Cordis config rows and the code they mount; layers apply in order: each bundle, then the profile's cordis.patch.yml, then the home-level one, then any --patch overlay.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L19-L27",
+          "version": "repo-lines-v1:sha256:94d0e40892594953bdb28fb17a6e3408f158f3404a47cf8752a9f2a229851bf9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTc1MjQ5OTA5NzQzZTQ5MjJmNWYyOGUxMDE4Y2U1Y2EzNmUzOGFhNDE0YjM1Nzk2Y2IxNzE2MGZhMWM2ZDZjZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmU1NmIwODI0NjAzYmFkZjA1ZTMwNzY5ODZkZGQxZjM1NzY5MDhhMGI2NTU5ZGEwNGVjOGI4YzgzMjYwZTI0NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmRhNTI5YWJiNGJkYTJjYWNhNTRlMDdjY2MzZjc4NDQ2YTczZDg5MWVmNjU2MzljZTlkNWMxOGM5NzM2NTkxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjM4MTY1MWI4NmIzNDlhOTZlZTFhZDJkMmQ2ZGZhMmYxY2E3NDQzNTZmZWVjNGE1Y2EwMDY4M2U5ODgwNThiOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_291135f0233c4a07b420d92013fa5da2",
+      "statement": "Running from npm is npx @deepseek-ai/dsh web; the command starts the Web UI at http://127.0.0.1:3080 by default and opens it in the default browser for a local launch, with --no-open to run without opening a browser.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L23-L27",
+          "version": "repo-lines-v1:sha256:b96ca6314d3d7f2a5fbce6dc9d4ab3130997c0fd4934fbfdeabc1e910d731738:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGM0M2ZiODlkZDcxMzkxNzA2YmI2NTUzMzcxMzlhZTY2YWMxMGZhY2M0MjYyYmNkMjQ4YzIyOWNmMGUyNWQwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2UyZDA2ODZkY2YwNDVmNjhmZjIwMzFlOTEzYTgwMjc0YWE4OGI3NjAwODRmNmNjNGY3Yzk0ZTA0NDVlZWNkMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2YxZTE5ZjVlZGMxYjJkMTg3N2M2YWZiMDExMGYyNjNiYzRjYmM5MjQ1NWM4OWRkNzFhZWMxYmVlOTY3NTI3YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmE2ZjZiYjA0NDg0OGZlNDUwYzAxZDc4ZjU3NGMyYTQwMGVjYjY5OTY3MzU0NGY4NThkOTEwOGVhM2JhOGY0ZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7521c048bfb449fab3bd73c7304e8726",
+      "statement": "Running from source is git clone, pnpm install, pnpm run build, then pnpm dsh web; pnpm run build prepares the repository artifacts and pnpm dsh web uses those built artifacts without rebuilding.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L33-L41",
+          "version": "repo-lines-v1:sha256:375fb0b48670a93a15d25d464d6879b5e9600e6680b07332c72502cfd5b7f767:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGM0M2ZiODlkZDcxMzkxNzA2YmI2NTUzMzcxMzlhZTY2YWMxMGZhY2M0MjYyYmNkMjQ4YzIyOWNmMGUyNWQwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWM3NjA2ZjFkYzc0YmMwY2M2OTJhNmQ0Yzc1Mzk3OTI2OTI4MDBiNjcwNzU1MDUxMGI2ZDYyZjM3NjhiZWMwNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTQ2MTg2NGEzN2VkNDY1MGFhMDhhYzI3NjBjYjQ0YTc0OTRkMmZhZWIwNmFlYTFmZjcwYTcwOWNhZmRjYWY5MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDUxMWNmYWVkNzA4YTMzOTM0NzM2NjE0MDQ2ZGE2YWVlMzAzZWNiYmNiODY0ZDc2OWRhMmI3YTc3YzlkMjhjMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_bd59aa484b244a71b98faf724acec77e",
+      "statement": "Every supported Node application starts at the dsh CLI with a named profile: dsh web is the deliberate alias for --profile web, and the shipped applications are dsh web, dsh --profile headless, dsh --profile sdk, dsh --profile sdk-minimal, and dsh --profile acp.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L43-L43",
+          "version": "repo-lines-v1:sha256:173a150d6f49a4a3141252b6ec03d76b15ea9aeeaa601e8eb22f9a0b5cc789c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTczYTE1MGQ2ZjQ5YTRhMzE0MTI1MmI2ZWMwM2Q3NmIxNWVhOWFlZWFhNjAxZThlYjIyZjlhMGI1Y2M3ODljMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTczYTE1MGQ2ZjQ5YTRhMzE0MTI1MmI2ZWMwM2Q3NmIxNWVhOWFlZWFhNjAxZThlYjIyZjlhMGI1Y2M3ODljMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzBlMzgyNWZhNGJjYmEyZmQ1M2JkNmY2ODhkMTkxMTYwMjk2NDVlNDJmYzJiYjMwNzI3NGUxZWUwYWQ1MWMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODBiYTI2N2ZjYWM2MmZlMzBjNDg1ODhjMzJmZjA2MjlhNTEwNWQxOTU2YWFlMTI3NGY1ZDI5YTZjZmExNmU5ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_934d8a4ec85a44ea8b73153f4b6d5e61",
+      "statement": "The repository layout is vendor/ (vendored Cordis source with manifest and sync procedure), packages/ (@deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/ starting with core/ the product API spine: session, system-prompt, tools, agent, agent-loop), and the capability families (llm/, fs/, shell/, ast/, lsp/, web/, subagent/, bundle/, workflow/, webhook/, todo/, plan/, preset/, guard/, and more).",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L11-L16",
+          "version": "repo-lines-v1:sha256:c46cd2dd83be0d2ac498d76e687b038bd5055be52b2f30020f1e8ca245804761:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODVhNTczZWI5MmQ3ZTZkNzY2YjA4Y2Y1NThmNTNmOGMzYzkwM2IxN2EzMzRmZGIwMGE1OGNiNWU2YTNjY2FhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjcxYzdjNTMxYTBiNjBjYmQ5MjdhZmU0ODZlNzdhNGMyZDhhNDljZDk1OTFjNDhlYmRkNWVkYmU2NGZiMmNjNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGY4Yjg0NmVhZjNkOGU5ODQ2MDg4OGYzNzkyYWRhMjJhODY2NmI5MGU5MzkwYWNhZGY5YWEwMzY3NGJkYjU1YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDFhMTkzYTc4YjE5NDRkZGU2NzM2N2U1ZjA5NWU1NGY0NjRiNmU1MTFlZGQ2ZTBjOTBjOGM5YzQzNWIyMzRjNSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e0cf31c1bc0b480baa934481ddef0038",
+      "statement": "The project is licensed MIT, and third-party dependencies and their licenses are disclosed in THIRD_PARTY_NOTICES.md.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L59-L63",
+          "version": "repo-lines-v1:sha256:940103296dc322af96e5ce89ef4aa395117f6b1e0d0bcc9d3edde88c8013e681:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWUwNzBkYTY5NWYzM2VlZTlhZDlhNmYxMmNiMmMyYzVkODA3NDEwM2M4ZGY1Y2UzOTZmZjVhNjVlZGU4Y2UzNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTAwODhjZjdmOTQ2ZGEzZDIyNGQxZTkyODExZDFlYjlhYmY0MjVmMGM1MjdmZjM4N2VhZmVhZTdiZTY0OWViYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzE5OGQxYzc0MzVlZTI0YWY1OGRiNTM3MzExNjY2NzQ2NTk4NTUzYWVhMTU4ZDlhMDU1M2VkMzIyM2UwM2I1ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

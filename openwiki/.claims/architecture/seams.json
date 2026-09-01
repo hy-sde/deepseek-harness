@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:710d73e7144f351e2657038d1d02a30ae7e7dbb9b199cb41c291d30b576e4324",
+  "claims": [
+    {
+      "id": "claim_f5d2fb00234e4cbb84a20d894ead6e72",
+      "statement": "A seam is a swappable capability with three roles: a Service Definition declaring the interface, a Service Provider implementing it, and a Consumer using it (commonly a model-facing tool); a package may combine roles, but one role alone is not a seam, and adding a capability means designing all three.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L111-L111",
+          "version": "repo-lines-v1:sha256:838e6689abf9923259bf3b34df58a58e410767bc6c67eeebdd7dffc4a3c83260:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODM4ZTY2ODlhYmY5OTIzMjU5YmYzYjM0ZGY1OGE1OGU0MTA3NjdiYzZjNjdlZWViZGQ3ZGZmYzRhM2M4MzI2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODM4ZTY2ODlhYmY5OTIzMjU5YmYzYjM0ZGY1OGE1OGU0MTA3NjdiYzZjNjdlZWViZGQ3ZGZmYzRhM2M4MzI2MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmZlOWJlZDBkYmUyZTc3ZWI2ZjUyMDkzNzRmMmIxY2Y4YzUzMDlkMWM4N2FhMGYyOTkyZjI5MjgxYTI1YTMwYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDM3NjhiNTU4NGI5NWNmYTM1MDI3MDdkOWNlNjg5YzI2ZTFjMDRmMDFkNjgxZmVmMWMzN2FiYzJmMzg5ZjA1NyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_87066fc07d0f4a0bbed036d1a0ab0634",
+      "statement": "Seams are why one provider swap changes the whole product: filesystem and subprocess providers share one execution world, so pointing them at a remote sandbox moves Bash, PTY, and LSP with them with no provider forks, and subagent providers vary just as widely behind one interface.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L113-L113",
+          "version": "repo-lines-v1:sha256:f88fc0a27455e50b3b36e03d752251cc7e864ca9303499050be125e1190d294f:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjg4ZmMwYTI3NDU1ZTUwYjNiMzZlMDNkNzUyMjUxY2M3ZTg2NGNhOTMwMzQ5OTA1MGJlMTI1ZTExOTBkMjk0ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjg4ZmMwYTI3NDU1ZTUwYjNiMzZlMDNkNzUyMjUxY2M3ZTg2NGNhOTMwMzQ5OTA1MGJlMTI1ZTExOTBkMjk0ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2I0OTkwNzU1MzNhZGFlN2FhY2QzMmY4ZjE1MjlmZjliNDM2ZTE1NGFlYzIyNmQ1OTc1ZDFjODkxNGRhMWQ2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzM5ZDNhYTE1ZmViYThiY2Y4NjdkMWY3ZDM4YjBlYjdhM2E5ZmFlYzI4Mjk2MzhjNDNiZGJiZTRhNzJmMDZiYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_569a22a05d2b41d0a3376baccd623ea4",
+      "statement": "A service can be a core spine service, a swappable capability seam, or a bundle/composition point; the capability graph shows the package that owns the service declaration, its known implementation packages, and packages that consume the service directly.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L6-L6",
+          "version": "repo-lines-v1:sha256:22be85a38a31d044770f30f648e40644e2156bcb3f4339e96d93698e78c34b5f:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjJiZTg1YTM4YTMxZDA0NDc3MGYzMGY2NDhlNDA2NDRlMjE1NmJjYjNmNDMzOWU5NmQ5MzY5OGU3OGMzNGI1ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjJiZTg1YTM4YTMxZDA0NDc3MGYzMGY2NDhlNDA2NDRlMjE1NmJjYjNmNDMzOWU5NmQ5MzY5OGU3OGMzNGI1ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzkzNzc5NTAxOGZkMjRmMTU2ZDM2ZjIzMWI0ZWUwODc5MjIxMmYyMjBkM2M5Y2U0MzRhZjE4OGMxNzBiYmJmZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDBjNjQwMzBjZWZhZGVkNjJhYjI0NDIyOWU3NTY0NmViNWQ5NGMwMjkzOTI1OTdjYjFhODUzMzM0M2I0YTNiNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_dc975a905e7244e09bfc72dc02c3e164",
+      "statement": "ctx.llm is a seam owned by the llm package, implemented by llm-deepseek, llm-pi-ai, and llm-replay, and consumed by agent-loop and compaction-basic; adapters register provider implementations while the loop and compaction call the provider-neutral stream service.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L507-L507",
+          "version": "repo-lines-v1:sha256:10e1a0f6dba883453512142a4a3afd9cca09c11e0a7a0e9f684c9fecb6ed90ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTBlMWEwZjZkYmE4ODM0NTM1MTIxNDJhNGEzYWZkOWNjYTA5YzExZTBhN2EwZTlmNjg0YzlmZWNiNmVkOTBlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTBlMWEwZjZkYmE4ODM0NTM1MTIxNDJhNGEzYWZkOWNjYTA5YzExZTBhN2EwZTlmNjg0YzlmZWNiNmVkOTBlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmRlODljYmMzYzJmMTVkNDk5ZGU5NzgxMDNhMjc5MjE3NTVmYzFiYzA2Y2FlMmNmZTQ5OTBhMDJmNzNhMzkxOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGFhYzMwZmM5Y2NmNzU0YThmOWZjMTcwN2RjYjdiMDkxYmUzYWY0MDA2Yzk4YzM1MjcwZmZlN2U0OTNiOWQwNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7dbf8ba372844950b46624f05b3d9285",
+      "statement": "ctx.subprocess is a seam owned by the subprocess package with implementations subprocess-local and subprocess-e2b; the bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP, Codex, and Claude Code subagent backends all spawn through it.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L550-L550",
+          "version": "repo-lines-v1:sha256:7f57e02c7e4c07b78c8e23712ee2734c76030437a3e72a19676d2e6f3a506d52:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2Y1N2UwMmM3ZTRjMDdiNzhjOGUyMzcxMmVlMjczNGM3NjAzMDQzN2EzZTcyYTE5Njc2ZDJlNmYzYTUwNmQ1MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2Y1N2UwMmM3ZTRjMDdiNzhjOGUyMzcxMmVlMjczNGM3NjAzMDQzN2EzZTcyYTE5Njc2ZDJlNmYzYTUwNmQ1MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjg1MWE1MWFhM2ExYzk5OTc0MWExNDFmNzFhYWU1NmYxYWY3MzJjYzNiZmM5YTI5NzI4NzdiNjljMjMxNWQyNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzExYWRhZjMxYTE5NDY1ZGYxNzgzODQ1ZWM0NTVmNDE0ZTc0MmYyZDA0NGM0YTU1OTgxYzU2ZjYwOTM3MTgyMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5c47e8c033e547a282cbd5b4ec40df74",
+      "statement": "ctx.shell is a seam owned by the shell package with implementations bash-local, bash-sandbox, and pwsh-local, consumed by tool-bash, tool-pwsh, hooks-claude-code and hooks-codex; sandboxed, remote, or PowerShell executors replace bash-local without touching the consumers.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L551-L551",
+          "version": "repo-lines-v1:sha256:8e28f4267e46831f1291f762be6a26ba5b8d6de89ff1fd5f8a3204b23a65a6a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGUyOGY0MjY3ZTQ2ODMxZjEyOTFmNzYyYmU2YTI2YmE1YjhkNmRlODlmZjFmZDVmOGEzMjA0YjIzYTY1YTZhMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGUyOGY0MjY3ZTQ2ODMxZjEyOTFmNzYyYmU2YTI2YmE1YjhkNmRlODlmZjFmZDVmOGEzMjA0YjIzYTY1YTZhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2EyMGJiMTQ5M2M5OGUxY2I2Zjc5ZDJkMTEwZjA4Y2Y5Njg2ODVkZjg2NGFlZDMwNTZkMmJkOWFiZWQ4MTc1NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzA0NDZkZTk3OGI3NmM5YmI5Y2RhNGY1ZmIzOWM4M2IwYmM1ODkyZjNjOGE0ZjA5ZTY0M2M4OGY3ZTVlZGU5YyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c685d7a0c6834e82ab3424903c724fc2",
+      "statement": "ctx.fs is a seam owned by the fs package with implementations fs-local, fs-sandbox, and fs-e2b; tool-fs executes read/write/edit through it, fs-sandbox fences mutations by the shared sandbox mode, and fs-observation-policy contributes observed-state checks through the fs/* event gate.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L559-L559",
+          "version": "repo-lines-v1:sha256:2fc6330009ef96caf40a264499cb3b01372dbce1916476b7b07e80701188fdaa:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmZjNjMzMDAwOWVmOTZjYWY0MGEyNjQ0OTljYjNiMDEzNzJkYmNlMTkxNjQ3NmI3YjA3ZTgwNzAxMTg4ZmRhYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmZjNjMzMDAwOWVmOTZjYWY0MGEyNjQ0OTljYjNiMDEzNzJkYmNlMTkxNjQ3NmI3YjA3ZTgwNzAxMTg4ZmRhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2I4Mzg0ZGY3MDc4YTEyZDFjZWQxMzZmZmEyMTEzMmRkNmFiYzQ4ZWY2ZDk5MTc4ZGY4NGNmM2FlYjZmOTRjZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmQzNjY4Y2NlOWJmMjI5ODQ0ODlkODEwZDEwZmE5YTk0NTQ2OWI4YTBkZjhjMzk5YTcyNTUxMGI5ZDU2YWQzYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_280d7d10557b4fb7a5e3b95864b71aab",
+      "statement": "ctx.subagents is a seam whose providers (subagent-spawn-in-process, subagent-fork-in-process, subagent-acp, subagent-codex, subagent-claude-code, subagent-dsh-sdk) implement transports, with tool-subagent selecting one-shot or continuable delegation, tool-subagent-control delivering follow-ups, and tool-ralph requiring one fresh structured-output route.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L561-L561",
+          "version": "repo-lines-v1:sha256:ab7135a863852305a922e545f6c4eb8074602d85ab987994764f29cb08e2dc6d:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWI3MTM1YTg2Mzg1MjMwNWE5MjJlNTQ1ZjZjNGViODA3NDYwMmQ4NWFiOTg3OTk0NzY0ZjI5Y2IwOGUyZGM2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWI3MTM1YTg2Mzg1MjMwNWE5MjJlNTQ1ZjZjNGViODA3NDYwMmQ4NWFiOTg3OTk0NzY0ZjI5Y2IwOGUyZGM2ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDE1YjVhNDkwZGM2ZTU4MDJhNzViZTZlOTY4M2I1NTRiY2YwOGE3NWIwNDQwMjRmYTBmMGNmY2RmMDYxM2JjZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODZjMzQyYTlmODkwMjllZWI3ZDM2MTVmZjBhOWJhZTNjMDZjYjUxZTYxYTlmODA1MGNjYmEzZjFlZmJjZDA4OCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1c6ddbf41fe04bd09ed67c9edc9fda8c",
+      "statement": "ctx.web is a seam owned by the web package with providers web-search-public and web-fetch-http, while tool-web owns the stable model-facing names for search and fetch.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L565-L565",
+          "version": "repo-lines-v1:sha256:d96662aaaaf249d10a6d4c2675044182982b8e874a147062c6654459cb6dae6e:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDk2NjYyYWFhYWYyNDlkMTBhNmQ0YzI2NzUwNDQxODI5ODJiOGU4NzRhMTQ3MDYyYzY2NTQ0NTljYjZkYWU2ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDk2NjYyYWFhYWYyNDlkMTBhNmQ0YzI2NzUwNDQxODI5ODJiOGU4NzRhMTQ3MDYyYzY2NTQ0NTljYjZkYWU2ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODZjMzQyYTlmODkwMjllZWI3ZDM2MTVmZjBhOWJhZTNjMDZjYjUxZTYxYTlmODA1MGNjYmEzZjFlZmJjZDA4OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGM5MWY3NzhlMjQ1MjM4NzdkZDM1ODI1NDA4OTQ1YmE1ZGJhNGMwMTMwOGMyOWE2OTJmMmY5NzZjZDNiNjQwYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3c8e69f00f294b3b80909fc81cc2fa4d",
+      "statement": "ctx.sessionPersistence is a seam whose backends (session-persistence-jsonl, session-persistence-sqlite) persist the same SessionEvent vocabulary, and applications choose a backend at composition time.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L522-L522",
+          "version": "repo-lines-v1:sha256:4b2119bb178abdfe811598069abbba57b83c5a3d8be63b31bb64fe22f3ab2a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGIyMTE5YmIxNzhhYmRmZTgxMTU5ODA2OWFiYmJhNTdiODNjNWEzZDhiZTYzYjMxYmI2NGZlMjJmM2FiMmEwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGIyMTE5YmIxNzhhYmRmZTgxMTU5ODA2OWFiYmJhNTdiODNjNWEzZDhiZTYzYjMxYmI2NGZlMjJmM2FiMmEwNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWJlZDU3MjJkMDU2NzExMmY5ZDljMDQzNzE4MjBmZTQ4NTEwNmY5ODFkYjVlMDY0NGE5OWI1MTRmNWI0NTNhZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjNhMzZkYjIxNGU5MzUzNjA2MTUxODllNzQ5ZjU1ODY1MjRkYjllYjZmZTUyYTkwOTljN2MwZTliOGUxZTVkZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a1ad0e65c66046a8b3630b12ecd20287",
+      "statement": "ctx.sessions (the in-memory session store that owns append-only Session instances and emits the durable session event feed) and ctx.tools (the tool registry and guarded execution pipeline) are core spine services, not swappable seams.",
+      "evidence": [
+        {
+          "resource": "repo://docs/capability-seams.md#L511-L511",
+          "version": "repo-lines-v1:sha256:f782c326023e9fa66a31e75ef4819920a4771568a1d369e3657029ef89aa367f:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjc4MmMzMjYwMjNlOWZhNjZhMzFlNzVlZjQ4MTk5MjBhNDc3MTU2OGExZDM2OWUzNjU3MDI5ZWY4OWFhMzY3ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjc4MmMzMjYwMjNlOWZhNjZhMzFlNzVlZjQ4MTk5MjBhNDc3MTU2OGExZDM2OWUzNjU3MDI5ZWY4OWFhMzY3ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGFhYzMwZmM5Y2NmNzU0YThmOWZjMTcwN2RjYjdiMDkxYmUzYWY0MDA2Yzk4YzM1MjcwZmZlN2U0OTNiOWQwNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzQ2YjdmMDA2ZDk2MDkzMDU4YjM1YWRjNWY4OTNiMjY2NGI1Mzg5OGU4ZmEwNGY5Yjk1YjY0YTMyY2FiMWRlYiJ9"
+        },
+        {
+          "resource": "repo://docs/capability-seams.md#L537-L537",
+          "version": "repo-lines-v1:sha256:5b5b95489257a4a81820595afa29af9c2ecc98483ad756590230c8b3eaa910ef:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWI1Yjk1NDg5MjU3YTRhODE4MjA1OTVhZmEyOWFmOWMyZWNjOTg0ODNhZDc1NjU5MDIzMGM4YjNlYWE5MTBlZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWI1Yjk1NDg5MjU3YTRhODE4MjA1OTVhZmEyOWFmOWMyZWNjOTg0ODNhZDc1NjU5MDIzMGM4YjNlYWE5MTBlZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZlMWFjNTFmOGU1OWE1YzIxOWMxMzdiODAwNTA0MTNiNzVhZTI5MjVlNmQzMjZkMGMyNzIzYjc4Nzk2MzkwMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGE2NjRlMDMyZTEzNjYzZmNlMTFhODI2ZTk2MGZlNGQzYTc3Zjg3Y2Q4NWE2ODMwZTJjNTc2ZDdjYTI4NDM3YyJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

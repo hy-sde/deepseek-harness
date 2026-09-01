@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:02da7ea0f8d5dc6ee553f4cdd533a4882cef18fac22bb494685a1c700a976a28",
+  "claims": [
+    {
+      "id": "claim_26e7fc25b2c24d969d890279add8e3a6",
+      "statement": "The codebase-memory group provides tool-codebase-memory: one-shot queries (list/index/status/search/query/trace/snippet/schema/architecture/detect/ADR/ingest/delete) that run against the local codebase-memory daemon via the `codebase-memory-mcp cli` mode, sharing its indexes and mutation locks.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/README.md#L16-L22",
+          "version": "repo-lines-v1:sha256:e9b457c5d03380bef704d174f81bd99431f89d5f643d9094bf01742ff887c83c:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzQ4M2FmNzQyMzUwYjczZjU1NDVhYzMwZTFmMmFhMDJjODg5NzE3NjI3ZTU5YWEzOWMyNTEwODU2ODcxOGJjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTY2MzBjMjEwMzQ5ZjBjODMxNTQ0Y2U1YmNlZWQzYTExYjVhNGY3OTc0MzhjNTMwYTMwMGY5ZTljNDE2ZmFiNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzZiNmM3NjA1NTY5YTlhYmVhNWJiYjc2Yjc5M2VhMTRlYzdjZDU0MmRjMjk2ZDRjMjQyNTQ5NGI4MmU3NTc1NCJ9"
+        },
+        {
+          "resource": "repo://packages/codebase-memory/README.md#L8-L14",
+          "version": "repo-lines-v1:sha256:3c240b3e77cbbd0440240a8b582b98a18c68e1ccae9b4446277cf16bd60beba3:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjQ3ZWE5NGExMzYxOGRjZjA2MjE3NmUxZjg0YTk5ZjNkNGM0ZjVlYTkxYTQ0ZTAyNGNmM2QyMzViODU5YzEwMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGEwNmEwNGQ3ZTJjNDFiYmYzZGY3MTUwZjgxZDVhNmFkOTJmZTMwMzFlNWExYjdkZGQ0MzZlZTY3YzE1YTI0ZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9766b860a5964dadab5f51fc361844a3",
+      "statement": "Each call spawns `codebase-memory-mcp cli --json <tool>` once and parses the raw MCP result envelope — the same daemon the MCP server fronts, so indexes, project mutation locks, and the index supervisor are fully shared; warm daemon calls cost about 0.2 s on this machine and cold spawn about 1.3 s.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L5-L5",
+          "version": "repo-lines-v1:sha256:d5776d1e873893e0fc951f6df64ab4db1fff7f3b0a1f8d9f8833c9a20df2d5f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDU3NzZkMWU4NzM4OTNlMGZjOTUxZjZkZjY0YWI0ZGIxZmZmN2YzYjBhMWY4ZDlmODgzM2M5YTIwZGYyZDVmOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDU3NzZkMWU4NzM4OTNlMGZjOTUxZjZkZjY0YWI0ZGIxZmZmN2YzYjBhMWY4ZDlmODgzM2M5YTIwZGYyZDVmOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWE4MTBjNGVmZTBmNzljYmU3OWJmYThjNGMzNjRiYTNmNDdkMDkwY2Y5NzBkZTY5YjgxNGZhZjI4YTA5NWY1MyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_58208fe99ddc4aefad68541aed754e61",
+      "statement": "The tool surface comprises codebase_list_projects, codebase_index_repository (mode=full|moderate|fast|cross-repo-intelligence), codebase_index_status, codebase_search_graph, codebase_query_graph (raw Cypher), codebase_trace_path (calls|data_flow|cross_service), codebase_get_code_snippet, codebase_get_graph_schema, codebase_get_architecture, codebase_search_code, codebase_detect_changes, codebase_manage_adr, codebase_ingest_traces, and the destructive codebase_delete_project.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L9-L22",
+          "version": "repo-lines-v1:sha256:b2daa6c058f7d9eefac9c5439811a006b0c2483d0b97a2d40be2e1ed24c4e70c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxMzRhMzBmNWYzM2M5MDJhM2M2NDlhNTMyZTYwNThiNjVmOWQ4NjMzNTVjOWJhYzRkNzA1ZDJmMmZmNjE2NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyNTQ0ZWNmZWExMGM3ODczMjFmY2JhN2QzMjZlYzk5YWZiYmM2Mzk4ZmQ1ZTFmM2MwMmRiMjA0ZTJiMzc2MTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFhODEwYzRlZmUwZjc5Y2JlNzliZmE4YzRjMzY0YmEzZjQ3ZDA5MGNmOTcwZGU2OWI4MTRmYWYyOGEwOTVmNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjMWJlMGM4NzlkMWFlMTZkMzFiYjk4YzRmZGIwMTk4OGUyMThlZGQ1M2M4OTcxNDQzZmM4YmM1ZDdlZjVmZjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3805dd83bf274fe4bca6b9ac3a881d9a",
+      "statement": "The CLI wrapper is preferred over the MCP client row because the MCP row keeps a long-lived stdio server inside every session and exposes tools with the mcp__codebase__* prefix, while the CLI wrapper spawns per call and exits with clean codebase_* names, tightened schemas, and per-preset configuration through the same daemon.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L24-L26",
+          "version": "repo-lines-v1:sha256:b43b232a581d80fba200d8550c527ff95692c8331a82d636ac81e3bd8f6f05e5:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjU2YzlkMTIxODViNmRiNTA0ZDRhYmMyZGJjMzUyNDk3NTViMjc2OWY1MWFiZWE5NGY1YTYyNTNhOGI3MTAyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTZhNGZkMzdiZmE2Y2NkMWIwZWJjZmNmYmM0NmQ1MGNmMDhhYzU4YzdlZmQ2YWZiOGYzODQ5N2E1ZDM3YjE2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjZkMTVhN2M5NzMyYTRhNzljODQ5YmU5MDU5NmVkYWZhOGE5NjVmZGRlMGU0ZThkMjY1YTVjNzg2M2ExYjY5ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTdkN2FmMzgwYzBkNmU2OGI3ZjRhOWFlYzVjMzA5M2QzMTc5YWQ2M2RkZDNiZDJiYTE1M2JlNmEwMTBlNjI2MyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3f020fd80d6c45abbc72fe61613200a2",
+      "statement": "The plugin config is cliPath (default codebase-memory-mcp on PATH), project (default graph target), timeoutMs (default 60000), indexTimeoutMs (default 600000 for codebase_index_repository), maxChars (default 200000), and enabled; the activation invariant fails fast with an install hint when the CLI is missing.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L30-L39",
+          "version": "repo-lines-v1:sha256:e47d9003b1736d9856fcf61cdd15936fd6d5621a63a40c10ed6579be14c32c77:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0OTNiNmQ1OTI4NGZjNmE0YzkyMTJjYzVjNjBlOWY5Y2Y0MDAxZWY4MWI4YmQyZTQyYzA1YTZjYjc0NzViNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU3ZDdhZjM4MGMwZDZlNjhiN2Y0YTlhZWM1YzMwOTNkMzE3OWFkNjNkZGQzYmQyYmExNTNiZTZhMDEwZTYyNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmYzAwZWIwMDhmZjUyNjU5OWNjYWY3YzM5MTJmNWZkZjUxYzAxMjNlMDhkOWRhZGI1MjBkMDI0NmQ5OGUyMjIifQ"
+        },
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L41-L41",
+          "version": "repo-lines-v1:sha256:cbd9309b0da32db46909316d0e570141134cf7e1bafa972b9b668e08ce14906b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2JkOTMwOWIwZGEzMmRiNDY5MDkzMTZkMGU1NzAxNDExMzRjZjdlMWJhZmE5NzJiOWI2NjhlMDhjZTE0OTA2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2JkOTMwOWIwZGEzMmRiNDY5MDkzMTZkMGU1NzAxNDExMzRjZjdlMWJhZmE5NzJiOWI2NjhlMDhjZTE0OTA2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjBhMTg1OWU5ODg1Y2Q1MjEzYjk5NzA0MDAzMGQ2OTgxYjdhYTI1ZGQ4MGFiYzExNDA0OGNkZGNjNzA1NzAyMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzc3MThkYjg2ZGQ3OGJkZDUzMjJhYTQ3Yzg5Zjk1ZTAzNTJhMzQ4ZDBjNmI4NjliOWE4YTBmZmY3ZGFjZjU1NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d7fc3e390094d648f38704f92047c45",
+      "statement": "Fourteen hand-authored codebase_* schemas encode the graph contract so the model prefers graph answers (codebase_search_graph / codebase_trace_path / codebase_get_code_snippet) over repeated grep/read cycles; the static schemas are added once to the request prefix (~3-5 KB total), far smaller than streaming MCP schemas.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L49-L49",
+          "version": "repo-lines-v1:sha256:741830d9ddad623a3afe7a46bbd4a52ea41751a85dbfb1e1a9796c2919b517b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzQxODMwZDlkZGFkNjIzYTNhZmU3YTQ2YmJkNGE1MmVhNDE3NTFhODVkYmZiMWUxYTk3OTZjMjkxOWI1MTdiMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzQxODMwZDlkZGFkNjIzYTNhZmU3YTQ2YmJkNGE1MmVhNDE3NTFhODVkYmZiMWUxYTk3OTZjMjkxOWI1MTdiMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWZjN2RhZTQ2ZGM5MGQzZWU0MDYzZjkyNjYyODgzNTJmMzJmYjFkMTdjMDA4YzlhZjQ0Yzg3ZjRkOTBmOWQ4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQzYjczYmE4OWRmZmFhMWZhMmIzNmMyOWNmMTQ5MjgzN2ZmOWEzYzE4OWM2OGM1ZmNmMzJhMDIyNmQzNzg4MiJ9"
+        },
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L53-L53",
+          "version": "repo-lines-v1:sha256:1814956c0ac74c0109f114305e4a222f4f921ef34e94fc3fc66d24d387f778d2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTgxNDk1NmMwYWM3NGMwMTA5ZjExNDMwNWU0YTIyMmY0ZjkyMWVmMzRlOTRmYzNmYzY2ZDI0ZDM4N2Y3NzhkMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTgxNDk1NmMwYWM3NGMwMTA5ZjExNDMwNWU0YTIyMmY0ZjkyMWVmMzRlOTRmYzNmYzY2ZDI0ZDM4N2Y3NzhkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmQzYjczYmE4OWRmZmFhMWZhMmIzNmMyOWNmMTQ5MjgzN2ZmOWEzYzE4OWM2OGM1ZmNmMzJhMDIyNmQzNzg4MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGM1ZTk5MzRkOWQwMTgyMzQ1ZGRjMzUwMmZlNzNhMzM1YmI1YzIzNGMxNmU3ZDk1ZTJiMzExYjMxNDBhNWM1MyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_deb7378b62c24876ae123df3e262f322",
+      "statement": "Results are structured JSON payloads parsed out of the MCP result envelope (e.g. search_graph's {total, results, has_more} tree rows), and tool errors (isError: true in the envelope, exit 0 under --json) surface as CodebaseMemoryCliError with argv/exit code attached, never as fake success.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L63-L63",
+          "version": "repo-lines-v1:sha256:abad1f1c47d575721d22c7fa5b84612149923b3d7db3bd5a4773cf3e1a23f867:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWJhZDFmMWM0N2Q1NzU3MjFkMjJjN2ZhNWI4NDYxMjE0OTkyM2IzZDdkYjNiZDVhNDc3M2NmM2UxYTIzZjg2NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWJhZDFmMWM0N2Q1NzU3MjFkMjJjN2ZhNWI4NDYxMjE0OTkyM2IzZDdkYjNiZDVhNDc3M2NmM2UxYTIzZjg2NyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWZjN2RhZTQ2ZGM5MGQzZWU0MDYzZjkyNjYyODgzNTJmMzJmYjFkMTdjMDA4YzlhZjQ0Yzg3ZjRkOTBmOWQ4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQzYjczYmE4OWRmZmFhMWZhMmIzNmMyOWNmMTQ5MjgzN2ZmOWEzYzE4OWM2OGM1ZmNmMzJhMDIyNmQzNzg4MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_22db2176764b48b39376e3a3d7716f19",
+      "statement": "The prompt section is one codebase:tools card: index before asking, prefer graph answers over repeated greps, page with limit/offset, use Cypher for what the curated tools cannot express, and codebase_delete_project is destructive.",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L77-L77",
+          "version": "repo-lines-v1:sha256:29c8fd0d1ee5ebc681d722157bf1f320b5201ed45f2b0171a071783be1c85dd3:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjljOGZkMGQxZWU1ZWJjNjgxZDcyMjE1N2JmMWYzMjBiNTIwMWVkNDVmMmIwMTcxYTA3MTc4M2JlMWM4NWRkMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjljOGZkMGQxZWU1ZWJjNjgxZDcyMjE1N2JmMWYzMjBiNTIwMWVkNDVmMmIwMTcxYTA3MTc4M2JlMWM4NWRkMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWZjN2RhZTQ2ZGM5MGQzZWU0MDYzZjkyNjYyODgzNTJmMzJmYjFkMTdjMDA4YzlhZjQ0Yzg3ZjRkOTBmOWQ4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQzYjczYmE4OWRmZmFhMWZhMmIzNmMyOWNmMTQ5MjgzN2ZmOWEzYzE4OWM2OGM1ZmNmMzJhMDIyNmQzNzg4MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_80e0fb0e700c45f180db814b6fb82873",
+      "statement": "Known limitations: the curated schemas are a hand-maintained mirror of the CLI's input schemas; check_index_coverage is declared but not dispatchable through cli and is intentionally not wrapped; and there is no host-plane service or GUI surface (the binary ships a graph visualizer at localhost:9749).",
+      "evidence": [
+        {
+          "resource": "repo://packages/codebase-memory/tool-codebase-memory/README.md#L89-L91",
+          "version": "repo-lines-v1:sha256:451b26270d510466bd7310eda948b71c0cb88a9924c41bcdd453f16038123711:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzBkMDhhMmRmYmNhNDUxZDQ5NDJkOTRjZTk1YWVmMDBkYjRiY2MyY2FlZTYzYzFmMmU1OTMyMTE0MGNhMjUwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzdjMjg4YTFlM2E4ODk4NWUyMWY1NDUwYWZlYWVmOTUzZDdkNWNiYTk4ZDI4MGZjMjUzMzBhYjRjNjZmM2UzMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDVhODQzY2E4OWY0OTJkZjBiZWFiYmE0NjExNWNhNTM2Nzg0NzlmMmQ1MTBkYjg1NjFlNGRiNzZjN2E0ZmJkNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

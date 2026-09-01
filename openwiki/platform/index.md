@@ -1,0 +1,14 @@
+# Files
+
+- [Codebase Memory Tools](codebase-memory.md) - The codebase-memory package group — one-shot codebase-intelligence tools (index, search, query, trace, architecture) running against the local codebase-memory daemon through the CLI mode.
+- [Filesystem Capability Family](filesystem.md) - The filesystem package group of DeepSeek Harness — the ctx.fs provider contract, local and sandbox-enforcing backends, the read-before-edit policy, the model-facing file and search tools, and the archive engine.
+- [LLM Capability Family](llm.md) - The LLM capability family of DeepSeek Harness — the provider-neutral ctx.llm service, the shared message and stream vocabulary, the DeepSeek and pi-ai provider adapters, retry execution, and replay-aware token measurement.
+- [Memory and Retrieval](memory.md) - The memory package group of DeepSeek Harness — the host ctx.memory service with its project-scoped local backend, the model-facing retain/recall/reflect/learn/memory_edit tools, and the memory:project prompt section.
+- [OpenWiki Engine (Fork Port)](openwiki.md) - The in-fork port of the openwiki 0.4 engine in DeepSeek Harness — the deterministic, resumable, claim-grounded repository wiki machinery that runs in-process behind the five lifecycle tools.
+- [Package Workspace Map](packages.md) - The DeepSeek Harness package workspace — npm groups under packages/, the @deepseek-ai/dsh-* naming convention, group READMEs as the authoritative package map, and the pnpm workspace configuration.
+- [Sandbox, Subprocess and Terminal Execution](sandbox-execution.md) - The execution world of DeepSeek Harness — the process-confinement sandbox seam with per-platform backends, the shared subprocess service, the bash/pwsh shell family, persistent PTY terminals, the approval stack, and loop-hygiene guards.
+- [SDK and ACP Application Servers](sdk-acp.md) - The out-of-process surfaces of DeepSeek Harness — the JSON-RPC SDK (protocol, TypeScript client, stdio server) and the automation-only ACP server, launched behind the sdk and acp profiles.
+- [Session Data Plane: Persistence, Projections, Retrieval](session-data-plane.md)
+- [Subagent Capability Family](subagents.md) - The delegation family of DeepSeek Harness — the ctx.subagents provider registry, one-shot and continuable children, the durable decision ledger, depth limits, and the product adapters for ACP, Codex, Claude Code and DSH SDK.
+- [Tool Registry and Execution Pipeline](tools-pipeline.md) - How tool calls flow through DeepSeek Harness — the scoped ctx.tools registry, the guarded pre/execute/post pipeline, the defineTool contract with output validation, catalog generation, and result spill policy.
+- [Web GUI Host and Client](web-gui.md) - The two halves of the dsh web GUI — the host/ group (HTTP server, API gateway, controllers, SPA serving, directory picking) and the client/ group (browser shell, modules, connection, ui-* slots and themes).

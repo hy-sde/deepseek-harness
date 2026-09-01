@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:2b6a9e6dc329af3d6127eb494d598f354a590f974579d13a37c4d04bde200c44",
+  "claims": [
+    {
+      "id": "claim_2b7aa645790147b5a42b721941a51b28",
+      "statement": "Cordis is the framework under dsh: plugins contribute services, typed events, and reversible effects to a shared context, and every part of the product is a plugin — the model adapter, the tool registry, the session log, and the agent loop — so each is replaceable from configuration and there is no privileged core to patch.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L9-L13",
+          "version": "repo-lines-v1:sha256:2ecbcad6eb421c28790b70050f498ae136ff260fbd4dfede797c6096ff4be1d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTBkMDU5OGNhNzlhNWFkZWY2NzA4NWNjNWFjYmQxMjJhZDg1N2M5Zjk3ODg5ZjIwNGY5NWE1YjIyYjRkZWNmYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmJiMDE3ZGIzYmIwZjMxZWNkYmExNTc0MDRkMWRlZTIzY2MzODU5OTUyODlmZTRiMzQ4MzI4M2MwOTgwYWZkNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWUyNzg1YmNjYWNjM2VjY2NkZTJkNDU4YWVmNjgwYTYyZDc5ZDcyOWMyYWUwNGJkZmQ4ZGU1YzZhMWUyNTkwMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQ5ZWIyM2M4YjI3ZDlkZDQ3ZjdhY2Y2Mjc3NWVlNTU4YWRiN2MzMWMyNGIwNTVkYjQwMTA0MjRhZGI2OTQwMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_020a56e442324cc099c7242b37872b79",
+      "statement": "A profile is a named composition stored in the Harness home that lists the bundles it stacks, holds any out-of-tree plugins it installs, and keeps the user's own cordis.patch.yml; web, headless, sdk, sdk-minimal, and acp ship as profile templates.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L15-L24",
+          "version": "repo-lines-v1:sha256:df1457cdaeeef76908156378a45f9a92060adca71a595540e7560e861418e9f6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NjY4ZDY2YTVhYzAzYjkyYjZkNjg0NjgwZTE4YWY0ODMyNDU0ODE1NTgwMDUyMThiMTZjZWQwNGMwMzVlMWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0MGExZDg5MjUxY2Y1OWRlZjVkYjM0NzM3NmI4MjQ4YjhhMTYxYWY4MzAwY2NmNzE5NjRkZjUyYTIwNjYyMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQyMThkMWMzYjVkNmFjZDg2N2VlMGIwMDE4MmQyOGRmN2JjNGU1NzJmOGQyMjQ1YmRhZDgxMzkwN2U2M2Y0YjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6164745551434acf9a04803847af698a",
+      "statement": "Each profile or bundle declares itself in its own package.json under a `dsh` field: `dsh.profile` lists a profile's bundles and `dsh.bundle` points at a bundle's patch file.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L23-L24",
+          "version": "repo-lines-v1:sha256:7dee11729399eb5f1eb1b1fc21f38e935c0b9ba4008d4b640b9c2138df38c6ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5ZjFhN2IyYTFmNWIzNmY0ZDM0YjE1ODQ3OGIxMWJlZjRjMTBiOTc5YWRiYWU2YmJhMDY3N2VhZDU0MjAzYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWU0YTYyZjEzNjlmMmZjNDk5NmQ0ZjZhNTJiZTgxMWVmYzFiMzM4ZDI2ZWRkNTdjNjEyNDc2YjU3ODY5NjhkZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDIxOGQxYzNiNWQ2YWNkODY3ZWUwYjAwMTgyZDI4ZGY3YmM0ZTU3MmY4ZDIyNDViZGFkODEzOTA3ZTYzZjRiMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5e89921fb3e34978935cd6f6fdd7744b",
+      "statement": "Composition layers apply to an empty entry list in this order: each bundle in the profile's listed order, then the profile's cordis.patch.yml, then the home-level one, then any `--patch` overlay; a patch targets a row by id and replaces its whole config or inserts new rows.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L28-L28",
+          "version": "repo-lines-v1:sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDIxOGQxYzNiNWQ2YWNkODY3ZWUwYjAwMTgyZDI4ZGY3YmM0ZTU3MmY4ZDIyNDViZGFkODEzOTA3ZTYzZjRiMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWNjN2YxYjE3MmMxZWJiZGY3MzczMzZkMjQxMjg0NTM5ZThiNThmZGU5MjZiNGQ3Y2M2YWMxNjE2Yzk2ZmVjNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c2d5752013a94ba9bb15383984e9a193",
+      "statement": "dsh-base is the shared first layer of the web, headless, sdk, and acp profiles (model adapters, tools, persistence, sandbox and approval policy, settings, credentials, telemetry), while dsh-sdk-minimal is the deliberate exception: one bundle owns its complete explicit SDK tree and does not apply dsh-base.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L26-L26",
+          "version": "repo-lines-v1:sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmQ4Y2FmZTg1ZjQ4YmEzNjJkYTc3YjcyOWE3MzY2YTA2NDU1OGQyZGZkMzYxMmNlOGQxMzgzODBjMjJlMjk4NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2RjMjRkNzhlYzgxMTUwNDlmODJiNTI2NmY4ODNhZTNjMDEzYTdlM2MxNjcyYThiODA0OWM4MDY5NjU2NmQ1ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9aab90313e9e4844a5c61a144a1f5f32",
+      "statement": "Custom profiles default to live patch reload; the shipped web profile is live, while headless, sdk, sdk-minimal, and acp apply all layers once at startup.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L30-L30",
+          "version": "repo-lines-v1:sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RjMjRkNzhlYzgxMTUwNDlmODJiNTI2NmY4ODNhZTNjMDEzYTdlM2MxNjcyYThiODA0OWM4MDY5NjU2NmQ1ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTUzMDg2Njk1MWEzZDU0NDI5MDY3OTU2ODA0MjQzMzJhYzA2ZTRiYjI5NGRjM2M4MTU5NmM5N2Y4ZjRmYTYzZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c289205f5f8e44008253677f25c335b3",
+      "statement": "A profile lives at $DSH_HOME/profiles/<name> and combines installable bundles, its own cordis.patch.yml, and a `patchReload: live | startup` policy, where an omitted reload policy keeps the historical live default for custom profiles.",
+      "evidence": [
+        {
+          "resource": "repo://packages/boot/app-boot/README.md#L46-L56",
+          "version": "repo-lines-v1:sha256:31a597d026e4fda60ca38d81c74ab3e28be4a150571dd3c688bde290cc430115:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwYjJiNDU2ODY3Mjg4YzcyMGQ4ZThmZjE5NzNjZTJhM2Q1M2I0YTMxYTJjMmVjMmRmNGY4OTc2M2E0YmFhZDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk0MjQ4YzFmNzA4NjFiY2VmMTUwZjEyYTVjODMyYzE3YTU1MjRhOTI3ZmIyMWQxNTNjZjI4YjgzNDBiNmI5YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2NjdkZmFhMjBmOWFhMTI0ODkzNGFjMGEzYzcyYWYyNmEzZDQ1MzRmYTNhZDE0ODM4N2I4NmEzNmM0NzUwY2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d7e09ec030f3446882df9e6daef0afb1",
+      "statement": "Every supported Node application starts at the dsh CLI with a named profile (dsh web, --profile headless, --profile sdk, --profile sdk-minimal, --profile acp), and verify-application-entrypoints rejects a Node application path that bypasses dsh.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L41-L46",
+          "version": "repo-lines-v1:sha256:9870996148e74ab5ffad558c95343ac71055bbf30efad3ab0cc1f76a8444a7a4:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTQ2NjgyMDM1MTkwMjUzNzgyNTRkYTI1OWZjZWIzNDE3YzBjY2VmMjljMzEwOTg3NTg4ZDk5OWI3NWE1MTg5OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWUwNGQ3NmVjMDM3OWRmYTc5MzVmYzUyNjM0MDRiZDEwMGQxZjA0YzJiMDBkOTY0MmIyM2YyZWRkZGRmYjYxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDUyZmNhOTFkMGZmMGU2YmQyOWI0MTVlYzA4YWY1NDUzZTgxYjhkNTg0NjcwYjQ4ODRiNThkZjU4NDE5ZDNhMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_919fa628571d4475be57cd1869af4e2e",
+      "statement": "Cordis's five ideas are: a plugin implements Service; a context is a repository of services claiming stable ctx.<key> slots such as ctx.tools, ctx.llm, or ctx.sessions; service dependencies are declared via inject; events are typed and dispatched as emit, waterfall, parallel, serial, or bail; and registrations are reversible effects installed through ctx.effect() or ctx.on().",
+      "evidence": [
+        {
+          "resource": "repo://docs/cordis-primer.md#L7-L13",
+          "version": "repo-lines-v1:sha256:f8c197d68f0cb89595380ebf327f381bdc471a280b7129325db92aa97a64b56e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjgzYTVmNmZmMzg3YjFhOWJjZTZhOTdjOTA1MTAyY2E1NmMzMWRjZDkwNDI5MmIyYzU2MTUxYzg1NjUyZGRlMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEwYmI1YmM1YjBkMmEyNTQ1Y2NhYWMwNjhhZjQ3ZTg3NzVjNmY1NzIzNDczODI0OTY5MGIyODNkNzg1NDdlMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDVmMTA5ZDZlMDA2MzZiYTY0ZTg4ZTQ1MDY3ZGE1YTM4MzgzNDlhYTI4ZjExZjc3NTg4ZTU4ODk5NzUxMDFlMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDQ0YjA1ZjRhMDI4Zjk0ZGFjMjU2ZWYyOGZkYTU0ZjM5ZGJmZWJjNmI5Y2I0ZDM4YjNjOTQzYzNmODRjMGRmYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e7f904b6537446368e241ab280bc8e14",
+      "statement": "Cordis dispatch modes are emit, waterfall, parallel, serial, and bail; the dispatch mode is part of an event's public contract and new harness events document it with an `@mode` tag so the generated catalog can check declarations against dispatch sites.",
+      "evidence": [
+        {
+          "resource": "repo://docs/cordis-primer.md#L15-L27",
+          "version": "repo-lines-v1:sha256:2762908ab002595916e5687c7cf57f79d5350c96f22cd81fff9c6c5de7c48feb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNDk4ODVmYmFlY2FiMzIwM2EwOGNjNWJiYzc2YTI1NmE1NzI0NGE5OTU3YWZlYzRiMzk4NDhkZjg3NDU4YWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllYzQyYmM5NTY5NTViMDk5NmNhZGEzODA3ZjAyN2IwMDA0ZmNmODgzZDQ1ZjhmM2Q4MjRjZjIxZTFkZDgxOWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwYjQ5YjE2ODVjZDA2YzJhZWVlOTJmODcyMmMzY2EzYWQyODQ2ZGIxM2UyYmFjYzAxMDAxNTJkN2Q5MTllMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVkNWUyYjA4NWRjNmYyYTVlOTc2MzRkYjQ3NGQ4YzZjMWU3NTBkMWM4NTY4Mjk4MDcwYWNhZjJjZjA1NzAyOGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c6240b6e88f44eaa8bfd2b3207f9f469",
+      "statement": "An agent preset is a directory holding one agent.cordis.yml, and a session composed from a preset runs that preset's tools, prompt sections, and skills while every other session keeps its own; the agent-presets package owns the roster (discovery over configured roots plus the harness home, the guarded per-agent mount, and copy-only authoring).",
+      "evidence": [
+        {
+          "resource": "repo://packages/preset/README.md#L10-L13",
+          "version": "repo-lines-v1:sha256:8a968a3f16b0b99fd004d880be133d8ed5128e05c368d98a22fa399be6db4be1:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTY2MzBjMjEwMzQ5ZjBjODMxNTQ0Y2U1YmNlZWQzYTExYjVhNGY3OTc0MzhjNTMwYTMwMGY5ZTljNDE2ZmFiNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_18b77bec30d443768b1ab2fdb708fbf7",
+      "statement": "To give one session a different capability set you compose an agent preset, and a service row there needs an `isolate` realm.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L125-L125",
+          "version": "repo-lines-v1:sha256:edb71c75b499cea17727e1abe59e1c741cc980d6084e57d22239447a7ce59358:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWRiNzFjNzViNDk5Y2VhMTc3MjdlMWFiZTU5ZTFjNzQxY2M5ODBkNjA4NGU1N2QyMjIzOTQ0N2E3Y2U1OTM1OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWRiNzFjNzViNDk5Y2VhMTc3MjdlMWFiZTU5ZTFjNzQxY2M5ODBkNjA4NGU1N2QyMjIzOTQ0N2E3Y2U1OTM1OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDZhM2VlZDQ3NWJmMjA3ZDM5NTA2ZjEzN2VlMjU4YTZiNDU5ZTFhNTcwNzBhNjllNzIyY2ExYjQ2MjBlMjg2NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWUzZGRlNGFjMzIxYzU2MWY3MzZjYTZmODAzOWFlM2VmNWVkYTNmNmI1YzAwZWE2MjhkYzA3OGEwMDdjMDQ0MyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1391b1689fcb435c89741668996b743b",
+      "statement": "mountRootInclude registers cordis:include and cordis:group as Loader builtins: a group row gives one isolate realm to a provider and its consumers together, and an agent preset outside this workspace cannot resolve @deepseek-ai/cordis-plugin-group by name.",
+      "evidence": [
+        {
+          "resource": "repo://packages/boot/app-boot/README.md#L84-L84",
+          "version": "repo-lines-v1:sha256:9973bb8238e04c790d15aed590c8e1668852f3f723352ef562a591887c42af49:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTk3M2JiODIzOGUwNGM3OTBkMTVhZWQ1OTBjOGUxNjY4ODUyZjNmNzIzMzUyZWY1NjJhNTkxODg3YzQyYWY0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTk3M2JiODIzOGUwNGM3OTBkMTVhZWQ1OTBjOGUxNjY4ODUyZjNmNzIzMzUyZWY1NjJhNTkxODg3YzQyYWY0OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGFhYmI0MjA2NGU1MDI1NzNlM2E1YTBhZDEzMzE4Zjk1MGY4YmY3NTg2NDQ4NzQzMTNhNmUyN2VjY2Q3OGYyNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjBmNjA4ZDk3MzRjMmNkNWYxMWVhZTU5MTU1NGIwOGI1NTU2ZGE1MWFmZDQyOTQyODBjNDM5MTYzZTAyZmEzMCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:fe33210a4f33e4b93ed8fb12a015302bbf20891cd39d74f21eda6a5cac7d7d59",
+  "claims": [
+    {
+      "id": "claim_5475a1eac6694b5a8d9e88cc2f2f0e5a",
+      "statement": "The subagent group is the delegation family: one contract (ctx.subagents) serves any number of named providers, mixing in-process children (fresh or forked from the parent's completed history) with out-of-process children (an ACP agent, a real Codex or Claude Code installation, or a complete Harness runtime over the SDK); the model-facing tools expose delegation, follow-up, and listing.",
+      "evidence": [
+        {
+          "resource": "repo://packages/subagent/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:2c59b2aa6ebcde3a56c3c1fee2a0d212761457f2694b990bf966c8965eb792f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNkYzY4NjRmMWUyYTI1YWZkZDk4ZTI0ZGRhNTNkNDMzY2YyYWEyOGZiYTdlNzU4OGRjOWZjY2M4MzI1YWI0MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_fd624a92f8ee466d95ecdb2321ffc8db",
+      "statement": "The family maps as: subagent/ (ctx.subagents, provider registry + one-shot runs + continuable children + discovery), subagent-in-process-driver, subagent-spawn-in-process, subagent-fork-in-process, subagent-acp, subagent-codex, subagent-claude-code, subagent-dsh-sdk, tool-subagent (delegation), tool-subagent-control (send_message/interrupt_agent/list_agents), and tool-subagent-report (child-scoped report channel).",
+      "evidence": [
+        {
+          "resource": "repo://packages/subagent/README.md#L25-L44",
+          "version": "repo-lines-v1:sha256:ac0b55e2e3fb94ca18b74ad4d10a5e62eea0cc3cb33e3335957e054444d501b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkNTFlNzJlN2JjNTE2ZjJmZTRlNWYwMDQ2OGQyM2Y1NDM5NWViNzRjODhhZGZiMjJjZjJmYjk5YWE1ZWE3MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzODgyZDA2ZGJiMmU2Njc1MzU2NjdlOTc0MTM1ZDZhMDM4MjljZWI2YjU0NGFkYjRkOTdlNzcyNjU4MTU5MWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxYTkwMDliMDdmMzY2N2NmOGU5NjA4NmM4NWQxMjhjMzRmZmY5NjMyYjYxNTdlZGU3NWMyYzZmMWU2YWVkMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljNGY5NGVkMDA3NTM2MDliOWIxYjMyZmEzMGQ2N2YwZWEyYjQ0MGNlYzg3MWM5NmNmYzdjODBlNWY4NmY4MzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8216a2be67224657a5f03f5176bb636e",
+      "statement": "dsh-subagent is the service behind child-agent delegation: an agent hands a task to a named child, collects the finished result, and for continuable children keeps sending follow-up work across turns; children come as one-shot runs that settle with a single result or continuable children whose durable session accepts later messages and can be interrupted, and the service answers discovery without loading or resuming them.",
+      "evidence": [
+        {
+          "resource": "repo://packages/subagent/subagent/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:e46ffc1a580774c36491a53450506fdd21757f303b0055dfe992225aef4830c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmRkOWU5NGMxMzc1MWMxODk3ODJiNjdlM2UyMWYzOWEzYzdhNjExNDYyNDc1ZWIyMjZjNGY1NGY0OWUwYTEzOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e5e717e152ad44f5bd0392cb4f9510b0",
+      "statement": "The subagent seam lets an agent delegate work to a child agent; unlike bash it is one optional capability not part of the agent loop, and multiple provider implementations coexist in one context registered by name (ctx.subagents) following the LLM adapter registry rather than the single-service bash executor.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/subagent.md#L4-L8",
+          "version": "repo-lines-v1:sha256:897a8a7f0e7c1b592266c30801268a03f618e86eced5ce27ad370dc9d50d1df2:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTNhZTZjYTQxNmEwOGE4M2I0NThmM2I1NWU3OTcwYTZhODY2NDM2ZTYwYWVjYjZlYjg2OTFjZTgzNDgxNWJhMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2E5ZThlM2JkZjQzYjFhMTIyNzdlOGY4OTA2NTdmMTY2NzlmZGM1MmVmZWU3YTc0ZGE4ZjdiNGJlNjUxNDhlYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_03676b721d5847ab8d078e8acf4600b1",
+      "statement": "A provider advertises start-time features on a static descriptor (SubagentCapabilities: agentOptions, outputSchema, depthLimit, toolFilter, persona) checked by the service before a one-shot run exists; requests needing a missing capability are rejected loud with SubagentError('UNSUPPORTED_CAPABILITY'), and continuable children are gated by the optional SubagentProvider.prepareContinuable method whose presence is the capability.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/subagent.md#L12-L18",
+          "version": "repo-lines-v1:sha256:6b756b5d09d4f0ccdb5d456bbfcc1c4bde9870f62df607d53c6ccc5b54cce050:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmQ1N2M2MjJhY2EwNTMzMDIwZDI0MTJkZTBkYzRjMjlkNDRhMTE2MzY5MDYxYWI0YjFhZTNmODViN2YxYjMzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2E5ZThlM2JkZjQzYjFhMTIyNzdlOGY4OTA2NTdmMTY2NzlmZGM1MmVmZWU3YTc0ZGE4ZjdiNGJlNjUxNDhlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjI3MmU4M2UzNzFlZjY3ZjVlNWE5NjdhODc0NTBjYzI3MzYxNGZjZWM2MzVkNGU3ZDk2ZDY2MTg0NGUzMjlkNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e934af20665b4ddb8460181a75ee442d",
+      "statement": "The one-shot SubagentStartRequest is built by the tool layer from the model input and its own config and validated against the named provider before start; required parent supplies the session cwd, lineage, and delegation depth, and optional provider/model/reasoning-effort/token overrides, output schema, depth, tool filter, and persona require matching capability flags.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/subagent.md#L38-L41",
+          "version": "repo-lines-v1:sha256:ee9ac1db6bd03894a9d7e8f985cebe4371ee77180b124ac9c064a2fafe129ceb:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM4NTJkYjBhZWQyN2QzZDgwZjRjMTljOWQ2MWM4MGU2Zjg5ZTcyMGM4ZjJlNDY4ZGNmOTU3MWNjMmFlYjllYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWFmMjJjZjA3MzI1OTJjMjQ3MTQxY2JlNjFlZmExMTAxMjYxMmY1YTMxMjJiOWFmOWJiYWY1MmY1NzI0ZDE5NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWUzMTJiNDBlZmRmZmY1ODgwYzA0YjMyNzQ4MTg4MzQyN2QxOTliZmUwNjdkZDMzM2JkZDBjMTlkODBiNjA4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjMyMDdkZjY2MDc5NGY4MTRlMDVhMzMzNGE3ZGIyN2FkNDkxMjkyNGYwOTMwMTU5OTk1MDZiZDU1NzJhNTEwMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8db53dbcacd341eabb207d7482d7ee66",
+      "statement": "Delegation depth is durable SessionHeader.delegationDepth plus the merge-extensible runtime field AgentOptions.subagentDepth; absence means top-level depth zero and the greater present value is authoritative, so an in-process child persists parent depth + 1, cold resume cannot lower it, and every start rejects a derived depth outside the safe-integer domain or above a defined absolute request.maxDepth cap.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/subagent.md#L491-L498",
+          "version": "repo-lines-v1:sha256:4a9c24062f1caabaa2811c8ec03a213568d5675edd15c6c89e92eb15f662017d:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjEwYmU1NTMxNmVjZjg2NjZiYmU3NjcwMTg2MzBlMmQzZmUzZTY1YTk0ZDdiYzE5OTAyNTAxNTRkNTQ5ZmQ5NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmRjOWE5YjU5MjA5OTEzOTJhN2RkNTlhOWIxMjMyN2I5MDBmMTIxMDBiN2JhMDYyZmM0MzRhNzg0NGQ4NWQzMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5af0c4389be04534af09a67baa0fbf14",
+      "statement": "listOpenDecisions(parent) lists every open decision a continuable child has reported oldest first; open decisions survive the child settling and the durable ledger is folded into the projection on first list so a restarted host reports the same records; resolveOpenDecision(parent, childId, key) closes one open decision idempotently (unknown key returns false without throwing) and appends the durable resolve mutation.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/subagent.md#L585-L612",
+          "version": "repo-lines-v1:sha256:73564eba4e3651790180bda896b8dc082a352bbb5d1e1fbea0f0b8e53bbb190c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MmE0MjkzODJiMmUxNDcxOGUwZTM3YjA1NzBhOGExNzAyOTkxZmNkODQ5OGNkODQwNjBhOGJmNGYwNTAxN2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ODlhNDI1YTFkMTAxYjkzZDM2MGI3MjIzZjVlZjg5ODM0NTNlYTkwMzE5YTlmMWNkOTQwMjU3ODAxNDFjN2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhMjkyOTI5NDlkMzRiNTFjZmQxMTViNmI5NGJkZGZlMjc2OThkZTU0Y2FhOTkwYjI5NWIyNGI5MzM2MjNjZmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_67e648f72e8e46cb9a53620d2403d3a3",
+      "statement": "Provider start() fulfills with a published run: the service mints a unique runId, snapshots local from the provider's exact localAgent, and emits a paired observe-only subagent/start and subagent/end; each continuable Activation emits the same pair for its residency epoch, so a cold resume is a new epoch with its own runId.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/subagent.md#L489-L491",
+          "version": "repo-lines-v1:sha256:dcafbb8c9cf562e05194d202878af48a7828630f221e1f0341559abd2a66f4e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmQ0ZjM0YjcyZGY3N2U5NTQ2M2Q5NGMxNjg0MmFiM2JhNDg3M2MxMTZlMTFhZjA2MGM0ZjI2ZmNkNzQ2MTliMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzcwODcwMmIxYmFmZWQ4NTgxODkzOTEwOGIxZmE5MDUxYmE4YjA5ZGI4NWI0Nzk4NzI1YzNjMWU1ZDUzYTIxZCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

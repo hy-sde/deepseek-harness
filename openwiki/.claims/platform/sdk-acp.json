@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:ae783395e41099d3e48929469bbb02593d918ca94e837b90d4584790adb70a1e",
+  "claims": [
+    {
+      "id": "claim_069830d4c4be439294765453d3288bfe",
+      "statement": "The sdk group lets another process drive a complete DeepSeek Harness runtime: the JSON-RPC wire protocol defines the messages, the server plugin serves external clients over stdio, and the TypeScript and Python clients launch dsh with a named profile and ordered patches; SDK clients open sessions, send prompts, and observe session events, agent status transitions, and subagent completions.",
+      "evidence": [
+        {
+          "resource": "repo://packages/sdk/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:7dcc1e3cc5155d8f06c325c6e0e3aac82177f158dc181c52749a58d952a6841d:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2RjYzFlM2NjNTE1NWQ4ZjA2YzMyNWM2ZTBlM2FhYzgyMTc3ZjE1OGRjMTgxYzUyNzQ5YTU4ZDk1MmE2ODQxZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2RjYzFlM2NjNTE1NWQ4ZjA2YzMyNWM2ZTBlM2FhYzgyMTc3ZjE1OGRjMTgxYzUyNzQ5YTU4ZDk1MmE2ODQxZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_38a2ff500fa24e44bcf431cbb1c9f533",
+      "statement": "dsh-sdk-protocol lets a DeepSeek Harness runtime and its SDK clients exchange JSON-RPC 2.0 messages over newline-delimited byte streams: one transport class plus the named request, result, and notification types both wire ends speak; the serving side is the dsh-sdk-jsonrpc-server plugin, and it is a pure library with no plugin, configuration, or registrations.",
+      "evidence": [
+        {
+          "resource": "repo://packages/sdk/protocol/README.md#L8-L19",
+          "version": "repo-lines-v1:sha256:ea802fc8546c77099bb30b76bee01bb90bbce7f76445828d055071aa419ce002:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5MWI1ZGQ1MTk5Mzc0Y2RhY2Y4MGI2ZjJmM2IzNDQ3N2MyMzc3YjE0ODhhZDY5Y2Y2ZjUwZGVmOTI3MDg5ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1YTY0YWM0MGI0ZjVkNmI1YmZhZjY5NTlhNWMwYzNiZTJiNDg4MzYxYjE5NjBmMWQ4Y2MxMjU1ZWM4ZDg5YmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1MDI3MTY5NzYwMTBhYjM4Mjc0MTQxZDM2MWIwMjlkMjQ1YjE5ZGVhNDkxYTU2ODJkOWJmZTJhNWNmMWZhNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlZDA2YTQzZGQ4MzQ2ZTNhZDU0MWY2OWVhYThjNWU0MzlkNjQ3NmM3NDMwM2E3NTBlODhhY2ZhYTYxOTA3NDcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_aae9d4568a0f4d53987367cd56a6a8e1",
+      "statement": "The acp group provides a server that lets programs and automation run persistent DeepSeek Harness agents over the standard Agent Client Protocol: a client can create, list, resume, and close sessions, attach standard MCP servers, select model options, send text and image prompts, receive semantic updates, answer permission prompts, and cancel work without a human in the loop.",
+      "evidence": [
+        {
+          "resource": "repo://packages/acp/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:8594e8ca6e30b108ba1b31ea43e8a740566e5562519f2843f99b460eea08df14:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODU5NGU4Y2E2ZTMwYjEwOGJhMWIzMWVhNDNlOGE3NDA1NjZlNTU2MjUxOWYyODQzZjk5YjQ2MGVlYTA4ZGYxNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU5NGU4Y2E2ZTMwYjEwOGJhMWIzMWVhNDNlOGE3NDA1NjZlNTU2MjUxOWYyODQzZjk5YjQ2MGVlYTA4ZGYxNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ea2874a9e648421189d3428fa8c88526",
+      "statement": "dsh-sdk-app is the SDK stdio application as a dsh profile bundle over dsh-base: its patch sets the coding-agent persona, mounts an app-owned zero-option command provider, and starts dsh-sdk-jsonrpc-server only after that provider accepts the invocation, so dsh --profile sdk --help writes help and exits without claiming stdin or stdout.",
+      "evidence": [
+        {
+          "resource": "repo://packages/bundle/sdk-app/README.md#L6-L9",
+          "version": "repo-lines-v1:sha256:54b0834d090008957e927a678d3f857fd52def2caa0480ce3081b21454cb5e99:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2YwNDU0ZmYwOTljYmEzYTRiYTI3ZWI3N2Y0OGY3ZjQ4MzRiNzZiNGJkMjU4MzlkYTdkMTYyNTkzMTE0NzQzNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjRmNjE3MmEwMmIxYzhhOWIyMmI1Njg5NGFhYzBjM2U3ZmUzNTE5NDFiYWVjZWQ1ODE5MzQxMDE0Y2M0MGJiOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTRiZWEwZThjMGQ4MDliNjhhM2UxNjI4ZmI3NjBmYzUzNjFlZjMwYmFiM2NiN2FjM2YyNjgxZjBkNmJmNzU1ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e439cded113b4582be828ae8b76a993e",
+      "statement": "In the SDK bundle the startup provider binds stdin EOF to the launcher's bounded successful shutdown, stdout is reserved for newline-delimited JSON-RPC frames, and model-generated session titles are disabled because the SDK exposes no title surface.",
+      "evidence": [
+        {
+          "resource": "repo://packages/bundle/sdk-app/README.md#L11-L20",
+          "version": "repo-lines-v1:sha256:dde452ad723fb08a42ba99139a0b489d9068dad2445fe0f8511f28ab765f5472:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxNDIwNjQwYTM5OTM0YTU0NTE3NDRlZWU3NTY1NDA4NDBlYjlkN2ViZTk3YWE5YzM5NjNhMWE0Y2Q4NDY5NTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNiMmUyNWZkYmI2Y2I0Y2UzZjFkZjFhYTFjMGViNzI4MThjZDA4OTQ0NWZhMzVjYjMwNzZjNTg2ZDZiOTMwMzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3c395af9bdb940eb99ce40b491d63872",
+      "statement": "dsh-acp-app is the automation-only ACP stdio application as a dsh profile bundle over dsh-base: its patch sets the coding-agent persona and default model route, mounts an app-owned zero-option command provider, and starts dsh-acp only after that provider accepts the invocation.",
+      "evidence": [
+        {
+          "resource": "repo://packages/bundle/acp-app/README.md#L6-L9",
+          "version": "repo-lines-v1:sha256:2a303fca6a8b8828f9caf4ecf702b22530f8ad0dfc0f51005c0711e008b04b6c:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2YyZGMyMWZhYzRkOWFkYTEyODI0MzQ2Njk3MDA1MWU3NmEwNzQ4ZTg0OGQxMTllZTFjYWIwNjgzMDczM2M0NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjRmNjE3MmEwMmIxYzhhOWIyMmI1Njg5NGFhYzBjM2U3ZmUzNTE5NDFiYWVjZWQ1ODE5MzQxMDE0Y2M0MGJiOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmI4OWJjZDg4OTYwNGFjYWY0NmEzNjM0M2QxZTRlNTMxNTFjYzIwMDA1ZjFkZmM3YjM0ZWRmMTQwMTVkOWFhYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9c5bd91279a04cfb8ba423bbde84a34a",
+      "statement": "In the ACP bundle the startup provider binds stdin EOF to the launcher's bounded successful shutdown, stdout is reserved for newline-delimited ACP JSON-RPC frames, ACP connection close/SIGINT/SIGTERM drain the bridge-owned agents and the root profile tree before exit, and the shipped row creates sessions with deepseek-official and deepseek-v4-flash.",
+      "evidence": [
+        {
+          "resource": "repo://packages/bundle/acp-app/README.md#L11-L15",
+          "version": "repo-lines-v1:sha256:c9963a27acd5837a8270bf7bb6933e64aca2bc04f42ecf2fbefd61c070a282c8:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjE0MjA2NDBhMzk5MzRhNTQ1MTc0NGVlZTc1NjU0MDg0MGViOWQ3ZWJlOTdhYTljMzk2M2ExYTRjZDg0Njk1NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWRhMTc3ZTJmNWZjNjZkNTI3ZTg2Y2M3ZmIyZmU0NjVmNzhmZjY2OTNkYTEyNDg1YTc2MDk5YjczYzNmMDAxYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2201005669974457b0da1a9a609ab494",
+      "statement": "The shipped applications are dsh web, dsh --profile headless, dsh --profile sdk, dsh --profile sdk-minimal, and dsh --profile acp — every supported Node application starts at the dsh CLI with a named profile.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture.md#L43-L43",
+          "version": "repo-lines-v1:sha256:173a150d6f49a4a3141252b6ec03d76b15ea9aeeaa601e8eb22f9a0b5cc789c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTczYTE1MGQ2ZjQ5YTRhMzE0MTI1MmI2ZWMwM2Q3NmIxNWVhOWFlZWFhNjAxZThlYjIyZjlhMGI1Y2M3ODljMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTczYTE1MGQ2ZjQ5YTRhMzE0MTI1MmI2ZWMwM2Q3NmIxNWVhOWFlZWFhNjAxZThlYjIyZjlhMGI1Y2M3ODljMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzBlMzgyNWZhNGJjYmEyZmQ1M2JkNmY2ODhkMTkxMTYwMjk2NDVlNDJmYzJiYjMwNzI3NGUxZWUwYWQ1MWMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODBiYTI2N2ZjYWM2MmZlMzBjNDg1ODhjMzJmZjA2MjlhNTEwNWQxOTU2YWFlMTI3NGY1ZDI5YTZjZmExNmU5ZCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

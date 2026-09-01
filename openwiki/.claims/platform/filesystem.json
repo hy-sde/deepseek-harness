@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:22fb583e519684164c40314c9db64effda70a615a1cf92246d1ae981e47f283d",
+  "claims": [
+    {
+      "id": "claim_cb094bb618ed4e7289041e5ebedcf0e4",
+      "statement": "The fs group gives agents durable, policy-governed access to files: the ctx.fs service contract in fs/, the host-filesystem and sandbox-enforcing backends in fs-local/ and fs-sandbox/, the read-before-edit policy in fs-observation-policy/, and the model-facing tools in tool-fs/ (read, read_image, write, edit) and tool-fs-search/ (glob, grep); backends swap without touching the tools or the policy, and file I/O takes no timeout by design.",
+      "evidence": [
+        {
+          "resource": "repo://packages/fs/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:d19eba548688f3e1db394af9eb026559f426119994153b1cb747fbe4dbf38740:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDE5ZWJhNTQ4Njg4ZjNlMWRiMzk0YWY5ZWIwMjY1NTlmNDI2MTE5OTk0MTUzYjFjYjc0N2ZiZTRkYmYzODc0MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDE5ZWJhNTQ4Njg4ZjNlMWRiMzk0YWY5ZWIwMjY1NTlmNDI2MTE5OTk0MTUzYjFjYjc0N2ZiZTRkYmYzODc0MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e2e0ede54b244ca1a00ac2148ed1a94c",
+      "statement": "The filesystem roles are played by fs/ (the ctx.fs service contract), fs-local/ (host-filesystem backend), fs-sandbox/ (sandbox-enforcing backend that fences writes and edits by the per-call sandbox mode while reads pass through), e2b/fs-e2b (remote execution world), fs-observation-policy/ (read-before-edit policy as fs/* listeners), tool-fs/, and tool-fs-search/ (glob/grep backed by the packaged ripgrep binary); the policy is a plugin, not a service the tools inject.",
+      "evidence": [
+        {
+          "resource": "repo://packages/fs/README.md#L23-L36",
+          "version": "repo-lines-v1:sha256:9cddb40bc220f48a2c95e6c00980f3d3538c1732af4239f8f53fbc75d6f66725:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MWQwZThjN2NjMGNlYjgyODdmZjM1NGZkZjQyZjY1MmZkZTU1NjQ2N2FkNDlmMWNmMDlkN2VkOGVjZjAxNjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1NzAxNzlmOGNmOWRlNzYwYjNlMzlkYmQ4OTIzZjEwMTA0MTdlZjc3MzU2MDVmZGVjNGFhMTQ1ZjFlYzFjNGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjNmZiZTczZDc0MmE3MDg2Y2IwNDI5MWM5NjE4YjBjMzMzNWU2NjZjZTlhNTBjNzBlMTY0NGIzMjJhOTJkNGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4MWNiNTllYjc2YzFkYTZhZWFkZGUxM2I0MWQ4M2FhNjYyZTVkNzY4MjEwNmU1MjY1MmUxMWY4NmE4Mjg4MzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9b2aa3114a5a44d3bd8cc1518d866f7e",
+      "statement": "dsh-fs defines the ctx.fs filesystem service: a compact, backend-neutral contract for one execution world that resolves paths to stable identities, maps shared host files when supported, reads text and raw bytes within bounds, lists directories, and applies atomic writes and literal edits, leaving storage mechanics to the backends. It also owns the fs/* policy-event vocabulary.",
+      "evidence": [
+        {
+          "resource": "repo://packages/fs/fs/README.md#L10-L10",
+          "version": "repo-lines-v1:sha256:4415b2db4ef3aeedb43a0ebfd25630122ce637c702d0ede29b666859f3ab3022:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDNmNjZkZjFhMWRhODdkZTMwYjYyZmU0YmUwZGVhNDFhYTkwOGZhNjAyYTg4NjgwNzEzYTJhZGFkZDVhMjkzMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_612173a8ba724adcb21a400f6a5a5521",
+      "statement": "Through ctx.fs you can resolve any path to a stable target identity, read a whole text file or stream it in chunks, read raw bytes up to an explicit cap, list one directory level, atomically create or replace a file, and apply a literal text edit atomically; both mutations take an optional version guard, and every operation returns data or a typed FsError with stable codes such as FS_NOT_FOUND, FS_STALE_VERSION, or FS_AMBIGUOUS_EDIT.",
+      "evidence": [
+        {
+          "resource": "repo://packages/fs/fs/README.md#L36-L36",
+          "version": "repo-lines-v1:sha256:c250f786cd18446ad8645fa3d105549837ed3b25565c1d583192c9d29fa60e24:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1MGY3ODZjZDE4NDQ2YWQ4NjQ1ZmEzZDEwNTU0OTgzN2VkM2IyNTU2NWMxZDU4MzE5MmM5ZDI5ZmE2MGUyNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1MGY3ODZjZDE4NDQ2YWQ4NjQ1ZmEzZDEwNTU0OTgzN2VkM2IyNTU2NWMxZDU4MzE5MmM5ZDI5ZmE2MGUyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk5MGU3MGVjMmNmZGEwZjVlYmExYzdiMzc0YTYyMjJmOGRkZDA2MGNjMzMxYTA5MjIzYTYzZWQ3Mzc1YjY1MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTgxY2I1OWViNzZjMWRhNmFlYWRkZTEzYjQxZDgzYWE2NjJlNWQ3NjgyMTA2ZTUyNjUyZTExZjg2YTgyODgzMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e71c9f1f4b9d4375ad8ae14b5fa35a30",
+      "statement": "The optional filesystem capability has four parts: dsh-fs owns ctx.fs with atomic text operations, dsh-fs-local implements local disk, dsh-fs-observation-policy records observed presence or absence and adds freshness rules through events, and dsh-tool-fs directly executes model-facing read/write/edit calls; without the policy plugin the seam is the complete, unconstrained filesystem where write unconditionally creates or overwrites and edit unconditionally replaces literal text.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/filesystem.md#L5-L5",
+          "version": "repo-lines-v1:sha256:3a7d6823521f7a9b535a17015ee8f1eef9f4f171216ca6dc70a63aea1c8a3c42:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E3ZDY4MjM1MjFmN2E5YjUzNWExNzAxNWVlOGYxZWVmOWY0ZjE3MTIxNmNhNmRjNzBhNjNhZWExYzhhM2M0MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E3ZDY4MjM1MjFmN2E5YjUzNWExNzAxNWVlOGYxZWVmOWY0ZjE3MTIxNmNhNmRjNzBhNjNhZWExYzhhM2M0MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjViMjY3NDc3NTFmNjNjMWQ4ZjI1NDZjM2YyZmViMDU2ZjgxMmVhMGViMTU4MDBhNDkxZDAwM2YyYmM3ZmY5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzFjMzYwYjJmMzg0MDY3ZmJmMGJkYzAzYzZhMGU1MTM0OWY0MmFiMzUxYjg5NWNkMzI3NWE3N2FmNjYyMTUyZCJ9"
+        },
+        {
+          "resource": "repo://docs/subsystems/filesystem.md#L7-L7",
+          "version": "repo-lines-v1:sha256:9167fa9db6a56fcab4ccb3bc81653dfebd47a85f0ef5d16b34114d3a5844c278:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTE2N2ZhOWRiNmE1NmZjYWI0Y2NiM2JjODE2NTNkZmViZDQ3YTg1ZjBlZjVkMTZiMzQxMTRkM2E1ODQ0YzI3OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTE2N2ZhOWRiNmE1NmZjYWI0Y2NiM2JjODE2NTNkZmViZDQ3YTg1ZjBlZjVkMTZiMzQxMTRkM2E1ODQ0YzI3OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU4MWUyM2YyZjZmNGU2OTlmMWZmMWVmYjIzZTIzYTg0OWYyMGE1NTFlODU5YWZiNjZhNGM4ZmYxMzBhMDcwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzZlODNhYWQ4NGJlZWU5YWUwNzA4NWViMjg4ZmNiYmRjMWEzMWJlMzBjOGNhMGU3NmI5MThhZTE1NzQwMWY1YSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_859b58d398b24b9db18e7cc28d9707a9",
+      "statement": "fs/write-intent and fs/edit-intent are single-slot decision waterfalls (the tool dispatches each with a default thunk returning undefined and a listener fully decides without calling next()), while fs/observed is a fire-and-forget recording event carrying an FsObservation (present at a version or confirmed absent) whose listener MUST be synchronous and side-effect-only because the tool does not guard the emit.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/filesystem.md#L181-L196",
+          "version": "repo-lines-v1:sha256:d24a68b48e6705492b1c9e581f89d04408fcc52279df173468b642a74724b2af:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiOWVkZWE4ODJkZTE2Y2YxNWIyOWYzNTA3YWRiOTEyODg5NWRiZDhmNTI5NTU5YmViYTk4NTRiNDE3MTk2NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4MDkxOGFjNjQzMDcwNDAzMDA0MzI3OGFiYjE2NzAwMWM2ODM0M2ZjNWEzYWRmN2Y4MmI2MTY5NTI5Yjg0YWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4MTFlNDBlNmNkNDk2YmU2YjFiZWFjOTI3ZDgyNjdjMDgxYjdlNWI0MmNlYWI5NTQyMDhjNmNhNDlhZDcxMjkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_df6fdd0b06d44c30b3d8b28adcacbf2f",
+      "statement": "A text read is bounded by line window, byte cap, and backend limits, and the read tool's result is purely presentational with no full/partial view: authorization is freshness-based (the tool emits a present fs/observed directly with the stat's version), and a metadata miss emits an absent observation before returning FS_NOT_FOUND.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/filesystem.md#L222-L228",
+          "version": "repo-lines-v1:sha256:ca26c675f869f13cf4394253282b2adc919b3b699f166f9df369b7d9f5d76c72:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjUyYjRhNjAxYzkwOWI3MDA2YTljOTcyODU1YmIxNzhkYzhiYjcyZWE1OGI1ZTEwNzM1OGIyODI1MjI2NjRiZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzYyNDBlN2VkNmRkMjQ2ZjUzNzQwNTk1NjY5MDA5NDA1YjRmNmEyZTY1NjdiNGFkMDNlMTc4NmQxOWNiYjZlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODgwOTE4YWM2NDMwNzA0MDMwMDQzMjc4YWJiMTY3MDAxYzY4MzQzZmM1YTNhZGY3ZjgyYjYxNjk1MjliODRhZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWQ0ZGNiNjJhY2ZiZDVmMjFiYmMwMTdlMDQ4OTllMWQxMTRmZGNlOTNhYjQ2YWVmMzBkZmI2NDNiMjcyYTMzNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_19826509839e41e38c8dc56105231515",
+      "statement": "fs-archive is a pure-TS multi-format archive engine (zip, tar, tar.gz, rar, 7z, iso, deb, rpm, cpio, cab, arj, asar) plus a codec layer, and it is the durable core of the read tool's multi-format support: foo.zip lists an archive's root, foo.zip:dir lists a directory, and foo.zip:dir/file.txt reads one member as text; format detection sniffs content signatures with extension fallback, and member reads are bounded by ArchiveLimits.",
+      "evidence": [
+        {
+          "resource": "repo://packages/fs/fs-archive/README.md#L1-L12",
+          "version": "repo-lines-v1:sha256:1cef99008496fb61608eb7657f4b78d37198f253591fe5f70079791b52021020:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc0MzYwMDEyMzM5ZTQ0YTk3NmMxYzg3YmEwYTlmYzdiNjFkMjBhNzdmMjViMTk1ZGM3OTQ1MzM1NTZiYjIyOWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5YTY2MWQzMjJiOTNhODA3MGQyMTQ0M2VhMjI5NjFiMGY5ZTdjYmJiN2MwNDAxODBjZTg0YzgwNzMzNjdhZDUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_de7711f505194ee4958e928393026be9",
+      "statement": "There are no timeouts on file I/O: the seam arms no deadline, and cancellation is a best-effort optional AbortSignal per primitive.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/filesystem.md#L272-L276",
+          "version": "repo-lines-v1:sha256:3c1f88a5388f94b560169ecb6ca8a17a1682834f9af94db0225383c331093f99:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTdmYTkzZGU5ZjMxNWI1Y2VhYjZiNzY2NmE1YjQ0NDk1YjEyZThkYThlMDk5NWQ2NGZiYzdjMGEwYmRkYTZmMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODk4OGIwM2U4ZTQxOGM2NTUzMmU2NWE5OWY0ODFlNTIyMTQ4YWU3ZTNhMTVlZTg0NDk5OTk5YmVjMmRmZjc1NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODdlNTI2MzUxOTRiOTY4ODNjYThiNTQwY2M2MjIxODAzNTM5MWRjN2YxMzdjNWZmYjk2ODEzMmU5OTllMWM4YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDI4NTQ3MGIyY2QzMDUwMjEzYWM0MjE0OTJhOTA5Mjg3OTU4MWJiZjczN2RmNWYwM2UwMGQ1YWEzNDhlOTNhOSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

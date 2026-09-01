@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:a2880200fea2a0f308e1ffda176005a1f59b28662e2867eb1360e1c192cdabcf",
+  "claims": [
+    {
+      "id": "claim_650b5c8c377c4ec18a1818f1c4353cc1",
+      "statement": "The memory group provides memory/ (the host memory service: retain, recall, reflect, learn, memory_edit, mine_sessions) and tool-memory/ (model-facing tools over the memory service); together they give agents durable, injection-neutralized project memory across sessions.",
+      "evidence": [
+        {
+          "resource": "repo://packages/memory/README.md#L10-L24",
+          "version": "repo-lines-v1:sha256:07492393f6ab49a1612ad6a5a2a6c472b972fca6bdef9689e892ccc88f8508da:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0ODNhZjc0MjM1MGI3M2Y1NTQ1YWMzMGUxZjJhYTAyYzg4OTcxNzYyN2U1OWFhMzljMjUxMDg1Njg3MThiY2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxNDIwNjQwYTM5OTM0YTU0NTE3NDRlZWU3NTY1NDA4NDBlYjlkN2ViZTk3YWE5YzM5NjNhMWE0Y2Q4NDY5NTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0NzNhN2FmNGY2ZTE2NDIxMWZjZWM1NzM4ZDZlMmJmYzBjYTcyMTA1YWExYzAzNGZmN2QxNGU5NGM4OGIyZmQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_84577506938a422f892672c73589a257",
+      "statement": "Memory is agent-curated long-horizon, durable, project-scoped memory: dsh-memory owns ctx.memory, a host-plane service with a backend registry and a shipped local backend persisting files under <harness home>/memories/<project>/, while dsh-tool-memory provides the retain/recall/reflect/memory_edit/learn tools plus a memory:project system-prompt section; memory is complementary to session-query and compaction.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/memory.md#L5-L16",
+          "version": "repo-lines-v1:sha256:0bd07696b263bfadd93468abad88b72f3fbf2a0a5b56e2a7f65794f6b362adfb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNTk3ZWU2ZDA3NmJmZDQ0YmRjZGM0MGNmMzcwOGIyMWFhNGFkNTU4ZGQ2OTMyMTBmN2Q0M2FmZmFjODliMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYWFmNzUyOTcwN2JiOGQzZWU1M2YzZjQyNmY5ZGNmMjE1MTYwOGY2N2E1OWRhMDNjN2YzNzA2ZmIxNmYyNDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkMGRlMmE3NzI2Nzk1MTAyYzA0NDk5YTg2NzcxNThhZjczNmFkNDk5OTM5YjQwZGQxMGE3ZWQ4ZjkwMzExMjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzOTA2ZmY4MTU4NjZiZmQxY2JkOWU4ZDEzMjlhOWFiZDMxNzRkNmFlMWU3NWM0MDVhNTkwZjc0NmIwODlhMzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ff69f61ef4ab49aeb23b95cf3a4d9886",
+      "statement": "Each project (encoded absolute cwd) gets one memory root with three artifacts: bank.jsonl.zstd (editable working entries written by retain, backed by memory_edit, in the same zstd frame container as session logs), learned.md (newest-first, deduped, capped 100 lesson bullets), and memory_summary.md (optional consolidated summary surfaced by recall, reflect, and prompt injection).",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/memory.md#L28-L42",
+          "version": "repo-lines-v1:sha256:7e504f03fa58d61824779832162fd589e26b1370644f52c8292d4e4a47ae2a2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzMWJlZjQ5OGFiZGRhNjJlMThkNzZjYmRiNmY0NWIwYWMyMzU4MjkwYWE4NTQ4OThhODEzOTI4N2NiYjUwYmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiZDEwODlhZmY3MGY5YjE0ZTZhMzFjZDU4MGMxZTdlNWNhODBiNTFhYmJhODRkYTIwZjY5MGQ3ZmM2YWQ5ZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3OTI0NmM2ZWRhODBmMGFkYTk2MmVkODYyMDg2MmI5MWIyYWEyODM4ZmFjNmUwZTRlYmYzZTMwN2E3NjE0ZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczYWUyZTlkM2JhMDYzNmJiNGQzMTgzZDljY2Q0ZjNlMjhmOWUyNDc0YTUxODI4OWRkZjVjMzYwYzI5MzRmN2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b1c5c494bdd34f378f99a414568015ea",
+      "statement": "Stored text is injection-neutralized (control chars, angle brackets/backticks, ~~~ fences) and secret-redacted on both write and read; search is lexical IDF scoring with light stemming over all three artifacts; and the local backend is pure node:fs with an in-process per-file write chain so concurrent saves from sibling sessions never drop each other's writes, with mutations emitting memory/change.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/memory.md#L44-L51",
+          "version": "repo-lines-v1:sha256:1e16ddafbf2bb4876c9ab14073376b12e3b8f8683c06ced3573b82fcbe65487c:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzI3YTY3MjNkNmYyNThjN2U2OTc3NjliN2M2NzBkNjQ3YmE2NWMxOWI0NzFjY2M3MDZmNGI5ZGNlMDE3OTljOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmFlNGJlOTc1NjYwMjQ5NWNlNzJlZDM0M2E2YjhhYjg0ODVjZmRiNDI5MDlmMTVjNDIyZDJmNTg4NGZlZDUyMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2ZlZmIxMmVlNzQ4NmUxZWVjYTdlZWQwZTI3ZTcxNTRiMzlkY2NmNTFiNDI1NjI3OTQzMWVjMGQ5OGUxMjkyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmUwNTBiMWM3NjI5ZjdiNGE2MGUyMWZkOTgwNDI5Nzk4MDFlNTMxZTQ1MGMzMWVmNTc5NWQ0YWQ4NmYwOGFkZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c24449122c3646b182991b2dd84bcd3d",
+      "statement": "MemoryService (ctx.memory) owns the registry (register/unregister/resolve/backendIds) and delegates status/save/learn/search/edit/summaries/clear to the selected backend; dsh-memory mounts the service and the local backend, while dsh-tool-memory contributes only the model-facing surface: five tools plus the memory:project system-prompt section at order 150.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/memory.md#L58-L66",
+          "version": "repo-lines-v1:sha256:2865b57029bb0ac0e22553b6386a319229ea370c86d0968b07b7cf2996b1def9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODk4OGIwM2U4ZTQxOGM2NTUzMmU2NWE5OWY0ODFlNTIyMTQ4YWU3ZTNhMTVlZTg0NDk5OTk5YmVjMmRmZjc1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDA5Y2M0MDBmMWFhN2MyNDFiYTFiNzgwZjRkYWZkNjFhNDQ0YWE4ODQ1Y2M1OWExM2NhZDRiMzI5YjdjY2I1ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzFhNDhiNzBkOGYzYTExYjY5MDJiOTI1Yzc1YjlhM2UxNWZjMTE0N2VlZGM0OTM2ZTFkNjUwNWMzMWQ5OGNiYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjc2MGNiZTJjZWRhOTViMGRkMmE0NGY2ODc0ODcwOGIyNDZiNmMyZTAyN2Y5MWZiZmUwZTRmZmMzMzM4OGE4OSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_00199e5d21604731a5a84cd9592c5ccb",
+      "statement": "The five model-facing tools are: retain (store durable facts, batched and deduplicated), recall (relevance-ranked search over bank + lessons + summary returning ids that round-trip through memory_edit), reflect (synthesize across many memories), memory_edit (update/forget/invalidate with lesson and summary entries read-only), and learn (capture one durable lesson into learned.md with prompt-injection markers and secrets stripped).",
+      "evidence": [
+        {
+          "resource": "repo://packages/memory/tool-memory/README.md#L17-L28",
+          "version": "repo-lines-v1:sha256:eda7037810d9606ebc84ea2d239e02945757334d80c879a20ea43268f6d180f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYjY1YmY2YTZiMGVkNzZmMjRlYjJkZmUxZjg1MTEzNjdkNmNmN2I5NDg0ZTRmMDA0YjExMzU0ZmI0Y2Q4MmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhYzQ5NTRjZjEwMDM3ODFjNmNhNDk1MWY0MTVhOWEzOTNkNmY1NWZjNTJmYjg1ZWFkN2Y4YjgyOTI4NGZmZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJkMThmYThmZTc0ZjIyMjUxMTQ2MjIxZmY5NjUwMjEyMWQxYzFkYTNkNmI0MGEwYzYyZjBlZTc0ZGJjNWU5YTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4Y2QyYWMyOTdiNTM5OWMyZmM0ZGNlY2JhNTdmOTU3NzVlNDk1MTQ3MjNkYTJmODFiZGM2OThhYTNhZDMyNmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_549f5dfde8a34aa7b5664338bfcce72a",
+      "statement": "When the harness sessionQuery service is mounted alongside, recall/reflect merge past-session hits (source session, read-only, sessionId/seq provenance), and mine_sessions harvests lessons from completed session logs (digests from compaction summaries, failures from turn/end error reasons, all-completed todos) stored as learn entries with the session as provenance and deduped per run; without the service every session feature degrades to a no-op.",
+      "evidence": [
+        {
+          "resource": "repo://docs/tool-catalog.md#L30-L30",
+          "version": "repo-lines-v1:sha256:e3f27b2acac735dae3fee2ed36b308417133e78f4a0b1e062bd4aaba249cb69d:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNmMjdiMmFjYWM3MzVkYWUzZmVlMmVkMzZiMzA4NDE3MTMzZTc4ZjRhMGIxZTA2MmJkNGFhYmEyNDljYjY5ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNmMjdiMmFjYWM3MzVkYWUzZmVlMmVkMzZiMzA4NDE3MTMzZTc4ZjRhMGIxZTA2MmJkNGFhYmEyNDljYjY5ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWNkNjJmOGEzYjczMDU0YTU0YjAwNjY5YjllN2EzM2EwYTg2ZWMwMmQ4NDg0Y2RkNjBkYjE4NGE5NWYxMTMxYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzIyYzI4NzQzODlkYWRhYTkzMDNkYTRiOWI5ODYyMzdlNjRiYWI4NzEzYjI3NGQxMjIzODE1ZDU2ZGU4NDk3NCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_76b478c48d5c4dd3a48453243b05ce27",
+      "statement": "apply() registers systemPrompt.section({ name: 'memory:project', order: 150 }) whose text is evaluated at each assembly and returns the calling session's project memory (memory_summary.md + learned.md, head-tail truncated to injectionMaxChars default 16000 chars) or '' for a project with no memory yet, with the session identity coming from context.agent.session.header.cwd.",
+      "evidence": [
+        {
+          "resource": "repo://packages/memory/tool-memory/README.md#L30-L35",
+          "version": "repo-lines-v1:sha256:a24b0242506fde39bdda57801d1ac4b5a1fcb6e651ae10db1fac0a6327adb066:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTE3NjI5YWI4M2YxNWI5M2Y2YzI2NTE1NDZmOTUwM2Y0ZGEzMjZkOTRjM2QyYjYxZWNkMjE4YWJjNDJiNzZkMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmQ0ZTNlOGY4OTE1MDVmZGQyN2RmMTA5MjY3MGMyOWM0OTk2YzY0NTE4ODU0NjFhMWM0NGNiNGExMGRlZGIwZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzUzN2Q4ZmJjMjVhYmVkYjY2YzNhMjBmMmE5OWZkNmUzY2VlNzRlYTc5ZDY1ZGI3ZDliMTRlZWU4YjBhNTQwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzk2ZjIzOGU5MjI1MmQ0MDVhYTI5MjBmNzJmYWFhOWEyNGUzZTMyYjE4NWZiMDgyNDg5MTQ0ODI0OTQ2ZTNmNCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

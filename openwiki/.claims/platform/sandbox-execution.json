@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4672eb10531225eda25ec7d1b92d9de5b2b0376e60830335f6ef572063cc5bd0",
+  "claims": [
+    {
+      "id": "claim_d80003634eba40b296786a86a4cacf8d",
+      "statement": "The sandbox group confines subprocess execution to a file-effect policy (read-only, workspace-write, danger-full-access), delivered by the confinement service (sandbox/, ctx.sandbox), per-platform backends (sandbox-local/), the shared policy resolver (sandbox-policy/, ctx.sandboxPolicy), and the Windows write-restriction backend (sandbox-windows-acl/, win32 backend); denied confined calls can retry through a user-approved one-time escalation, and confinement is same-world only.",
+      "evidence": [
+        {
+          "resource": "repo://packages/sandbox/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:29ce6d1a2983826ae9a7d1a08a696d4b08468988aefdef66b1188e958b05a856:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjljZTZkMWEyOTgzODI2YWU5YTdkMWEwOGE2OTZkNGIwODQ2ODk4OGFlZmRlZjY2YjExODhlOTU4YjA1YTg1NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjljZTZkMWEyOTgzODI2YWU5YTdkMWEwOGE2OTZkNGIwODQ2ODk4OGFlZmRlZjY2YjExODhlOTU4YjA1YTg1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a6d65be1a5584869a0565140bf619d29",
+      "statement": "dsh-sandbox-local provides the per-platform confinement backends behind ctx.sandbox — Linux runs under bwrap when that works otherwise the Landlock launcher, macOS uses Seatbelt (sandbox-exec), Windows uses the ACL restricted-token runner — selects one runner per host, fails closed with SANDBOX_UNAVAILABLE when no runner is usable, and reports full/partial enforcement plus denial signatures.",
+      "evidence": [
+        {
+          "resource": "repo://packages/sandbox/sandbox-local/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:2284a59a36fccc4cf8b67d413bf2f3a8002e5aa4116e9906107d8c4f3deead53:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjI4NGE1OWEzNmZjY2M0Y2Y4YjY3ZDQxM2JmMmYzYTgwMDJlNWFhNDExNmU5OTA2MTA3ZDhjNGYzZGVlYWQ1MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjI4NGE1OWEzNmZjY2M0Y2Y4YjY3ZDQxM2JmMmYzYTgwMDJlNWFhNDExNmU5OTA2MTA3ZDhjNGYzZGVlYWQ1MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d845497c12af451a8a68f7c1301a53dd",
+      "statement": "The bwrap profile combines a read-only host root, a fresh /dev, and /proc from a private PID namespace, and workspace-write adds an ephemeral /tmp and a writable workspace bind.",
+      "evidence": [
+        {
+          "resource": "repo://packages/sandbox/sandbox-local/README.md#L75-L75",
+          "version": "repo-lines-v1:sha256:7af80d120ffc8340192ab81b3bd1eb96f19e9436f414ed931b2622b64cc9fd47:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2FmODBkMTIwZmZjODM0MDE5MmFiODFiM2JkMWViOTZmMTllOTQzNmY0MTRlZDkzMWIyNjIyYjY0Y2M5ZmQ0NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2FmODBkMTIwZmZjODM0MDE5MmFiODFiM2JkMWViOTZmMTllOTQzNmY0MTRlZDkzMWIyNjIyYjY0Y2M5ZmQ0NyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzJiMzdhYmEwMGUwOTgwNDhkMzU2NmI0NjA4OTZhMTc3ZDRhMjI2NWYxODA0YzYwNGY0MmZiNTUyYTk3NzZhZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmQ1NTcwNWEwODVkM2VjOWIyY2UwYzIxNmVkZmRhYjdiNmViNjdiOWJiNDBjOTI4MjU4NTc2YTRiOWZmNGViMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_973072c919a745fc8f20f5a92b2086b9",
+      "statement": "The Seatbelt profile is allow-default with (deny file-write*) plus write allow-lists derived from the shared writableRoots helper, and the Windows ACL rung keeps one deterministic write SID and standing ACE per workspace plus a random private temp directory with a distinct SID per session/workspace pair, reporting partial enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://packages/sandbox/sandbox-local/README.md#L79-L81",
+          "version": "repo-lines-v1:sha256:dac07d7cbd3f4a2699a7e21471d3b2c24b53341e1f1f8578773854be62f7b1f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODIyMGMzNTE2YjU1ODFiZWYyMDVmODlmMzUzOWFiZjYzNmVkMWE5MzlhZmQ3YjMyZTg5NzJkMzZkOTU2YzM4ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODQzNGRjY2I4ZTI1ZjJmZDQ0ZGJiODk5ZTU2ZTk3YTI4Njc0YTdiNThkOTFlOGYyYmVmMGRiNTc1NzIwMGEyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmQ1NTcwNWEwODVkM2VjOWIyY2UwYzIxNmVkZmRhYjdiNmViNjdiOWJiNDBjOTI4MjU4NTc2YTRiOWZmNGViMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTkwZWUyZjhkMTUzMzA4ZTRhNWI0MTI2MTQ5MzQ5ZmNmOTNmNmUyZmU5OTcyOWJhMjI0MWI4YjlkNmQ5NTNmNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_be5d1f6f790840cdb74743e07ba2e3a4",
+      "statement": "Every child process and terminal session the harness runs — bash commands, language servers, persistent shells, and out-of-process subagent backends — starts, observes, and terminates through ctx.subprocess with a local provider running them on the host machine; the group provides executable lookup, bounded output capture with spill recovery, whole-tree termination, and a scrubbed starting environment.",
+      "evidence": [
+        {
+          "resource": "repo://packages/subprocess/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:fefa91e2dd1f54c8e043969ec328aeed62a08bd414c028f04e6de58fd070426c:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmVmYTkxZTJkZDFmNTRjOGUwNDM5NjllYzMyOGFlZWQ2MmEwOGJkNDE0YzAyOGYwNGU2ZGU1OGZkMDcwNDI2YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmVmYTkxZTJkZDFmNTRjOGUwNDM5NjllYzMyOGFlZWQ2MmEwOGJkNDE0YzAyOGYwNGU2ZGU1OGZkMDcwNDI2YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3ee65ee5f124c249b695adc502a6e46",
+      "statement": "The shell group provides command execution (foreground runs and background polling) with exactly one executor mounted per composition: bash-local/bash-sandbox on POSIX and pwsh-local/pwsh-sandbox on Windows, with the model-facing bash/pwsh and persistent tools on top and shell-env supplying the managed DSH_* environment.",
+      "evidence": [
+        {
+          "resource": "repo://packages/shell/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:74974ee3cde007979131d3d261ef90c3639615b0cc46134df6158d413f87cf83:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzQ5NzRlZTNjZGUwMDc5NzkxMzFkM2QyNjFlZjkwYzM2Mzk2MTViMGNjNDYxMzRkZjYxNThkNDEzZjg3Y2Y4MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzQ5NzRlZTNjZGUwMDc5NzkxMzFkM2QyNjFlZjkwYzM2Mzk2MTViMGNjNDYxMzRkZjYxNThkNDEzZjg3Y2Y4MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        },
+        {
+          "resource": "repo://packages/shell/README.md#L26-L44",
+          "version": "repo-lines-v1:sha256:66051ad7e591fd98d652c7f306f4e4fa947742ea4e004fa7314ae4133af913fd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjYjA2ODJiYzVlZWM2YWY3ZDEzMzBjOGQyYjlmZDNhNGE1MGE1ODkxYmM1YWNkYzMxZjhkYTA2ZTIzMDhkZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmZGM3YWMyYTNhMGIxYjg2YjAxMDE3NDQ4YmQyMWI4NGU3YTcwYTZlOWUyNWVhY2RkMDNlNTRmY2VhNzVjOGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MTcyYzA4YjRmOTcxOWQwMzdiY2QxNWEzMGFiZDFiYzAxZmUwOTljYTI5MzA2NjczNmNmZWZlMjU5NzBiODYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_13fbbebcbfbf4f7892012ae49ddd93d5",
+      "statement": "The terminal group gives agents persistent, owner-scoped terminal sessions behind ctx.terminals (opaque ids, operations fenced to the owning agent), with terminal-bash starting an interactive bash or pwsh shell under the shared sandbox policy and tool-terminal exposing six model-facing tools with bounded results; sessions are process-local and do not survive a harness restart.",
+      "evidence": [
+        {
+          "resource": "repo://packages/terminal/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:0b8370fc510baad82c0d5329d130e268afd1ef3921fb13922e19eb25cf4bea01:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGI4MzcwZmM1MTBiYWFkODJjMGQ1MzI5ZDEzMGUyNjhhZmQxZWYzOTIxZmIxMzkyMmUxOWViMjVjZjRiZWEwMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGI4MzcwZmM1MTBiYWFkODJjMGQ1MzI5ZDEzMGUyNjhhZmQxZWYzOTIxZmIxMzkyMmUxOWViMjVjZjRiZWEwMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_efb6002e7e7d4b51a4d6354767eb281d",
+      "statement": "The user-approval seam of dsh-user-approval owns the shared request/outcome vocabulary, the ctx.approval dispatch service, the approval/request answerer waterfall, the log-only audit pair, and the per-session ask/never policy; callers fail closed unless the outcome is allowed-once.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/approval.md#L5-L5",
+          "version": "repo-lines-v1:sha256:1a1b7e0cae0c4ea62e0cc1b67d23e313e4b851fee7b7702cfb6e44d214b4b00e:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWExYjdlMGNhZTBjNGVhNjJlMGNjMWI2N2QyM2UzMTNlNGI4NTFmZWU3Yjc3MDJjZmI2ZTQ0ZDIxNGI0YjAwZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWExYjdlMGNhZTBjNGVhNjJlMGNjMWI2N2QyM2UzMTNlNGI4NTFmZWU3Yjc3MDJjZmI2ZTQ0ZDIxNGI0YjAwZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGE3OWE0ZDIyZTgzYTI3MzFmYzQ1MTk4YWIwNDhmMTMyYTcxOWU3NDBmOWQxMWNmMDk4ODVjN2Y3YjVlM2Q5YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzMwZDc4OTMwZGVkZjQ3NDE4MzE4ZmEyYTI3MzNkMDhlMmMyOThjMjQ3MTBiMmUzODA0MzIyMDIwYmZlMTVhMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b475397528ef4cce9f60097fd9ff9c96",
+      "statement": "ApprovalOutcome is closed and fail-closed: allowed-once grants only the asked-about action; callers deny on rejected, cancelled, and unavailable, and a missing, non-owning, throwing, or non-conforming answerer becomes unavailable rather than opening the gate.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/approval.md#L21-L21",
+          "version": "repo-lines-v1:sha256:ba9d68d1fdfd82e07731a715bcd68dcd78cb2e2e5d6159a4c0d767a774b6c4f6:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmE5ZDY4ZDFmZGZkODJlMDc3MzFhNzE1YmNkNjhkY2Q3OGNiMmUyZTVkNjE1OWE0YzBkNzY3YTc3NGI2YzRmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmE5ZDY4ZDFmZGZkODJlMDc3MzFhNzE1YmNkNjhkY2Q3OGNiMmUyZTVkNjE1OWE0YzBkNzY3YTc3NGI2YzRmNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDIxMzU0YTZkMDhkMDU3NDdmZDE2NThhNzQ4ZjU4YTY3NWMyYWMxNmVjMGQzMTQ3NjE4N2NjZjk5YTJmYjcwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjczZTM2YjVlYTgyODc1NGY0NWY5NjkzMGIyOTliNzYxMTUxNjUwMzgwYWYwODgyNWQ5YzJhNDg5NGE4MmUzYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_51376d7d039347e7990a4c2ee6b44e7e",
+      "statement": "The guard group keeps the loop productive with repeat-tool-reminder (notices repeated identical tool calls) and timeout-policy (time limit on tool calls that declare one), both shipping enabled in the dsh base bundle.",
+      "evidence": [
+        {
+          "resource": "repo://packages/guard/README.md#L12-L12",
+          "version": "repo-lines-v1:sha256:c4098e59dd73eebc2575bd636d26d4beefc27429fbbc18d58cf1106a313544ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzQwOThlNTlkZDczZWViYzI1NzViZDYzNmQyNmQ0YmVlZmMyNzQyOWZiYmMxOGQ1OGNmMTEwNmEzMTM1NDRhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzQwOThlNTlkZDczZWViYzI1NzViZDYzNmQyNmQ0YmVlZmMyNzQyOWZiYmMxOGQ1OGNmMTEwNmEzMTM1NDRhYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhiNWNjZjI0NTVjMDgwZGNjMTQyMGRkNWVkNTJjMDU2ZDU0Mjk0NzE4OGMzYWM2NTUzZTJkOGQwZGEzZTIwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2d1ff090fe84404383f989a8fea83abc",
+      "statement": "timeout-policy arms a cooperative deadline for tool calls that declare a limit: it asks the tool to stop through exec.signal and maps a settled cancellation to a clear 'tool call timed out after <ms>ms' error, never hard-stopping downstream work.",
+      "evidence": [
+        {
+          "resource": "repo://packages/guard/timeout-policy/README.md#L10-L14",
+          "version": "repo-lines-v1:sha256:9145d49ff19c522fe8065ac10b6a02e57ce4eea0afb5172a6c7e54397c67f30d:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDM1Y2M4ZDMwNjVhMGMyNWE1MjQ2YjAzYzlkZGQ3M2RmOTA1Y2ZmN2U2YjU2M2VjNzQzZmM5YzZkZjk4ZjBjYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODc3OGU3OWJkMDAzOGRmZjUxNDk1ZDNhYjA2YjVkMmVlMTc4ZmQxMDM2NTM3ZDU2MGY3ODkzYmYzNWY0MmZlMyJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}

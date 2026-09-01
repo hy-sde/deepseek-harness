@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:92769c7e0e7d3ee5bd8a25e6f4f2d2aecd369d257a96778f8aa0f05b20dfa458",
+  "claims": [
+    {
+      "id": "claim_a995b4b531c44e299a821b3513086a3f",
+      "statement": "dsh-tools provides ctx.tools, the registry tool plugins register into and the loop dispatches through: every model tool call runs through a guarded pipeline (allow/deny/ask policy, monotonic guards, around-dispatch wrappers, result inspection, definition-owned content finalization, and a final observe-only notification), its mode config selects native function calling, PTC mode, catalog mode, or both, and tool authors use defineTool for typed parameter and output schemas.",
+      "evidence": [
+        {
+          "resource": "repo://packages/core/tools/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:d773e8403fb5db8335eac8e32852dab504a76a91ec3e1606e6b47ace4d4cf166:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzhkNDBhYjE5ODkyNzZmNDkwMjQ5ZDBhMjdkNWMzZjZiYjgwZThiMTI5MjdkMjQxOTkxN2Q1ODhkMjZhZmM3OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ce73f4949ebd442080f2abfdb7210e8d",
+      "statement": "The tool execution pipeline runs tools/pre-execute first, monotonic guards next, then the tools/execute and tools/post-execute waterfalls, which may transform a call; definition-owned finalizeContent and tools/result run afterward.",
+      "evidence": [
+        {
+          "resource": "repo://docs/tool-execution-pipeline.md#L6-L6",
+          "version": "repo-lines-v1:sha256:89ba86cc2785a72f5b599bc3f2ab76085c640a831e24868bd2af6fce4ab34736:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODliYTg2Y2MyNzg1YTcyZjViNTk5YmMzZjJhYjc2MDg1YzY0MGE4MzFlMjQ4NjhiZDJhZjZmY2U0YWIzNDczNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODliYTg2Y2MyNzg1YTcyZjViNTk5YmMzZjJhYjc2MDg1YzY0MGE4MzFlMjQ4NjhiZDJhZjZmY2U0YWIzNDczNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDVkOTYyYTQwMmExMmMxODQ3NmYxM2IyMzdhZGQzYzdkZmE2ODc2MzQ1OTE1NmYxMmM4YjM4MWI0YjVhYTZmYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmViYjI2Yzg3OWU0ZjZjMmIxOGE5YTQyN2YzYzE3Y2ZkN2VjMTdkMzM1MTY5YTcxNGRjMTBkMTViM2EwZmYyMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0bf869f0d6a4ba18e2c34186a8490b6",
+      "statement": "Filesystem read-before-edit checks stay below tool-fs on fs/* events; ctx.approval resolves asks before monotonic guards and owner policy that must not be reordered remains a registered guard; the registry losslessly snapshots the candidate result and normalizes a snapshot failure before finalizeContent enforces its synchronous content-only invariant, with tools/result observing the immutable lossless-JSON outcome; and PTC mode sends both the reserved run_code transport and its serialized sub-calls through the pipeline with denials as binding rejections.",
+      "evidence": [
+        {
+          "resource": "repo://docs/tool-execution-pipeline.md#L60-L60",
+          "version": "repo-lines-v1:sha256:c81e4c617d025e04a0d4664256b57c7ab7734bcb42c375f870ad856605180853:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzgxZTRjNjE3ZDAyNWUwNGEwZDQ2NjQyNTZiNTdjN2FiNzczNGJjYjQyYzM3NWY4NzBhZDg1NjYwNTE4MDg1MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzgxZTRjNjE3ZDAyNWUwNGEwZDQ2NjQyNTZiNTdjN2FiNzczNGJjYjQyYzM3NWY4NzBhZDg1NjYwNTE4MDg1MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTY4MjU5OGI4NWFlNWZkOTgzMTAzZDZlYTAwOWMwOWI5MzE0YmZmMjczZGVhNmMxNjE5MzM5ZTk4ZDk5NzUwNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY3M2FkM2IyODEzYTU0YmE0MThjNjNjNjBjYWU2OWQwZDBjY2U3NjEyYWU5ODNkMzdjYTIxMzljNmZjNjk2NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9d461c5c69c14e48b6a261a029b75db6",
+      "statement": "The tool pipeline of dsh-tools documents every ToolDefinition field, the typed schema DSL that builds it, the guarded execution types, and the UI-presentation types.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/tools.md#L4-L7",
+          "version": "repo-lines-v1:sha256:bac148ef020aca6e3cc176bcf237609f6c3342d93bc837a396ecdc137ed8aa94:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZiYTlkZTU5YjMxZTVhNzU3ZGUwMmE0NmVkMjkyOTk3NzkwOTJmMGExNzZkMTE2OTk5ZjNkNzMyYWM5OGI2NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTMzMzQ1N2RlMTM1ODQzZjFmMjRiY2I0NzI0MDM1OTRjNGJlMGNiZmU4ZjM4NmZlZTU3NDcxOTIxYjM4Y2YxZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjJlNTRlMWVkNjk3MDE5MzZkYTkwYmJiODM0ZDYyNDk1OGQxOTBkMzc5Y2ZlMjk5MDZjZWRiZDQwMjIxYjUyMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ed523c28d8f64ca986fdec70008015d8",
+      "statement": "A ToolDefinition is a ToolSchema plus a mandatory canonical output declaration, the execute function, host-only scheduler metadata, an optional final-content callback, and optional UI presenters; the registry's schemas() builds the model-facing ToolSchema[] by an explicit allowlist so output/execute/finalizeContent/timeoutMs/isConcurrencySafe/device/presentCall/presentResult never leak into a model request.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/tools.md#L10-L13",
+          "version": "repo-lines-v1:sha256:80f5b0f2e4ad57c4fa214aeca1878174e5b5476f2015613b071c486696f6fc69:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjFmNDM2ZGUyYWYwM2I5Zjc4OWY0YmMxYTcxM2RkYjFiNDIyMjRkNzgwN2FmODMzYjkzYTQ3NzUyNmI5ZjQwNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmEyN2Q3OTEzMWM2ZTFhYjY3MzA2Yzc1ZTFlOTQ4NjA4ZmJhNTc5MGI4ODU1OGFkMWVhMTI5ZjUwNTViNjQwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2ZmOTg3N2YxYjYzM2ZlMDhmNmQ5OTRmNDE4ZmQyOWZiYWRiZTJmZmFlZGY3YjBhY2Q4ZDNiNzc3MjA0ZGIzZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8e6e1ccd0c2a45c7b1c70d1feef9aebd",
+      "statement": "The tool-owned canonical output contract is ToolOutputDefinition: a raw supported JSON Schema enforced against every successful canonical value, a pure render(args, value) projection to Native/model content, and an optional pure presentationMeta projection computed only for top-level calls; a tool mounted under mode 'catalog' has its full schema withheld from the prompt and is reachable only through the reserved dyn transport.",
+      "evidence": [
+        {
+          "resource": "repo://docs/subsystems/tools.md#L16-L45",
+          "version": "repo-lines-v1:sha256:edbe0dd913f2653fa78a3e3b6a75b35fc41d72ea52344858379e7853b79b99f0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkOWU1ZWM1YzBlYWI5MDAwZDhkYjFiMzBhMmI5NDVlYWRiMTFjZjVjN2MzZTMzMzZhYmNlM2U0MjBkMGJhNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmMWVkZDExZmM1ZDNjMmRlZDlkZTI4MmNjNjgwNzNiMTRiYWVhOGE2NjdlM2M2Y2I4MDYzNGI1MTcxM2YyYjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiZmJjMzQ0OWRjMTQxMWZmMjM5YmM5Y2JmY2QxM2ZlMWVlOGMwNGUxNDQ3ODQ4MWQxZjZjYjc4ZDUzYjI2OTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhNzk4NmY2OTUyNTk3MTg0MWVkMjM0MmY3YjkzMDZhODI1NDAxMDMwNzQwYzU1Yzc2YmIyMTY4NTliZTM2MWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_eb95834b47e8487a930de8800e360543",
+      "statement": "docs/tool-catalog.md is generated from schemas collected by booting each tool plugin: runtime registration is the source of truth for computed schemas, the manifest is checked against every on-disk tool-* package, and --check verifies the committed artifact.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/gen-tool-catalog.ts#L1-L4",
+          "version": "repo-lines-v1:sha256:e5fa8580920ae214a6cd2a34750ffbe9d446113e962db8c523c91f75910658f1:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWFmMjJjZjA3MzI1OTJjMjQ3MTQxY2JlNjFlZmExMTAxMjYxMmY1YTMxMjJiOWFmOWJiYWY1MmY1NzI0ZDE5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTU2Zjc1OWY2M2M1MzlkNDUxM2IxODNiNDVkNmJlNjFlNjMzNmM1NmUwM2I3NmU3MmUwMzMyOWMwNDEyMzliMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzkxOWIyZjA5M2Q4ZWYyZmMzMDJmMzhjMjU3OWI5ODJiMDE5NTIwNjZhMjM0OGI4OTE1YjM3YWU1ZTNjYzI0ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_629b83482d854359baeaffbd96b8f075",
+      "statement": "The spill group keeps oversized tool output out of the model's context without losing it: when a tool result exceeds a deployment's byte cap the full text is saved to a spill artifact and the model sees a bounded preview plus a locator; the family splits into the storage service (spill/), the local filesystem backend (spill-local/), and the result policy (spill-policy/), is opt-in and best-effort, and acts only when maxInlineBytes is configured.",
+      "evidence": [
+        {
+          "resource": "repo://packages/spill/README.md#L10-L12",
+          "version": "repo-lines-v1:sha256:33635a481b51dd1999d7037e0e281f45c23a8016be12c879f4306998a89518a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQxNWIyZGI0ZWYzYWVlZGI0M2EwZWJmZDI1NjMwMTIyY2U2MzdjNzAyZDBlZGUyOWI2NjY4NTlmM2FiMzAyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODg4Y2Q3NWQ3Y2FiNTAyMDdmNGFkOGExYjQxZTQ2ZTQyMWQ0MzEyMjAyMTJiOWRmNWQ3MDliNWMxOGI4NzNlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjgyY2UzMTY5MDRmNGZhMDJhOGE4YjJmNWY3ODExNGEyN2U5MjIxZWZmNWZhMjBjYmI3YTc3ODA1ODU1ZjkxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkODMzN2Q3OTcwYzUwOGI2YzM3Y2E1ODdiNTMwYzI0NzU5YmRkMDFkZTA1ZTcwNDdlMzdjM2U4YzY3MzgzOSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-09-01T12:21:12.375Z"
+  }
+}
