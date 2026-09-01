@@ -924,7 +924,13 @@ fn render_change(
 				text.push_str(if new_label.contains(' ') { "\t" } else { "" });
 				text.push('\n');
 				let old_data = prepared.old.data.as_slice().unwrap_or_default();
-				let sink = GitHunks { out: &mut text, old_data };
+				let sink = GitHunks {
+					out: &mut text,
+					old_data,
+					next_line: 0,
+					next_offset: 0,
+					candidate: None,
+				};
 				gix::diff::blob::UnifiedDiff::new(
 					&diff,
 					&input,
@@ -1008,6 +1014,16 @@ fn compute_similarity(
 struct GitHunks<'a> {
 	out: &'a mut String,
 	old_data: &'a [u8],
+	/// Monotonic scan state for function context: index of the next
+	/// unexamined old-file line, its byte offset, and the most recent
+	/// qualifying line seen. `consume_hunk` is invoked in ascending hunk
+	/// order, so advancing this cursor forward keeps a single O(n) pass
+	/// over each file (git's xdiff bounds its per-hunk backward scan the
+	/// same way with `funclineprev`); recomputing the context from line 1
+	/// for every hunk would be O(hunks x file size).
+	next_line: usize,
+	next_offset: usize,
+	candidate: Option<&'a [u8]>,
 }
 
 impl gix::diff::blob::unified_diff::ConsumeHunk for GitHunks<'_> {
@@ -1025,7 +1041,7 @@ impl gix::diff::blob::unified_diff::ConsumeHunk for GitHunks<'_> {
 		self.out.push_str(" +");
 		push_range(self.out, new_start, header.after_hunk_len);
 		self.out.push_str(" @@");
-		if let Some(function) = function_context(self.old_data, header.before_hunk_start) {
+		if let Some(function) = self.advance_function_context(header.before_hunk_start) {
 			self.out.push(' ');
 			self.out.push_str(&String::from_utf8_lossy(function));
 		}
@@ -1135,19 +1151,103 @@ fn push_range(out: &mut String, start: u32, len: u32) {
 	}
 }
 
-fn function_context(data: &[u8], hunk_start: u32) -> Option<&[u8]> {
-	let before = usize::try_from(hunk_start.saturating_sub(1)).ok()?;
-	let mut candidate = None;
-	for line in data.split(|&byte| byte == b'\n').take(before) {
-		let line = line.strip_suffix(b"\r").unwrap_or(line);
-		if line
-			.first()
-			.is_some_and(|byte| !byte.is_ascii_whitespace() && *byte != b'}')
-		{
-			candidate = Some(line);
+impl<'a> GitHunks<'a> {
+	/// Advance the function-context cursor over the old-file lines that
+	/// precede the hunk starting at 1-based old-file line `hunk_start`,
+	/// returning the most recent qualifying line among them (identical to a
+	/// from-scratch backward scan, but O(n) total across all hunks).
+	///
+	/// Qualifying = line's first byte is not ASCII whitespace and is not
+	/// `}`; a trailing `\r` is ignored for the test and omitted from the
+	/// returned slice (matching the previous implementation).
+	///
+	/// Local divergence from the omp port's `function_context`
+	/// (crates/pi-vcs/src/git/diff.rs, which rescan the whole file from
+	/// line 1 for every hunk - O(hunks x file size)): hunks are consumed in
+	/// ascending order here, so a single forward cursor reproduces the exact
+	/// same result in one pass per file.
+	fn advance_function_context(&mut self, hunk_start: u32) -> Option<&'a [u8]> {
+		let before = usize::try_from(hunk_start.saturating_sub(1)).ok()?;
+		while self.next_line < before {
+			let rest = &self.old_data[self.next_offset..];
+			let newline = rest.iter().position(|&byte| byte == b'\n');
+			let line_end = newline.map_or(self.old_data.len(), |i| self.next_offset + i);
+			let line = &self.old_data[self.next_offset..line_end];
+			self.next_offset = newline.map_or(self.old_data.len(), |_| line_end + 1);
+			self.next_line += 1;
+			let line = line.strip_suffix(b"\r").unwrap_or(line);
+			if let Some(&first) = line.first() {
+				if !first.is_ascii_whitespace() && first != b'}' {
+					self.candidate = Some(line);
+				}
+			}
 		}
+		self.candidate
 	}
-	candidate
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn probe(data: &[u8], hunk_starts: &[u32]) -> Vec<Option<String>> {
+		let mut out = String::new();
+		let mut hunks = GitHunks {
+			out: &mut out,
+			old_data: data,
+			next_line: 0,
+			next_offset: 0,
+			candidate: None,
+		};
+		hunk_starts
+			.iter()
+			.map(|&start| {
+				hunks
+					.advance_function_context(start)
+					.map(|line| String::from_utf8_lossy(line).into_owned())
+			})
+			.collect()
+	}
+
+	#[test]
+	fn forward_cursor_matches_from_scratch_pick() {
+		let data = b"one\ntwo\nthree\nfour\n";
+		// hunk at line 2 -> lines before it: ["one"]
+		assert_eq!(probe(data, &[2]), vec![Some("one".into())]);
+		// hunk at line 4 -> lines before it: ["one","two","three"], last qualifying "three"
+		assert_eq!(probe(data, &[4]), vec![Some("three".into())]);
+		// two hunks ascending: shared cursor must keep the from-scratch result
+		assert_eq!(probe(data, &[2, 4]), vec![Some("one".into()), Some("three".into())]);
+		// hunk at line 1 has no preceding lines
+		assert_eq!(probe(data, &[1]), vec![None]);
+	}
+
+	#[test]
+	fn qualifying_line_predicate() {
+		// indented lines and `}` never qualify; the nearest qualifying line wins
+		let data = b"  indented\nnot indented\n  indented\n}\n";
+		assert_eq!(probe(data, &[2]), vec![None]); // before: ["  indented"]
+		assert_eq!(probe(data, &[4]), vec![Some("not indented".into())]); // before: [..., "}"]
+		assert_eq!(probe(data, &[5]), vec![Some("not indented".into())]); // before ends at "}"
+	}
+
+	#[test]
+	fn trailing_cr_stripped_and_last_line_without_newline() {
+		let data = b"one\r\ntwo\r\nlast";
+		// split on \n keeps the terminator; \r is stripped before the test
+		assert_eq!(probe(data, &[2]), vec![Some("one".into())]); // before: ["one\r"]
+		assert_eq!(probe(data, &[3]), vec![Some("two".into())]); // before: ["one\r","two\r"]
+		assert_eq!(probe(data, &[4]), vec![Some("last".into())]); // before also includes bare "last"
+	}
+
+	#[test]
+	fn empty_and_trailing_newline_files() {
+		assert_eq!(probe(b"", &[1]), vec![None]);
+		assert_eq!(probe(b"\n", &[1]), vec![None]);
+		let data = b"a\n";
+		assert_eq!(probe(data, &[2]), vec![Some("a".into())]);
+		assert_eq!(probe(data, &[1, 2]), vec![None, Some("a".into())]);
+	}
 }
 
 fn path_string(path: &BStr) -> String {
