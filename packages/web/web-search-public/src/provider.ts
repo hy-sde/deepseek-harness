@@ -19,7 +19,23 @@ import type {
   WebSearchResult,
   WebSearchSource,
 } from '@deepseek-ai/dsh-web'
+import { Cause, Data, Effect, Scheduler } from 'effect'
 import type { PublicEngine } from './types.ts'
+
+/**
+ * Error channel for one engine's failed search. Tagged so the effect error
+ * stays typed; it is recovered into the `failed` attempt kind immediately
+ * inside the attempt effect and never escapes.
+ */
+class EngineSearchError extends Data.TaggedError('EngineSearchError')<{ readonly cause: unknown }> {}
+
+/**
+ * Effect's default scheduler dispatches on `setImmediate`; the sync scheduler
+ * dispatches on `queueMicrotask`, which vitest's fake timers do not mock. The
+ * fork's tests use fake timers heavily, so every plugin-side Effect runtime
+ * must pin the sync scheduler or cancel-without-advancing tests deadlock.
+ */
+const syncScheduler = new Scheduler.MixedScheduler('sync')
 
 /** Stable id this provider registers under in `ctx.web`. */
 export const PUBLIC_PROVIDER_ID = 'public'
@@ -194,41 +210,73 @@ export class PublicSearchProvider implements WebSearchProvider {
     return toResult(merged, request.maxResults)
   }
 
-  private async attempt(
+  /**
+   * Run one engine with a per-engine transport deadline.
+   *
+   * The engine's own promise is never abandoned by management: the deadline
+   * and the caller's aggregate signal both abort the engine's controller, and
+   * on timeout the `Effect.timeout` interrupt still runs the Scope finalizer
+   * (which signals the engine), so a signal-ignoring engine becomes a zombie
+   * exactly like the old `Promise.race` — never a hang.
+   *
+   * `Effect.timeout` fails with `Cause.TimeoutError` on expiry; the facade
+   * maps that back to the `timedOut` attempt kind the aggregate understands.
+   * Deliberately not `Effect.timeoutOption`: the aggregate needs the timeout
+   * distinguishable from a value-less success.
+   */
+  private attempt(
     engine: PublicEngine,
     request: WebSearchRequest,
     signal: AbortSignal | undefined,
   ): Promise<EngineAttempt> {
-    const controller = new AbortController()
-    const deadline = AbortSignal.timeout(this.options.timeoutMs)
-    const abortEngine = (): void => { controller.abort() }
-    const onDeadline = (): void => {
-      // Force a signal-ignoring engine to stop as soon as the deadline fires.
-      abortEngine()
-    }
-    deadline.addEventListener('abort', onDeadline, { once: true })
-    if (signal?.aborted) {
-      deadline.removeEventListener('abort', onDeadline)
-      return { kind: 'failed', message: 'aborted by caller' }
-    }
-    signal?.addEventListener('abort', abortEngine, { once: true })
-
-    try {
-      const outcome = await Promise.race([
-        engine.search(request, controller.signal).then(
-          sources => ({ kind: 'ok' as const, sources }),
-          (error: unknown) => ({ kind: 'failed' as const, message: error instanceof Error ? error.message : String(error) }),
-        ),
-        new Promise<{ readonly kind: 'timedOut' }>((resolve) => {
-          deadline.addEventListener('abort', () => { resolve({ kind: 'timedOut' }) }, { once: true })
+    const timeoutMs = this.options.timeoutMs
+    const program = Effect.gen(function* () {
+      if (signal?.aborted) return { kind: 'failed' as const, message: 'aborted by caller' }
+      const controller = new AbortController()
+      // Scope-owned forwarder: its release finalizer detaches the listener and
+      // aborts the engine controller on every exit path — success, classified
+      // failure, deadline interrupt — replacing the hand-rolled try/finally.
+      yield* Effect.acquireRelease(
+        Effect.sync(() => {
+          const abortEngine = (): void => {
+            controller.abort()
+          }
+          signal?.addEventListener('abort', abortEngine, { once: true })
+          return abortEngine
         }),
-      ])
-      return signal?.aborted ? { kind: 'failed' as const, message: 'aborted by caller' } : outcome
-    } finally {
-      controller.abort()
-      deadline.removeEventListener('abort', onDeadline)
-      signal?.removeEventListener('abort', abortEngine)
-    }
+        abortEngine =>
+          Effect.sync(() => {
+            signal?.removeEventListener('abort', abortEngine)
+            controller.abort()
+          }),
+      )
+      // The options form's `catch` maps to the ERROR channel and receives the
+      // original rejection (the bare function form wraps it in
+      // Cause.UnknownError, hiding the engine's message) — carry it through as
+      // a tagged error and recover it into the `failed` attempt kind here.
+      const outcome = yield* Effect.tryPromise({
+        try: () =>
+          engine.search(request, controller.signal).then(
+            sources => ({ kind: 'ok' as const, sources }),
+          ),
+        catch: (error: unknown) => new EngineSearchError({ cause: error }),
+      }).pipe(
+        Effect.match({
+          onSuccess: value => value,
+          onFailure: (error: EngineSearchError) => ({
+            kind: 'failed' as const,
+            message: error.cause instanceof Error ? error.cause.message : String(error.cause),
+          }),
+        }),
+      )
+      return signal?.aborted ? ({ kind: 'failed' as const, message: 'aborted by caller' }) : outcome
+    })
+    return Effect.runPromise(Effect.scoped(program.pipe(Effect.timeout(timeoutMs))), {
+      scheduler: syncScheduler,
+    }).catch((error: unknown) => {
+      if (Cause.isTimeoutError(error)) return { kind: 'timedOut' as const }
+      throw error
+    })
   }
 }
 

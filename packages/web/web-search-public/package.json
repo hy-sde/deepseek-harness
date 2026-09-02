@@ -31,7 +31,8 @@
     "@deepseek-ai/cordis": "workspace:^"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@deepseek-ai/schemastery": "workspace:^",
+    "effect": "4.0.0-rc.112"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-web": "workspace:^",
