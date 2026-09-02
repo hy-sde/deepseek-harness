@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/openwiki/openwiki-core/README.md
-README.md: 17045cf8b3db3f5c75a8855eeb9df415b919447b
-README.zh.md: 308637cf178b8eb621e638f22c8c7c2fc4398241
+README.md: 0d4fb8270614490268f9532193cae2814cc2ad22
+README.zh.md: 474bffb4b8f47e5a50b04b04d73af30fc8cbad43

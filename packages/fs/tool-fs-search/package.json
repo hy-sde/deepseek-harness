@@ -32,7 +32,6 @@
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-internal-urls": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-llm": "workspace:^",
     "@deepseek-ai/dsh-output-retention": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",

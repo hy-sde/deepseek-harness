@@ -1,15 +1,38 @@
+---
+description: "harness 的只读 VCS 管道：封装用户安装 pi-vcs CLI 的 ctx.vcs host 服务，暴露基于 gitoxide 的差异、状态、发现与 watch 数据面，与 git 逐字节兼容，对 git 服务纯属增量。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-vcs
 
 [English](README.md) | 中文
+
+## 概述
+
+`dsh-vcs` 暴露 `ctx.vcs`——一个 host 平面服务，封装用户安装的 `pi-vcs` CLI，为 harness 提供窄的只读 VCS 数据面：修订、暂存与工作树差异（含 `--name-only`/`--numstat` 模式）、状态计数、分支名、仓库发现与 HEAD 变化 watch，每个文本数据面都与对应 `git diff` 输出逐字节兼容。当调用方需要 gitoxide 原生切片而不改变默认 TS/git-CLI 路径时选择它：该服务纯属增量，`pi-vcs` 不可达时降级到 git 服务。其代价是按功能探测与逐调用 shell-out——每个动词生成 `pi-vcs` 并采集受限输出，且二进制补丁只渲染标记。
+
+## 目录
+
+- [增量式且按功能探测](#additive-and-feature-detected)
+- [`pi-vcs` CLI](#the-pi-vcs-cli)
+- [执行的命令](#executed-commands)
+- [安全边界](#security-boundary)
+- [配置](#configuration)
+- [已知限制与延后工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
 
 DeepSeek Harness 的原生 vcs 管道：`ctx.vcs`，一个 host 平面服务，封装 `pi-vcs` CLI —— oh-my-pi vcs 数据面的窄原生切片 —— 通过 `ctx.subprocess` 通道执行，以 `ctx.av` 为模板。
 
 服务解析 `pi-vcs` 可执行文件（配置 → `DSH_VCS_PATH` → PATH），用 `pi-vcs --version` 探测，并暴露窄切片：git 修订差异与暂存差异由 **gitoxide 进程内渲染**（git 兼容的统一补丁文本，与 git 服务渲染逐字节兼容）、仓库发现、以及 HEAD 变化 watch 伴生进程。
 
+<a id="additive-and-feature-detected"></a>
 ## 增量式且按功能探测
 
 `ctx.vcs` 在该 harness 约定下**纯属增量**：git 服务（`ctx.git`，TS/git-CLI）保持默认路径且不被改动。这些数据面仅在 `pi-vcs` 二进制可达且探测正常时解析；否则 `probe()` 报告 `available: false`，调用方降级到 git 服务。无 jj 后端、无变更动词 —— 这些保留在 git 服务上。
 
+<a id="the-pi-vcs-cli"></a>
 ## `pi-vcs` CLI
 
 该 CLI **像 `av` 一样由用户安装** —— 从本仓库的 `native/pi-vcs-cli/` 构建（一个基于 gitoxide 的 Rust crate）：
@@ -22,6 +45,7 @@ cargo build --release --manifest-path native/pi-vcs-cli/Cargo.toml
 
 它是 oh-my-pi `crates/pi-vcs` git 后端的一个忠实、MIT 署名的移植，限定于窄切片。其差异渲染器输出 git 兼容的统一文本（针对文本、二进制、重命名/复制与暂存数据面，均验证为与 `git diff` 逐字节一致）。
 
+<a id="executed-commands"></a>
 ## 执行的命令
 
 | 方法 | CLI 调用 | 用途 |
@@ -40,15 +64,21 @@ cargo build --release --manifest-path native/pi-vcs-cli/Cargo.toml
 
 所有命令都通过 `ctx.subprocess` 执行，带受限的 stdout/stderr 采集、墙钟超时和 SIGTERM→SIGKILL 宽限。非零退出以数据形式返回在 run 上，并带结构化 `code`（VcsError 分类：`NotARepository`、`RefNotFound`、`ObjectNotFound`、`Backend`、`Unsupported` 等），从 CLI 的 JSON stderr 解析；只有启动失败、信号杀死或超时才抛出 `VcsCommandError`。`watch` 返回一个终止进程树的释放器。
 
+<a id="security-boundary"></a>
 ## 安全边界
 
 - **只读切片** —— `ctx.vcs` 从不变更仓库：无提交、无暂存、无引用写入。所有动词只渲染既有状态。
 - 无命令经过 shell 解释；argv 原样通过 subprocess 通道传递。
 - 发现是纯文件系统遍历（无子进程）；gix 打开时拒绝环境中的 `GIT_*` 位置覆盖，将每个操作绑定到已发现的仓库。
 
+<a id="configuration"></a>
 ## 配置
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import vcsPackage from '@deepseek-ai/dsh-vcs'
+
+const ctx = new Context()
 ctx.plugin(vcsPackage, {
   vcsPath: '/usr/local/bin/pi-vcs',
   timeoutMs: 120000,
@@ -59,9 +89,20 @@ ctx.plugin(vcsPackage, {
 })
 ```
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与延后工作
 
 - **二进制补丁仅渲染标记** —— 省去 `GIT binary patch` 正文机制（delta/base85）；二进制变更输出 `Binary files … differ`，与 harness 差异解析器的预期一致。
 - **工作树差异保留在 git 服务** —— `pi-vcs` 覆盖修订与索引；未提交的工作树差异仍经由 `ctx.git`。
 - **无 jj 后端** —— harness fork 仅 git（`isPureJj=false`）；编译进 omp 原生 addon 的 jj-lib 不是可调用的二进制，且刻意不在范围内。
 - **逐调用 shell-out** —— 批量动词没有常驻原生进程；每次调用生成 `pi-vcs` 并采集受限输出。`watch` 是唯一的长驻伴生进程。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

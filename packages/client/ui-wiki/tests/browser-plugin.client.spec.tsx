@@ -7,9 +7,10 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
-import { describe, expect, it, afterEach } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { en } from '../src/client/locales.ts'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { WikiRemoteNamespace } from '../src/client/api.ts'
@@ -55,6 +56,7 @@ async function bench(): Promise<{ ctx: Context }> {
       'sidebar.footer.action': { kind: 'list', scope: 'root' },
     },
   } as never, (() => null) as never)
+  ctx.provide('locale', { register: vi.fn(() => (() => {}) ) } as never)
   ctx.provide('remote', { wiki: scriptedWiki(calls) } as unknown as ClientRemote)
   ctx.provide('remote.wiki', scriptedWiki(calls))
   await ctx.plugin({ inject, apply }).await()
@@ -70,8 +72,9 @@ describe('ui-wiki browser plugin', () => {
 
   it('toggle opens the drawer, lists pages, and opens a page', async () => {
     await bench()
-    render(<WikiDrawer />) // closed → renders nothing
-    render(<WikiToggle wide />)
+    const t = (key: string): string => (en as Record<string, string>)[key] ?? key
+    render(<WikiDrawer t={t} />) // closed → renders nothing
+    render(<WikiToggle wide t={t} />)
     fireEvent.click(screen.getByTitle('Open wiki'))
     await waitFor(() => { expect(screen.getByText('LLM Wiki')).toBeDefined() })
     await waitFor(() => { expect(screen.getByText('Rust')).toBeDefined() })

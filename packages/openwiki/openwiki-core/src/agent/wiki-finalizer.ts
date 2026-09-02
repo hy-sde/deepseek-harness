@@ -223,12 +223,13 @@ export interface WikiFinalizerOptions extends WikiLifecycleOptions {
  * @param options - Preparation inputs for the active wiki.
  * @returns Run-scoped state required by finalization.
  */
-export async function prepareWikiForAuthoring({
-  backend,
-  outputMode,
-  conceptType = ENGLISH_CONCEPT_TYPE,
-  runOperation = runWikiOperation,
-}: WikiPreparationOptions): Promise<PreparedWikiState> {
+export async function prepareWikiForAuthoring(options: WikiPreparationOptions): Promise<PreparedWikiState> {
+  const {
+    backend,
+    outputMode,
+    conceptType = ENGLISH_CONCEPT_TYPE,
+    runOperation = runWikiOperation,
+  } = options
   await runOperation('migrate', () =>
     migrateWikiToOkf(backend, outputMode, conceptType),
   )
@@ -245,18 +246,19 @@ export async function prepareWikiForAuthoring({
  *
  * @param options - Finalization inputs and matching preparation state.
  */
-export async function finalizeWikiArtifacts({
-  backend,
-  outputMode,
-  labels = ENGLISH_INDEX_LABELS,
-  conceptType = ENGLISH_CONCEPT_TYPE,
-  prepared,
-  at,
-  producerActor = OPENWIKI_PRODUCER_ACTOR,
-  producerActorsByPage,
-  claimSources,
-  runOperation = runWikiOperation,
-}: WikiFinalizerOptions): Promise<void> {
+export async function finalizeWikiArtifacts(options: WikiFinalizerOptions): Promise<void> {
+  const {
+    backend,
+    outputMode,
+    labels = ENGLISH_INDEX_LABELS,
+    conceptType = ENGLISH_CONCEPT_TYPE,
+    prepared,
+    at,
+    producerActor = OPENWIKI_PRODUCER_ACTOR,
+    producerActorsByPage,
+    claimSources,
+    runOperation = runWikiOperation,
+  } = options
   if (producerActor.trim().length === 0) {
     throw new Error('Wiki finalization requires a non-empty producer actor.')
   }

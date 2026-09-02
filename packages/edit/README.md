@@ -1,3 +1,7 @@
+---
+description: "The edit package group: the Hashline line-anchored patch language and the model-facing rich edit tool, for deployments choosing or wiring the editor capability family."
+kind: "package-group"
+---
 # edit/ - rich editor capability family
 
 English | [中文](README.zh.md)

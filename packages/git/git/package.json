@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-git",
   "description": "Agentic git plumbing: the host ctx.git service (diff capture/parsing, hunk staging, commit/push/log over the subprocess seam) backing the commit and review tools in @deepseek-ai/dsh-tool-git",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.2-alpha.4",
   "publishConfig": {
     "access": "public"
   },
@@ -38,10 +38,6 @@
       "types": "./lib/types/lock-files.d.ts",
       "default": "./lib/types/lock-files.js"
     },
-    "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
-      "default": "./lib/invariant.js"
-    },
     "./vcs": {
       "types": "./lib/types/vcs.d.ts",
       "default": "./lib/types/vcs.js"
@@ -59,7 +55,7 @@
   },
   "files": [
     "lib/index.js",
-    "lib/invariant.js",
+    "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
@@ -68,12 +64,10 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-subprocess": "workspace:^"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-subprocess": "workspace:^"
   }
 }

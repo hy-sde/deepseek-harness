@@ -31,12 +31,6 @@
     },
     {
       "path": "../deepseek-llm-api-extensions"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

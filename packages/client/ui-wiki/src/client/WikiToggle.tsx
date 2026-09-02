@@ -5,21 +5,26 @@
  */
 
 import clsx from 'clsx'
+import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SidebarFooterActionOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import { wikiStore } from './store.ts'
 import css from './WikiToggle.module.css'
 
 /** Sidebar-footer cell toggling the wiki drawer. */
-export function WikiToggle({ wide }: SidebarFooterActionOwnerProps) {
+export type WikiToggleProps =
+  SidebarFooterActionOwnerProps
+  & PropsLocale<'wiki'>
+
+export function WikiToggle({ wide, t }: WikiToggleProps) {
   const open = wikiStore.getState().open
   return (
     <button
       className={clsx(css.toggle, !wide && css.rail, open && css.active)}
-      title={open ? 'Close wiki' : 'Open wiki'}
+      title={open ? t('toggle.closeWiki') : t('toggle.openWiki')}
       onClick={() => { wikiStore.toggleOpen() }}
     >
       <span className={css.glyph} aria-hidden>❖</span>
-      {wide && <span className={css.label}>Wiki</span>}
+      {wide && <span className={css.label}>{t('toggle.label')}</span>}
     </button>
   )
 }

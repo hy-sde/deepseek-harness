@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react'
+import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { WikiBlockNode } from './api.ts'
 import { wikiStore } from './store.ts'
 import css from './BlockTree.module.css'
@@ -37,10 +38,11 @@ interface BlockRowProps {
   node: WikiBlockNode
   pageName: string
   depth: number
+  t: TranslateNS<'wiki'>
 }
 
 /** One outliner row: content + hover actions + nested children. */
-export function BlockRow({ node, pageName, depth }: BlockRowProps) {
+export function BlockRow({ node, pageName, depth, t }: BlockRowProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(node.content)
   const [adding, setAdding] = useState(false)
@@ -85,22 +87,22 @@ export function BlockRow({ node, pageName, depth }: BlockRowProps) {
         <div className={css.actions}>
           {!editing && (
             <>
-              <button className={css.action} title="Add child block" onClick={() => { setAdding(v => !v) }}>＋</button>
-              <button className={css.action} title="Edit text" onClick={() => { setDraft(node.content); setEditing(true) }}>✎</button>
-              <button className={css.action} title="Delete block" onClick={() => { if (window.confirm(`Delete block #${node.id}?`)) void wikiStore.deleteBlock(node.id) }}>🗑</button>
+              <button className={css.action} title={t('block.addChild')} onClick={() => { setAdding(v => !v) }}>＋</button>
+              <button className={css.action} title={t('block.editText')} onClick={() => { setDraft(node.content); setEditing(true) }}>✎</button>
+              <button className={css.action} title={t('block.deleteBlock')} onClick={() => { if (window.confirm(`Delete block #${node.id}?`)) void wikiStore.deleteBlock(node.id) }}>🗑</button>
             </>
           )}
           {editing && (
             <>
-              <button className={css.action} title="Save (⌘⏎)" onClick={commitEdit}>Save</button>
-              <button className={css.action} title="Cancel (Esc)" onClick={() => { setEditing(false) }}>Cancel</button>
+              <button className={css.action} title={t('block.saveShortcut')} onClick={commitEdit}>{t('block.save')}</button>
+              <button className={css.action} title={t('block.cancelShortcut')} onClick={() => { setEditing(false) }}>{t('block.cancel')}</button>
             </>
           )}
         </div>
       </div>
       {node.children.length > 0 && (
         <div className={css.children}>
-          {node.children.map(child => <BlockRow key={child.id} node={child} pageName={pageName} depth={depth + 1} />)}
+          {node.children.map(child => <BlockRow key={child.id} node={child} pageName={pageName} depth={depth + 1} t={t} />)}
         </div>
       )}
       {adding && (
@@ -108,7 +110,7 @@ export function BlockRow({ node, pageName, depth }: BlockRowProps) {
           <input
             className={css.addInput}
             value={addDraft}
-            placeholder={`child of #${node.id}… Enter saves`}
+            placeholder={t('block.placeholder', { id: node.id })}
             onChange={(e) => { setAddDraft(e.target.value) }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commitAdd()
@@ -116,8 +118,8 @@ export function BlockRow({ node, pageName, depth }: BlockRowProps) {
             }}
             autoFocus
           />
-          <button className={css.action} onClick={commitAdd}>Save</button>
-          <button className={css.action} onClick={() => { setAdding(false) }}>Cancel</button>
+          <button className={css.action} onClick={commitAdd}>{t('block.save')}</button>
+          <button className={css.action} onClick={() => { setAdding(false) }}>{t('block.cancel')}</button>
         </div>
       )}
     </div>
@@ -125,10 +127,10 @@ export function BlockRow({ node, pageName, depth }: BlockRowProps) {
 }
 
 /** A tree of blocks with an "add top-level child" affordance. */
-export function BlockTree({ blocks, pageName }: { blocks: WikiBlockNode[]; pageName: string }) {
+export function BlockTree({ blocks, pageName, t }: { blocks: WikiBlockNode[]; pageName: string; t: TranslateNS<'wiki'> }) {
   return (
     <div className={css.tree}>
-      {blocks.map(node => <BlockRow key={node.id} node={node} pageName={pageName} depth={0} />)}
+      {blocks.map(node => <BlockRow key={node.id} node={node} pageName={pageName} depth={0} t={t} />)}
     </div>
   )
 }

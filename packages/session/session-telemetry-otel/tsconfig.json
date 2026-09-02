@@ -31,12 +31,6 @@
     },
     {
       "path": "../../identity/anonymous-user-id"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

@@ -1,11 +1,31 @@
+---
+description: "The host-plane, read-only Automic Vault CLI wrapper for deployments and maintainers choosing, configuring, or debugging `ctx.av` audit, hardening, detector-catalog, and secret-name listing surfaces."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-av
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`ctx.av` is the host-plane, read-only Automic Vault wrapper: it resolves the `av` executable, probes it with `av --version`, and parses the JSON surfaces from `av scan --json`, `av doctor [tool] --json`, `av detectors --json`, `av hardeners --json`, and `av list`. Choose it when an agent or tool needs Vault facts — the model-facing tools in `@deepseek-ai/dsh-tool-av` resolve this exact service. The cost is one bounded subprocess shell-out per call with a wall-clock timeout, and the boundary is hard: value-releasing verbs never run here, so no Secret Value reaches model context or an argv.
+
+## Table of Contents
+
+- [Executed commands](#executed-commands)
+- [Security boundary](#security-boundary)
+- [Configuration](#configuration)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 Agentic Automic Vault plumbing for the DeepSeek Harness: `ctx.av`, a host-plane, read-only wrapper around the [Automic Vault](https://www.automicvault.com/) `av` CLI via the `ctx.subprocess` seam. The model-facing tools in `@deepseek-ai/dsh-tool-av` resolve this host instance.
 
 The service resolves the `av` executable (config → `DSH_AV_PATH` → PATH), probes it with `av --version`, and parses the JSON surfaces `av scan --json` (audit), `av doctor [tool] --json` (hardening verification), `av detectors --json` and `av hardeners --json` (catalogs), plus `av list` (saved secret **names only**).
 
+<a id="executed-commands"></a>
 ## Executed commands
 
 | Method | CLI invocation | Purpose |
@@ -19,15 +39,21 @@ The service resolves the `av` executable (config → `DSH_AV_PATH` → PATH), pr
 
 All commands run through `ctx.subprocess` with bounded stdout/stderr collection, a wall-clock timeout, and SIGTERM→SIGKILL grace. A non-zero exit is returned as data on the run; only launch failure, signal kill, or timeout throws `AvCommandError`.
 
+<a id="security-boundary"></a>
 ## Security boundary
 
 - This service **never invokes the value-releasing verbs** (`av inject`, `av proxy`, `av save`, `av harden`) — they stay human-in-the-loop in a terminal the user controls.
 - `av list` returns names only; the service has no method that returns a stored Secret Value, and no command carries a secret on argv.
 - No command is shell-interpreted; argv is passed verbatim through the subprocess seam.
 
+<a id="configuration"></a>
 ## Configuration
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import avPackage from '@deepseek-ai/dsh-av'
+
+const ctx = new Context()
 ctx.plugin(avPackage, {
   avPath: '/usr/local/bin/av', // default: DSH_AV_PATH env, else `av` on PATH
   timeoutMs: 120000,
@@ -37,8 +63,21 @@ ctx.plugin(avPackage, {
 })
 ```
 
+<a id="known-limitations-and-deferred-work"></a>
 ## Known Limitations and Deferred Work
 
 - **No secret custody verbs** — saving, injecting, and proxying Secret Values are intentionally out of surface; `av save` itself is interactive-only (reads from `/dev/tty`), so a future custody tool needs an upstream CLI change.
 - **Per-call shell-out** — no persistent connection to the Automic Vault app; each verb spawns `av` and collects bounded output.
 - **Scan output can be large** — the 8 MiB stdout cap bounds one `av scan`; the tool layer summarizes before rendering.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

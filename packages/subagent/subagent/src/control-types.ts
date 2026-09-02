@@ -148,6 +148,10 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 }
 
+/**
+ * Subagent Control Error Details Map.
+ *
+ */
 export interface SubagentControlErrorDetailsMap {
   'bad-request': { readonly issues: zCore.core.$ZodIssue[] }
   cancelled: Record<never, never>

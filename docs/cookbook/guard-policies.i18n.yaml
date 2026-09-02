@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cookbook/guard-policies.md
-guard-policies.md: 683f215381d51da094f7b114792ac80437c4a363
-guard-policies.zh.md: a80359ef361f92d6f999caee2a092cd33efb322f
+guard-policies.md: 22e6f5732031deb22153ce10bd3c89cebdab169d
+guard-policies.zh.md: 563bd8dbb7f14692d3d09bd87a4cf9d53ad1238b

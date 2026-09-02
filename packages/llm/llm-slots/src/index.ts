@@ -165,13 +165,19 @@ export class ModelSlotGate {
     }
   }
 
-  /** Apply a module-config change (enabled switch / capacity) at runtime. */
+  /**
+   * Apply a module-config change (enabled switch / capacity) at runtime.
+   * @param config - the new module configuration.
+   */
   reconfigure(config: ModelSlotsConfig): void {
     this.enabled = config.enabled
     this.capacity = config.capacity
   }
 
-  /** Transient stats snapshot. */
+  /**
+   * Transient stats snapshot.
+   * @returns the current gate statistics.
+   */
   snapshot(): ModelSlotsStats {
     return {
       enabled: this.enabled,
@@ -186,7 +192,10 @@ export class ModelSlotGate {
 /** Process-global gate shared by every mounted instance and derived context. */
 let gate: ModelSlotGate | undefined
 
-/** Resolve the process-global gate, creating it on first use. */
+/**
+ * Resolve the process-global gate, creating it on first use.
+ * @returns the shared process-global gate.
+ */
 export function globalModelSlotGate(): ModelSlotGate {
   gate ??= new ModelSlotGate()
   return gate

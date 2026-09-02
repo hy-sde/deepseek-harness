@@ -24,13 +24,7 @@
       "path": "../session-query"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../fs/internal-urls"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

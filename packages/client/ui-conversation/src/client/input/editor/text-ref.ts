@@ -15,7 +15,7 @@ import { registerLexicalTextEntity } from '@lexical/text'
 import { mergeRegister } from '@lexical/utils'
 import { $getRoot } from 'lexical'
 import { scanTextRefs } from '../decorations.ts'
-import css from './composer-editor.module.css'
+import css from '../../composer-editor.module.css'
 
 /** JSON form of one text-ref node. */
 export type SerializedTextRefNode = SerializedTextNode

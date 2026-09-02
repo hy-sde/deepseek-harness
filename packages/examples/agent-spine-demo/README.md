@@ -131,14 +131,13 @@ A YAML include can deduplicate config but cannot own a bin or provide entry-poin
 
 ### Invariant companions
 
-The bundle mounts the invariant registry and its four package companions (`session`, `agent`, `scope`, `agent-loop`). `invariants.enabled: false` or package filters suppress the checks but do not remove the service or companion registrations; Session's always-on validation and freezing are separate. The package's own companion ([`src/invariant.ts`](src/invariant.ts)) installs no runtime invariant because this composition package owns no independent event stream or mutable data.
+The bundle mounts the invariant registry and its four package companions (`session`, `agent`, `scope`, `agent-loop`). `invariants.enabled: false` or package filters suppress the checks but do not remove the service or companion registrations; Session's always-on validation and freezing are separate. The bundle publishes no invariant companion of its own: it owns no independent event stream or mutable data.
 
 ### Source map
 
 | File | Role |
 |---|---|
 | [`src/index.ts`](src/index.ts) | Plugin entry: `Config` schema, `pickSpineConfig()`, `apply()` mounting every child |
-| [`src/invariant.ts`](src/invariant.ts) | Invariant companion (no runtime invariant; composition wiring is covered by tests) |
 
 </details>
 
@@ -189,3 +188,5 @@ This Dev Note is working context for maintainers; it is explicitly non-authorita
 The fallback title limits (5 words, 40 fallback bytes, 80 accepted-title bytes) are an overridable example policy owned by this bundle rather than by `dsh-session-title`; an entry point that needs different bounds passes its own `sessionTitle` config. The `workspaceContext` field is required (not defaulted) because it changes model-visible input; keep that requirement if the field is ever re-shaped.
 
 </details>
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.

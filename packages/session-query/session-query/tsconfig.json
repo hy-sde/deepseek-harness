@@ -40,12 +40,6 @@
     },
     {
       "path": "../../session/session-projection-cache"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

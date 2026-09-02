@@ -1,3 +1,7 @@
+---
+description: "edit 包组：Hashline 以行锚定的补丁语言与面向模型的富 edit 工具，供选择或接线编辑器能力家族的部署方参考。"
+kind: "package-group"
+---
 # edit/ - 富编辑器能力家族
 
 [English](README.md) | 中文

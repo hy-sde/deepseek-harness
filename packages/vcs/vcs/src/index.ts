@@ -41,4 +41,8 @@ export function apply(ctx: Context, config: Config = {}): void {
 /** Cordis plugin name for loader diagnostics. */
 export const name = 'vcs'
 
+/**
+ * The plugin core: registers the vcs service.
+ *
+ */
 export default { name, apply }

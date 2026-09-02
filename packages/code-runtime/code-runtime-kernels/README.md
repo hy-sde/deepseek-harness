@@ -1,6 +1,28 @@
+---
+description: "Persistent Python and JavaScript kernels for DeepSeek Harness: a self-contained plugin that gives the model a first-class run_kernel_code tool with session state that survives across calls."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-code-runtime-kernels
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-code-runtime-kernels` gives the model a first-class `run_kernel_code` tool backed by persistent Python and JavaScript kernels whose session state survives across calls, mounting as an ordinary Cordis plugin row with no upstream harness changes. Use it for computation with intermediate results instead of scratch files: share a `session` id across related calls, omit it for one-offs, and pass `reset: true` when a session's state is corrupted. Two long-lived subprocesses run self-contained runners (Python standard library only; Node builtins only) under one shared host driver, with configurable budgets (`toolTimeoutMs`, `maxWallMs`, `maxOutputBytes`), session reaping, and SIGINT→SIGTERM→SIGKILL escalation. The main boundary is that kernel code has bash-equivalent trust — this is process confinement for robustness, not a security boundary — and a busy synchronous cell resists SIGINT at the cost of the session's state.
+
+## Table of Contents
+
+- [Mounting](#mounting)
+- [Config](#config)
+- [Tool surface](#tool-surface)
+- [Semantics](#semantics)
+- [Development](#development)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 **Persistent Python and JavaScript kernels for DeepSeek Harness** — one self-contained plugin that gives the model a first-class `run_kernel_code` tool with session state that survives across calls. No upstream harness changes are required: it mounts as an ordinary Cordis plugin row (via `cordis.patch.yml`) and registers one tool on `ctx.tools`, exactly like the shipped tools.
 
@@ -116,3 +138,14 @@ Prefix-stable while the visible tool definition and order are unchanged; registr
 - **State can be poisoned.** A buggy program can corrupt the session's state at any time; `reset: true` is the intended recovery primitive.
 - **No security boundary.** Kernel code has bash-equivalent trust, matching the harness's own process backends.
 - **Idle kernels hold a process.** With `sessionIdleMs: 0` (default), session kernels stay alive until reset or plugin teardown, so long-lived work should resume promptly or persist to disk.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

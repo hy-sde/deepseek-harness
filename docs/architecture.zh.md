@@ -148,3 +148,11 @@ seam 正是替换一个提供方就能改变整个产品的原因。文件系统
 | 将注册项限定到单个 agent | 使用该 agent 的 `agent.ctx` |
 
 [扩展实操手册](cookbook/extension-cookbook.zh.md)将功能映射到能力，并索引[包](cookbook/adding-a-package.zh.md)、[工具](cookbook/adding-a-tool.zh.md)、[LLM（大语言模型）适配器](cookbook/adding-an-llm-adapter.zh.md)和[设置卡片](cookbook/adding-a-settings-card.zh.md)的分步指南。[Conversation 子系统](subsystems/conversation.zh.md)负责 Chat node 组装。
+
+## 工具执行与宿主沙箱
+
+agent（以及 harness 工具命令本身）执行的命令运行在宿主文件／进程沙箱之下。如果所需的 `gh`、`pnpm`、构建、测试或生成器命令因沙箱阻止凭据、网络、IPC、监视或嵌套 `sandbox-exec` 而失败，请以最小的宿主升级原样重试；要求沙箱证据，绝不绕过测试失败或产品沙箱。
+
+## 本地运行检查
+
+推送前通过 [dsh-pre-push-checks](../.agents/skills/dsh-pre-push-checks/SKILL.md) 运行检查；只报告实际运行的命令。`gh stack sync` 之后立即验证；检查通过前不要合并。将证据匹配到对应的面：聚焦行为测试、模型／用户输出快照、文档使用 `doc-sync`、构建冒烟、以及真实 API 的 e2e。绝不默认跑完整测试套件，也不要为提交或推送重复已验证通过的检查；CI 拥有穷尽覆盖，完整的本地预演只在明确要求、用于 CI 诊断或涉及不可精简的全仓库变更时进行。CI 覆盖率门禁是 `test:coverage` 而非 `test`（[原因](testing.zh.md)）。

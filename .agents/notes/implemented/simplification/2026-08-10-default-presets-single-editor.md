@@ -2,9 +2,7 @@
 
 Status: implemented
 
-Superseded: the `minimal` exception was removed wholesale —
-[drop str_replace_editor entirely](../simplification/2026-08-18-drop-str-replace-editor-tool.md)
-now ships `minimal` as the rich two-tool preset and deletes the standalone plugin.
+Superseded: the `minimal` exception was removed wholesale — [drop str_replace_editor entirely](../simplification/2026-08-18-drop-str-replace-editor-tool.md) now ships `minimal` as the rich two-tool preset and deletes the standalone plugin.
 
 English | [中文](2026-08-10-default-presets-single-editor.zh.md)
 

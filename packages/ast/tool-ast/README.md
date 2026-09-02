@@ -1,6 +1,27 @@
+---
+description: "The model-facing structural code tools ast_grep and ast_edit: packaged ast-grep native binary, subprocess-spawned, with preview-first rewrite through the filesystem seam — for agents choosing where textual grep or literal edit falls short."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-ast
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`ast_grep` and `ast_edit` give an agent exact, syntax-aware access to a codebase: find every function, call, or class matching a tree pattern, or rewrite every match to a template after previewing the precise hunks. Both tools run the packaged ast-grep native binary, so no host install is needed, and every call is a bounded subprocess with a cooperative timeout. Use `ast_grep` when the shape matters and textual grep would be noise; use `ast_edit` when the change is a 1:1 structural substitution and the write should carry the filesystem seam's observation and version guard. The main cost is one subprocess spawn per call; the main boundary is that a capture cannot expand into sibling nodes unless the grammar permits it at that position.
+
+## Table of Contents
+
+- [The two tools](#the-two-tools)
+- [Exit-code classification](#exit-code-classification)
+- [Config](#config)
+- [Engine ownership](#engine-ownership)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 The **model-facing structural code tools**—`ast_grep`, `ast_edit`—are backed by the **packaged ast-grep native binary** (`@ast-grep/cli`), ported from the [@oh-my-pi](https://github.com/oh-my-pi) coding-agent tool suite. Rather than textual grep or literal edit, these tools operate on the syntax tree of the target file: patterns use tree metavariables (`$NAME` binds one node, `$_` matches any single node, `$$$NAME` captures zero+ nodes) so "every call to `foo()`" or "rename every `old` field to `new`" can be expressed exactly.
 
@@ -129,3 +150,13 @@ None; UI presentation is outside the model request.
 - **Grammar coverage follows ast-grep** — dozens of languages are supported, but a niche or very new grammar may be missing or lag; a syntax error in a pattern may surface as `AST_USAGE_ERROR`.
 - **Structural rewrite is 1:1** — a capture cannot expand into sibling nodes the grammar does not permit at that position; multi-node restructuring may need several smaller rewrites or a plain file edit.
 - **Preview size caps** — matched-node and hunk previews are byte-capped; an enormous match or hunk is cut (with a marker) rather than silently dropped, and `rawOutputMaxBytes` bounds the whole engine stream.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

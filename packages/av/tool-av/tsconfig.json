@@ -12,9 +12,6 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../../packages/runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../../packages/core/system-prompt"
     },
     {
@@ -22,9 +19,6 @@
     },
     {
       "path": "../../../packages/av/av"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

@@ -1,9 +1,30 @@
+---
+description: "面向模型的 Automic Vault 工具组，供代理与维护者选择、配置或排查基于 host `ctx.av` 服务的只读审计、加固验证、目录与密钥名称列举能力。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-av
 
 [English](README.md) | 中文
 
+## 概述
+
+基于 host `ctx.av` 服务的模型面向 Automic Vault 工具：`av_scan` 审计 Mac 上的凭证暴露，`av_doctor` 验证已安装的加固，`av_catalog` 列出 Automic Vault 认识的检测器与加固器，`av_list` 仅返回已保存密钥的名称。当代理应审计与报告而非改动系统时选择它——硬化、存储与注入值始终是在用户控制的终端中由人做出的决定。成本由每次调用的 `maxFindings` 与 `maxCatalogEntries` 上限加一次汇总后的子进程往返限定；边界是任何工具输出都不含 Secret 值。
+
+## 目录
+
+- [工具表面](#tool-surface)
+- [安全规则](#security-rules)
+- [配置](#configuration)
+- [Model Experience](#model-experience)
+- [已知限制与后续工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
+
 基于 host `ctx.av` 服务的模型面向 [Automic Vault](https://www.automicvault.com/) 工具。表面是有意只读的：审计 Mac 上的凭证暴露、验证加固、查看检测器/加固器目录、列出已保存的密钥名称——绝不把 Secret 值释放进模型上下文。
 
+<a id="tool-surface"></a>
 ## 工具表面
 
 - `av_scan [severity] [detector] [max_findings]`——完整审计；发现项携带 severity、说明、修复建议、影响的文件/行与产出它的检测器。
@@ -13,15 +34,21 @@
 
 当 `av` CLI 缺失或损坏时，每个工具退化为结构化 `{ available: false, reason }` 值并给出安装提示（`brew install --cask automic-vault/isotopes/automic-vault`），而不是抛出异常。
 
+<a id="security-rules"></a>
 ## 安全规则
 
 1. 工具输出绝不包含 Secret 值。`av_list` 仅返回名称；扫描/检查/目录返回路径、配置与建议。
 2. 代理报告暴露并提出文档化的修复；运行 `av harden <tool>`、保存密文或向命令注入值，都在用户控制的终端中由人决定。
 3. 工具绝不绕过、禁用或自动批准 Automic Vault 授权门或审批。
 
+<a id="configuration"></a>
 ## 配置
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import toolAvPackage from '@deepseek-ai/dsh-tool-av'
+
+const ctx = new Context()
 ctx.plugin(toolAvPackage, {
   maxFindings: 30, // av_scan finding cap
   maxCatalogEntries: 60, // av_catalog entries per scope
@@ -29,6 +56,7 @@ ctx.plugin(toolAvPackage, {
 })
 ```
 
+<a id="model-experience"></a>
 ## Model Experience
 
 ### 工具 schema
@@ -79,8 +107,19 @@ ctx.plugin(toolAvPackage, {
 
 静态段文本——无失效。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
 
 - **无密库动词**——`av save`、`av inject`、`av proxy` 有意缺席；`av save` 只能交互式进行，值的释放保持人机循环。托管工具延后，直到上游 CLI 提供非 TTY 交接且能保证值不进入模型上下文或 argv。
 - **无加固自动化**——工具只验证与建议；`av harden`（根权限系统变更）刻意留给用户运行。纯计划模式的加固预览可在不放松边界的前提下稍后加入。
 - **过滤是透传**——`severity` 过滤在 CLI 返回完整报告后执行，约束渲染但不约束子进程输出上限。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

@@ -405,7 +405,11 @@ export interface SubagentReportContent {
   readonly decisionKey?: string
 }
 
-/** Normalize a caller-supplied decision key: trim and collapse whitespace. */
+/**
+ * Normalize a caller-supplied decision key: trim and collapse whitespace.
+ * @param key - the raw decision key.
+ * @returns the normalized key.
+ */
 export function normalizeDecisionKey(key: string): string {
   return key.trim().replace(/\s+/g, ' ')
 }

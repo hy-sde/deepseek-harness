@@ -42,13 +42,7 @@
       "path": "../../util/timeout"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../internal-urls"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

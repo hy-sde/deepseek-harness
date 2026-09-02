@@ -9,7 +9,7 @@
  * followed by either EOL or a single space + label count. Lines that merely
  * start with `<` or `=` never match.
  *
- * Ported from oh-my-pi (`packages/coding-agent/src/tools/conflict-detect.ts`),
+ * Ported from oh-my-pi (`coding-agent/src/tools/conflict-detect.ts`),
  * MIT, adapted to the DeepSeek Harness file-services seam.
  * @module @deepseek-ai/dsh-internal-urls/conflict
  */

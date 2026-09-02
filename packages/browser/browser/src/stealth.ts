@@ -1,6 +1,6 @@
 /**
  * Stealth browser launch + user-agent spoofing, ported from oh-my-pi's
- * `packages/coding-agent/src/tools/browser/launch.ts` (MIT, see port_omp.md).
+ * `coding-agent/src/tools/browser/launch.ts` (MIT, see port_omp.md).
  *
  * Puppeteer's `--enable-automation` flag sets `navigator.webdriver=true` and
  * shows the "controlled by automated software" infobar. Playwright's default

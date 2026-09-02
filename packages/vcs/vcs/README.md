@@ -1,6 +1,27 @@
+---
+description: "Read-only VCS plumbing for the harness: the ctx.vcs host service over the user-installed pi-vcs CLI, exposing gitoxide-backed diff, status, discovery, and watch surfaces byte-compatible with git and additive to the git service."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-vcs
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-vcs` exposes `ctx.vcs`, a host-plane service over the user-installed `pi-vcs` CLI that gives the harness narrow read-only VCS surfaces — rev, staged, and worktree diffs with `--name-only`/`--numstat` modes, status counts, branch name, repository discovery, and a HEAD-change watch — every text surface byte-compatible with the corresponding `git diff` output. Choose it when a caller wants the native gitoxide slice without changing the default TS/git-CLI path: the service is purely additive and degrades to the git service when `pi-vcs` is unreachable. Its costs are feature detection and a per-call shell-out — each verb spawns `pi-vcs` with bounded output, and binary patches render as markers only.
+
+## Table of Contents
+
+- [Additive and feature-detected](#additive-and-feature-detected)
+- [The `pi-vcs` CLI](#the-pi-vcs-cli)
+- [Executed commands](#executed-commands)
+- [Security boundary](#security-boundary)
+- [Configuration](#configuration)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 Native vcs plumbing for the DeepSeek Harness: `ctx.vcs`, a host-plane service over the `pi-vcs` CLI — the narrow native slice of the oh-my-pi vcs surface — via the `ctx.subprocess` seam. Modeled on `ctx.av`.
 
@@ -49,6 +70,10 @@ All commands run through `ctx.subprocess` with bounded stdout/stderr collection,
 ## Configuration
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import vcsPackage from '@deepseek-ai/dsh-vcs'
+
+const ctx = new Context()
 ctx.plugin(vcsPackage, {
   vcsPath: '/usr/local/bin/pi-vcs',
   timeoutMs: 120000,
@@ -65,3 +90,14 @@ ctx.plugin(vcsPackage, {
 - **Conflicted merged states** — during an in-progress merge, `git diff` switches to a combined (`diff --cc`) form; the native renderer matches omp by skipping conflict entries, so review of a conflicted tree best targets the staged/range surfaces. Status still reports `UU` exactly like git.
 - **No jj backend** — the harness fork is git-only (`isPureJj=false`); jj-lib compiled into omp's native addons is not a callable binary and is deliberately out of scope.
 - **Per-call shell-out** — no persistent native process for batch verbs; each call spawns `pi-vcs` and collects bounded output. `watch` is the one long-lived companion.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

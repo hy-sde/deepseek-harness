@@ -34,12 +34,6 @@
     },
     {
       "path": "../../plan/plan-mode"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

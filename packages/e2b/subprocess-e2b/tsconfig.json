@@ -25,12 +25,6 @@
     },
     {
       "path": "../e2b"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

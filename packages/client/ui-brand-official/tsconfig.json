@@ -24,13 +24,7 @@
       "path": "../ui-slots"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../ui-conversation"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

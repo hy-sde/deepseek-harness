@@ -43,3 +43,5 @@ No direct effect; wiki RPC traffic does not alter model requests.
 ### Dev Note
 
 The controller extends `TypertRemoteService` with namespace `wiki` (see the Typert protocol). Its declared request/value types are the projection contract named in the Cordis catalog policy.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.

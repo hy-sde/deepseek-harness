@@ -234,6 +234,18 @@ interface FileReadOutcome {
   totalLines: number
   /** Whether selected output hit the byte cap. */
   truncatedByBytes?: true
+  /**
+   * Optional model-facing footer block appended after the file body (e.g. the
+   * conflict-resolution notice produced by scanning this read's lines).
+   */
+  notice?: string
+  /**
+   * Optional hashline snapshot tag for this file's content (`[path#TAG]`), set
+   * when the read recorded a session snapshot for the whole normalized file.
+   * When present, the envelope's `<content>` starts with the header so the
+   * model can copy it verbatim into a later hashline `edit` section.
+   */
+  snapshotTag?: string
 }
 ```
 

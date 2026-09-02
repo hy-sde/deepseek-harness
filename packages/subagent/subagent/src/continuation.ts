@@ -987,7 +987,11 @@ export class SubagentContinuationManager {
     }
   }
 
-  /** Whether a resolved key belongs to this manager's wedge protocol. */
+  /**
+   * Whether a resolved key belongs to this manager's wedge protocol.
+   * @param key - the decision key to test.
+   * @returns true when the key is a wedge-protocol key.
+   */
   isWedgeKey(key: string): boolean {
     return isWedgeDecisionKey(key)
   }

@@ -44,7 +44,11 @@ export async function runLogseq(args: string[], signal?: AbortSignal): Promise<C
   }
 }
 
-/** JSON double-quoted strings are valid EDN strings. */
+/**
+ * JSON double-quoted strings are valid EDN strings.
+ * @param value - the string to encode.
+ * @returns the EDN/JSON-quoted form.
+ */
 export function ednString(value: string): string {
   return JSON.stringify(value)
 }

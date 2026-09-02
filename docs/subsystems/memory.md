@@ -2,70 +2,29 @@
 
 English | [中文](memory.zh.md)
 
-**Agent-curated long-horizon memory** — durable, project-scoped memory the agent
-curates itself, ported from the [oh-my-pi](https://github.com/oh-my-pi)
-coding-agent memory surface (see `port_omp.md` item 4). Two packages compose
-it: [dsh-memory](../../packages/memory/memory) owns `ctx.memory` — a host-plane
-service with a backend registry and a shipped `local` backend that persists
-files under `<harness home>/memories/<project>/` — and
-[dsh-tool-memory](../../packages/memory/tool-memory) provides the model-facing
-`retain`/`recall`/`reflect`/`memory_edit`/`learn` tools plus a `memory:project`
-system-prompt section that reloads the calling session's project memory at the
-start of every session.
+**Agent-curated long-horizon memory** — durable, project-scoped memory the agent curates itself, ported from the [oh-my-pi](https://github.com/oh-my-pi) coding-agent memory surface (see `port_omp.md` item 4). Two packages compose it: [dsh-memory](../../packages/memory/memory) owns `ctx.memory` — a host-plane service with a backend registry and a shipped `local` backend that persists files under `<harness home>/memories/<project>/` — and [dsh-tool-memory](../../packages/memory/tool-memory) provides the model-facing `retain`/`recall`/`reflect`/`memory_edit`/`learn` tools plus a `memory:project` system-prompt section that reloads the calling session's project memory at the start of every session.
 
-Memory is complementary to session-query and compaction rather than
-overlapping them: those replay the conversation ledger, while this bank answers
-"what did we decide / prefer / learn here?" across sessions. It lives
-host-plane because the store is durable project data that easily outlives one
-session; per-session tool packages resolve it.
+Memory is complementary to session-query and compaction rather than overlapping them: those replay the conversation ledger, while this bank answers "what did we decide / prefer / learn here?" across sessions. It lives host-plane because the store is durable project data that easily outlives one session; per-session tool packages resolve it.
 
-`ctx.memory` delegates to the selected backend (default: the first registered;
-the shipped `local` provider mounts when `backend` is unset or `local`). Only
-`local` ships in this port — the registry keeps the seam open for
-Hindsight/Mnemopi-style providers later, and any new provider registers one
-`MemoryBackend` and the same tools work unchanged.
+`ctx.memory` delegates to the selected backend (default: the first registered; the shipped `local` provider mounts when `backend` is unset or `local`). Only `local` ships in this port — the registry keeps the seam open for Hindsight/Mnemopi-style providers later, and any new provider registers one `MemoryBackend` and the same tools work unchanged.
 
 ## Layout and data model
 
 Each project (encoded absolute cwd) gets one memory root with three artifacts:
 
-- `bank.jsonl.zstd` — editable working entries written by `retain` (id,
-  content, context, source, importance, timestamps, active flag). Backs
-  `memory_edit`. By default the on-disk format is the same zstd frame
-  container as session logs: each save batch is one checksummed frame,
-  append-only and self-healing. The pre-rename plaintext `bank.jsonl` is
-  still read and is migrated on the first write; set `compression: 'none'`
-  in `LocalMemoryConfig` for the original line-append format.
-- `learned.md` — newest-first, deduped, capped (100) lesson bullets written by
-  `learn`; the same format and normalization omp keeps.
-- `memory_summary.md` — optional consolidated summary (hand- or tool-maintained)
-  surfaced by `recall`, `reflect`, and prompt injection.
+- - `bank.jsonl.zstd` — editable working entries written by `retain` (id, content, context, source, importance, timestamps, active flag). Backs `memory_edit`. By default the on-disk format is the same zstd frame container as session logs: each save batch is one checksummed frame, append-only and self-healing. The pre-rename plaintext `bank.jsonl` is still read and is migrated on the first write; set `compression: 'none'` in `LocalMemoryConfig` for the original line-append format.
+- - `learned.md` — newest-first, deduped, capped (100) lesson bullets written by `learn`; the same format and normalization omp keeps.
+- - `memory_summary.md` — optional consolidated summary (hand- or tool-maintained) surfaced by `recall`, `reflect`, and prompt injection.
 
-Stored text is injection-neutralized (control chars, `<`/backticks, `~~~`
-fences) and secret-redacted on both write and read. Search is lexical IDF
-scoring with light stemming over all three artifacts; `memory_edit` can
-`update`/`forget`/`invalidate` bank entries, while lesson and summary entries
-are read-only facts.
+Stored text is injection-neutralized (control chars, `<`/backticks, `~~~` fences) and secret-redacted on both write and read. Search is lexical IDF scoring with light stemming over all three artifacts; `memory_edit` can `update`/`forget`/`invalidate` bank entries, while lesson and summary entries are read-only facts.
 
-The `local` backend is pure `node:fs` with an in-process per-file write chain,
-so concurrent saves from sibling sessions can never drop each other's writes.
-Mutations emit `memory/change` (`{ cwd }`) so in-process consumers can
-invalidate caches.
+The `local` backend is pure `node:fs` with an in-process per-file write chain, so concurrent saves from sibling sessions can never drop each other's writes. Mutations emit `memory/change` (`{ cwd }`) so in-process consumers can invalidate caches.
 
-Provider source: [`packages/memory/memory/src/local.ts`](../../packages/memory/memory/src/local.ts).
-Contract source: [`packages/memory/memory/src/types.ts`](../../packages/memory/memory/src/types.ts).
+Provider source: [`packages/memory/memory/src/local.ts`](../../packages/memory/memory/src/local.ts). Contract source: [`packages/memory/memory/src/types.ts`](../../packages/memory/memory/src/types.ts).
 
 ## The service and the plugin
 
-`MemoryService` (`ctx.memory`) owns the registry (`register`/`unregister`/
-`resolve`/`backendIds`) and thin delegation of `status`/`save`/`learn`/
-`search`/`edit`/`summaries`/`clear` to the selected backend, emitting
-`memory/change` after each mutation. `dsh-memory`'s plugin mounts the service
-and, when selected, the `local` backend. `dsh-tool-memory` contributes only the
-model-facing surface: five tools over `ctx.memory` and the `memory:project`
-system-prompt section (order 150, empty when the project has no memory yet).
-The generated [`ctx.memory` section](#ctxmemory--memoryservice) below shows the
-exact signatures.
+`MemoryService` (`ctx.memory`) owns the registry (`register`/`unregister`/ `resolve`/`backendIds`) and thin delegation of `status`/`save`/`learn`/ `search`/`edit`/`summaries`/`clear` to the selected backend, emitting `memory/change` after each mutation. `dsh-memory`'s plugin mounts the service and, when selected, the `local` backend. `dsh-tool-memory` contributes only the model-facing surface: five tools over `ctx.memory` and the `memory:project` system-prompt section (order 150, empty when the project has no memory yet). The generated [`ctx.memory` section](#ctxmemory--memoryservice) below shows the exact signatures.
 
 ```ts type-equiv
 /** One memory operation is rooted at the calling session's project. */
@@ -88,6 +47,8 @@ interface MemorySaveInput {
   source?: string
   /** Importance in `[0, 1]`; defaults to the backend's baseline. */
   importance?: number
+  /** Optional originating session id, captured for cross-session provenance. */
+  sessionId?: string
 }
 ```
 

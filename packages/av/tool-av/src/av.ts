@@ -25,8 +25,16 @@ export interface AvToolConfig {
 }
 
 const SEVERITIES = ['high', 'medium', 'low'] as const
+/**
+ * Av Severity.
+ *
+ */
 export type AvSeverity = (typeof SEVERITIES)[number]
 
+/**
+ * Av Scan Args.
+ *
+ */
 export interface AvScanArgs {
   /** Only findings at or above this severity (null = all). */
   severity?: AvSeverity
@@ -36,6 +44,10 @@ export interface AvScanArgs {
   max_findings?: number
 }
 
+/**
+ * Av Scan Finding Value.
+ *
+ */
 export interface AvScanFindingValue {
   source: string
   severity: string
@@ -45,6 +57,10 @@ export interface AvScanFindingValue {
   detectors: string[]
 }
 
+/**
+ * Av Scan Value.
+ *
+ */
 export interface AvScanValue {
   /** Whether the Automic Vault CLI is reachable (install hint when false). */
   available: boolean
@@ -56,11 +72,19 @@ export interface AvScanValue {
   truncated?: boolean
 }
 
+/**
+ * Av Doctor Args.
+ *
+ */
 export interface AvDoctorArgs {
   /** Hardener name to verify (empty = all applicable). */
   tool?: string
 }
 
+/**
+ * Av Doctor Issue Value.
+ *
+ */
 export interface AvDoctorIssueValue {
   kind: string
   message: string
@@ -69,6 +93,10 @@ export interface AvDoctorIssueValue {
   target_path?: string
 }
 
+/**
+ * Av Doctor Result Value.
+ *
+ */
 export interface AvDoctorResultValue {
   name: string
   healthy: boolean
@@ -76,6 +104,10 @@ export interface AvDoctorResultValue {
   issues: AvDoctorIssueValue[]
 }
 
+/**
+ * Av Doctor Value.
+ *
+ */
 export interface AvDoctorValue {
   available: boolean
   version?: string
@@ -84,6 +116,10 @@ export interface AvDoctorValue {
   results: AvDoctorResultValue[]
 }
 
+/**
+ * Av Catalogs Args.
+ *
+ */
 export interface AvCatalogsArgs {
   /** Which catalog to return (default both). */
   scope?: 'detectors' | 'hardeners' | 'both'
@@ -91,6 +127,10 @@ export interface AvCatalogsArgs {
   max_entries?: number
 }
 
+/**
+ * Av Catalog Entry Value.
+ *
+ */
 export interface AvCatalogEntryValue {
   name: string
   docs?: string
@@ -104,6 +144,10 @@ export interface AvHardenerCatalogEntryValue {
   applicable: boolean
 }
 
+/**
+ * Av Catalog Value.
+ *
+ */
 export interface AvCatalogValue {
   available: boolean
   version?: string
@@ -114,6 +158,10 @@ export interface AvCatalogValue {
   truncated?: boolean
 }
 
+/**
+ * Av List Value.
+ *
+ */
 export interface AvListValue {
   available: boolean
   version?: string
@@ -141,6 +189,12 @@ function unavailableValue(reason: string): { available: false; reason: string } 
   return { available: false, reason }
 }
 
+/**
+ * Apply Av Tools.
+ *
+ * @param ctx - The ctx parameter.
+ * @param config - The config parameter.
+ */
 export function applyAvTools(ctx: Context, config: AvToolConfig = {}): void {
   const av: AvService = ctx.av
   const maxFindings = config.maxFindings ?? 30
@@ -460,7 +514,11 @@ function summarizeDoctor(report: DoctorReport, version: string | undefined): AvD
   }
 }
 
-/** Wrap an av command failure into a model-visible message. */
+/**
+ * Wrap an av command failure into a model-visible message.
+ * @param error - the failure thrown by the av CLI or service.
+ * @returns never - always throws with a model-visible message.
+ */
 export function rethrowAvError(error: unknown): never {
   if (error instanceof AvCommandError) {
     const detail = error.stderr.trim()
@@ -471,6 +529,12 @@ export function rethrowAvError(error: unknown): never {
 
 /* ── rendering ─────────────────────────────────────────────────────────── */
 
+/**
+ * Render Scan.
+ *
+ * @param value - The value parameter.
+ * @returns - The result of the operation.
+ */
 export function renderScan(value: AvScanValue): string {
   if (!value.available) return value.reason ?? 'av unavailable'
   const head = [`Automic Vault audit — ${value.summary.total} finding(s)`, `  high: ${value.summary.high}  medium: ${value.summary.medium}  low: ${value.summary.low}`]
@@ -485,6 +549,12 @@ export function renderScan(value: AvScanValue): string {
   return lines.join('\n')
 }
 
+/**
+ * Render Doctor.
+ *
+ * @param value - The value parameter.
+ * @returns - The result of the operation.
+ */
 export function renderDoctor(value: AvDoctorValue): string {
   if (!value.available) return value.reason ?? 'av unavailable'
   if (value.results.length === 0) return 'av doctor: no applicable hardeners'
@@ -505,6 +575,12 @@ export function renderDoctor(value: AvDoctorValue): string {
   return lines.join('\n')
 }
 
+/**
+ * Render Catalog.
+ *
+ * @param value - The value parameter.
+ * @returns - The result of the operation.
+ */
 export function renderCatalog(value: AvCatalogValue): string {
   if (!value.available) return value.reason ?? 'av unavailable'
   const lines = ['Automic Vault catalog:']
@@ -523,6 +599,12 @@ export function renderCatalog(value: AvCatalogValue): string {
   return lines.join('\n')
 }
 
+/**
+ * Render List.
+ *
+ * @param value - The value parameter.
+ * @returns - The result of the operation.
+ */
 export function renderList(value: AvListValue): string {
   if (!value.available) return value.reason ?? 'av unavailable'
   if (value.names.length === 0) return 'Automic Vault holds no saved secrets.'

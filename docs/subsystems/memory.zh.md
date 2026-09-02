@@ -2,58 +2,29 @@
 
 [English](memory.md) | 中文
 
-**面向代理的长期记忆** —— 由代理自行策展、按项目隔离的持久化记忆，移植自
-[oh-my-pi](https://github.com/oh-my-pi) 编程代理的记忆体系（见
-`port_omp.md` 第 4 项）。由两个包组成：
-[dsh-memory](../../packages/memory/memory) 提供 `ctx.memory`——宿主平面的服务，
-带后端注册表和内置的 `local` 后端，将文件持久化到
-`<harness home>/memories/<project>/`；[dsh-tool-memory](../../packages/memory/tool-memory)
-提供面向模型的 `retain`/`recall`/`reflect`/`memory_edit`/`learn` 工具，外加一个
-`memory:project` 系统提示区段，在每次会话开始时重新载入调用会话的项目记忆。
+**面向代理的长期记忆** —— 由代理自行策展、按项目隔离的持久化记忆，移植自[oh-my-pi](https://github.com/oh-my-pi) 编程代理的记忆体系（见`port_omp.md` 第 4 项）。由两个包组成：[dsh-memory](../../packages/memory/memory) 提供 `ctx.memory`——宿主平面的服务，带后端注册表和内置的 `local` 后端，将文件持久化到`<harness home>/memories/<project>/`；[dsh-tool-memory](../../packages/memory/tool-memory)提供面向模型的 `retain`/`recall`/`reflect`/`memory_edit`/`learn` 工具，外加一个`memory:project` 系统提示区段，在每次会话开始时重新载入调用会话的项目记忆。
 
-记忆与会话查询、压缩互补而非重叠：后者回放会话账本，而此记忆库回答跨会话的
-“我们之前决定/偏好/学到了什么？”。它位于宿主平面，因为存储是轻易跨越单个会话
-的持久化项目数据；按会话挂载的工具包解析它。
+记忆与会话查询、压缩互补而非重叠：后者回放会话账本，而此记忆库回答跨会话的“我们之前决定/偏好/学到了什么？”。它位于宿主平面，因为存储是轻易跨越单个会话的持久化项目数据；按会话挂载的工具包解析它。
 
-`ctx.memory` 委托给选中的后端（默认：首个注册；`backend` 未设置或为 `local`
-时挂载内置的 `local` 提供方）。本移植仅内置 `local`——注册表为后续
-Hindsight/Mnemopi 式提供方保留接缝，任何新提供方只需注册一个
-`MemoryBackend`，同样的工具即可无缝使用。
+`ctx.memory` 委托给选中的后端（默认：首个注册；`backend` 未设置或为 `local`时挂载内置的 `local` 提供方）。本移植仅内置 `local`——注册表为后续Hindsight/Mnemopi 式提供方保留接缝，任何新提供方只需注册一个`MemoryBackend`，同样的工具即可无缝使用。
 
 ## 布局与数据模型
 
 每个项目（编码后的绝对 cwd）对应一个记忆根，含三个工件：
 
-- `bank.jsonl.zstd` — 由 `retain` 写入的可编辑工作条目（id、内容、上下文、来源、
-  重要性、时间戳、活跃标志）。支撑 `memory_edit`。默认磁盘格式与会话日志相同的
-  zstd 帧容器：每次保存批次是一帧带校验的帧，追加友好且可自愈。更名前的纯文本
-  `bank.jsonl` 仍会被读取，并在首次写入时迁移；在 `LocalMemoryConfig` 中设置
-  `compression: 'none'` 可恢复原逐行追加格式。
-- `learned.md` — 由 `learn` 写入的、新在前、去重、限容（100 条）的教训列表；
-  与 omp 保持相同的格式和归一化。
-- `memory_summary.md` — 可选的整合摘要（手工或工具维护），由 `recall`、
-  `reflect` 与提示注入呈现。
+- - `bank.jsonl.zstd` — 由 `retain` 写入的可编辑工作条目（id、内容、上下文、来源、重要性、时间戳、活跃标志）。支撑 `memory_edit`。默认磁盘格式与会话日志相同的zstd 帧容器：每次保存批次是一帧带校验的帧，追加友好且可自愈。更名前的纯文本`bank.jsonl` 仍会被读取，并在首次写入时迁移；在 `LocalMemoryConfig` 中设置`compression: 'none'` 可恢复原逐行追加格式。
+- - `learned.md` — 由 `learn` 写入的、新在前、去重、限容（100 条）的教训列表；与 omp 保持相同的格式和归一化。
+- - `memory_summary.md` — 可选的整合摘要（手工或工具维护），由 `recall`、`reflect` 与提示注入呈现。
 
-存储文本在写入与读取时都会做注入中和（控制字符、`<`/反引号、`~~~` 围栏）
-与密钥脱敏。搜索是对三个工件做词法 IDF 评分并辅以轻量词干匹配；`memory_edit`
-可对银行条目执行 `update`/`forget`/`invalidate`，而教训与摘要条目是只读事实。
+存储文本在写入与读取时都会做注入中和（控制字符、`<`/反引号、`~~~` 围栏）与密钥脱敏。搜索是对三个工件做词法 IDF 评分并辅以轻量词干匹配；`memory_edit`可对银行条目执行 `update`/`forget`/`invalidate`，而教训与摘要条目是只读事实。
 
-`local` 后端纯 `node:fs` 实现，带进程内按文件写链，因此来自并将会话的并发写入
-绝不会互相覆盖。变更会发出 `memory/change`（`{ cwd }`），供进程内消费者失效
-缓存。
+`local` 后端纯 `node:fs` 实现，带进程内按文件写链，因此来自并将会话的并发写入绝不会互相覆盖。变更会发出 `memory/change`（`{ cwd }`），供进程内消费者失效缓存。
 
-提供方源码：[`packages/memory/memory/src/local.ts`](../../packages/memory/memory/src/local.ts)。
-契约源码：[`packages/memory/memory/src/types.ts`](../../packages/memory/memory/src/types.ts)。
+提供方源码：[`packages/memory/memory/src/local.ts`](../../packages/memory/memory/src/local.ts)。契约源码：[`packages/memory/memory/src/types.ts`](../../packages/memory/memory/src/types.ts)。
 
 ## 服务与插件
 
-`MemoryService`（`ctx.memory`）拥有注册表（`register`/`unregister`/
-`resolve`/`backendIds`）并将 `status`/`save`/`learn`/`search`/`edit`/
-`summaries`/`clear` 薄委托给选中的后端，每次变更后发出 `memory/change`。
-`dsh-memory` 的插件挂载该服务，并在被选中时挂载 `local` 后端；
-`dsh-tool-memory` 只贡献面向模型的表面：五个基于 `ctx.memory` 的工具和
-`memory:project` 系统提示区段（order 150，项目尚无记忆时为空）。下方生成的
-[`ctx.memory` 区段](#ctxmemory--memoryservice) 展示了确切的签名。
+`MemoryService`（`ctx.memory`）拥有注册表（`register`/`unregister`/`resolve`/`backendIds`）并将 `status`/`save`/`learn`/`search`/`edit`/`summaries`/`clear` 薄委托给选中的后端，每次变更后发出 `memory/change`。`dsh-memory` 的插件挂载该服务，并在被选中时挂载 `local` 后端；`dsh-tool-memory` 只贡献面向模型的表面：五个基于 `ctx.memory` 的工具和`memory:project` 系统提示区段（order 150，项目尚无记忆时为空）。下方生成的[`ctx.memory` 区段](#ctxmemory--memoryservice) 展示了确切的签名。
 
 ```ts type-equiv
 /** One memory operation is rooted at the calling session's project. */
@@ -76,6 +47,8 @@ interface MemorySaveInput {
   source?: string
   /** Importance in `[0, 1]`; defaults to the backend's baseline. */
   importance?: number
+  /** Optional originating session id, captured for cross-session provenance. */
+  sessionId?: string
 }
 ```
 

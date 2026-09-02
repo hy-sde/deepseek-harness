@@ -38,6 +38,14 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
   'packages/av/av': 'The host CLI-wrapper service registers no tool schema, prompt, session/UI surface, or observable events; the Automic Vault tools (dsh-tool-av) own every model-facing effect, and the service itself never renders secret material.',
   'packages/session-query/session-url': 'The `session://` handler registers no tool schema, prompt section, or UI surface; it only makes the existing session corpus reachable through the read/grep tools (dsh-tool-fs), which own every model-facing effect.',
   'packages/util/workspace-path': 'The package only formats Workspace paths for browser UI; it never constructs model input.',
+  'packages/vcs/vcs': 'VCS service seam over the host working tree; dsh-tool-git owns every model-facing schema and prompt.',
+  'packages/browser/browser': 'Browser automation primitives and the browser service seam; dsh-tool-browser owns every model-facing schema and rendering.',
+  'packages/client/ui-countdown': 'Browser-side countdown UI plugin layer; registers nothing model-facing.',
+  'packages/examples/logseq-example': 'Example composition bundle; the model-facing wiring it demonstrates belongs to dsh-tool-logseq in a real profile.',
+  'packages/fs/internal-urls': 'Internal URL grammar and resolver; the read/grep tools that resolve these refs own every model-facing effect.',
+  'packages/guard/stream-rules': 'Runtime stream-rules guard seam; it constrains model-visible output without registering prompt, schema, or result content.',
+  'packages/memory/memory': 'Storage service for project memory; dsh-tool-memory owns every model-facing schema and prompt.',
+  'packages/util/zstd': 'Pure zstd frame utility; registers nothing model-facing.',
   'packages/util/values': 'The package only validates, snapshots, compares, freezes, or rejects caller-owned values; consumers own every model-facing use.',
 }
 
@@ -63,6 +71,8 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/util/deque': { kind: 'none', reason: 'In-process collection primitive; registers nothing model-facing.' },
   'packages/util/time': { kind: 'indirect', reason: 'Pure zone validation; the consumer that records a canonical zone owns the model-visible line derived from it.' },
   'packages/core/agent-default-model': { kind: 'indirect', reason: 'The service supplies a ModelSelection; request assembly and adapters own the model-visible request.' },
+  'packages/examples/agent-spine-demo': { kind: 'indirect', reason: 'The bundle registers no model-facing content of its own; its mounted children own every prompt, schema, and result.' },
+  'packages/git/git': { kind: 'indirect', reason: 'The workspace service owns no model-facing registration; dsh-tool-git owns the commit/commit_apply/review schemas, the git: prompt section, and result rendering.' },
   'packages/llm/deepseek-llm-api-extensions': { kind: 'indirect', reason: 'The registry contributes model-hidden provider fields; dsh-llm-deepseek owns their wire placement.' },
   'packages/preset/agent-presets': { kind: 'indirect', reason: 'The mount installs a preset\'s own plugins, which own every model-facing registration it makes visible.' },
   'packages/typert/registry': { kind: 'none', reason: 'Runtime type registry; consumers (cordis_inspect, wire faces, gates) own any model-visible projection of registry contents.' },

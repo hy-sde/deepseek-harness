@@ -40,4 +40,8 @@ export function apply(ctx: Context, config: Config = {}): void {
 /** Cordis plugin name for loader diagnostics. */
 export const name = 'av'
 
+/**
+ * The plugin core: registers the av services.
+ *
+ */
 export default { name, apply }

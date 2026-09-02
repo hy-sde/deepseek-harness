@@ -28,6 +28,11 @@ function clampDuration(ms: number): number {
   return value
 }
 
+/**
+ * The shared countdown timer: one absolute-deadline store behind the sidebar
+ * renders. Exposes a stable snapshot for `useSyncExternalStore`, a subscribe
+ * handle, and duration/start/stop/complete controls.
+ */
 export class CountdownStore {
   private snapshot: TimerSnapshot = {
     running: false,
@@ -41,6 +46,7 @@ export class CountdownStore {
   /** Stable until the next mutation, so `useSyncExternalStore` never loops. */
   getSnapshot = (): TimerSnapshot => this.snapshot
 
+  /** Register a snapshot change listener; returns its unsubscribe handle. */
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
     return () => { this.listeners.delete(listener) }
@@ -51,7 +57,10 @@ export class CountdownStore {
     for (const listener of this.listeners) listener()
   }
 
-  /** Adopt a new duration for the next start. */
+  /**
+   * Adopt a new duration for the next start (clamped to the supported range).
+   * @param ms - The requested duration in milliseconds.
+   */
   setDuration(ms: number): void {
     this.set({ durationMs: clampDuration(ms), finishedAt: null })
   }
@@ -81,11 +90,16 @@ export class CountdownStore {
     this.set({ running: false, finishedAt: Date.now() })
   }
 
-  /** Remaining ms for display: the live deadline delta while running, else the configured duration. */
+  /**
+   * Remaining ms for display: the live deadline delta while running, else the
+   * configured duration.
+   * @returns The remaining milliseconds (or the full duration when idle).
+   */
   remainingMs(): number {
     if (!this.snapshot.running || this.snapshot.endAt === null) return this.snapshot.durationMs
     return Math.max(0, this.snapshot.endAt - Date.now())
   }
 }
 
+/** The browser-wide singleton used by the countdown slots. */
 export const countdown = new CountdownStore()

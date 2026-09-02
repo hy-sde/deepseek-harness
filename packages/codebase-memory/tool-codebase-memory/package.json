@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-codebase-memory",
   "description": "Model-facing codebase-memory CLI tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the codebase-memory daemon from the terminal — the local alternative to the stdio MCP client row",
-  "version": "0.1.1-rc.2",
+  "version": "0.1.2-alpha.4",
   "publishConfig": {
     "access": "public"
   },
@@ -36,6 +36,7 @@
   "files": [
     "lib/index.js",
     "lib/invariant.js",
+    "lib/invariant-*.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],

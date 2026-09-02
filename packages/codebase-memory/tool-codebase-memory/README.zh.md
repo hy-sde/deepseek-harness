@@ -1,9 +1,30 @@
+---
+description: "面向模型的 codebase-memory 工具：经 CLI 对本地 codebase-memory daemon 发起一次性查询，与 stdio MCP 客户端共享同一 daemon。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-codebase-memory
 
 [English](README.md) | 中文
 
+## 概述
+
+`dsh-tool-codebase-memory` 把本地 codebase-memory daemon 暴露为模型侧的 `codebase_*` 工具，从终端发起一次性查询。每次调用派发一次 `codebase-memory-mcp cli --json <tool>` 并解析原始 MCP 结果信封，与 MCP server 前端的是同一个 daemon，因此索引、项目变更锁与索引 supervisor 完全共享——热 daemon 调用约 0.2 秒。与 stdio MCP 客户端行相比，选择它可获得每次调用一个进程、schema 精简、可按 preset 配置，而不是每个会话常驻一个长寿命 server；可把 MCP 行禁用挂起作为零维护备选。主要边界是精选 schema 是 CLI 输入 schema 的手工维护镜像，codebase-memory 发布新增工具时本包需要更新。
+
+## 目录
+
+- [工具面](#tool-surface)
+- [为什么用 CLI 而不是 MCP](#why-cli-over-mcp)
+- [配置](#configuration)
+- [模型体验](#model-experience)
+- [已知限制与待办工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
+
 基于 [codebase-memory](https://github.com/DeusData/codebase-memory-mcp) 的模型侧工具：从终端对本地 codebase-memory daemon 发起一次性查询。该工具面是 stdio MCP 客户端行（`@deepseek-ai/dsh-mcp-client` 配 `command: codebase-memory-mcp`）的本地替代方案——不在每个会话里常驻一个 MCP server，而是每次调用派发一次 `codebase-memory-mcp cli --json <tool>` 并解析原始 MCP 结果信封——**与 MCP server 前端的是同一个 daemon**，因此索引、项目变更锁与索引 supervisor 完全共享。本机实测热 daemon 调用约 0.2 秒（冷启动约 1.3 秒；`codebase-memory-mcp daemon start` 可保持常暖）。
 
+<a id="tool-surface"></a>
 ## 工具面
 
 - `codebase_list_projects` —— 列出全部已索引项目（名称、根路径、git 状态）；是其他地方 `project` 词汇的来源。
@@ -21,25 +42,31 @@
 - `codebase_ingest_traces [traces]` —— 把 `{caller, callee, count}` 运行时 trace 折入图。
 - `codebase_delete_project [project]` —— 破坏性操作；仅用于清理被取代的索引。
 
+<a id="why-cli-over-mcp"></a>
 ## 为什么用 CLI 而不是 MCP
 
 MCP 客户端行（`@deepseek-ai/dsh-mcp-client` 配 `command: codebase-memory-mcp`）能工作，但会在**每个**会话里常驻一个 stdio server，且把所有工具原样暴露为 `mcp__codebase__*` 前缀。CLI 包装每次调用派发一次、随即退出——无需回收、不会崩、会话内无常驻进程——且工具名干净（`codebase_*`）、schema 精简、可按 preset 配置。功能上完全一致：`cli` 模式经由同一个 daemon 执行（`main_local_cli_daemon_execute` → `cbm_daemon_application_client_tool`），这正是当初 logseq 转向 CLI-first 得以成立的原因。若想保留零维护的备选，可把 MCP 行禁用挂起。
 
+<a id="configuration"></a>
 ## 配置
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import toolCodebaseMemoryPackage from '@deepseek-ai/dsh-tool-codebase-memory'
+
+const ctx = new Context()
 ctx.plugin(toolCodebaseMemoryPackage, {
   cliPath: 'codebase-memory-mcp', // CLI executable (default: on PATH)
   project: 'deepseek-harness', // default project for tools that can omit it
   timeoutMs: 60000, // per-call process timeout (index calls use indexTimeoutMs)
   indexTimeoutMs: 600000, // timeout for codebase_index_repository
   maxChars: 200000, // cap on rendered JSON payload before explicit truncation
-  enabled: true, // codebase:tools prompt section
 })
 ```
 
 设置 `project` 会让每次调用显式指向目标图，同时仍允许按调用覆盖。插件激活不变量在 CLI 缺失时快速失败并给出安装提示。可随时用 `codebase-memory-mcp cli list_projects` 验证。
 
+<a id="model-experience"></a>
 ## 模型体验
 
 ### 工具 schema
@@ -84,8 +111,19 @@ ctx.plugin(toolCodebaseMemoryPackage, {
 
 静态段落文本——无失效。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与待办工作
 
 - 精选 schema 是 CLI 输入 schema 的手工维护镜像；codebase-memory 发布新增工具时本包需要更新（MCP 行会自动跟随——这也是保留其作为禁用备选的好理由）。
 - `check_index_coverage` 虽在二进制的工具表中声明，但无法通过 `cli` 派发（"unknown tool"），因此有意不包装它。
 - 无主机面服务或 GUI 面：二进制自带 `localhost:9749` 图谱可视化；类 logseq wiki 面板的画中抽屉属未来工作。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

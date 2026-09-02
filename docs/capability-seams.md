@@ -7,11 +7,14 @@ A service can be a core spine service, a swappable capability seam, or a bundle/
 
 ```mermaid
 flowchart LR
+  pkg_vcs["vcs"]
+  svc_vcs["ctx.vcs<br/>VCS working-tree seam"]
+  pkg_tool_fs["tool-fs"]
+  pkg_tool_git["tool-git"]
   pkg_attachment["attachment"]
   svc_attachments["ctx.attachments<br/>Durable binary attachment storage"]
   pkg_attachment_local["attachment-local"]
   pkg_api_session_controller["api-session-controller"]
-  pkg_tool_fs["tool-fs"]
   pkg_llm_pi_ai["llm-pi-ai"]
   pkg_llm_deepseek["llm-deepseek"]
   pkg_llm["llm"]
@@ -227,7 +230,6 @@ flowchart LR
   pkg_tool_debug["tool-debug"]
   pkg_git["git"]
   svc_git["ctx.git<br/>Local git repository seam"]
-  pkg_tool_git["tool-git"]
   pkg_memory["memory"]
   svc_memory["ctx.memory<br/>Agent-curated long-horizon memory seam"]
   pkg_tool_memory["tool-memory"]
@@ -355,6 +357,7 @@ flowchart LR
   pkg_typert_registry --> svc_typert
   pkg_user_approval --> svc_approval
   pkg_user_questions --> svc_userQuestions
+  pkg_vcs --> svc_vcs
   pkg_web --> svc_web
   pkg_web_fetch_http --> svc_web
   pkg_web_search_public --> svc_web
@@ -488,6 +491,8 @@ flowchart LR
   svc_typert --> pkg_api_gateway
   svc_typert --> pkg_typert_loader
   svc_userQuestions --> pkg_tool_ask_user
+  svc_vcs --> pkg_tool_fs
+  svc_vcs --> pkg_tool_git
   svc_web --> pkg_tool_web
   svc_webServer --> pkg_client_connection
   svc_webServer --> pkg_client_hmr
@@ -505,6 +510,7 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.vcs` | `seam` | [`vcs`](../packages/vcs/vcs) | [`vcs`](../packages/vcs/vcs) | [`tool-fs`](../packages/fs/tool-fs), [`tool-git`](../packages/git/tool-git) | - | Resolves VCS-rooted file state and attribution for the working tree the agent opens; dsh-tool-git owns the model-facing commands. |
 | `ctx.attachments` | `seam` | [`attachment`](../packages/attachment/attachment) | [`attachment-local`](../packages/attachment/attachment-local) | [`api-session-controller`](../packages/api/session-controller), [`tool-fs`](../packages/fs/tool-fs), [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`llm-deepseek`](../packages/llm/llm-deepseek) | - | The host commits accepted images before session events; provider adapters resolve authorized durable references into provider-native content. |
 | `ctx.llm` | `seam` | [`llm`](../packages/llm/llm) | [`llm-deepseek`](../packages/llm/llm-deepseek), [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`llm-replay`](../packages/test-support/llm-replay) | [`agent-loop`](../packages/core/agent-loop), [`compaction-basic`](../packages/compaction/compaction-basic) | - | Adapters register provider implementations; the loop and compaction call the provider-neutral stream service. |
 | `ctx.deepseekLlmApiExtensions` | `seam` | [`deepseek-llm-api-extensions`](../packages/llm/deepseek-llm-api-extensions) | [`session-log-deepseek`](../packages/session/session-log-deepseek), [`plugin-package-inventory-deepseek`](../packages/llm/plugin-package-inventory-deepseek) | [`llm-deepseek`](../packages/llm/llm-deepseek) | - | Plugins prepare independent top-level fields; the official adapter merges them and commits their delivery state after HTTP acceptance. |

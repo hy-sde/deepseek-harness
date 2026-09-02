@@ -48,4 +48,8 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.systemPrompt.section(buildBrowserPromptSection(config))
 }
 
+/**
+ * The plugin core: registers the browser tool.
+ *
+ */
 export default { name, inject, apply }

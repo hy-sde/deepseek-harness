@@ -1,32 +1,37 @@
+---
+description: "Model-facing repository wiki lifecycle tools (openwiki_begin … openwiki_finish) driving the ported deterministic openwiki 0.4 engine core in-process."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-openwiki
 
 English | [中文](README.zh.md)
 
-Model-facing repository wiki lifecycle tools — `openwiki_begin`,
-`openwiki_submit_plan`, `openwiki_next_page`, `openwiki_submit_page`,
-`openwiki_finish` — that drive the ported deterministic openwiki 0.4 engine
-core (`@deepseek-ai/dsh-openwiki-core`) **in-process**. The five-tool contract
-and every model-facing description match upstream openwiki 0.4, so harness
-agents run the same resumable, claim-grounded wiki generation with no external
-`openwiki` CLI and with `codebase-memory` for structural discovery.
+## Summary
+
+`dsh-tool-openwiki` gives an agent the repository wiki lifecycle: `openwiki_begin`, `openwiki_submit_plan`, `openwiki_next_page`, `openwiki_submit_page`, and `openwiki_finish` drive the ported deterministic openwiki 0.4 core in-process, with the same resumable, claim-grounded protocol upstream defines. Choose it in a preset when an agent should maintain a repository wiki through codebase-memory-assisted structural discovery without an external `openwiki` CLI. It is a Cordis agent-plane plugin that injects `tools` + `systemPrompt` and registers no service of its own; the main boundaries are its tight coupling to the ported core's formats and one active run per mounting session.
+
+## Table of Contents
+
+- [Surface](#surface)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
+
+Model-facing repository wiki lifecycle tools — `openwiki_begin`, `openwiki_submit_plan`, `openwiki_next_page`, `openwiki_submit_page`, `openwiki_finish` — that drive the ported deterministic openwiki 0.4 engine core (`@deepseek-ai/dsh-openwiki-core`) **in-process**. The five-tool contract and every model-facing description match upstream openwiki 0.4, so harness agents run the same resumable, claim-grounded wiki generation with no external `openwiki` CLI and with `codebase-memory` for structural discovery.
 
 ## Surface
 
-One Cordis agent-plane plugin (mounts as a preset or profile-patch row,
-injects `tools` + `systemPrompt`, registers no service of its own):
+One Cordis agent-plane plugin (mounts as a preset or profile-patch row, injects `tools` + `systemPrompt`, registers no service of its own):
 
-- `openwiki_begin` — start or resume a durable run (`.run.json`) over a Git
-  repository root; returns `status=noop` for clean updates.
-- `openwiki_submit_plan` — validate and durably persist the ordered PageJob
-  queue; init requires `/openwiki/quickstart.md`, paths are normalized.
+- `openwiki_begin` — start or resume a durable run (`.run.json`) over a Git repository root; returns `status=noop` for clean updates.
+- `openwiki_submit_plan` — validate and durably persist the ordered PageJob queue; init requires `/openwiki/quickstart.md`, paths are normalized.
 - `openwiki_next_page` — first pending job with existing Markdown + Claims.
-- `openwiki_submit_page` — complete the current job by proving its complete
-  Claim set against the written page (front matter repair then Claims
-  resolution and durable verification).
-- `openwiki_finish` — deterministic finalization: planned/abandoned
-  deletions, Mermaid validation, wiki index sync, link validation, generated
-  provenance, Claims finalization + manifest replacement, run metadata, and
-  `.run.json` removal.
+- `openwiki_submit_page` — complete the current job by proving its complete Claim set against the written page (front matter repair then Claims resolution and durable verification).
+- `openwiki_finish` — deterministic finalization: planned/abandoned deletions, Mermaid validation, wiki index sync, link validation, generated provenance, Claims finalization + manifest replacement, run metadata, and `.run.json` removal.
 
 ## Configuration
 
@@ -74,3 +79,12 @@ Static section text — no invalidation.
 - **Mermaid/jsdom optional** — authoritative Mermaid validation needs the optional `mermaid` + `jsdom` peers in the host process; without them validation degrades to heuristics (same as upstream).
 - **One active run per mounting session** — `HostSessionManager` is a single-run adapter; concurrent wiki runs need separate agent sessions or a per-run manager refactor.
 - **No CI workflow** — upstream's scheduled GitHub Actions workflow and code-mode connectors are deliberately not ported; the harness runs the wiki in-process through these very tools.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

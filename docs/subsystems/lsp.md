@@ -12,11 +12,20 @@ The seam and model expose exactly four semantic queries; the union is closed, so
 
 ```ts type-equiv
 /**
- * The four semantic queries the seam and model expose. A closed union: adding an operation is a
- * compile-enforced change across the seam, providers, and the tool. Symbols and call hierarchy are
- * not operations here; they need different schemas.
+ * The model-exposed operations the seam and tool share. A closed union: adding an operation is a
+ * compile-enforced change across the seam, providers, and the tool. `documentSymbols`, `codeActions`,
+ * and `rename` produce their own result shapes; navigation operations normalize to locations.
  */
-type LspOperation = 'goToDefinition' | 'findReferences' | 'goToImplementation' | 'hover'
+type LspOperation =
+  | 'goToDefinition'
+  | 'findReferences'
+  | 'goToImplementation'
+  | 'hover'
+  | 'goToTypeDefinition'
+  | 'documentSymbols'
+  | 'codeActions'
+  | 'rename'
+  | 'diagnostics'
 ```
 
 ```ts type-equiv
@@ -46,16 +55,20 @@ Every field is required: `workspaceRoot` is caller-supplied, `languageId` comes 
  * A caller's normalized query. Every field is required: `workspaceRoot` is caller-supplied,
  * `languageId` comes from the provider registration (not here), and consumers own timeouts and
  * result limits — so no field needs implementation defaulting and there is no `resolve()` step.
+ * `newName` is present only for `rename` (the requested symbol's new name); other operations leave
+ * it undefined.
  */
 interface LspQueryRequest {
   /** Which semantic query to run. */
   readonly operation: LspOperation
   /** The source file to query (relative to `workspaceRoot` or absolute; the provider canonicalizes). */
   readonly filePath: string
-  /** The zero-based UTF-16 cursor position to query at. */
+  /** The zero-based UTF-16 cursor position to query at; `documentSymbols` ignores it. */
   readonly position: LspPosition
   /** The workspace root the provider resolves against and indexes; required, never defaulted. */
   readonly workspaceRoot: string
+  /** The new symbol name for `rename`; ignored by every other operation. */
+  readonly newName?: string
 }
 ```
 
@@ -98,8 +111,10 @@ interface LspHover {
 ```ts type-equiv
 /**
  * The closed result union. Navigation operations (`goToDefinition`, `findReferences`,
- * `goToImplementation`) normalize to `locations`; `hover` normalizes to content or `null`.
- * Consumers `switch` on `kind` to exhaustiveness so a new arm breaks compilation until handled.
+ * `goToImplementation`, `goToTypeDefinition`) normalize to `locations`; `hover` normalizes to
+ * content or `null`. `documentSymbols`, `codeActions`, and `rename` normalize to their own shapes;
+ * `diagnostics` reuses the normalized diagnostic list. Consumers `switch` on `kind` to
+ * exhaustiveness so a new arm breaks compilation until handled.
  *
  * The `locations` variant carries `resolvedWorkspaceUri`: the provider's canonical `file:` URI for
  * the request's workspace root. A caller that relativizes location URIs MUST use this, not parse the
@@ -109,6 +124,10 @@ interface LspHover {
 type LspQueryResult =
   | { readonly kind: 'locations'; readonly locations: readonly LspLocation[]; readonly resolvedWorkspaceUri: string }
   | { readonly kind: 'hover'; readonly hover: LspHover | null }
+  | { readonly kind: 'documentSymbols'; readonly symbols: readonly LspDocumentSymbol[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'codeActions'; readonly actions: readonly LspCodeAction[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'rename'; readonly files: readonly LspRenameFile[]; readonly resolvedWorkspaceUri: string }
+  | { readonly kind: 'diagnostics'; readonly diagnostics: readonly LspDiagnostic[]; readonly resolvedWorkspaceUri: string }
 ```
 
 ## Provider and service
@@ -120,7 +139,8 @@ A provider owns a stable branded `id` and an exclusive lowercase leading-dot ext
  * A language-server backend registered on `ctx.lsp`. Each provider owns a stable {@link
  * LspProviderId} and an extension-to-language-id map (lowercase, leading-dot keys).
  * `findReferences` always includes declarations — the provider enforces this internally; callers
- * get no flag.
+ * get no flag. The write-path methods receive caller-supplied in-memory content and never read the
+ * file; they resolve and contain the path themselves.
  */
 interface LspProvider {
   /** Stable provider identity, reserved atomically with the extension mappings. */
@@ -134,13 +154,33 @@ interface LspProvider {
    * @returns the normalized, closed-union result.
    */
   query(request: LspProviderQuery, signal?: AbortSignal): Promise<LspQueryResult>
+  /**
+   * Format a document's text. The caller supplies authoritative in-memory content; the provider
+   * opens a transient document with it, calls `textDocument/formatting`, and applies the returned
+   * edits to the caller's text.
+   * @param request - the write-path format request.
+   * @param signal - optional cancellation; the provider stops its own work when it aborts.
+   * @returns the formatted text, or `null` when the server has no formatting provider or returned no edits.
+   */
+  format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>
+  /**
+   * Collect diagnostics for a document. The caller asserts the content/version; the provider opens a
+   * transient document with exactly that text+version and returns the diagnostics the server
+   * publishes for it (filtered to the uri and version, sorted). A server that never publishes yields
+   * an empty result after the provider's bounded wait.
+   * @param request - the write-path diagnostics request.
+   * @param signal - optional cancellation; the provider stops its own work when it aborts.
+   * @returns the normalized diagnostics (empty when none are published).
+   */
+  collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>
 }
 ```
 
 ```ts type-equiv
 /**
  * The LSP capability seam (`ctx.lsp`). Owns provider registration/selection and normalized query
- * execution; exposes exactly the four operations and no protocol escape hatch.
+ * execution; exposes exactly the four operations and the two write-path operations, and no protocol
+ * escape hatch.
  */
 interface LspService {
   /**
@@ -159,6 +199,22 @@ interface LspService {
    * @returns the normalized, closed-union result.
    */
   query(request: LspQueryRequest, signal?: AbortSignal): Promise<LspQueryResult>
+  /**
+   * Select a provider by the file's extension and run one format. Selection mirrors `query`;
+   * no match throws `LspError` `LSP_UNAVAILABLE`.
+   * @param request - the write-path format request.
+   * @param signal - optional cancellation forwarded to the selected provider.
+   * @returns the formatted text, or `null` when the provider/server had nothing to format.
+   */
+  format(request: LspFormatRequest, signal?: AbortSignal): Promise<LspFormatResult>
+  /**
+   * Select a provider by the file's extension and collect diagnostics. Selection mirrors `query`;
+   * no match throws `LspError` `LSP_UNAVAILABLE`.
+   * @param request - the write-path diagnostics request.
+   * @param signal - optional cancellation forwarded to the selected provider.
+   * @returns the normalized diagnostics (empty when none were published).
+   */
+  collectDiagnostics(request: LspDiagnosticsRequest, signal?: AbortSignal): Promise<LspDiagnosticsResult>
 }
 ```
 

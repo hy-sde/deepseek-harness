@@ -12,13 +12,7 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../../packages/runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../../packages/subprocess/subprocess"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

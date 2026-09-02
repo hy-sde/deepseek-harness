@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-gui-full-access-direct-switch.md
-2026-08-18-gui-full-access-direct-switch.md: de470684fe53102fa6c6aac5b6266a4b2e724777
-2026-08-18-gui-full-access-direct-switch.zh.md: d1a8695780479acbaf456725060b8b8b6da02267
+2026-08-18-gui-full-access-direct-switch.md: 3dd253fe99e7261c4ddf31eaef643138b32856cb
+2026-08-18-gui-full-access-direct-switch.zh.md: 32398857562975f2ea3b89a1233a48e4985157a5

@@ -8,6 +8,7 @@
  */
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import clsx from 'clsx'
+import type { PropsLocale, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SidebarFooterActionOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import { countdown } from './timer.ts'
 import css from './CountdownCell.module.css'
@@ -60,9 +61,9 @@ function playChime(): void {
 }
 
 /** Raise the "time is up" Web notification when permission allows. */
-function showNotification(durationMs: number): void {
+function showNotification(durationMs: number, t: TranslateNS<'countdown'>): void {
   if (!hasNotifications()) return
-  const body = `${formatLong(durationMs)} is up — time to take a break!`
+  const body = `${formatLong(durationMs, t)} is up — time to take a break!`
   const notify = (): void => {
     new Notification('⏰ Timer finished', { body, tag: 'dsh-countdown-done' })
   }
@@ -80,13 +81,13 @@ function showNotification(durationMs: number): void {
 }
 
 /** Human duration: "45m", "1h 10m", "25m 30s"… */
-function formatLong(ms: number): string {
+function formatLong(ms: number, t: TranslateNS<'countdown'>): string {
   const totalSeconds = Math.max(0, Math.round(ms / 1000))
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
-  if (minutes >= 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-  if (seconds > 0) return `${minutes}m ${seconds}s`
-  return `${minutes}m`
+  if (minutes >= 60) return t('timer.hm', { h: Math.floor(minutes / 60), m: minutes % 60 })
+  if (seconds > 0) return t('timer.ms', { m: minutes, s: seconds })
+  return t('timer.m', { m: minutes })
 }
 
 /** Countdown clock: "45:00", "1:05:00" for hour-plus runs. */
@@ -103,7 +104,11 @@ const timeClass = (running: boolean, finished: boolean): string | undefined =>
   running ? css.running : finished ? css.done : undefined
 
 /** Sidebar footer cell: wide row with controls, compact chip on the rail. */
-export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
+export type CountdownCellProps =
+  SidebarFooterActionOwnerProps
+  & PropsLocale<'countdown'>
+
+export function CountdownCell({ wide, t }: CountdownCellProps) {
   const snapshot = useSyncExternalStore(countdown.subscribe, countdown.getSnapshot)
   const [panel, setPanel] = useState(false)
   const [custom, setCustom] = useState(() => Math.round(snapshot.durationMs / MINUTE_MS))
@@ -116,7 +121,7 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
       if (live.running && live.endAt !== null && Date.now() >= live.endAt && live.finishedAt === null) {
         countdown.complete()
         playChime()
-        showNotification(live.durationMs)
+        showNotification(live.durationMs, t)
       }
     }
     const tickId = window.setInterval(() => {
@@ -138,7 +143,7 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
   const running = snapshot.running
   const finished = snapshot.finishedAt !== null && !running
   const remaining = countdown.remainingMs()
-  const primaryLabel = running || finished ? 'Restart' : 'Start'
+  const primaryLabel = running || finished ? t('action.restart') : t('action.start')
   const onPrimary = (): void => {
     requestPermission()
     if (running || finished) countdown.restart()
@@ -148,8 +153,8 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
   const onApplyCustom = (): void => { countdown.setDuration(custom * MINUTE_MS); setPanel(false) }
 
   const popover = panel ? (
-    <div className={css.popover} role="dialog" aria-label="Timer duration settings">
-      <div className={css.popoverTitle}>Timer duration</div>
+    <div className={css.popover} role="dialog" aria-label={t('timer.settingsAria')}>
+      <div className={css.popoverTitle}>{t('timer.settingsTitle')}</div>
       <div className={css.presets}>
         {PRESETS_MIN.map(minutes => (
           <button
@@ -158,11 +163,11 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
             className={clsx(css.chip, snapshot.durationMs === minutes * MINUTE_MS && css.chipOn)}
             onClick={() => { countdown.setDuration(minutes * MINUTE_MS); setCustom(minutes) }}
           >
-            {minutes}m
+            {minutes}{t('timer.minute')}
           </button>
         ))}
       </div>
-      <label className={css.customLabel} htmlFor="countdown-custom-minutes">Custom minutes</label>
+      <label className={css.customLabel} htmlFor="countdown-custom-minutes">{t('timer.customMinutes')}</label>
       <input
         id="countdown-custom-minutes"
         type="number"
@@ -175,8 +180,8 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
         }}
       />
       <div className={css.popoverActions}>
-        <button type="button" className={clsx(css.btn, css.btnPrimary)} onClick={onApplyCustom}>Apply</button>
-        <button type="button" className={css.btn} onClick={() => { setPanel(false) }}>Close</button>
+        <button type="button" className={clsx(css.btn, css.btnPrimary)} onClick={onApplyCustom}>{t('action.apply')}</button>
+        <button type="button" className={css.btn} onClick={() => { setPanel(false) }}>{t('action.close')}</button>
       </div>
     </div>
   ) : null
@@ -187,8 +192,8 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
         <button
           type="button"
           className={css.railPrimary}
-          title={running || finished ? 'Restart timer' : 'Start timer'}
-          aria-label={running || finished ? 'Restart timer' : 'Start timer'}
+          title={running || finished ? t('timer.restartTimer') : t('timer.startTimer')}
+          aria-label={running || finished ? t('timer.restartTimer') : t('timer.startTimer')}
           onClick={onPrimary}
         >
           <span className={clsx(css.railTime, timeClass(running, finished))}>{formatClock(remaining)}</span>
@@ -196,8 +201,8 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
         <button
           type="button"
           className={css.railGear}
-          title="Set duration"
-          aria-label="Set duration"
+          title={t('timer.setDuration')}
+          aria-label={t('timer.setDuration')}
           onClick={() => { setPanel(open => !open) }}
         >
           ⚙
@@ -215,8 +220,8 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
         <button
           type="button"
           className={css.btn}
-          title="Clear timer"
-          aria-label="Clear timer"
+          title={t('timer.clearTimer')}
+          aria-label={t('timer.clearTimer')}
           onClick={onClear}
           disabled={!running && !finished}
         >
@@ -225,9 +230,9 @@ export function CountdownCell({ wide }: SidebarFooterActionOwnerProps) {
       </div>
       <div className={clsx(css.row, css.subRow)}>
         <span className={css.hint}>
-          {running ? 'running…' : finished ? 'Done!' : `Set ${Math.round(snapshot.durationMs / MINUTE_MS)} min`}
+          {running ? t('timer.running') : finished ? t('timer.done') : t('timer.setMin', { n: Math.round(snapshot.durationMs / MINUTE_MS) })}
         </span>
-        <button type="button" className={css.btn} onClick={() => { setPanel(open => !open) }}>Set time</button>
+        <button type="button" className={css.btn} onClick={() => { setPanel(open => !open) }}>{t('timer.setTime')}</button>
       </div>
       {popover}
     </div>

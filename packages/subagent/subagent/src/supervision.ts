@@ -77,12 +77,21 @@ export function diagnoseWedge(
   return { kind: 'clean' }
 }
 
-/** A decision key the supervisor generates for one stalled child. */
+/**
+ * A decision key the supervisor generates for one stalled child.
+ * @param childId - the stalled child's session id.
+ * @returns the wedge decision key.
+ */
 export function wedgeDecisionKey(childId: string): string {
   return `wedge:${childId}`
 }
 
-/** Whether one key is a supervisor-raised wedge decision for `childId`. */
+/**
+ * Whether one key is a supervisor-raised wedge decision for `childId`.
+ * @param key - the key to test.
+ * @param childId - optional child id to compare against.
+ * @returns true when the key is a wedge decision.
+ */
 export function isWedgeDecisionKey(key: string, childId?: string): boolean {
   if (!key.startsWith('wedge:')) return false
   if (childId === undefined) return true

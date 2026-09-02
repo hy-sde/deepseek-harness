@@ -37,12 +37,6 @@
     },
     {
       "path": "../compaction-tool-result-pruner"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

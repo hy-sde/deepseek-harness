@@ -2,7 +2,7 @@
  * Playwright (Microsoft, Apache-2.0) ARIA-snapshot sources bundled to one CJS
  * string by oh-my-pi; the `[ref=eN]` anchors are written straight into the page
  * and resolve through `resolveAriaRef`. Generated — regenerate from omp
- * `packages/coding-agent/src/tools/browser/aria/aria-snapshot.bundle.txt`.
+ * `coding-agent/src/tools/browser/aria/aria-snapshot.bundle.txt`.
  */
 
 /** The bundled CJS source, evaluated in the page's main world. */

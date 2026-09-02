@@ -1,9 +1,29 @@
+---
+description: "宿主 `ctx.browser` 服务，供代理与维护者选择、配置或排查经 Chrome DevTools Protocol 的 launch、attach 与 relay 三种浏览器后端。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-browser
 
 [English](README.md) | 中文
 
+## 概述
+
+宿主 `ctx.browser` 服务经 Chrome DevTools Protocol 持有真实浏览器连接，提供三种后端：`launch` 派生带 stealth 补丁的浏览器，`attach` 接入既有 CDP 端点，`relay` 通过进程内 relay 服务器＋MV3 扩展驱动用户自己的 Chrome 标签页。在这些连接之上，它打开并导航命名标签页、求值 JS、返回带稳定 `[ref=eN]` id 的 ARIA 快照、按 ref 或 CSS 选择器点击与输入、写出截图并关闭标签页。当需要 agent 化浏览器控制时选择它——`@deepseek-ai/dsh-tool-browser` 是其预期消费方，模型从不直接调用。代价是每个 cwd+kind 一个浏览器进程或连接，服务自身没有启停策略；隐身特性并非安全边界。
+
+## 目录
+
+- [功能](#what-it-does)
+- [后端](#backends)
+- [配置](#configuration)
+- [已知限制与延期工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
+
 agent 化浏览器工具（移植自 omp / oh-my-pi）的宿主 `ctx.browser` 服务：经 [playwright-core CDP](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp) 持有真实的浏览器连接，提供三种后端 — **launch**（带 stealth 补丁的浏览器二进制）、**attach**（经 `cdp_url` 接入既有 CDP 端点）、以及 **relay**（通过进程内 relay 服务器＋配套 MV3 扩展驱动用户自己的 Chrome 标签页）。由 [`@deepseek-ai/dsh-tool-browser`](../tool-browser/README.zh.md) 消费，模型不直接调用。
 
+<a id="what-it-does"></a>
 ## 功能
 
 在组合上注册一个宿主服务（`ctx.browser`）。其面：
@@ -14,6 +34,7 @@ agent 化浏览器工具（移植自 omp / oh-my-pi）的宿主 `ctx.browser` �
 
 ARIA 快照由打包进来的 Playwright ARIA-snapshot 源码（Apache-2.0，微软）在 `src/aria-bundle.ts` 提供 — 与 omp 用的是同一份生成 bundle — 因此每次快照都带可操作的 `[ref=eN]` id，且在下一次快照前保持有效。
 
+<a id="backends"></a>
 ## 后端
 
 | kind | 解析 | 浏览器 |
@@ -24,6 +45,7 @@ ARIA 快照由打包进来的 Playwright ARIA-snapshot 源码（Apache-2.0，微
 
 relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，提供 `GET /json/version`（扩展接入前返回 503）、`GET /json`、`WS /cdp`（下游 CDP 客户端）、`WS /ext`（扩展，可配置 token 门禁），以及 `GET /ext-assets/*`（便于用户在 `chrome://extensions` → Load unpacked 侧载扩展）。bridge 在扩展对每个标签页唯一的 `chrome.debugger` 附着之上，以铸造 session id 的方式复用每条下游 CDP 连接 — 与 `omp browser-relay`（MIT）同一设计。
 
+<a id="configuration"></a>
 ## 配置
 
 - `browserPath` — `launch` 的默认可执行文件（可选；否则由 Playwright 解析）。
@@ -33,3 +55,19 @@ relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，
 - `timeoutMs` — 默认导航超时（30000）。
 
 服务位于宿主平面，不持有持久状态，随其所属上下文一同销毁（关闭浏览器并停止 relay）。
+
+<a id="known-limitations-and-deferred-work"></a>
+## 已知限制与延期工作
+
+- 服务不管理浏览器进程的启停策略；消费方需自行限定并释放会话。
+- 隐身与指纹特性针对常见自动化检测器，并非安全边界。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

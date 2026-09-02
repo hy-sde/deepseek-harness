@@ -213,10 +213,12 @@ function projectReferencesInvariants(root: string, ownerDir: string, entryPath: 
     if (configPath === undefined) break
     if (visited.has(configPath)) continue
     visited.add(configPath)
-    const config = JSON.parse(readFileSync(configPath, 'utf8')) as {
-      references?: Array<{ path?: string }>
+    const config = ts.readConfigFile(configPath, ts.sys.readFile)
+    if (config.error !== undefined) {
+      throw new Error(`package-invariants: ${configPath}: cannot parse tsconfig: ${ts.flattenDiagnosticMessageText(config.error.messageText, '\n')}`)
     }
-    for (const reference of config.references ?? []) {
+    const references = (config.config as { references?: Array<{ path?: string }> }).references
+    for (const reference of references ?? []) {
       if (reference.path === undefined) continue
       const referenced = resolve(dirname(configPath), reference.path)
       if (referenced === target) return true

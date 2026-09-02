@@ -18,16 +18,10 @@
       "path": "../../util/zstd"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../core/tools"
     },
     {
       "path": "../../core/system-prompt"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

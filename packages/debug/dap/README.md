@@ -1,6 +1,28 @@
+---
+description: "Debug Adapter Protocol (DAP) capability seam for DeepSeek Harness: adapter resolution plus a session manager that launches and drives debugpy, lldb-dap, gdb, dlv, and other debuggers."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-dap
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-dap` provides the Debug Adapter Protocol (DAP) capability seam (`ctx.dap`): adapter resolution plus a session manager that launches/attaches spawned DAP adapters and drives source/function/instruction/data breakpoints, continue, pause, steps, threads and stack frames, scopes and variables, expressions, memory reads/writes, disassembly, modules and loaded sources, program output, and session termination. It is one service instance per mounted session — agent presets mount it inside an isolated `debug` realm — and because a DAP adapter is a local binary that owns the debuggee, this package is both the service definition and the provider, so no remote provider seam exists. Choose it when a composition needs real debugger integration; the model-facing surface lives in `@deepseek-ai/dsh-tool-debug`. The main boundaries are environmental: adapter availability depends on which debuggers are installed, guests launch in a scrubbed environment and never inherit secrets, and `dap.yaml` accepts strictly-JSON content only.
+
+## Table of Contents
+
+- [The seam](#the-seam)
+- [Adapters and config](#adapters-and-config)
+- [Environment note](#environment-note)
+- [Connection modes](#connection-modes)
+- [Testing](#testing)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 Debug Adapter Protocol (DAP) capability seam (`ctx.dap`) for the DeepSeek Harness — adapter resolution plus a session manager that launches/attaches, sets source/function/instruction/data breakpoints, continues, pauses, steps, lists threads and stack frames, reads scopes and variables, evaluates expressions, reads/writes memory, disassembles, lists modules/loaded sources, captures program output, and terminates debug sessions through spawned DAP adapters (debugpy, lldb-dap, gdb, dlv, ...).
 
@@ -46,3 +68,14 @@ Prefix-stable: this package owns no guidance text, so model-visible prefixes are
 - **No remote providers** — a DAP adapter must be a local binary; remote-port adapters are reached through host-side forwarding, not a remote provider seam.
 - **YAML config is v1 JSON-only** — `dap.yaml` parses only strictly-JSON content; richer YAML (anchors, merge keys) is deferred to a future config pass.
 - **Credentials are never inherited** — guests that need secrets must be given them explicitly; the scrubbed environment is intentional but may trip adapters that assume a full user environment.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

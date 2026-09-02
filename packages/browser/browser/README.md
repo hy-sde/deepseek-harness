@@ -1,9 +1,29 @@
+---
+description: "The host `ctx.browser` service for agents and maintainers choosing, configuring, or debugging launch, attach, and relay browser backends over Chrome DevTools Protocol."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-browser
 
 English | [中文](README.zh.md)
 
+## Summary
+
+The host `ctx.browser` service owns real browser connections over Chrome DevTools Protocol through three backends: `launch` spawns a stealth-patched browser, `attach` joins an existing CDP endpoint, and `relay` drives the user's own Chrome tabs through an in-process relay server plus an MV3 extension. On those connections it opens and navigates named tabs, evaluates JS, returns ARIA snapshots with stable `[ref=eN]` ids, clicks and types by ref or CSS selector, writes screenshots, and closes tabs. Choose it when agentic browser control is needed — `@deepseek-ai/dsh-tool-browser` is its intended consumer and the model never calls it directly. The cost is one browser process or connection per cwd+kind with no launch/teardown policy of its own, and stealth features are not a security boundary.
+
+## Table of Contents
+
+- [What it does](#what-it-does)
+- [Backends](#backends)
+- [Configuration](#configuration)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
+
 The host `ctx.browser` service for the agentic browser tool (ported from omp / oh-my-pi): it owns real browser connections over Chrome DevTools Protocol through [playwright-core CDP](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp), with three backends — **launch** (stealth-patched browser binary), **attach** (existing CDP endpoint via `cdp_url`), and **relay** (the user's own Chrome tabs through an in-process relay server + companion MV3 extension). Intended to be consumed by [`@deepseek-ai/dsh-tool-browser`](../tool-browser/README.md), never by the model directly.
 
+<a id="what-it-does"></a>
 ## What it does
 
 Registers one host service on the composition (`ctx.browser`). The surface:
@@ -14,6 +34,7 @@ Registers one host service on the composition (`ctx.browser`). The surface:
 
 The ARIA snapshot is produced by the bundled Playwright ARIA-snapshot sources (Apache-2.0, Microsoft) vendored as `src/aria-bundle.ts` — the same generated bundle omp uses — so every snapshot carries actionable `[ref=eN]` ids that stay valid until the next snapshot.
 
+<a id="backends"></a>
 ## Backends
 
 | kind | resolution | browser |
@@ -24,6 +45,7 @@ The ARIA snapshot is produced by the bundled Playwright ARIA-snapshot sources (A
 
 The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, serves `GET /json/version` (503 until the extension connects), `GET /json`, `WS /cdp` (downstream CDP clients), `WS /ext` (the extension, token-gated when configured), and `GET /ext-assets/*` so the extension can be sideloaded from `chrome://extensions` → Load unpacked. The bridge multiplexes every downstream CDP connection over the extension's one `chrome.debugger` attachment per tab with minted session ids — the same design as `omp browser-relay` (MIT).
 
+<a id="configuration"></a>
 ## Configuration
 
 - `browserPath` — default executable for `launch` (optional; Playwright resolves one).
@@ -33,3 +55,21 @@ The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, 
 - `timeoutMs` — default navigation timeout (30000).
 
 The service is host-plane, holds no durable state, and is disposed with its owning context (closes its browsers and stops the relay).
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+<a id="known-limitations-and-deferred-work"></a>
+## Known Limitations and Deferred Work
+
+- The service owns no launch/teardown policy for browser processes; consumers must scope and dispose their own sessions.
+- Stealth and fingerprint features target common automation detectors and are not a security boundary.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

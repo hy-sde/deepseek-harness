@@ -166,6 +166,18 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // resolve at install time, before the build produces lib/bin.js.
   '@deepseek-ai/dsh-experimental-webworker-packer': ['bin.js', 'lib/repository-*.js'],
   '@deepseek-ai/dsh-subprocess-local': ['scripts/ensure-spawn-helper.mjs'],
+  // Fork-owned SQLite persistence backend: the schema and Zstandard dictionary are
+  // read at runtime via new URL('../resources/...', import.meta.url), so they ship
+  // beside the emitted JS. Upstream removed this package; the fork's release keeps it.
+  '@deepseek-ai/dsh-session-persistence-sqlite': ['resources/zstd-dictionary.bin', 'resources/sql/**/*.sql'],
+  // Fork tool packages whose invariant companion shares a hashed tsdown chunk
+  // with the entry (single bundle, hashed runtime chunk); the chunk must publish
+  // beside the invariant bundle for the published package to resolve it.
+  '@deepseek-ai/dsh-tool-codebase-memory': ['lib/invariant-*.js'],
+  '@deepseek-ai/dsh-tool-logseq': ['lib/invariant-*.js'],
+  // Fork openwiki engine: tsdown splits mermaid + runtime into dozens of hashed
+  // chunks the entry lazily imports, so the whole emitted JS tree must publish.
+  '@deepseek-ai/dsh-openwiki-core': ['lib/**/*.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {

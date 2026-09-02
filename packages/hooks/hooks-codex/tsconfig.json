@@ -37,12 +37,6 @@
     },
     {
       "path": "../../shell/shell"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

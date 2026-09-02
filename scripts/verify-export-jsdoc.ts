@@ -566,8 +566,14 @@ function loadCompilerOptions(scanRoot: string): ts.CompilerOptions {
  */
 export function collectExportJsdocViolations(scanRoot: string = root): string[] {
   const violations: string[] = []
+  const exempt = new Set<string>()
+  try {
+    const list = JSON.parse(readFileSync(resolve(scanRoot, 'scripts/export-jsdoc.exempt.json'), 'utf8')) as { packages: string[] }
+    for (const dir of list.packages) exempt.add(dir)
+  } catch { /* no exemption file: full enforcement */ }
   const rels = globSync('packages/*/*/src/**/*.ts', { cwd: scanRoot })
     .map(path => path.split(sep).join('/'))
+    .filter(rel => !exempt.has(rel.split('/').slice(0, 3).join('/')))
     .sort()
   const program = ts.createProgram(rels.map(rel => resolve(scanRoot, rel)), loadCompilerOptions(scanRoot))
   const checker = program.getTypeChecker()

@@ -1,14 +1,38 @@
+---
+description: "面向模型方的 commit、commit_apply、review 工具——agent 化 git 提交与评审工作流，读取在 ctx.vcs 与 ctx.git 之间按偏好路由。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-git
 
 [English](README.md) | 中文
 
+## 概述
+
+面向模型方的三个工具——`commit`、`commit_apply`、`review`——驱动移植自 omp (oh-my-pi) 的 agent 化 git 提交与评审工作流。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时按机会路由到它，否则回退到 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径逐字节不变。组合需要让模型编写确定性的拆分提交计划并对已暂存 diff 做有界评审扇出时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；边界是提交评审质量仍由模型自行协商——工具面只强制结构，不评判语义。
+
+## 目录
+
+- [读取偏好路由](#read-preference-routing)
+- [功能](#what-it-does)
+- [两阶段契约](#two-phase-contract)
+- [配置](#configuration)
+- [导出形状](#export-shape)
+- [Model Experience](#model-experience)
+- [已知限制与待办](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
+
 面向模型方的 `commit`、`commit_apply`、`review` 三个工具——agent 化 git 提交与评审工作流，移植自 omp (oh-my-pi)。其底层宿主服务为 [`@deepseek-ai/dsh-git`](../git/README.zh.md)（`ctx.git`）。
 
+<a id="read-preference-routing"></a>
 ## 读取偏好路由
 
 `commit` 分析与 `review` 的每一项**读取**（仓库检查、变更文件、状态计数、numstat、diff 文本、分支）在宿主 bundle 注册了 [`@deepseek-ai/dsh-vcs`](../../vcs/vcs/README.zh.md)（`ctx.vcs`）且其 `pi-vcs` 探测干净时，都通过它解析——每次调用按需解析，每次工具执行只探测一次——否则回退到 `ctx.git`。**变更输入始终留在 `ctx.git`**（`addAll` 自动暂存、`commit_apply` 供 `stageHunks` 使用的原始暂存 diff），因此写入路径逐字节不变。门面位于 `./reads.ts`（`openReads` → `ReadSurface`），测试通过临时真实仓库旁的假 `pi-vcs` shim 加以验证（读取走 vcs 动词，自动暂存仍走 git）。
 
 
+<a id="what-it-does"></a>
 ## 功能
 
 在 `ctx.tools` 上注册三个工具，一个带提交／评审协商语法的 `git:` 系统提示词 section，并注入 `ctx.git`：
@@ -17,10 +41,12 @@
 - **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。
 - **`review`** — 按权重把已暂存 diff 切成至多 `maxReviewers` 份子代理运行，采用结构化评审者契约，按评审者置信度的最小值聚合 `ship`／`reject` 结论，按严重度排序 findings，并把传输失败报告为 errors（绝不静默批准未受评审的变更）。
 
+<a id="two-phase-contract"></a>
 ## 两阶段契约
 
 流程刻意由模型驱动但确定：`commit` 返回地面真值加计划骨架与指引，模型编写精确的 `SplitCommitPlan`（类型、作用域、摘要、详情、依赖、可选 hunk 选择），`commit_apply` 校验并无隐藏模型会话地执行。失败会重置索引，因此不会丢失任何变更，其余编辑都以可检查状态保留在工作区。
 
+<a id="configuration"></a>
 ## 配置
 
 - `reviewProvider` — 评审扇出的子代理提供方 id（默认 `spawn`）。
@@ -30,10 +56,12 @@
 
 本部署的 agent preset 行挂载 `reviewProvider: spawn` 与 `maxReviewers: 4`。
 
+<a id="export-shape"></a>
 ## 导出形状
 
 函数／命名空间插件，导出 `name`／`inject`／`apply` 且无默认导出（多余的 default 会让 Loader 的 `unwrapExports` 折叠模块并丢弃 `inject`）。辅助函数与类型（`resolveCwd`、`toPriority`、`sliceByWeight`、`gitDiffSection`、`buildReviewerPrompt`、`SliceResult`、`ReviewerFinding` 及通用提交类型）从 `/commit` 与 `/review` 再导出，供测试与其他消费方使用。
 
+<a id="model-experience"></a>
 ## Model Experience
 
 ### 工具 schema
@@ -64,6 +92,7 @@ Token 增长随 diff 与 `commit_apply` 的 `created` 列表扩大；两者均�
 
 仅追加；新可见内容跟在可复用请求前缀之后，不会使既有 KV-cache 条目失效。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与待办
 
 - **工具内部无隐藏模型会话** — 提交评审质量是模型自身的协商；工具面只强制结构，不评判摘要的语义。
@@ -71,3 +100,13 @@ Token 增长随 diff 与 `commit_apply` 的 `created` 列表扩大；两者均�
 - **锁文件自动归位，不可规划** — 它们从不进入骨架；`commit_apply` 依据所属 manifest 决定归入哪一组。
 - **`review` 把未评审视为 reject** — 评审者传输失败（或空切片）拒绝批准，而非猜测。
 - **无 force-push、amend、rebase 动词** — 服务面是提交／评审子集；编辑器与交互式历史改写仍在界外。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

@@ -1,11 +1,31 @@
+---
+description: "无需凭据的 WebSearchProvider：把一个查询并发散开到五个公共引擎，并按跨引擎共识整合结果，接入 harness web seam，无需 API 密钥。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-web-search-public
 
 [English](README.md) | 中文
+
+## 概述
+
+`dsh-web-search-public` 是一个无需凭据的 `WebSearchProvider`，接入 harness web seam（`ctx.web`）：无需 API 密钥或环境变量，它将一个查询并发散开到五个公共引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。当部署需要零设置的公共网页搜索且能容忍引擎失败时选择它；它只注册 provider，不拥有任何面向模型的工具——那是 `dsh-tool-web` 的职责。其代价是共识带来的延迟底线、成倍放大的匿名请求（提高被风控风险），且其最佳努力解析器可能遭遇引擎无提示改版或拦截。
+
+## 目录
+
+- [配置](#config)
+- [映射](#mapping)
+- [模型体验](#model-experience)
+- [已知限制与暂缓事项](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
 
 一个无需凭据的 `WebSearchProvider`，用于 harness [web 能力 seam](../web/README.zh.md)（`ctx.web`）。无需 API 密钥或环境变量，它将一个查询并发散开到五个公共搜索引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。这是对 oh-my-pi `searchPublicWeb` 聚合的忠实移植。
 
 这是一个**实现**包：它向 `ctx.web` 注册提供方，不拥有 `ctx.web` 键，也不注册面向模型的工具（后者属于 `@deepseek-ai/dsh-tool-web`）。它是函数／命名空间插件（`inject: ['web']`），负责注册后端，而非默认导出服务。
 
+<a id="config"></a>
 ## 配置
 
 | 配置键 | 默认值 | 含义 |
@@ -25,12 +45,14 @@
     hardDeadlineMs: 30000
 ```
 
+<a id="mapping"></a>
 ## 映射
 
 每个引擎的静态 HTML 结果页被归结为 `WebSearchSource` 条目：`url` ← 结果链接（DuckDuckGo `uddg` 与 Google `/url?q=` 跳转包装会被解包）、`title` ← 可见的结果标题文本、`snippet` ← 结果摘要（DuckDuckGo `result__snippet`、Startpage `w-gl__description`、Ecosia `result__quote`、Google `VwiC3b`、Mojeek `p.s`）、`publishedAt` ← DuckDuckGo 结果时间戳（日期前缀）。引擎从不合成 `content`；最终上限由 seam 强制执行，`maxResults` 作为上界传给引擎。请求不携带任何凭据，且 HTTP 重定向会在访问 `Location` 指向的目标之前被拒绝（web 包 AGENTS.md 规则）。
 
 提供方将查询并发散开到所有引擎并整合结果：URL 先按大小写／`www.`／尾部斜杠归一化并在引擎之间去重，再按跨引擎共识（有多少引擎返回了该 URL）排序，其次按最佳引擎内排名，最后按引擎顺序——因此 Startpage 与 DuckDuckGo 都返回的 URL 胜过单引擎命中，同一排位内的平票由更靠前的引擎胜出。最有信息量的摘要（可得的最长者）胜出；同排位平票时取更靠前引擎的标题与 URL。散开过程竞速三种退出方式并取最早者——所有引擎落定、软截止期到点且手中已有成功、或（无成功且并非全部失败时越过软截止期等待首次成功之后）硬截止期——随后中止所有仍在运行的引擎。单引擎失败（传输错误、非 2xx 响应、风控页）与零结果页均被容忍：仅当**所有**引擎都失败时，调用才以 `WebError` `WEB_PROVIDER_ERROR` 失败，其消息聚合了各引擎的原因；调用方中止的请求以 `WEB_ABORTED` 呈现。只要配置了至少一个引擎，`available()` 即为真——不存在会失效的凭据门槛。
 
+<a id="model-experience"></a>
 ## 模型体验
 
 通过 [`dsh-tool-web`](../tool-web/README.zh.md) 间接影响；该工具保留此提供方经共识合并、`maxResults` 限制的 URL、标题、摘要与发布日期，或将聚合错误 `all public search engines failed: ...` 置于消费方的错误包装层内；生成答案与提供方私有字段不进入上下文。
@@ -39,6 +61,7 @@
 
 不会直接导致 KV Cache 失效；请求前缀变更由上述消费方负责。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项
 
 - **并行散开成倍放大匿名请求**——每次检索都会同时联系全部五个引擎（单次查询最多 5 个并发抓取），相比单引擎回退链，被风控与按主机限流的风险更高。被风控的引擎只会让聚合降级而不会失败，但限流严重的网络可能看到更多风控，而非更少。
@@ -47,3 +70,13 @@
 - **解析器是对特定 HTML 结构的最佳努力式抓取**——引擎偶尔会改版标记；改版后该引擎只返回零结果而非畸形数据，因此聚合是降级而非损坏。
 - **不合成 `content`**——引擎只返回来源；seam 的生成答案表面保持未设置。
 - **Google 是最脆弱的引擎**——借同意 Cookie 抓取保留以作覆盖，可在不改动聚合契约的前提下从引擎列表中移除。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

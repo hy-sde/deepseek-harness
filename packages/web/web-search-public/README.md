@@ -1,6 +1,25 @@
+---
+description: "Credential-free WebSearchProvider for the harness web seam: fans one query to five public engines in parallel and consolidates results by cross-engine consensus, no API key required."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-web-search-public
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-web-search-public` is a credential-free `WebSearchProvider` for the harness web seam (`ctx.web`): with no API key or environment variable it fans one query out to five public engines in parallel — Startpage, DuckDuckGo, Ecosia, Google, and Mojeek — and consolidates the answers by cross-engine consensus, so no single engine's challenge, timeout, or slow response blocks or degrades the search. Choose it when a deployment wants public web search with zero setup and tolerance for engine failures; it registers the provider only and owns no model-facing tool — that is `dsh-tool-web`'s job. Its costs are a latency floor for consensus and multiplied anonymous requests that raise bot-challenge exposure, and its best-effort parsers can see engines change markup or challenge without notice.
+
+## Table of Contents
+
+- [Config](#config)
+- [Mapping](#mapping)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 A credential-free `WebSearchProvider` for the harness [web capability seam](../web/README.md) (`ctx.web`). With no API key or environment variable, it fans one query out to five public search engines in parallel — Startpage, DuckDuckGo, Ecosia, Google and Mojeek — and consolidates the answers by cross-engine consensus, so no single engine's challenge, timeout, or slow response can block or degrade the search. This is a faithful port of oh-my-pi's `searchPublicWeb` aggregate.
 
@@ -47,3 +66,14 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 - **Parsers are best-effort structural scrapes of specific HTML shapes** — engines occasionally change markup; a changed shape yields zero results for that engine rather than malformed data, so the aggregate degrades rather than corrupts.
 - **No `content` synthesis** — engines return sources only; the seam's generated-answer surface stays unset.
 - **Google is the most fragile engine** — kept for coverage behind the consent-cookie scrape, and can be retired from the engine list without touching the aggregate contract.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

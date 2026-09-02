@@ -133,6 +133,18 @@
     "@deepseek-ai/dsh-web-search-public": "workspace:^",
     "@deepseek-ai/dsh-workflow": "workspace:^",
     "@deepseek-ai/dsh-workflow-worker-thread": "workspace:^",
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@deepseek-ai/schemastery": "workspace:^",
+    "@deepseek-ai/dsh-tool-memory": "workspace:^",
+    "@deepseek-ai/dsh-tool-session-query": "workspace:^",
+    "@deepseek-ai/dsh-tool-git": "workspace:^",
+    "@deepseek-ai/dsh-tool-browser": "workspace:^",
+    "@deepseek-ai/dsh-tool-av": "workspace:^",
+    "@deepseek-ai/dsh-internal-urls": "workspace:^",
+    "@deepseek-ai/dsh-zstd-frame": "workspace:^",
+    "@deepseek-ai/dsh-vcs": "workspace:^",
+    "@deepseek-ai/dsh-memory": "workspace:^",
+    "@deepseek-ai/dsh-browser": "workspace:^",
+    "@deepseek-ai/dsh-git": "workspace:^",
+    "@deepseek-ai/dsh-av": "workspace:^"
   }
 }

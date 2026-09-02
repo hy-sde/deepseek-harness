@@ -5,7 +5,7 @@
  * Ported from @oh-my-pi/pi-coding-agent (https://github.com/can1357/oh-my-pi). MIT License. Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük.
  */
 
-/** Guidance embedded for the `hashline` mode (from packages/hashline/src/prompt.md). */
+/** Guidance embedded for the `hashline` mode (from hashline/src/prompt.md). */
 export const HASHLINE_GUIDANCE = `
 <guidance>
 Section: [PATH#TAG]; TAG: 4-hex snapshot from latest read/search, REQUIRED each section.

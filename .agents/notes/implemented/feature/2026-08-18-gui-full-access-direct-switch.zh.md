@@ -24,3 +24,10 @@ Supersedes [2026-07-31-gui-full-access-confirmation.md](2026-07-31-gui-full-acce
 ## 后果
 
 产品标签 `Full access` 保留（它是呈现层名称，不是门禁）；只有对话框消失。新的选择器表面不再有「需确认」构件的积木——如果要重新引入，需要把 `RiskConfirmation` 与各门禁状态一并带回来。验收：`permission-row.spec.tsx`、`browser-plugin.spec.ts`、`input-bar.spec.tsx`、`popup.spec.ts`、`popup-view.spec.tsx` 以及 Web e2e 回放都断言直接写入而非对话框。
+## 备选方案
+
+**保留每次切换的 RiskConfirmation 门禁。** 它保留了最后一个确认时刻，但既然 full access 已成为新会话默认且审批已禁用，该门禁只给每次预设切换增加税负，并不产生用户尚未做出的安全决策。
+
+**改为每次会话确认一次。** 它消除了每次选择的税负，但空会话恰恰是用户最不需要摩擦、却最需要能在会话中段授予更宽访问面的时刻。
+
+**在选项上直接切换（已选）。** Full access 已是默认状态，再次询问只是确认表演；设置界面与会话横幅保留可见的当前模式，无需弹窗。

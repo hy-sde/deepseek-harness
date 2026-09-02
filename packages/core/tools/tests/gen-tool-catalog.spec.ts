@@ -26,18 +26,24 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     const catalog = await collectToolCatalog()
     const names = catalog.flatMap(entry => entry.schemas.map(s => s.name)).sort()
     expect(names).toEqual([
-      'ask_user_question', 'ast_edit', 'ast_grep', 'bash', 'bash', 'cordis_define',
-      'cordis_inspect_list', 'cordis_inspect_query', 'cordis_inspect_self', 'cordis_run', 'cordis_stop',
-      'cordis_undefine', 'create_goal', 'edit', 'edit', 'exit_plan_mode', 'followup_task', 'get_goal', 'glob', 'grep',
-      'interrupt_agent', 'interrupt_agent', 'job_kill', 'job_list', 'job_output',
-      'list_agents', 'list_agents', 'list_subagent_models', 'lsp', 'pwsh', 'pwsh', 'ralph',
-      'read', 'read_image', 'run_code', 'schedule_create', 'schedule_delete',
+      'ask_user_question', 'ast_edit', 'ast_grep', 'av_catalog', 'av_doctor', 'av_list', 'av_scan', 'bash', 'bash',
+      'browser', 'codebase_delete_project', 'codebase_detect_changes', 'codebase_get_architecture',
+      'codebase_get_code_snippet', 'codebase_get_graph_schema', 'codebase_index_repository', 'codebase_index_status',
+      'codebase_ingest_traces', 'codebase_list_projects', 'codebase_manage_adr', 'codebase_query_graph',
+      'codebase_search_code', 'codebase_search_graph', 'codebase_trace_path', 'commit', 'commit_apply',
+      'cordis_define', 'cordis_inspect_list', 'cordis_inspect_query', 'cordis_inspect_self', 'cordis_run',
+      'cordis_stop', 'cordis_undefine', 'create_goal', 'debug', 'edit', 'edit', 'exit_plan_mode', 'followup_task',
+      'get_goal', 'glob', 'grep', 'interrupt_agent', 'interrupt_agent', 'job_kill', 'job_list', 'job_output',
+      'learn', 'list_agents', 'list_agents', 'list_subagent_models', 'logseq_graph', 'logseq_list', 'logseq_query',
+      'logseq_remove', 'logseq_search', 'logseq_server', 'logseq_show', 'logseq_upsert', 'lsp', 'memory_edit',
+      'mine_sessions', 'openwiki_begin', 'openwiki_finish', 'openwiki_next_page', 'openwiki_submit_page',
+      'openwiki_submit_plan', 'pending_decisions', 'pwsh', 'pwsh', 'ralph', 'read', 'read_image', 'recall',
+      'reflect', 'report', 'retain', 'review', 'run_code', 'run_kernel_code', 'schedule_create', 'schedule_delete',
       'schedule_list', 'send_message', 'send_message', 'session_event_read', 'session_event_search',
-      'session_event_trace', 'session_search', 'session_trace', 'skill', 'spawn_teammate',
-      'subagent', 'team_task_create',
-      'team_task_get', 'team_task_list', 'team_task_update', 'terminal_close', 'terminal_list',
-      'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal', 'todo_write',
-      'update_goal', 'wait_agent', 'web_fetch', 'web_search', 'workflow', 'write',
+      'session_event_trace', 'session_search', 'session_trace', 'skill', 'spawn_teammate', 'subagent',
+      'team_task_create', 'team_task_get', 'team_task_list', 'team_task_update', 'terminal_close', 'terminal_list',
+      'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal', 'todo_write', 'update_goal',
+      'wait_agent', 'web_fetch', 'web_search', 'workflow', 'write',
     ])
     // Every tool carries a JSON-Schema `parameters` object (what the model sees).
     for (const entry of catalog) {
@@ -66,6 +72,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     expect(control?.sources).toEqual({
       interrupt_agent: 'packages/subagent/tool-subagent-control/src/index.ts',
       list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
+      pending_decisions: 'packages/subagent/tool-subagent-control/src/index.ts',
       send_message: 'packages/subagent/tool-subagent-control/src/index.ts',
     })
   })

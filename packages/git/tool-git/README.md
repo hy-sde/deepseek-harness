@@ -1,6 +1,28 @@
+---
+description: "Model-facing commit, commit_apply, and review tools for the agentic git commit and review workflow, with read-preference routing between ctx.vcs and ctx.git."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-git
 
 English | [中文](README.zh.md)
+
+## Summary
+
+The three model-facing tools — `commit`, `commit_apply`, and `review` — drive the agentic git commit and review workflow ported from omp (oh-my-pi). Reads route opportunistically through `ctx.vcs` when its `pi-vcs` probe is clean and fall back to `ctx.git`; mutation inputs always stay on `ctx.git`, so the write path is byte-for-byte unchanged. Choose this package when a composition wants the model to author deterministic split-commit plans and get bounded reviewer fan-out over the staged diff. The cost is one analysis call per commit plus reviewer fan-out capped by `maxReviewers` and `maxReviewerDiffChars`; the boundary is that commit-review quality stays the model's own negotiation — the tool surface enforces structure, not semantic judgment.
+
+## Table of Contents
+
+- [Read-preference routing](#read-preference-routing)
+- [What it does](#what-it-does)
+- [Two-phase contract](#two-phase-contract)
+- [Configuration](#configuration)
+- [Export shape](#export-shape)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 The model-facing `commit`, `commit_apply`, and `review` tools — the agentic git commit + review workflow, ported from omp (oh-my-pi). The underlying host service is [`@deepseek-ai/dsh-git`](../git/README.md) (`ctx.git`).
 
@@ -71,3 +93,14 @@ Append-only; newly visible content follows the reusable request prefix and does 
 - **Lock files are auto-placed, not planable** — they never appear in the skeleton; `commit_apply` decides their group from the owning manifest.
 - **`review` treats unreviewed as reject** — a reviewer transport failure (or an empty slice) refuses approval rather than guessing.
 - **No force-push, no amend, no rebase verbs** — the service surface is the commit/review subset; editors and interactive history rewriting remain outside.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

@@ -167,19 +167,21 @@ type SubagentInterruptAuthority =
 最终结算会等待 `ctx.sessions.flush(session)`，但会忽略其参与布尔值，因为任意 listener 都无法证明某个持久化后端已存储该状态。rejection 会被记录，但不会使 Activation 失败；管理器仍会 dispose 该 handle 并释放所有权，此后持久化的子 agent 状态在后续恢复时可能缺失或陈旧。管理器卸载会调用内部的管理器全局 drain，关闭准入并 dispose 每片在线森林；`drainContinuableDescendants(parents)` 只关闭由 host 确切拥有的在线 Agent 之下的准入，并 dispose 其可继续后代，而无关森林保持在线。两者都会等待各自作用域内已获准的物化过程，自顶向下传播取消，按 child-first 顺序释放 handle，并且即使个别分支失败也会等待所有选中分支。持久化子会话不受该进程内拆卸的影响。
 
 ```ts type-equiv
-/** Durable attribution for one model-authored message between adjacent Agents. */
-interface AgentMessageSource {
-  readonly kind: 'agent-message'
+/** Durable attribution for a continuable child's explicit parent report. */
+interface SubagentReportMessageSource {
+  readonly kind: 'subagent-report'
   /** A message another agent addressed to this one (`relay` context form). */
   readonly form: 'relay'
-  /** Session id of the Agent whose tool call produced the message. */
+  /** Session id of the reporting child. */
   readonly senderSessionId: SessionId
 }
 ```
 
 ```ts type-equiv
-/** Options for one model-authored message between adjacent Agents. */
-interface SubagentSendMessageOptions {
+/** Options for following up with one continuable child. */
+interface SubagentFollowupOptions {
+  /** Durable attribution retained on the delivered message; it grants no authority. */
+  readonly source: MessageSource
   /** Caller cancellation, owning the operation only until inbox acceptance. */
   readonly signal: AbortSignal
 }
@@ -201,7 +203,7 @@ interface ContinuableStart {
 /**
  * Durable attribution for the manager's own account of a continuable child
  * settling. Deliberately a different kind from
- * {@link AgentMessageSource}: an Agent message is content the sender chose,
+ * {@link SubagentReportMessageSource}: a report is content the child chose,
  * while this message is the manager stating what became of the child, and a
  * transcript that merged them would credit the child with words it never wrote.
  */

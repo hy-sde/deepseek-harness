@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-search-public",
   "description": "Credential-free public web search provider (startpage → duckduckgo → ecosia → google → mojeek) for the DeepSeek Harness web capability seam (ctx.web)",
-  "version": "0.1.0-rc.5",
+  "version": "0.1.2-alpha.4",
   "publishConfig": {
     "access": "public"
   },
@@ -27,7 +27,6 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-web": "workspace:^",
     "@deepseek-ai/cordis": "workspace:^"
   },
@@ -35,7 +34,6 @@
     "@deepseek-ai/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-web": "workspace:^",
     "@deepseek-ai/cordis": "workspace:^"
   }

@@ -46,7 +46,9 @@ export interface Config {
 
 /** A failed `av` invocation: exit status plus stderr retained for the agent. */
 export class AvCommandError extends Error {
+  /** Process exit code of the failed av command (null when the process never exited). */
   readonly exitCode: number | null
+  /** Captured stderr of the failed av command. */
   readonly stderr: string
 
   constructor(message: string, options: { exitCode: number | null; stderr: string; cause?: unknown }) {

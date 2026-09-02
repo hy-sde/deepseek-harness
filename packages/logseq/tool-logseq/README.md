@@ -1,6 +1,26 @@
+---
+description: "Model-facing Logseq CLI tools for driving a Logseq database graph from the terminal: list, show, search, Datalog query, upsert, remove, and graph/server lifecycle with deterministic JSON output."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-logseq
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-tool-logseq` lets an agent drive a Logseq database graph from the terminal: list, show, search, Datalog-query, upsert, and remove blocks, pages, tags, properties, tasks, and assets, plus graph and server lifecycle actions. Choose it over the desktop-app MCP bridge when you want deterministic JSON output, Datalog querying, structured task upserts, or fully headless operation — the MCP bridge needs the app open and lacks removal, Datalog, and task commands. The tools run the installed `logseq` CLI on every call, so the CLI must be installed and each call pays one process spawn; the cheapest path is to batch writes into single `logseq_upsert` calls and start a headless server with `logseq_server start`.
+
+## Table of Contents
+
+- [Tool surface](#tool-surface)
+- [Why CLI over MCP](#why-cli-over-mcp)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 Model-facing [Logseq](https://logseq.com/) CLI tools that drive a Logseq database graph directly from the terminal. The surface is the local alternative to the desktop-app MCP bridge: besides the read/write basics it adds what the MCP bridge cannot do — Datalog `query`, `remove`, first-class `task` upserts, and graph/server lifecycle — all wrapped from the installed `logseq` CLI (`opam exec -- dune build @bundle`, or the prebuilt binary).
 
@@ -22,13 +42,15 @@ The desktop MCP bridge serves the same graph when the app is open, but requires 
 ## Configuration
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import toolLogseqPackage from '@deepseek-ai/dsh-tool-logseq'
+
+const ctx = new Context()
 ctx.plugin(toolLogseqPackage, {
   cliPath: 'logseq', // CLI executable (default: on PATH)
   graph: 'llm-wiki', // always pass --graph <name>
-  rootDir: undefined, // pass --root-dir <path> to override ~/logseq
   timeoutMs: 60000, // per-call process timeout
   maxItems: 50, // cap on rendered list/search items
-  enabled: true, // logseq:tools prompt section
 })
 ```
 
@@ -85,3 +107,12 @@ Static section text — no invalidation.
 - **Graph server required** — the graph needs a db-worker-node server; the tools reuse the running one (including the desktop app's) or `logseq_server start` launches a headless one. A stopped server surfaces as a CLI error, not a clean retry path.
 - **JSON shapes are read at runtime** — `list/search/query` item fields follow the CLI's JSON contract; if a future CLI changes shape, the compact renders degrade gracefully rather than crashing.
 - **No asset upload** — `logseq_upsert`/`logseq_list` cover assets only via the generic node/asset listing; binary asset ingestion stays a file/CLI concern for now.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

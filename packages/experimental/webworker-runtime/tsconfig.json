@@ -34,12 +34,6 @@
     },
     {
       "path": "../../util/crypto"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

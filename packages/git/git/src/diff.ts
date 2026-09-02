@@ -1,6 +1,6 @@
 /**
  * Diff parsing for the git service.
- * Direct port of omp's `packages/coding-agent/src/commit/git/diff.ts` plus the
+ * Direct port of omp's `coding-agent/src/commit/git/diff.ts` plus the
  * `selectHunks` / `extractFileHeader` helpers from `utils/git.ts` — kept pure
  * text-in / text-out so both the service and the tools can test them directly.
  * @module @deepseek-ai/dsh-git/diff

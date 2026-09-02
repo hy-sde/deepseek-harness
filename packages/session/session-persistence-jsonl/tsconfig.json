@@ -25,12 +25,6 @@
     },
     {
       "path": "../../util/zstd"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

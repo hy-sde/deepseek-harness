@@ -28,12 +28,6 @@
     },
     {
       "path": "../jobs"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

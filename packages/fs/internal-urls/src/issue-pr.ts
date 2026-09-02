@@ -2,7 +2,7 @@
  * GitHub-as-filesystem: `issue://` and `pr://` protocol handlers that resolve
  * through the `gh` CLI so read/grep can consume issues, pull requests, and PR
  * diffs without tool sprawl. Ported in shape from oh-my-pi
- * (`packages/coding-agent/src/internal-urls/issue-pr-protocol.ts`), MIT; the
+ * (`coding-agent/src/internal-urls/issue-pr-protocol.ts`), MIT; the
  * fetching layer is injectable for tests.
  *
  * URL shapes:

@@ -1,6 +1,24 @@
+---
+description: "Pure-TS multi-format archive engine (zip, tar, tar.gz, rar, 7z, iso, deb, rpm, cpio, cab, arj, asar) plus codecs, listing and reading members behind the read tool, ported from @oh-my-pi/pi-utils."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-fs-archive
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-fs-archive` is the pure-TS multi-format archive engine behind the harness `read` tool: it sniffs or infers the format of zip, tar, tar.gz, rar, 7z, iso, deb, rpm, cpio, cab, arj, and asar containers, and lists roots, directories, and individual members as text via `openArchive` and its `ArchiveReader`. Choose it when a tool must resolve `archive.ext:member/path` references; bounded `ArchiveLimits` keep attacker-controlled archives from driving unbounded allocation. Main costs: indexing loads the archive into memory up to `readMaxArchiveBytes` (default 256 MiB) because no streaming path is wired in, and archive writing is not exposed — members are read-only. It is an algorithmically 1:1 port of the MIT-licensed original, with the Bun runtime dependencies reimplemented on Node and `.ts` import suffixes.
+
+## Table of Contents
+
+- [Port differences](#port-differences)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [License](#license)
+- [Dev Note](#dev-note)
+
+-----
 
 A pure-TS multi-format archive engine — zip, tar, tar.gz, rar, 7z, iso, deb, rpm, cpio, cab, arj, asar — plus the codec layer (gzip, bzip2, ncompress LZW, xz, deflate, zstd) behind them. Ported from [@oh-my-pi/pi-utils](https://github.com/can1357/oh-my-pi/tree/main/packages/utils/src/ar).
 
@@ -42,3 +60,14 @@ import {
 ## License
 
 Port of MIT-licensed code. Original copyright: `Copyright (c) 2025-2026 Can Bölük` and contributors. Derived files carry header attribution; see the inline file headers.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

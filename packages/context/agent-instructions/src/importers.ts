@@ -188,6 +188,8 @@ export function normalizeForeignContent(displayPath: string, content: string): s
  * and the body. Only flat `key: value` lines are parsed (the formats use no
  * nested structures for the fields that matter here); anything else is treated
  * as body text so content is never destroyed.
+ * @param raw - the document text to parse.
+ * @returns the parsed fields plus body, or undefined when no frontmatter.
  */
 export function parseSimpleFrontmatter(raw: string): { frontmatter: Record<string, unknown>; body: string } | undefined {
   if (!raw.startsWith('---')) return undefined

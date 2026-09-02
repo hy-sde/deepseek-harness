@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-session-url",
   "description": "session:// internal-URL scheme: read a session transcript, read one event as JSON, list sessions, and search past history through the read/grep tools",
-  "version": "0.1.1-rc.2",
+  "version": "0.1.2-alpha.4",
   "publishConfig": {
     "access": "public"
   },
@@ -22,16 +22,11 @@
       "types": "./lib/types/handler.d.ts",
       "default": "./lib/types/handler.js"
     },
-    "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
-      "default": "./lib/invariant.js"
-    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
   "files": [
     "lib/index.js",
-    "lib/invariant.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],

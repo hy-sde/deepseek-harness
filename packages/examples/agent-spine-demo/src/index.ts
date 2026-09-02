@@ -24,10 +24,6 @@ import * as goalSession from '@deepseek-ai/dsh-goal-round-driver'
 import * as toolGoal from '@deepseek-ai/dsh-tool-goal'
 import LocalJobRegistry, { type Config as JobsConfig } from '@deepseek-ai/dsh-jobs-local'
 import InvariantRegistry, { type Config as InvariantConfig } from '@deepseek-ai/dsh-invariants'
-import * as sessionInvariant from '@deepseek-ai/dsh-session/invariant'
-import * as agentInvariant from '@deepseek-ai/dsh-agent/invariant'
-import * as scopeInvariant from '@deepseek-ai/dsh-scope/invariant'
-import * as agentLoopInvariant from '@deepseek-ai/dsh-agent-loop/invariant'
 import * as toolBash from '@deepseek-ai/dsh-tool-bash'
 import * as bashEnv from '@deepseek-ai/dsh-shell-env'
 import * as workspaceContext from '@deepseek-ai/dsh-agent-instructions'
@@ -244,10 +240,6 @@ export function apply(ctx: Context, config: Config): void {
   }
   ctx.plugin(LocalJobRegistry, config.jobs ?? {})
   ctx.plugin(InvariantRegistry, config.invariants ?? {})
-  ctx.plugin(sessionInvariant)
-  ctx.plugin(agentInvariant)
-  ctx.plugin(scopeInvariant)
-  ctx.plugin(agentLoopInvariant)
   if (config.toolBash !== false) {
     ctx.plugin(bashEnv, { dshHome })
     ctx.plugin(toolBash, config.toolBash ?? {})

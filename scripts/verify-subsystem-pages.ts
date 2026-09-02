@@ -24,6 +24,7 @@ export const GROUPS_WITHOUT_SUBSYSTEM_PAGE: Readonly<Record<string, string>> = {
   ast: 'Structural search/rewrite tooling (ast-grep); the tool packages own every model-facing contract and their apply path runs through the filesystem subsystem.',
   edit: 'Rich editor over ctx.fs; no standalone subsystem — the filesystem subsystem owns the shared vocabulary, errors, and versions.',
   'codebase-memory': 'One-shot codebase-intelligence queries against the local codebase-memory daemon; the package README owns the contract.',
+  examples: 'Reusable composition example bundles rather than a runtime subsystem; their mounted packages own all runtime contracts.',
   openwiki: 'Repository wiki lifecycle tools running the ported openwiki engine; the package README owns the contract and the wire protocol.',
 }
 

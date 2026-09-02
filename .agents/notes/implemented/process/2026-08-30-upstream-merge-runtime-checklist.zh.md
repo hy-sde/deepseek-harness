@@ -10,7 +10,7 @@ Status: implemented
 
 八个缺陷类别，按发现顺序：
 
-1. **客户端 tsdown 阶段无法解析入口。** `packages/api/wiki-controller/tsdown.config.ts` 是从兄弟控制器错误克隆来的配置，声明了该仅 host 包并不存在的浏览器端半边（`lib/types/client/index.js`）。tsc 看不到 tsdown 的入口配置，所以只有完整执行 `pnpm run build` 才会失败。修复：删除该配置，与 `settings-controller` 的先例一致。
+1. **客户端 tsdown 阶段无法解析入口。** api/wiki-controller 的 `tsdown.config.ts`（已删除）是从兄弟控制器错误克隆来的配置，声明了该仅 host 包并不存在的浏览器端半边（`lib/types/client/index.js`）。tsc 看不到 tsdown 的入口配置，所以只有完整执行 `pnpm run build` 才会失败。修复：删除该配置，与 `settings-controller` 的先例一致。
 2. **web 启动时崩溃于未声明的依赖。** 该包生成的 `typert.host.js` 导入了 `zod`，但从未在 `dependencies` 中声明。只有真正启动 `pnpm dsh web` 才会暴露。修复：声明 `zod`（每个 typert 贡献者本就如此）。
 3. **陈旧的客户端 bundle 导致插件加载失败。** 合并前构建出的客户端 bundle 把 `require("zod")` 外部化了，而模块表中既无对应行、也未内联核心。干净重建即可修复；只有打开 web UI 才能看到插件加载错误。
 4. **注册到外部 slot 时与声明产生竞态。** `ui-countdown` 与 `ui-wiki` 在 `apply()` 里直接注册到 `sidebar.footer.action` / `shell.overlay`，而声明这两个 slot 的包把子表推迟到后面的 `ctx.effect` 才注册。上游的 slots API 要求使用顺序安全写法 `ctx.slots.inject(slotName, () => ctx.slots.register(...))`。只有启动 UI 才能看到 `slot "..." is not declared`。

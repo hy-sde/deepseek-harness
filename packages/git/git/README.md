@@ -1,6 +1,27 @@
+---
+description: "Host ctx.git service for the agentic commit and review workflow: stateless git-CLI wrappers over ctx.subprocess, diff-parsing primitives, and split-commit execution verbs."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-git
 
 English | [中文](README.zh.md)
+
+## Summary
+
+The host `ctx.git` service gives the agentic commit and review workflow a stateless, thin wrapper around the `git` CLI through the `ctx.subprocess` seam, plus the diff-parsing primitives and split-commit execution verbs the model-facing tools need. It reads repository state and captured diffs — with `--binary` so binary changes survive staging round-trips — slices recorded `--cached` diffs back onto the index by hunk selection, and commits, pushes, and logs through the same bounded subprocess path. Choose it when a composition needs git plumbing for `@deepseek-ai/dsh-tool-git`; the model never consumes it directly. The cost is one bounded subprocess per verb with a wall-clock timeout, grace, and collected-output caps; the boundary is the commit/review subset, with no interactive rebase, amend, stash, bisect, or credential plumbing.
+
+## Table of Contents
+
+- [What it does](#what-it-does)
+- [Execution model](#execution-model)
+- [Partial-hunk staging](#partial-hunk-staging)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 The host `ctx.git` service for the agentic commit + review workflow (ported from omp / oh-my-pi): a stateless, thin wrapper around the `git` CLI through the [`ctx.subprocess`](../../subprocess/subprocess/README.md) seam, plus the diff-parsing primitives and split-commit execution verbs the model-facing tools need. Intended to be consumed by [`@deepseek-ai/dsh-tool-git`](../tool-git/README.md), never by the model directly.
 
@@ -43,3 +64,14 @@ No direct invalidation; the named consumers own any request-prefix changes.
 - **Commit/review subset only** — no interactive rebase, amend, stash, bisect, or submodule verbs; editors and interactive history rewriting stay outside this seam.
 - **Per-call shell-out** — no persistent git daemon or in-process index cache; each verb spawns `git` and collects bounded output.
 - **No credential/store plumbing** — the service assumes ambient git auth (SSH agent, credential helper) and does not manage remotes, secrets, or signing keys.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

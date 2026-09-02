@@ -99,6 +99,15 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'vcs',
+    pkg: 'vcs',
+    title: 'VCS working-tree seam',
+    mode: 'seam',
+    implementations: ['vcs'],
+    consumers: ['tool-fs', 'tool-git'],
+    note: 'Resolves VCS-rooted file state and attribution for the working tree the agent opens; dsh-tool-git owns the model-facing commands.',
+  },
+  {
     key: 'attachments',
     pkg: 'attachment',
     title: 'Durable binary attachment storage',

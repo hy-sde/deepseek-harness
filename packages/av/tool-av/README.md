@@ -1,9 +1,30 @@
+---
+description: "Model-facing Automic Vault tools for agents and maintainers choosing, configuring, or debugging the read-only audit, hardening-verification, catalog, and secret-name listing surface over the host `ctx.av` service."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-av
 
 English | [中文](README.zh.md)
 
+## Summary
+
+Model-facing Automic Vault tools over the host `ctx.av` service: `av_scan` audits the Mac for exposed credentials, `av_doctor` verifies installed hardening, `av_catalog` lists the detectors and hardeners Automic Vault knows, and `av_list` returns saved-secret names only. Choose it when an agent should audit and report rather than mutate — hardening, storing, and injecting values stay human decisions in a terminal the user controls. Costs are bounded by the `maxFindings` and `maxCatalogEntries` caps plus one summarized subprocess round-trip per call, and the boundary is that no tool output ever contains a Secret Value.
+
+## Table of Contents
+
+- [Tool surface](#tool-surface)
+- [Security rules](#security-rules)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
+
 Model-facing [Automic Vault](https://www.automicvault.com/) tools over the host `ctx.av` service. The surface is deliberately read-only: audit the Mac for exposed credentials, verify hardening, inspect the detector/hardener catalog, and list saved secret names — never release a Secret Value into model context.
 
+<a id="tool-surface"></a>
 ## Tool surface
 
 - `av_scan [severity] [detector] [max_findings]` — full audit; findings carry severity, explanation, remediation, affected files/lines, and the detectors that produced them.
@@ -13,15 +34,21 @@ Model-facing [Automic Vault](https://www.automicvault.com/) tools over the host 
 
 When the `av` CLI is missing or broken, every tool degrades to a structured `{ available: false, reason }` value with an installation hint (`brew install --cask automic-vault/isotopes/automic-vault`) instead of throwing.
 
+<a id="security-rules"></a>
 ## Security rules
 
 1. No tool output ever contains a Secret Value. `av_list` returns names only; scan/doctor/catalog return paths, configs and advice.
 2. The agent reports exposures and proposes the documented fix; running `av harden <tool>`, storing secrets, or injecting into a command stays a human decision in a terminal the user controls.
 3. The tools never bypass, disable, or auto-approve an Automic Vault Authorization Gate or Approval.
 
+<a id="configuration"></a>
 ## Configuration
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import toolAvPackage from '@deepseek-ai/dsh-tool-av'
+
+const ctx = new Context()
 ctx.plugin(toolAvPackage, {
   maxFindings: 30, // av_scan finding cap
   maxCatalogEntries: 60, // av_catalog entries per scope
@@ -29,6 +56,7 @@ ctx.plugin(toolAvPackage, {
 })
 ```
 
+<a id="model-experience"></a>
 ## Model Experience
 
 ### Tool schemas
@@ -75,6 +103,20 @@ Static section text — no invalidation.
 
 ## Known Limitations and Deferred Work
 
+<a id="known-limitations-and-deferred-work"></a>
+
 - **No secret custody verbs** — `av save`, `av inject`, and `av proxy` are intentionally absent; `av save` is interactive-only, and value release stays human-in-the-loop. A custody tool is deferred until the upstream CLI gains a non-TTY handoff and can guarantee values never reach model context or argv.
 - **No hardening automation** — the tools verify and recommend; `av harden` (root system mutation) is deliberately left for the user to run. A plan-only harden preview could be added later without relaxing that boundary.
 - **Filtering is pass-through** — `severity` filtering happens after the CLI returns the full report, so it bounds rendering but not the subprocess output cap.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

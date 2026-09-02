@@ -144,3 +144,11 @@ New behavior attaches to a documented extension point. Changing the loop itself 
 | Scope a registration to one agent | use that agent's `agent.ctx` |
 
 The [extension cookbook](cookbook/extension-cookbook.md) maps features to capabilities and indexes the step-by-step guides for [packages](cookbook/adding-a-package.md), [tools](cookbook/adding-a-tool.md), [LLM adapters](cookbook/adding-an-llm-adapter.md), and [settings cards](cookbook/adding-a-settings-card.md). The [Conversation subsystem](subsystems/conversation.md) owns Chat-node assembly.
+
+## Tool execution and the host sandbox
+
+Commands run by the agent (and harness tool commands themselves) execute under the host file/process sandbox. If a required `gh`, `pnpm`, build, test, or generator command fails because the sandbox blocks credentials, network, IPC, watching, or nested `sandbox-exec`, retry unchanged with the narrowest host escalation; require sandbox evidence, never bypass test failures or the product sandbox.
+
+## Run relevant checks locally
+
+Run checks before pushes via [dsh-pre-push-checks](../.agents/skills/dsh-pre-push-checks/SKILL.md); report only commands run. Validate immediately after `gh stack sync`; do not merge before checks pass. Match evidence to the surface: focused behavior tests, model/user-output snapshots, `doc-sync` for docs, built smokes, and real-API e2e for providers. Never default to the full suite or repeat a passing check; CI owns exhaustive coverage, and full local rehearsals happen only by explicit request, for CI diagnosis, or for an irreducibly repository-wide change. `test:coverage`, not `test`, is the CI coverage gate ([why](testing.md)).

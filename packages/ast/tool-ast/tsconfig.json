@@ -39,9 +39,6 @@
       "path": "../../fs/fs"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../sandbox/sandbox"
     },
     {
@@ -52,9 +49,6 @@
     },
     {
       "path": "../../subprocess/subprocess-local"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

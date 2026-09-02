@@ -15,7 +15,6 @@ import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import * as tool from '../src/index.ts'
-import * as ToolInvariant from '../src/invariant.ts'
 import SubagentModelSelectionConfig, {
   SUBAGENT_MODEL_SELECTION_SETTINGS_NAMESPACE,
 } from '../src/model-selection-settings.ts'
@@ -197,7 +196,6 @@ describe('SubagentModelSelectionConfig', () => {
   it('installs per-Agent definitions for a shared preset scope', async () => {
     const ctx = await boot()
     await ctx.plugin(InvariantRegistry, { enabled: true })
-    await ctx.plugin(ToolInvariant)
     const preset = createScope(ctx, { preset: 'standard' })
     const other = createScope(ctx, { preset: 'minimal' })
     await preset.ctx.plugin(tool, {
@@ -352,7 +350,6 @@ describe('SubagentModelSelectionConfig', () => {
   it('checks model-selectable definitions without rejecting a policy-only preset', async () => {
     const ctx = await boot()
     await ctx.plugin(InvariantRegistry, { enabled: true })
-    await ctx.plugin(ToolInvariant)
     const disabled = await createAgent(ctx, 'invariant-disabled')
     const next = () => Promise.resolve({ kind: 'enter' as const, messages: [] })
     const payload = {

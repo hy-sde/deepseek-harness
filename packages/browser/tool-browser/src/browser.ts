@@ -32,6 +32,10 @@ export interface BrowserToolConfig {
   timeoutSeconds?: number
 }
 
+/**
+ * Browser Run Args.
+ *
+ */
 export interface BrowserRunArgs {
   action: 'open' | 'close' | 'run' | 'state'
   name?: string
@@ -50,6 +54,10 @@ export interface BrowserRunArgs {
   screenshot_path?: string
 }
 
+/**
+ * Browser Run Value.
+ *
+ */
 export interface BrowserRunValue {
   action: BrowserRunArgs['action']
   name: string
@@ -58,7 +66,13 @@ export interface BrowserRunValue {
   result?: string
 }
 
-/** Session-header cwd first, then the configured root, else process cwd. */
+/**
+ * Session-header cwd first, then the configured root, else process cwd.
+ * @param exec - the executing tool context.
+ * @param configured - the configured browser root, when set.
+ * @param argPath - a caller-supplied path argument, when set.
+ * @returns the resolved working directory.
+ */
 export function resolveCwd(exec: ToolExecution, configured: string | undefined, argPath: string | undefined): string {
   const base = exec.agent?.session.header.cwd
   const root = typeof base === 'string' && base.length > 0 ? base : (configured ?? process.cwd())
@@ -66,11 +80,24 @@ export function resolveCwd(exec: ToolExecution, configured: string | undefined, 
   return argPath.startsWith('/') ? argPath : resolve(root, argPath)
 }
 
+/**
+ * Trim Aria.
+ *
+ * @param aria - The aria parameter.
+ * @param maxChars - The maxchars parameter.
+ * @returns - The result of the operation.
+ */
 export function trimAria(aria: string, maxChars: number): string {
   if (aria.length <= maxChars) return aria
   return `${aria.slice(0, maxChars)}\n… (truncated to ${maxChars} chars)`
 }
 
+/**
+ * Apply Browser Tool.
+ *
+ * @param ctx - The ctx parameter.
+ * @param config - The config parameter.
+ */
 export function applyBrowserTool(ctx: Context, config: BrowserToolConfig = {}): void {
   const browser = ctx.browser
   const maxAriaChars = config.maxAriaChars ?? 20_000
@@ -244,6 +271,12 @@ async function maybeScreenshot(
   value.screenshots = [...(value.screenshots ?? []), path]
 }
 
+/**
+ * Stringify Result.
+ *
+ * @param result - The result parameter.
+ * @returns - The result of the operation.
+ */
 export function stringifyResult(result: unknown): string {
   if (result === undefined) return 'undefined'
   if (typeof result === 'string') return result

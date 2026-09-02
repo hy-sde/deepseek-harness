@@ -65,4 +65,8 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.systemPrompt.section(buildAvPromptSection(config))
 }
 
+/**
+ * The plugin core: registers the av tools.
+ *
+ */
 export default { name, inject, apply }

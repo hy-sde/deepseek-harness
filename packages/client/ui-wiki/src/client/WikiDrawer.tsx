@@ -6,16 +6,17 @@
  */
 
 import { useState, useSyncExternalStore } from 'react'
+import type { PropsLocale, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { BlockTree } from './BlockTree.tsx'
 import { wikiStore } from './store.ts'
 import css from './WikiDrawer.module.css'
 
 /** The drawer panel body: list view or page view. */
-function WikiBody() {
+function WikiBody({ t }: { t: TranslateNS<'wiki'> }) {
   const state = wikiStore.getState()
 
   if (state.loading && state.current === null && state.pages.length === 0) {
-    return <div className={css.muted}>Loading…</div>
+    return <div className={css.muted}>{t('drawer.loading')}</div>
   }
 
   if (state.current !== null) {
@@ -23,11 +24,11 @@ function WikiBody() {
     return (
       <div className={css.pageView}>
         <div className={css.pageHeader}>
-          <button className={css.back} onClick={() => { wikiStore.backToPages() }}>‹ Pages</button>
+          <button className={css.back} onClick={() => { wikiStore.backToPages() }}>{t('drawer.backToPages')}</button>
           <div className={css.pageTitle}>{state.current.root.title}</div>
           <button
             className={css.danger}
-            title="Delete this page (permanent)"
+            title={t('drawer.deletePageTitle')}
             onClick={() => { if (window.confirm(`Delete page "${name}" and all its blocks?`)) void wikiStore.deletePage(name) }}
           >
             🗑
@@ -41,12 +42,12 @@ function WikiBody() {
           </div>
         )}
         <div className={css.treeWrap}>
-          <BlockTree blocks={state.current.root.children} pageName={name} />
+          <BlockTree blocks={state.current.root.children} pageName={name} t={t} />
         </div>
-        <PageAppender name={name} />
+        <PageAppender name={name} t={t} />
         {state.current.linked.length > 0 && (
           <div className={css.linked}>
-            <div className={css.linkedTitle}>Referenced from</div>
+            <div className={css.linkedTitle}>{t('drawer.referencedFrom')}</div>
             {state.current.linked.map(block => (
               <button
                 key={block.id}
@@ -63,18 +64,18 @@ function WikiBody() {
     )
   }
 
-  return <PageList />
+  return <PageList t={t} />
 }
 
 /** One page-append input at the page bottom. */
-function PageAppender({ name }: { name: string }) {
+function PageAppender({ name, t }: { name: string; t: TranslateNS<'wiki'> }) {
   const [draft, setDraft] = useState('')
   return (
     <div className={css.addRow}>
       <input
         className={css.addInput}
         value={draft}
-        placeholder={`block on ${name}… Enter saves`}
+        placeholder={t('drawer.placeholder', { name })}
         onChange={(e) => { setDraft(e.target.value) }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -89,7 +90,7 @@ function PageAppender({ name }: { name: string }) {
 }
 
 /** The page-list view with inline page creation + search. */
-function PageList() {
+function PageList({ t }: { t: TranslateNS<'wiki'> }) {
   const state = wikiStore.getState()
   const [newTitle, setNewTitle] = useState('')
 
@@ -99,15 +100,15 @@ function PageList() {
         <input
           className={css.searchInput}
           value={state.searchQuery}
-          placeholder="Search pages & blocks…"
+          placeholder={t('drawer.searchPlaceholder')}
           onChange={(e) => { wikiStore.setSearchQuery(e.target.value) }}
           onKeyDown={(e) => { if (e.key === 'Enter') void wikiStore.runSearch() }}
         />
-        <button className={css.action} onClick={() => void wikiStore.runSearch()}>Search</button>
+        <button className={css.action} onClick={() => void wikiStore.runSearch()}>{t('drawer.search')}</button>
       </div>
       {state.searchQuery.trim() !== '' && state.searchResults.length > 0 && (
         <div className={css.results}>
-          <div className={css.sectionTitle}>Results</div>
+          <div className={css.sectionTitle}>{t('drawer.results')}</div>
           {state.searchResults.map(item => (
             <button key={item.id} className={css.pageRow} onClick={() => void wikiStore.openPage(item.title)}>
               <span className={css.pageName}>{item.title}</span>
@@ -118,7 +119,7 @@ function PageList() {
       )}
       {state.searchQuery.trim() === '' && (
         <>
-          <div className={css.sectionTitle}>Pages</div>
+          <div className={css.sectionTitle}>{t('drawer.pages')}</div>
           <div className={css.pageRows}>
             {state.pages.map(page => (
               <button key={page.id} className={css.pageRow} onClick={() => void wikiStore.openPage(page.title ?? String(page.id))}>
@@ -133,7 +134,7 @@ function PageList() {
             <input
               className={css.addInput}
               value={newTitle}
-              placeholder="New page title…"
+              placeholder={t('drawer.newPagePlaceholder')}
               onChange={(e) => { setNewTitle(e.target.value) }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && newTitle.trim() !== '') {
@@ -150,7 +151,9 @@ function PageList() {
 }
 
 /** The drawer shell: header + body. Renders nothing when closed. */
-export function WikiDrawer() {
+export type WikiDrawerProps = PropsLocale<'wiki'>
+
+export function WikiDrawer({ t }: WikiDrawerProps) {
   const state = useSyncExternalStore(
     store => wikiStore.subscribe(store),
     () => wikiStore.getState(),
@@ -163,17 +166,17 @@ export function WikiDrawer() {
   return (
     <div className={css.drawer} data-wiki-drawer>
       <div className={css.header}>
-        <div className={css.title}>LLM Wiki</div>
-        <button className={css.close} title="Close wiki (or toggle from sidebar)" onClick={() => { wikiStore.close() }}>×</button>
+        <div className={css.title}>{t('drawer.title')}</div>
+        <button className={css.close} title={t('drawer.closeTitle')} onClick={() => { wikiStore.close() }}>×</button>
       </div>
       {wikiStore.getState().error !== null && (
         <div className={css.errorBanner}>
           {wikiStore.getState().error}
-          <button className={css.dismiss} onClick={() => { wikiStore.clearError() }} aria-label="dismiss">✕</button>
+          <button className={css.dismiss} onClick={() => { wikiStore.clearError() }} aria-label={t('drawer.dismiss')}>✕</button>
         </div>
       )}
       <div className={css.body}>
-        <WikiBody />
+        <WikiBody t={t} />
       </div>
     </div>
   )

@@ -86,7 +86,6 @@ The package registers a continuable-child setup contribution rather than a globa
 | File | Role |
 |---|---|
 | [`src/index.ts`](src/index.ts) | Continuable-child setup: `installReportTool`, `Config`, delivery resolution |
-| [`src/invariant.ts`](src/invariant.ts) | Invariant companion |
 
 </details>
 
@@ -173,3 +172,5 @@ These limits define what an accepted report does and does not guarantee; they ar
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.

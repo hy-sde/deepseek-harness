@@ -7,18 +7,32 @@
   },
   "files": [
     "src/archive.ts",
-    "src/index.ts",
-    "src/invariant.ts"
+    "src/index.ts"
   ],
   "references": [
-    { "path": "../../../vendor/cordis" },
-    { "path": "../../../vendor/schemastery" },
-    { "path": "../../attachment/attachment" },
-    { "path": "../../runtime-diagnostics/invariants" },
-    { "path": "../../util/brand" },
-    { "path": "../../core/session" },
-    { "path": "../../interaction/commands" },
-    { "path": "../../session/session-persistence" },
-    { "path": "../session-query" }
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../attachment/attachment"
+    },
+    {
+      "path": "../../util/brand"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../interaction/commands"
+    },
+    {
+      "path": "../../session/session-persistence"
+    },
+    {
+      "path": "../session-query"
+    }
   ]
 }

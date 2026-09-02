@@ -56,7 +56,11 @@ export interface SubagentDecisionEventData {
   readonly openedAt: number
 }
 
-/** Whether one session event is a durable decision mutation. */
+/**
+ * Whether one session event is a durable decision mutation.
+ * @param event - the session event to test.
+ * @returns true when the event is a decision mutation.
+ */
 export function isSubagentDecisionEvent(
   event: SessionEvent,
 ): event is SessionEvent<'subagent/decision'> {

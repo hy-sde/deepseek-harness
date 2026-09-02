@@ -3,7 +3,7 @@
  * Each script runs in every new document; together they hide Playwright/Puppeteer
  * fingerprints: navigator.webdriver, automation UA + client hints, sourceURL
  * tampering, fonts, WebGL, canvas/audio, plugins, hardware, codecs, workers, locale.
- * Generated — regenerate from omp `packages/coding-agent/src/tools/puppeteer/*.txt`.
+ * Generated — regenerate from omp `coding-agent/src/tools/puppeteer/*.txt`.
  */
 import type { Page } from 'playwright-core'
 

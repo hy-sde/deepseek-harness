@@ -55,7 +55,9 @@ export interface Config {
  * `RefNotFound`, `ObjectNotFound`, `Backend`, `Unsupported`).
  */
 export class VcsCommandError extends Error {
+  /** Process exit code of the failed vcs command (null when the process never exited). */
   readonly exitCode: number | null
+  /** Captured stderr of the failed vcs command. */
   readonly stderr: string
   /** Structured CLI error code (VcsError taxonomy) when the CLI reported one. */
   readonly code?: string

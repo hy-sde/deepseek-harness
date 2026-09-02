@@ -15,9 +15,6 @@
       "path": "../git"
     },
     {
-      "path": "../../../packages/runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../../packages/llm/llm"
     },
     {
@@ -31,9 +28,6 @@
     },
     {
       "path": "../../../packages/vcs/vcs"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

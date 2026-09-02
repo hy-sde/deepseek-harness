@@ -1,6 +1,28 @@
+---
+description: "为 DeepSeek Harness 提供持久化 Python 与 JavaScript 内核的自包含插件，给模型一等公民的 run_kernel_code 工具并保留跨调用会话状态。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-code-runtime-kernels
 
 [English](README.md) | 中文
+
+## 概述
+
+`dsh-code-runtime-kernels` 为模型提供一等公民的 `run_kernel_code` 工具，由跨调用保留会话状态的持久化 Python 与 JavaScript 内核支撑，以普通 Cordis 插件行挂载，无需改动上游 Harness。当计算需要中间结果时用它替代草稿文件：相关调用共享同一 `session` id，一次性计算省略 `session`，会话状态损坏或不需要时传 `reset: true`。两个长寿命子进程运行自包含 runner（Python 仅标准库；Node 仅内置），共享同一个 host 驱动，并有可配置的预算（`toolTimeoutMs`、`maxWallMs`、`maxOutputBytes`）、会话回收与 SIGINT→SIGTERM→SIGKILL 升级。主要边界是 kernel 代码拥有 bash 级信任——这是为健壮性做的进程隔离，而非安全边界——且繁忙的同步 cell 对 SIGINT 无响应，代价是丢失会话状态。
+
+## 目录
+
+- [挂载](#mounting)
+- [配置](#config)
+- [工具面](#tool-surface)
+- [语义](#semantics)
+- [开发](#development)
+- [模型体验](#model-experience)
+- [已知限制与待办](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
+
+-----
 
 为 DeepSeek Harness 提供**持久化 Python 与 JavaScript 内核**——一个自包含插件，给模型一个一等公民的 `run_kernel_code` 工具，跨调用保留会话状态。无需改动上游 Harness：它以普通 Cordis 插件行（通过 `cordis.patch.yml`）挂载，并在 `ctx.tools` 上注册一个工具，与内置工具完全一致。
 
@@ -13,6 +35,7 @@
 
 这是**进程隔离，而非安全边界**：程序源码拥有与内置 `process` 隔离后端相同的 bash 级信任。驱动的职责是健壮性——伪造帧不会弄崩 host，无响应的 kernel 会被逐步升级到终止——而非隔离。
 
+<a id="mounting"></a>
 ## 挂载
 
 在任意 `cordis.yml` 中添加 bundle 行（或类似行）：
@@ -34,6 +57,7 @@
 
 所有行 id 带 `code-runtime-kernels-` 前缀以避免与内置行冲突（重复的 loader id 会导致启动失败）。随后模型即看到 `run_kernel_code` 工具。
 
+<a id="config"></a>
 ## 配置
 
 | 键 | 默认 | 含义 |
@@ -49,6 +73,7 @@
 | `startupTimeoutMs` | `15000` | 等待启动 `ready` 握手，超时判失败。 |
 | `shutdownGraceMs` | `1000` | `exit` 帧后等待 kernel 退出的宽限期。 |
 
+<a id="tool-surface"></a>
 ## 工具面
 
 `run_kernel_code` 参数：
@@ -62,6 +87,7 @@
 
 返回 seam 的结果信封——`value`（JSON 完成值）、`logs`、`executionCount` 与 `error { kind, message }`——错误词汇与内置 `run_code` 一致（`exception` / `timeout` / `abort` / `worker-exit` / `invalid-output` / `output-limit`），但带有本插件自有的持久会话字段（`session`、`reset`、`executionCount`）。
 
+<a id="semantics"></a>
 ## 语义
 
 - **会话**。带非空 `session` 的调用运行于该会话的 kernel；`executionCount` 报告累计次数。`reset: true` 先关旧 kernel 再开新 kernel 响应。
@@ -70,10 +96,12 @@
 - **预算与失败种类**。墙钟超时 → `'timeout'`；取消或被迫终止 → `'abort'`；抛异常 → `'exception'`；非 JSON 完成 → `'invalid-output'`；合并输出溢出 → `'output-limit'`；kernel 死亡 → 会话注册表替换 kernel 并重试一次。全部是结果字段，绝不会 reject 工具调用。
 - **输出溢出恢复**。运行溢出 `maxOutputBytes`（`'output-limit'` 失败）时，工具调用 `ctx.spillStore.saveText()` 保存完整的捕获输出（日志加溢出的完成值），成功后（已加载 `spillStore` 后端且有会话属主）在失败消息后追加 `full program output preserved at <retrieval-hint>`，让溢出尾部可恢复而非被丢弃。spill 失败是最佳努力：绝不会让调用失败或改变截断后的结果。
 
+<a id="development"></a>
 ## 开发
 
 `pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、根 `tsdown` 导出（lib/）。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码，每次 spawn 落地为临时 `.py`）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
 
+<a id="model-experience"></a>
 ## 模型体验
 
 ### 系统提示
@@ -110,9 +138,20 @@ Prefer run_kernel_code to reading/writing scratch files when the work is computa
 
 可见工具定义与顺序不变时前缀稳定；注册生命周期变化可能使自首个变更 schema token 起的复用失效。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与待办
 
 - **繁忙的同步 cell 对 SIGINT 无响应。** `while (true) {}`/`while True:` 循环永不把控制权交还事件循环，因此中断处理器无法运行，真正停住它的是升级阶梯（SIGTERM 再 SIGKILL）——代价是 kernel 状态，因而也是会话。能让出控制权的 cell（对定时器／I/O／工具调用的异步 `await`）可干净取消，kernel 得以存活（墙钟/超时测试覆盖了这一分化）。
 - **状态可能被污染。** 有缺陷的程序随时可能破坏会话状态；`reset: true` 是预期的恢复原语。
 - **不是安全边界。** kernel 代码拥有与 bash 同等的信任，与该 harness 自身的进程后端一致。
 - **空闲 kernel 占用一个进程。** 在 `sessionIdleMs: 0`（默认）下，会话 kernel 会一直存活到 reset 或插件销毁，因此长任务应尽快续跑或落盘。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文 — 点击展开</summary>
+
+无。
+
+</details>

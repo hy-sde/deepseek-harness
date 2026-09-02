@@ -31,12 +31,6 @@
     },
     {
       "path": "../../boot/cmdline"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

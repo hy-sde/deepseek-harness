@@ -24,3 +24,10 @@ Copy cleanup follows each surface: the `confirm.*` keys in `settings.permission`
 ## Consequences
 
 The product label `Full access` stays (it is presentation, not the gate); only the dialog goes. New picker surfaces no longer have an acknowledgement-gate building block — reintroducing one means bringing `RiskConfirmation` and the gate states back. Acceptance: `permission-row.spec.tsx`, `browser-plugin.spec.ts`, `input-bar.spec.tsx`, `popup.spec.ts`, `popup-view.spec.tsx`, and the Web e2e replays assert the direct write instead of the dialog.
+## Alternatives considered
+
+**Keep the every-change RiskConfirmation gate.** It preserved the last remaining confirmation moment, but with full access now the default for new sessions and approvals disabled, the gate taxed every preset switch and produced no safety decision the user had not already made.
+
+**Confirm once per session instead.** It removed the per-pick tax, but the empty session is exactly when the user least needs friction and most needs the ability to grant access to a wider surface mid-session.
+
+**Switch directly on the pick (chosen).** Full access is the default state, so asking again is confirmation theater; the settings surface and the session banner retain the visible current mode without a modal.

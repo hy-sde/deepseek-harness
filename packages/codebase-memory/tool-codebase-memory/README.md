@@ -1,6 +1,26 @@
+---
+description: "Model-facing codebase-memory tools that run one-shot queries against the local codebase-memory daemon, spawning the CLI once per call and sharing the same daemon the stdio MCP client fronts."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-tool-codebase-memory
 
 English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-tool-codebase-memory` exposes the local codebase-memory daemon as model-facing `codebase_*` tools that run one-shot queries from the terminal. Each call spawns `codebase-memory-mcp cli --json <tool>` once and parses the raw MCP result envelope against the same daemon the MCP server fronts, so indexes, project mutation locks, and the index supervisor are fully shared — warm daemon calls cost ~0.2 s. Choose it over the stdio MCP client row when you want one process per call, tightened schemas, and per-preset configuration instead of a long-lived server inside every session, keeping the MCP row disabled as a zero-maintenance fallback. The main boundary is that the curated schemas are a hand-maintained mirror of the CLI's input schemas, so a codebase-memory release that adds tools needs this package updated.
+
+## Table of Contents
+
+- [Tool surface](#tool-surface)
+- [Why CLI over MCP](#why-cli-over-mcp)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
 
 Model-facing [codebase-memory](https://github.com/DeusData/codebase-memory-mcp) tools that run one-shot queries against the local codebase-memory daemon from the terminal. The surface is the local alternative to the stdio MCP client row: instead of holding a long-lived MCP server inside every session, each call spawns `codebase-memory-mcp cli --json <tool>` once and parses the raw MCP result envelope — **the same daemon the MCP server fronts**, so indexes, project mutation locks and the index supervisor are fully shared. Warm daemon calls cost ~0.2 s on this machine (cold spawn ~1.3 s; `codebase-memory-mcp daemon start` keeps one warm).
 
@@ -28,13 +48,16 @@ The MCP client row (`@deepseek-ai/dsh-mcp-client` with `command: codebase-memory
 ## Configuration
 
 ```ts
+import { Context } from '@deepseek-ai/cordis'
+import toolCodebaseMemoryPackage from '@deepseek-ai/dsh-tool-codebase-memory'
+
+const ctx = new Context()
 ctx.plugin(toolCodebaseMemoryPackage, {
   cliPath: 'codebase-memory-mcp', // CLI executable (default: on PATH)
   project: 'deepseek-harness', // default project for tools that can omit it
   timeoutMs: 60000, // per-call process timeout (index calls use indexTimeoutMs)
   indexTimeoutMs: 600000, // timeout for codebase_index_repository
   maxChars: 200000, // cap on rendered JSON payload before explicit truncation
-  enabled: true, // codebase:tools prompt section
 })
 ```
 
@@ -89,3 +112,12 @@ Static section text — no invalidation.
 - The curated schemas are a hand-maintained mirror of the CLI's input schemas; a codebase-memory release that adds tools needs this package updated (the MCP row auto-follows — a good reason to keep it as a disabled fallback).
 - `check_index_coverage` is declared by the binary's tool table but not dispatchable through `cli` ("unknown tool"), so it is intentionally not wrapped.
 - No host-plane service or GUI surface: the binary already ships a graph visualizer at `localhost:9749`; an in-GUI drawer (like the logseq wiki pane) is future work.
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>
