@@ -69,6 +69,7 @@ External packages that a workspace package resolves at runtime. The tier covers 
 | [`compression`](https://github.com/expressjs/compression) | MIT |
 | [`diff`](https://github.com/kpdecker/jsdiff) | BSD-3-Clause |
 | [`e2b`](https://github.com/e2b-dev/e2b) | MIT |
+| [`effect`](https://github.com/Effect-TS/effect) | MIT |
 | [`eventsource-parser`](https://github.com/rexxars/eventsource-parser) | MIT |
 | [`fflate`](https://github.com/101arrowz/fflate) | MIT |
 | [`immer`](https://github.com/immerjs/immer) | MIT |
