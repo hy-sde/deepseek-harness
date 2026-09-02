@@ -24,6 +24,7 @@ import type {
   SubprocessRuntime,
   SubprocessSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
+import { Effect, Scheduler } from 'effect'
 import type {
   VcsDiffMode,
   VcsDiffOptions,
@@ -32,6 +33,14 @@ import type {
   VcsStatusSummary,
   VcsWatchEvent,
 } from './types.ts'
+
+/**
+ * Effect's default scheduler dispatches on `setImmediate`; the sync scheduler
+ * dispatches on `queueMicrotask`, which vitest's fake timers do not mock. The
+ * fork's tests use fake timers heavily, so every plugin-side Effect runtime
+ * must pin the sync scheduler or cancel-without-advancing tests deadlock.
+ */
+const syncScheduler = new Scheduler.MixedScheduler('sync')
 
 /** Plugin configuration for the vcs service. */
 export interface Config {
@@ -97,6 +106,40 @@ const DEFAULT_GRACE_MS = 5_000
 const DEFAULT_WATCH_INTERVAL_MS = 1_000
 const VERSION_PREFIX = 'pi-vcs '
 const WATCH_READ_POLL_MS = 250
+
+/**
+ * Classify a spawn/done failure: an external abort wins, then the deadline,
+ * then a plain launch failure — the same priority the hand-rolled
+ * try/catch chains used. Pure (module-level) because it is called from inside
+ * the `Effect.gen` scheduler body, which does not close over class `this`.
+ */
+function classifyAttemptError(
+  command: string,
+  limit: number,
+  signal: AbortSignal | undefined,
+  state: { timedOut: boolean },
+  cause: unknown,
+): VcsCommandError {
+  if (signal?.aborted) {
+    return new VcsCommandError(`pi-vcs ${command} was aborted before completion`, {
+      exitCode: null,
+      stderr: '',
+      cause,
+    })
+  }
+  if (state.timedOut) {
+    return new VcsCommandError(`pi-vcs ${command} timed out after ${limit}ms`, {
+      exitCode: null,
+      stderr: '',
+      cause,
+    })
+  }
+  return new VcsCommandError(`pi-vcs ${command} could not start (launch failed)`, {
+    exitCode: null,
+    stderr: '',
+    cause,
+  })
+}
 
 /** The `ctx.vcs` service. */
 export class VcsService extends Service {
@@ -414,104 +457,117 @@ export class VcsService extends Service {
       })
     }
     const limit = options.timeoutMs ?? this.timeoutMs
-    const controller = new AbortController()
-    const state = { timedOut: false }
-    const timer = setTimeout(() => {
-      state.timedOut = true
-      controller.abort()
-    }, limit)
-    const forward = (): void => {
-      controller.abort()
-    }
-    if (signal !== undefined) {
-      signal.addEventListener('abort', forward, { once: true })
-    }
-    let handle: SubprocessHandle
-    try {
-      handle = this.subprocess().spawn({
-        argv: [this.vcsPath, ...argv],
-        cwd,
-        graceMs: this.graceMs,
-        stdio: {
-          stdin: stdin === undefined ? 'ignore' : { data: stdin },
-          stdout: { maxBytes: this.maxStdoutBytes },
-          stderr: { maxBytes: this.maxStderrBytes },
-        },
-        signal: controller.signal,
-      } satisfies SubprocessSpawnSpec)
-    } catch (error: unknown) {
-      clearTimeout(timer)
-      if (signal !== undefined) signal.removeEventListener('abort', forward)
-      if (signal?.aborted) {
-        throw new VcsCommandError('pi-vcs command was aborted before completion', {
-          exitCode: null,
-          stderr: '',
-          cause: error,
-        })
-      }
-      if (state.timedOut) {
-        throw new VcsCommandError(`pi-vcs ${argv[0] ?? ''} timed out after ${limit}ms`, {
-          exitCode: null,
-          stderr: '',
-          cause: error,
-        })
-      }
-      throw new VcsCommandError(`pi-vcs ${argv[0] ?? ''} could not start (launch failed)`, {
-        exitCode: null,
-        stderr: '',
-        cause: error,
-      })
-    }
-    let outcome: SubprocessOutcome
-    try {
-      outcome = await handle.done
-    } catch (error: unknown) {
-      clearTimeout(timer)
-      if (signal !== undefined) signal.removeEventListener('abort', forward)
-      if (state.timedOut) {
-        throw new VcsCommandError(`pi-vcs ${argv[0] ?? ''} timed out after ${limit}ms`, {
-          exitCode: null,
-          stderr: '',
-          cause: error,
-        })
-      }
-      throw new VcsCommandError(`pi-vcs ${argv[0] ?? ''} could not start (launch failed)`, {
-        exitCode: null,
-        stderr: '',
-        cause: error,
-      })
-    }
-    clearTimeout(timer)
-    if (signal !== undefined) signal.removeEventListener('abort', forward)
-    const stdout = handle.collected.stdout?.readFrom(0)
-    const stderr = handle.collected.stderr?.readFrom(0)
-    if (stdout === undefined || stderr === undefined) {
-      throw new VcsCommandError(`pi-vcs ${argv[0] ?? ''} produced no collected output streams`, {
-        exitCode: null,
-        stderr: '',
-      })
-    }
-    if (state.timedOut) {
-      throw new VcsCommandError(`pi-vcs ${argv[0] ?? ''} timed out after ${limit}ms`, {
-        exitCode: null,
-        stderr: stderr.text,
-      })
-    }
-    if (outcome.signal !== null) {
-      throw new VcsCommandError(
-        `pi-vcs ${argv[0] ?? ''} was killed by signal ${outcome.signal}`,
-        {
-          exitCode: outcome.exitCode,
-          stderr: stderr.text,
-        },
-      )
-    }
-    return {
-      stdout: stdout.text,
-      exitCode: outcome.exitCode ?? 0,
-      killed: false,
-      stderr: stderr.text,
-    }
+    // `Effect.gen` takes a `function*`, which does not close over the class
+    // `this`; capture the internals as locals/arrows instead of aliasing this.
+    const vcsPath = this.vcsPath
+    const graceMs = this.graceMs
+    const maxStdoutBytes = this.maxStdoutBytes
+    const maxStderrBytes = this.maxStderrBytes
+    const spawnVcs = (spec: SubprocessSpawnSpec): SubprocessHandle => this.subprocess().spawn(spec)
+    return await Effect.runPromise(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const controller = new AbortController()
+          const state = { timedOut: false }
+          // Scope-owned deadline + signal forwarder: the release finalizer
+          // clears the timer and detaches the listener on every exit path
+          // (success, classified failure, future interruption) instead of
+          // three hand-rolled cleanup sites. The timeout stays cooperative:
+          // it aborts the child (SIGTERM → grace → SIGKILL via the seam) and
+          // classification happens only after the process has settled —
+          // `Effect.timeout*` is deliberately not used because it would
+          // abandon the source instead of draining it.
+          yield* Effect.acquireRelease(
+            Effect.sync(() => {
+              const onAbort = (): void => {
+                controller.abort()
+              }
+              const timer = setTimeout(() => {
+                state.timedOut = true
+                controller.abort()
+              }, limit)
+              signal?.addEventListener('abort', onAbort, { once: true })
+              return { timer, onAbort }
+            }),
+            armed =>
+              Effect.sync(() => {
+                clearTimeout(armed.timer)
+                signal?.removeEventListener('abort', armed.onAbort)
+              }),
+          )
+          const spawned = yield* Effect.try(() =>
+            spawnVcs({
+              argv: [vcsPath, ...argv],
+              cwd,
+              graceMs,
+              stdio: {
+                stdin: stdin === undefined ? 'ignore' : { data: stdin },
+                stdout: { maxBytes: maxStdoutBytes },
+                stderr: { maxBytes: maxStderrBytes },
+              },
+              signal: controller.signal,
+            } satisfies SubprocessSpawnSpec),
+          ).pipe(
+            Effect.match({
+              onSuccess: handle => ({ ok: true as const, handle }),
+              onFailure: error => ({ ok: false as const, error }),
+            }),
+          )
+          if (!spawned.ok) {
+            return yield* Effect.fail(
+              classifyAttemptError(argv[0] ?? '', limit, signal, state, spawned.error),
+            )
+          }
+          const settled = yield* Effect.tryPromise<SubprocessOutcome>(() => spawned.handle.done).pipe(
+            Effect.match({
+              onSuccess: outcome => ({ ok: true as const, outcome }),
+              onFailure: error => ({ ok: false as const, error }),
+            }),
+          )
+          if (!settled.ok) {
+            return yield* Effect.fail(
+              classifyAttemptError(argv[0] ?? '', limit, signal, state, settled.error),
+            )
+          }
+          const stdout = spawned.handle.collected.stdout?.readFrom(0)
+          const stderr = spawned.handle.collected.stderr?.readFrom(0)
+          if (stdout === undefined || stderr === undefined) {
+            return yield* Effect.fail(
+              new VcsCommandError(`pi-vcs ${argv[0] ?? ''} produced no collected output streams`, {
+                exitCode: null,
+                stderr: '',
+              }),
+            )
+          }
+          if (state.timedOut) {
+            return yield* Effect.fail(
+              new VcsCommandError(`pi-vcs ${argv[0] ?? ''} timed out after ${limit}ms`, {
+                exitCode: null,
+                stderr: stderr.text,
+              }),
+            )
+          }
+          if (settled.outcome.signal !== null) {
+            return yield* Effect.fail(
+              new VcsCommandError(
+                `pi-vcs ${argv[0] ?? ''} was killed by signal ${settled.outcome.signal}`,
+                {
+                  exitCode: settled.outcome.exitCode,
+                  stderr: stderr.text,
+                },
+              ),
+            )
+          }
+          return {
+            stdout: stdout.text,
+            exitCode: settled.outcome.exitCode ?? 0,
+            killed: false,
+            stderr: stderr.text,
+          }
+        }),
+      ),
+      { scheduler: syncScheduler },
+    )
   }
 
   /** Run one `pi-vcs` command and require a clean exit (exit 0). */
