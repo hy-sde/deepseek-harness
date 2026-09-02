@@ -3,7 +3,7 @@
  * controller is the one Remote face over `ctx.wikiGraph`: it narrows the
  * service's CLI arguments to the wire request shapes, projects the service's
  * results untouched, and classifies every refusal as a `wiki-*`
- * `TypertRemoteFailure`. No model-facing tool surface lives here — the tool
+ * `RemoteFailure`. No model-facing tool surface lives here — the tool
  * package keeps owning that contract (@module @deepseek-ai/dsh-tool-logseq).
  */
 
@@ -12,7 +12,7 @@ import {
   LogseqCliError,
   type LogseqGraphService,
 } from '@deepseek-ai/dsh-logseq-graph'
-import { Remote, TypertRemoteFailure, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { Remote, RemoteError, RemoteFailure, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {
   WikiGetPageRequest,
   WikiGetPageValue,
@@ -42,18 +42,14 @@ declare module '@deepseek-ai/cordis' {
 }
 
 /** The graph seam's own refusal, one `status:'error'` envelope from the CLI. */
-function cliFailure(error: LogseqCliError): TypertRemoteFailure {
+function cliFailure(error: LogseqCliError): RemoteFailure {
   const detail = typeof error.payload === 'string' ? error.payload : error.payload.message
-  return new TypertRemoteFailure({
-    code: 'wiki-cli-error',
-    message: error.message,
-    details: { detail: detail ?? error.message },
-  })
+  return new RemoteError('wiki-cli-error', error.message, { detail: detail ?? error.message })
 }
 
 /** Any non-classified failure of the graph seam. */
-function internal(message: string): TypertRemoteFailure {
-  return new TypertRemoteFailure({ code: 'internal', message, details: {} })
+function internal(message: string): RemoteFailure {
+  return new RemoteError('internal', message, {})
 }
 
 /**
@@ -74,11 +70,7 @@ export class WikiController extends TypertRemoteService {
   private get graph(): LogseqGraphService {
     const graph = this.ctx.get('wikiGraph')
     if (graph === undefined) {
-      throw new TypertRemoteFailure({
-        code: 'wiki-unavailable',
-        message: 'no wiki graph service is mounted',
-        details: {},
-      })
+      throw new RemoteError('wiki-unavailable', 'no wiki graph service is mounted', {})
     }
     return graph
   }
@@ -186,8 +178,8 @@ export class WikiController extends TypertRemoteService {
   }
 
   /** Map whatever the seam threw onto the Remote failure vocabulary. */
-  private classify(method: string, error: unknown): TypertRemoteFailure {
-    if (error instanceof TypertRemoteFailure) return error
+  private classify(method: string, error: unknown): RemoteFailure {
+    if (error instanceof RemoteError) return error
     if (error instanceof LogseqCliError) return cliFailure(error)
     return internal(`wiki.${method}: ${error instanceof Error ? error.message : String(error)}`)
   }

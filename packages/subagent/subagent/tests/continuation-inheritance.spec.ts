@@ -15,16 +15,36 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import SandboxPolicyService, { effectiveSandboxMode, setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
+import SandboxPolicyService, { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
+import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import ApprovalService, { effectiveApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
+import ApprovalService, { type ApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import SubagentRuntime from '../src/index.ts'
 import { TestSessionQuery } from './test-session-query.ts'
+
+
+/** The last explicit sandbox override in a session log, or none. */
+function effectiveSandboxMode(events: readonly SessionEvent[]): SandboxMode | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (event?.type === 'sandbox/mode') return event.data.mode
+  }
+  return undefined
+}
+
+/** The last explicit approval override in a session log (default: never). */
+function effectiveApprovalPolicy(events: readonly SessionEvent[]): ApprovalPolicy {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (event?.type === 'approval/policy') return event.data.policy
+  }
+  return 'never'
+}
 
 type Script = ConstructorParameters<typeof MockAdapter>[0]
 
@@ -155,7 +175,7 @@ describe('continuable policy inheritance', () => {
     await waitNoActivation(ctx, started.childId)
 
     const loaded = await ctx.sessionPersistence.load(started.childId)
-    expect(loaded.meta.seedLength).toBeGreaterThan(0)
+    expect(loaded.meta.isSeeded).toBe(true)
     expect(policyEvents(loaded.events)).toMatchObject([
       { type: 'approval/policy', data: { policy: 'never', source: 'delegation' } },
     ])
@@ -223,7 +243,7 @@ describe('continuable policy inheritance', () => {
     await waitNoActivation(ctx, started.childId)
 
     const loaded = await ctx.sessionPersistence.load(started.childId)
-    expect(loaded.meta.seedLength).toBeGreaterThan(0)
+    expect(loaded.meta.isSeeded).toBe(true)
     expect(loaded.events.filter(event => event.type === 'sandbox/mode')).toMatchObject([
       { data: { mode: 'workspace-write' } },
       { data: { mode: 'read-only', source: 'delegation' } },

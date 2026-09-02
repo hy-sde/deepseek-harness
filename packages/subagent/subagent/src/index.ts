@@ -33,6 +33,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { scopeTarget } from '@deepseek-ai/dsh-scope'
 import type { Scoped } from '@deepseek-ai/dsh-scope'
 import z from '@deepseek-ai/schemastery'
+import { admitPromptContent } from '@deepseek-ai/dsh-attachment'
 import { assertObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { ContentBlock, GenerateOptions, MessageId, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -495,7 +496,7 @@ export class SubagentRuntime extends TypertRemoteService {
       session = undefined
     }
     if (session === undefined) return
-    const folded = foldSubagentDecisions(session.events)
+    const folded = foldSubagentDecisions(session.snapshotEvents())
     let bucket = this.openDecisions.get(key)
     for (const [recordKey, entry] of folded) {
       if (bucket !== undefined && bucket.has(recordKey)) continue // in-process wins
@@ -808,7 +809,7 @@ export class SubagentRuntime extends TypertRemoteService {
    * @param parentSessionId - parent session whose direct children are listed.
    * @param signal - carrier cancellation forwarded to Session queries.
    * @returns the catalog view for that parent.
-   * @throws {TypertRemoteFailure} `bad-request` for an empty parent id,
+   * @throws {RemoteFailure} `bad-request` for an empty parent id,
    *   `cancelled` for an aborted read, `subagent-projections-unavailable` when
    *   the deployment has no projection registry, otherwise `internal`.
    */
@@ -831,7 +832,7 @@ export class SubagentRuntime extends TypertRemoteService {
    * @param request - durable address, minted identity, content, and optional browser zone.
    * @param signal - carrier cancellation, owning the call until inbox acceptance.
    * @returns the accepted message's inbox identity.
-   * @throws {TypertRemoteFailure} `bad-request`, `invalid-time-zone`,
+   * @throws {RemoteFailure} `bad-request`, `invalid-time-zone`,
    *   `subagent-parent-unavailable`, `subagent-not-resumable`,
    *   `subagent-unauthorized`, `subagent-delivery-unavailable`, `cancelled`, or
    *   `internal`.
@@ -845,7 +846,7 @@ export class SubagentRuntime extends TypertRemoteService {
       : canonicalClientTimeZone(clientTimeZone)
     if (clientTimeZone !== undefined && canonicalTimeZone === undefined) {
       return rejectControl(
-        'invalid-time-zone',
+        'subagent/invalid-time-zone',
         'clientTimeZone must be UTC or a valid IANA Area/Location name',
         { value: clientTimeZone },
       )
@@ -853,7 +854,7 @@ export class SubagentRuntime extends TypertRemoteService {
     const parent = this.ctx.get('agents')?.get(parentSessionId)
     if (parent === undefined) {
       return rejectControl(
-        'subagent-parent-unavailable',
+        'subagent/parent-unavailable',
         `parent session "${parentSessionId}" is not live`,
         { parentSessionId },
       )
@@ -863,7 +864,16 @@ export class SubagentRuntime extends TypertRemoteService {
       rpcId: request.requestId,
       ...(canonicalTimeZone === undefined ? {} : { clientTimeZone: canonicalTimeZone }),
     }
-    const content: ContentBlock[] = [...request.content]
+    // Admission precedes delivery: image parts become durable references
+    // here, so the child inbox only ever accepts Host-persisted attachments.
+    let content: ContentBlock[]
+    if (request.content.every((part): part is { readonly type: 'text'; readonly text: string } => part.type === 'text')) {
+      content = request.content.map(part => ({ type: 'text', text: part.text }))
+    } else {
+      const attachments = this.ctx.get('attachments')
+      if (attachments === undefined) throw new Error('subagent image prompt requires an attachment store')
+      content = await admitPromptContent(attachments, request.content)
+    }
     try {
       return { messageId: await this.followup(parent, childSessionId, content, { source, signal }) }
     } catch (error: unknown) {
@@ -881,7 +891,7 @@ export class SubagentRuntime extends TypertRemoteService {
    * @param parentSessionId - durable direct parent whose authority is claimed.
    * @param mode - required continuable-address discriminator.
    * @returns acknowledgement that the cancel signal was admitted, not that the target is quiescent.
-   * @throws {TypertRemoteFailure} `bad-request` for an empty id,
+   * @throws {RemoteFailure} `bad-request` for an empty id,
    *   `subagent-unauthorized` when the address does not own the live target,
    *   otherwise `internal`.
    */
@@ -897,7 +907,7 @@ export class SubagentRuntime extends TypertRemoteService {
     } catch (error: unknown) {
       if (error instanceof SubagentError && error.code === 'UNAUTHORIZED') {
         return rejectControl(
-          'subagent-unauthorized',
+          'subagent/unauthorized',
           'subagent does not belong to this parent',
           { childSessionId },
         )

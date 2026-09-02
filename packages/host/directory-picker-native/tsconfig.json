@@ -15,10 +15,13 @@
       "path": "../directory-picker"
     },
     {
+      "path": "../../util/native-command"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../util/native-command"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

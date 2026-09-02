@@ -33,6 +33,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { AgentCancelCause, Session, SessionEvent, UserMessage } from '@deepseek-ai/dsh-session'
 import type { PostToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
 import * as fs from 'node:fs'
@@ -481,7 +482,7 @@ export function apply(ctx: Context, config: Config): void {
               session.append(
                 'user/message',
                 reminder,
-                { surfaceOp: { op: 'replace', start: range.start, end: range.end }, sourceEventSeqs: range.shadowed },
+                { surfaceOp: { op: 'replace', start: SessionSeq(range.start), end: SessionSeq(range.end) }, sourceEventSeqs: range.shadowed.map(seq => SessionSeq(seq)) },
               )
             } catch (error) {
               // A failed rewrite must not strand the session without a retry:
@@ -510,7 +511,7 @@ export function apply(ctx: Context, config: Config): void {
    * can replace exactly that and keep the turn's prompt.
    */
   function computeDiscardRange(session: Session, turn: number): { start: number; end: number; shadowed: number[] } | undefined {
-    const events = session.events
+    const events = session.snapshotEvents()
     // Locate the last step of this turn.
     let stepStartIndex = -1
     for (let index = events.length - 1; index >= 0; index--) {

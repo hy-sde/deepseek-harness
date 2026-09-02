@@ -15,16 +15,22 @@
       "path": "../../../vendor/cosmokit"
     },
     {
-      "path": "../../subprocess/subprocess"
+      "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
+      "path": "../../subprocess/subprocess"
     },
     {
       "path": "../../util/timeout"
     },
     {
       "path": "../e2b"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

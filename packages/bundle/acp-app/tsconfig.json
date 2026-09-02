@@ -12,10 +12,13 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../boot/cmdline"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../boot/cmdline"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

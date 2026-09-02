@@ -85,6 +85,9 @@
     },
     {
       "path": "../../jobs/tool-jobs"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

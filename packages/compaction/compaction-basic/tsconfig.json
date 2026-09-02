@@ -4,7 +4,9 @@
     "rootDir": "src",
     "outDir": "lib/types"
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
     {
       "path": "../../../vendor/cosmokit"
@@ -34,10 +36,13 @@
       "path": "../compaction"
     },
     {
+      "path": "../compaction-tool-result-pruner"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../compaction-tool-result-pruner"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

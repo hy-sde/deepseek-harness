@@ -4,7 +4,7 @@ import {
   LogseqCliError,
   type LogseqGraphService,
 } from '@deepseek-ai/dsh-logseq-graph'
-import { TypertRemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { WikiController } from '../src/index.ts'
 
 /** A stub graph seam recording calls; every method returns the canned value. */
@@ -115,9 +115,9 @@ describe('WikiController Remote face', () => {
     })
   })
 
-  it('passes TypertRemoteFailures through unchanged', async () => {
+  it('passes RemoteFailures through unchanged', async () => {
     void vi
-    const failure = new TypertRemoteFailure({ code: 'wiki-custom', message: 'keep me', details: { x: 1 } })
+    const failure = new RemoteError('wiki-cli-error', 'keep me', { detail: 'keep me' })
     const { controller } = host({ listTags: () => { throw failure } })
     await expect(controller.listTags()).rejects.toBe(failure)
   })

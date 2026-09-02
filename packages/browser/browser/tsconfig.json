@@ -16,6 +16,9 @@
     },
     {
       "path": "../../../packages/subprocess/subprocess"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

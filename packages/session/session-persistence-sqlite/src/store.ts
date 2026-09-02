@@ -10,6 +10,7 @@ import { lstat, mkdir, open } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import type { DatabaseSync, StatementSync } from 'node:sqlite'
 import {
+  SessionLogOffset,
   type SessionEvent,
   type SessionHeader,
   type SessionId,
@@ -19,6 +20,7 @@ import {
   type PersistenceBackend,
   type SessionPersistenceRevision as PersistenceRevision,
   type SessionPersistenceSnapshot,
+  type SessionStorageMetadata,
   type StoredPrefix,
   type StoredSuffix,
 } from '@deepseek-ai/dsh-session-persistence'
@@ -144,6 +146,7 @@ export class SqliteStore implements PersistenceBackend<number> {
     const scanned = scanRows(snapshot.eventRows)
     return {
       meta: rowToMeta(snapshot.row),
+      inheritedEventCount: SessionLogOffset(snapshot.row.seed_length ?? 0),
       events: scanned.preserved,
       revision: sqliteRevision(this.storeIdentity, snapshot.row),
       ...scanned.tornFrom === undefined ? {} : { tornMarker: scanned.tornFrom },
@@ -157,7 +160,7 @@ export class SqliteStore implements PersistenceBackend<number> {
     return row === undefined ? undefined : sqliteRevision(this.storeIdentity, row)
   }
 
-  async loadStoredFrom(id: SessionId, fromSeq: number, signal?: AbortSignal): Promise<StoredSuffix | undefined> {
+  async loadStoredFrom(id: SessionId, fromSeq: SessionLogOffset, signal?: AbortSignal): Promise<StoredSuffix | undefined> {
     await this.observe(signal)
     const snapshot = this.readTransaction(() => {
       const row = this.rowFor(id)
@@ -167,11 +170,15 @@ export class SqliteStore implements PersistenceBackend<number> {
     signal?.throwIfAborted()
     if (snapshot === undefined) return undefined
     const { preserved } = scanRows(snapshot.eventRows, snapshot.base)
-    return { meta: rowToMeta(snapshot.row), events: preserved.filter(event => event.seq >= fromSeq) }
+    return {
+      meta: rowToMeta(snapshot.row),
+      inheritedEventCount: SessionLogOffset(snapshot.row.seed_length ?? 0),
+      events: preserved.filter(event => event.seq >= fromSeq),
+    }
   }
 
   async appendBatch(
-    meta: SessionHeader,
+    storage: SessionStorageMetadata,
     events: readonly SessionEvent[],
     isMaterialized: boolean,
   ): Promise<void> {
@@ -180,30 +187,30 @@ export class SqliteStore implements PersistenceBackend<number> {
     this.db.exec(sql('begin-immediate'))
     try {
       validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath)
-      const sessionKey = isMaterialized ? this.sessionKey(meta.id) : this.writeRow(meta)
+      const sessionKey = isMaterialized ? this.sessionKey(storage.meta.id) : this.writeRow(storage)
       const tailRows = this.tailRows(sessionKey)
-      const currentLast = this.logicalLastEvent(meta.id, tailRows)
+      const currentLast = this.logicalLastEvent(storage.meta.id, tailRows)
       const expected = currentLast === undefined ? 0 : currentLast.seq + 1
       const first = events[0] as SessionEvent
       if (first.seq !== expected) {
-        throw new Error(`session ${meta.id} append starts at seq ${first.seq}, stored next seq is ${expected}`)
+        throw new Error(`session ${storage.meta.id} append starts at seq ${first.seq}, stored next seq is ${expected}`)
       }
 
       const insert = this.insertStatement()
       for (const record of packChunkRuns(events)) this.insertRecord(insert, sessionKey, bindRecord(record))
-      this.incrementRevision(meta.id)
+      this.incrementRevision(storage.meta.id)
       this.db.exec(sql('commit'))
     } catch (error: unknown) {
       this.rollback(error, 'append')
     }
   }
 
-  async materializeHeader(meta: SessionHeader): Promise<void> {
+  async materializeHeader(storage: SessionStorageMetadata): Promise<void> {
     await this.open()
     this.db.exec(sql('begin-immediate'))
     try {
       validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath)
-      this.writeRow(meta)
+      this.writeRow(storage)
       this.db.exec(sql('commit'))
     } catch (error: unknown) {
       /* v8 ignore next -- validate/write failure uses the same transaction rollback path covered by append and repair. */
@@ -212,7 +219,7 @@ export class SqliteStore implements PersistenceBackend<number> {
   }
 
   async commitRepair(
-    meta: SessionHeader,
+    storage: SessionStorageMetadata,
     tornMarker: number | undefined,
     closers: readonly SessionEvent[],
   ): Promise<void> {
@@ -221,31 +228,31 @@ export class SqliteStore implements PersistenceBackend<number> {
     this.db.exec(sql('begin-immediate'))
     try {
       validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath)
-      const row = this.rowFor(meta.id)
-      if (row === undefined) throw new Error(`session ${meta.id} metadata row is missing`)
-      const sessionKey = this.sessionKey(meta.id)
+      const row = this.rowFor(storage.meta.id)
+      if (row === undefined) throw new Error(`session ${storage.meta.id} metadata row is missing`)
+      const sessionKey = this.sessionKey(storage.meta.id)
       const currentRows = this.db.prepare(sql('select-events')).all(sessionKey).map(decodeEventRow)
       const current = scanRows(currentRows)
       if (tornMarker !== undefined) {
         if (current.tornFrom !== tornMarker) {
-          throw new Error(`session ${meta.id} repair is stale: physical tail no longer starts at seq ${tornMarker}`)
+          throw new Error(`session ${storage.meta.id} repair is stale: physical tail no longer starts at seq ${tornMarker}`)
         }
         this.db.prepare(sql('delete-events-from'))
           .run(sessionKey, tornMarker)
       } else if (current.tornFrom !== undefined) {
-        throw new Error(`session ${meta.id} repair omitted current torn tail at seq ${current.tornFrom}`)
+        throw new Error(`session ${storage.meta.id} repair omitted current torn tail at seq ${current.tornFrom}`)
       }
       if (closers.length > 0) {
         const expected = current.preserved.at(-1)?.seq === undefined
           ? 0
           : (current.preserved.at(-1) as SessionEvent).seq + 1
         if (closers[0]?.seq !== expected) {
-          throw new Error(`session ${meta.id} repair is stale: closer starts at seq ${closers[0]?.seq}, stored next seq is ${expected}`)
+          throw new Error(`session ${storage.meta.id} repair is stale: closer starts at seq ${closers[0]?.seq}, stored next seq is ${expected}`)
         }
         const insert = this.insertStatement()
         for (const closer of closers) this.insertRecord(insert, sessionKey, bindRecord(closer))
       }
-      this.incrementRevision(meta.id)
+      this.incrementRevision(storage.meta.id)
       this.db.exec(sql('commit'))
     } catch (error: unknown) {
       this.rollback(error, 'repair')
@@ -387,17 +394,17 @@ export class SqliteStore implements PersistenceBackend<number> {
     )
   }
 
-  private writeRow(meta: SessionHeader): number {
+  private writeRow(storage: SessionStorageMetadata): number {
     const inserted = this.db.prepare(sql('upsert-session')).get(
-      meta.id,
-      meta.version,
-      meta.createdAt,
-      meta.cwd ?? null,
-      meta.parentSession ?? null,
-      meta.seedLength ?? null,
-      meta.origin ?? null,
-      meta.delegationDepth ?? null,
-      meta.agentPreset ?? null,
+      storage.meta.id,
+      storage.meta.version,
+      storage.meta.createdAt,
+      storage.meta.cwd ?? null,
+      storage.meta.parentSession ?? null,
+      storage.inheritedEventCount,
+      storage.meta.origin ?? null,
+      storage.meta.delegationDepth ?? null,
+      storage.meta.agentPreset ?? null,
       randomUUID(),
     ) as { id: number }
     return inserted.id

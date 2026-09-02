@@ -40,7 +40,7 @@ describe('web e2e: Full access switch in the composer picker', () => {
     const access = page.locator('button[aria-label^="访问模式"]').first()
     await access.waitFor({ timeout: 10_000 })
 
-    expect(await access.getAttribute('aria-label')).toBe('访问模式，当前：Workspace Write')
+    expect(await access.getAttribute('aria-label')).toBe('访问模式，当前：工作区内修改')
 
     await access.click()
     await page.getByRole('menuitem', { name: 'Full access' }).click()

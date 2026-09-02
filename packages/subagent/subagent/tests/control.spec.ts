@@ -6,6 +6,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import type { MessageId } from '@deepseek-ai/dsh-llm'
+import type { PromptContentPart } from '@deepseek-ai/dsh-attachment/types'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import SubagentRuntime, {
   SubagentError,
@@ -128,7 +129,7 @@ describe('subagent catalog Remote', () => {
     )
     await expect(subagents.remoteExportList(PARENT, signal)).rejects.toMatchObject({
       failure: {
-        code: 'subagent-projections-unavailable',
+        code: 'subagent/projections-unavailable',
         message: expect.stringContaining('sessionProjections') as unknown as string,
       },
     })
@@ -158,10 +159,10 @@ describe('subagent prompt Remote', () => {
     expect(followup).not.toHaveBeenCalled()
   })
 
-  it('forwards non-text content blocks without narrowing them', async () => {
+  it('forwards the admitted prompt content to followup', async () => {
     const { subagents } = await bench({ [PARENT]: { status: 'idle' } })
     const followup = vi.spyOn(subagents, 'followup').mockResolvedValue('m-content' as MessageId)
-    const content = [{ type: 'reasoning' as const, text: 'retain this block' }]
+    const content: PromptContentPart[] = [{ type: 'text', text: 'retain this block' }]
 
     await expect(subagents.prompt({ ...promptRequest(), content }, signal))
       .resolves.toEqual({ messageId: 'm-content' })
@@ -200,7 +201,7 @@ describe('subagent prompt Remote', () => {
     await expect(subagents.prompt(promptRequest('UTC'), signal)).resolves.toEqual({ messageId: 'm-3' })
     for (const zone of ['', ' UTC', 'Shanghai', 'Nowhere/Nowhere']) {
       await expect(subagents.prompt(promptRequest(zone), signal)).rejects.toMatchObject({
-        failure: { code: 'invalid-time-zone', details: { value: zone } },
+        failure: { code: 'subagent/invalid-time-zone', details: { value: zone } },
       })
     }
   })
@@ -210,7 +211,7 @@ describe('subagent prompt Remote', () => {
     const followup = vi.spyOn(subagents, 'followup')
 
     await expect(subagents.prompt(promptRequest(), signal)).rejects.toMatchObject({
-      failure: { code: 'subagent-parent-unavailable', details: { parentSessionId: PARENT } },
+      failure: { code: 'subagent/parent-unavailable', details: { parentSessionId: PARENT } },
     })
     expect(followup).not.toHaveBeenCalled()
   })
@@ -219,10 +220,10 @@ describe('subagent prompt Remote', () => {
     const { subagents } = await bench({ [PARENT]: { status: 'idle' } })
     const followup = vi.spyOn(subagents, 'followup')
     const cases: readonly [string, string][] = [
-      ['NOT_RESUMABLE', 'subagent-not-resumable'],
-      ['UNAUTHORIZED', 'subagent-unauthorized'],
-      ['DRAINING', 'subagent-delivery-unavailable'],
-      ['ACTIVATION_CLOSING', 'subagent-delivery-unavailable'],
+      ['NOT_RESUMABLE', 'subagent/not-resumable'],
+      ['UNAUTHORIZED', 'subagent/unauthorized'],
+      ['DRAINING', 'subagent/delivery-unavailable'],
+      ['ACTIVATION_CLOSING', 'subagent/delivery-unavailable'],
       ['NO_PROVIDER', 'internal'],
     ]
     for (const [thrown, code] of cases) {
@@ -290,7 +291,7 @@ describe('subagent interrupt Remote', () => {
 
     interrupt.mockImplementation(() => { throw new SubagentError('not yours', 'UNAUTHORIZED') })
     expect(() => subagents.interruptByParent(CHILD, PARENT, 'continuable')).toThrow(
-      expect.objectContaining({ failure: { code: 'subagent-unauthorized', message: expect.any(String) as unknown as string, details: { childSessionId: CHILD } } }),
+      expect.objectContaining({ failure: { code: 'subagent/unauthorized', message: expect.any(String) as unknown as string, details: { childSessionId: CHILD } } }),
     )
 
     interrupt.mockImplementation(() => { throw new Error('boom') })

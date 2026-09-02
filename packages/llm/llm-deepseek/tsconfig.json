@@ -48,13 +48,16 @@
       "path": "../../settings/settings"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../util/timeout"
     },
     {
       "path": "../../identity/anonymous-user-id"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

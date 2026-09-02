@@ -8,7 +8,6 @@ import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ReadResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-fs'
-import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-internal-urls'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
 import { SNAPSHOT_MAX_BYTES, getSessionSnapshotStore, normalizeToLF, stripBom } from '@deepseek-ai/dsh-hashline'
@@ -87,7 +86,7 @@ export function parseReadArgs(args: { file_path: string; offset?: number; limit?
 export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
   ctx.systemPrompt.section({
     name: 'tool:read',
-    order: FIRST_PARTY_SECTION_ORDER.TOOL_READ,
+    order: ctx.systemPrompt.getSectionOrder('TOOL_READ'),
     text:
       'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text.',
   })

@@ -30,7 +30,13 @@
       "path": "../../util/crypto"
     },
     {
+      "path": "../../util/values"
+    },
+    {
       "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

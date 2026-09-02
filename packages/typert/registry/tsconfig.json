@@ -15,10 +15,13 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../protocol"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../protocol"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

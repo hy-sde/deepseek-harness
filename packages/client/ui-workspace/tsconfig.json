@@ -39,6 +39,9 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../schedule/schedule"
+    },
+    {
       "path": "../ui-sidebar"
     },
     {
@@ -51,10 +54,13 @@
       "path": "../ui-session"
     },
     {
+      "path": "../../util/workspace-path"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../util/workspace-path"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

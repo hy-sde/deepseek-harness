@@ -47,17 +47,6 @@ async function bench() {
       'settings.general.item': { kind: 'list', scope: 'root' },
     },
   } as never, () => null)
-  ctx.provide('connection', {
-    api: {
-      settings: {
-        describe: () => Promise.resolve({
-          rpcId: 'describe',
-          result: { ok: true as const, value: { writable: true, hasDocument: false, namespaces: [] } },
-        }),
-        mutate: () => Promise.reject(new Error('settings mutation is not exercised')),
-      },
-    },
-  } as never)
   await ctx.plugin({ inject: [...settingsInject], apply: settingsApply }).await()
   let decoration: CommandDecoration | undefined
   ctx.provide('commandUi', {
@@ -80,7 +69,7 @@ async function bench() {
       commands.push(line)
       return Promise.resolve(commandResult.ok
         ? { ok: true as const, value: { matched: commandResult.matched ?? true } }
-        : { ok: false as const, error: { code: 'internal', message: 'boom' } })
+        : { ok: false as const, error: { code: 'gateway/internal', message: 'boom' } })
     },
   })
   ctx.provide('sessions', {
@@ -89,7 +78,7 @@ async function bench() {
   const fiber = ctx.plugin({ inject: [...inject], apply })
   await fiber.await()
   return {
-    ctx, fiber, values, commands, remote,
+    ctx, fiber, locale, values, commands, remote,
     setResult: (r: { ok: boolean; matched?: boolean }) => { commandResult = r },
     decoration: () => decoration,
     permissionRow: () => ctx.slots.entries('settings.general.item')
@@ -127,11 +116,13 @@ describe('ui-permission browser plugin', () => {
     const again = await c.ui.options(proj, new AbortController().signal)
     expect(again.find(option => option.id === 'workspace-write')?.active).toBe(true)
     expect(again.find(option => option.id === 'read-only')?.detail).toBe('Reads only.')
-    // Kebab-case names title-case; non-kebab host-configured names pass through.
+    // English built-ins use product labels; other kebab-case names title-case.
     expect(again.map(option => option.label)).toEqual(['Read Only', 'Workspace Write', 'Full access'])
     b.values.set(sid('s1'), { ...SELECT, options: [{ value: 'plain', name: 'Ask Every Time' }] })
     const passthrough = await c.ui.options(proj, new AbortController().signal)
-    expect(passthrough[0]?.label).toBe('Ask Every Time')
+    expect(passthrough.map(option => option.label)).toEqual([
+      'Project Files', 'Operator Mode', 'Custom Mode', '__proto__', 'Ask Every Time',
+    ])
     // A projection that vanished between availability and open throws.
     expect(() => c.ui.options({ sessionId: sid('ghost') }, new AbortController().signal))
       .toThrow(/not available on this host/)

@@ -145,7 +145,7 @@ function wakesOf(ctx: Context, parentId: SessionId, kind: string): { text: strin
   const session = ctx.sessions.get(parentId)
   if (session === undefined) return []
   const found: { text: string; childIds?: string[] }[] = []
-  for (const event of session.events) {
+  for (const event of session.snapshotEvents()) {
     if (event.type !== 'user/message') continue
     const entry = event.data as { content: { type: string; text: string }[]; source: { kind: string; childIds?: string[] } }
     if (entry.source.kind !== kind) continue
@@ -162,7 +162,7 @@ function decisionEvents(
 ): { phase: string; childId: string; key: string; status?: string; summary?: string }[] {
   const session = ctx.sessions.get(sessionId)
   if (session === undefined) return []
-  return session.events
+  return session.snapshotEvents()
     .filter(event => event.type === 'subagent/decision')
     .map(event => event.data as { phase: string; childId: string; key: string; status?: string; summary?: string })
 }

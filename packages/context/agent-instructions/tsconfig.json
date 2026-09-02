@@ -24,6 +24,9 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../session/session-projection"
+    },
+    {
       "path": "../../core/tools"
     },
     {
@@ -31,6 +34,9 @@
     },
     {
       "path": "../../util/home-paths"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     },
     {
       "path": "../../runtime-diagnostics/invariants"

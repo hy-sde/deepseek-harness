@@ -24,9 +24,6 @@
       "path": "../../core/session"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../util/native-command"
     },
     {
@@ -34,6 +31,12 @@
     },
     {
       "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

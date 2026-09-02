@@ -48,7 +48,7 @@ describe('WikiClient face', () => {
     const calls: { method: string; args: unknown[] }[] = []
     const wiki = scriptedWiki(calls)
     // Swap one method to an error envelope.
-    const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as WikiRemoteNamespace
+    const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as unknown as WikiRemoteNamespace
     await wikiStore.bind(new WikiClient(failing))
     await wikiStore.ensurePages()
   })
@@ -129,7 +129,7 @@ describe('wikiStore state machine', () => {
   it('surfaces errors in state instead of throwing', async () => {
     const calls: { method: string; args: unknown[] }[] = []
     const wiki = scriptedWiki(calls)
-    const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as WikiRemoteNamespace
+    const failing = { ...wiki, listPages: async () => ({ ok: false as const, error: { code: 'internal' as const, message: 'graph down', details: {} } }) } as unknown as WikiRemoteNamespace
     await wikiStore.bind(new WikiClient(failing))
     await wikiStore.ensurePages()
     expect(wikiStore.getState().error).toMatch(/graph down/)

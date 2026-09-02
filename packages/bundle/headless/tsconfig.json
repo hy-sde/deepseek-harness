@@ -30,10 +30,13 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../boot/cmdline"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../boot/cmdline"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

@@ -8,7 +8,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import { TypertRemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { z } from 'zod'
 import type {
   SubagentCatalog, SubagentControlErrorDetailsMap, SubagentListEntry,
@@ -66,7 +66,7 @@ export function rejectControl<Code extends keyof SubagentControlErrorDetailsMap>
   message: string,
   details: SubagentControlErrorDetailsMap[Code],
 ): never {
-  throw new TypertRemoteFailure({ code, message, details })
+  throw new RemoteError(code, message, details as never)
 }
 
 /**
@@ -126,7 +126,7 @@ export function rejectCatalogRead(error: unknown, signal: AbortSignal): never {
   }
   if (error instanceof SubagentError && error.code === 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE') {
     return rejectControl(
-      'subagent-projections-unavailable',
+      'subagent/projections-unavailable',
       'subagent catalog is unavailable: this deployment does not mount the sessionProjections registry (load @deepseek-ai/dsh-session-projection)',
       {},
     )
@@ -151,10 +151,10 @@ export function rejectPrompt(error: unknown, childSessionId: SessionId, signal: 
   if (error instanceof SubagentError) {
     switch (error.code) {
       case 'NOT_RESUMABLE':
-        return rejectControl('subagent-not-resumable', 'subagent cannot be resumed', { childSessionId })
+        return rejectControl('subagent/not-resumable', 'subagent cannot be resumed', { childSessionId })
       case 'UNAUTHORIZED':
         return rejectControl(
-          'subagent-unauthorized',
+          'subagent/unauthorized',
           'subagent does not belong to this parent',
           { childSessionId },
         )
@@ -163,7 +163,7 @@ export function rejectPrompt(error: unknown, childSessionId: SessionId, signal: 
       case 'CONTINUATION_UNAVAILABLE':
       case 'PERSISTENCE_UNAVAILABLE':
         return rejectControl(
-          'subagent-delivery-unavailable',
+          'subagent/delivery-unavailable',
           'subagent follow-up is temporarily unavailable',
           { childSessionId },
         )

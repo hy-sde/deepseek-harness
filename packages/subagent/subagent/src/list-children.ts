@@ -17,6 +17,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { Session, SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionProjectionRegistry } from '@deepseek-ai/dsh-session-projection'
 import type { SessionProjectionCache } from '@deepseek-ai/dsh-session-projection-cache'
@@ -220,7 +221,7 @@ async function resolveCandidateRows(
     // The unit's serializable no-value sentinel is `null`; `undefined` can
     // only mean the key was dropped at a JSON boundary. Both are no value.
     if (identity === undefined || identity === null
-      || identity.seq < (candidate.header.seedLength ?? 0)) return
+      || identity.seq < candidate.live.inheritedEventCount) return
     rows[index] = childRow(childId, identity, 'running', subagentParents.has(childId))
   })
 
@@ -301,25 +302,25 @@ async function resolveColdIdentity(
   signal: AbortSignal | undefined,
 ): Promise<SubagentListEntry> {
   const childId = header.id
-  if (cache !== undefined) {
+  // A header deliberately exposes only whether a fork cut exists, not its
+  // integer. An unseeded lifecycle has the exact cut 0 and may use the cache;
+  // a seeded lifecycle must read the body before an identity seq can be
+  // classified as inherited or owned.
+  if (cache !== undefined && !header.isSeeded) {
     let cached: SubagentIdentityProjection | null | undefined
     try {
-      cached = cache.cachedSnapshot(header, ['subagent'])?.values.subagent
+      cached = cache.cachedSnapshot(header, SessionLogOffset(0), ['subagent'])?.values.subagent
     } catch {
       // Unlike the preparation fold below, a throwing cache read renders no
       // verdict: the cache is derived data, so its damage (a poisoned stored
       // row of ANY unit) silently falls through to the authoritative re-fold.
       cached = undefined
     }
-    // A child's OWN descriptor is immutable once appended, so a cached
-    // identity is final only when the seq gate proves it was folded from the
-    // own suffix: a creation-window checkpoint may instead carry a fork
-    // seed's replayed ANCESTOR descriptor (seq below `seedLength`), which
-    // must not outrank the re-fold. Everything else also falls through to
-    // preparation: an absent key (a cut before any descriptor) and the
-    // `null` sentinel, whose verdict belongs to the authoritative re-fold,
-    // not to a derived row.
-    if (cached !== undefined && cached !== null && cached.seq >= (header.seedLength ?? 0)) {
+    // An unseeded child's descriptor is owned at every valid seq. Everything
+    // else falls through to preparation: an absent key and the `null`
+    // sentinel, whose verdict belongs to the authoritative re-fold, not to a
+    // derived row.
+    if (cached !== undefined && cached !== null) {
       return childRow(childId, cached, 'inactive', hasChildren)
     }
   }
@@ -352,7 +353,7 @@ async function resolveColdIdentity(
   }
   const identity = ownedObservation.projections?.values.subagent
   if (identity === undefined || identity === null
-    || identity.seq < (header.seedLength ?? 0)) {
+    || identity.seq < ownedObservation.inheritedEventCount) {
     return { kind: 'diagnostic', id: childId, reason: 'corrupt' }
   }
   return childRow(childId, identity, 'inactive', hasChildren)
@@ -386,7 +387,7 @@ function childRow(
 
 /** Immutable header fields that distinguish one session lifecycle from another under the same id. */
 const LIFECYCLE_WITNESS_KEYS = [
-  'version', 'id', 'createdAt', 'cwd', 'parentSession', 'seedLength', 'delegationDepth',
+  'version', 'id', 'createdAt', 'cwd', 'parentSession', 'isSeeded', 'delegationDepth',
   'origin', 'agentPreset',
 ] as const
 

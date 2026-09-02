@@ -1285,7 +1285,7 @@ export class SubagentContinuationManager {
     // which may carry an ANCESTOR's descriptor when the parent is itself a
     // continuable child.
     const descriptor = foldSubagentDescriptor(
-      source.events.slice(source.header.seedLength ?? 0),
+      source.events.slice(source.inheritedEventCount),
     )
     if (descriptor === undefined || descriptor.mode !== 'continuable') {
       throw new SubagentError(

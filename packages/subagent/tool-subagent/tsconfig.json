@@ -24,6 +24,9 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../session/session-projection"
+    },
+    {
       "path": "../../core/scope"
     },
     {
@@ -43,6 +46,9 @@
     },
     {
       "path": "../../jobs/jobs"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     },
     {
       "path": "../../runtime-diagnostics/invariants"

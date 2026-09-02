@@ -218,6 +218,15 @@ export interface WikiQueryValue {
   rows: WikiJson
 }
 
+
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'wiki-unavailable': Record<never, never>
+    'wiki-cli-error': { readonly detail: string }
+    internal: Record<never, never>
+  }
+}
+
 /** Stable wiki failure details returned by unary methods. */
 export interface WikiErrorDetailsMap {
   /** The graph seam is not mounted in this deployment. */

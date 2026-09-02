@@ -43,6 +43,9 @@
     },
     {
       "path": "../commands"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

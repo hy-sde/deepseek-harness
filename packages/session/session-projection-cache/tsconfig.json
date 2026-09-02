@@ -21,9 +21,6 @@
       "path": "../../core/session"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../storage/storage"
     },
     {
@@ -34,6 +31,12 @@
     },
     {
       "path": "../session-projection"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

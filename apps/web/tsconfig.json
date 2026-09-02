@@ -23,6 +23,7 @@
   // cannot see both sides of the cordis Context merges).
   "exclude": [
     "tests/scaffold.ts",
+    "tests/conversation-column-overflow.e2e.ts",
     "tests/scaffold-hermetic.e2e.ts",
     "tests/startup-rpc-budget.e2e.ts",
     "tests/minimal-preset.snapshot.ts",
@@ -58,7 +59,6 @@
     "tests/stats-paged-history.e2e.ts",
     "tests/sidebar-scrollbar.e2e.ts",
     "tests/rail-search-expand.e2e.ts",
-    "tests/conversation-column-overflow.e2e.ts",
     "tests/ptc-round.e2e.ts",
     "tests/composer-draft-scroll.e2e.ts",
     "tests/cordis-tool-round.e2e.ts",
@@ -73,6 +73,7 @@
     "tests/markdown-cjk-strong.e2e.ts",
     "tests/markdown-inline-code-links.e2e.ts",
     "tests/queue-actions.e2e.ts",
+    "tests/queue-image.e2e.ts",
     "tests/skill-invocation-policy.e2e.ts",
     "tests/skill-user-invoke.e2e.ts",
     "tests/permission-policy-context.e2e.ts",

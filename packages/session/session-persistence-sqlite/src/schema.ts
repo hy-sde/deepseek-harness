@@ -352,7 +352,7 @@ export function rowToMeta(row: SessionRow): SessionHeader {
     createdAt: row.created_at,
     ...row.cwd === null ? {} : { cwd: row.cwd },
     ...row.parent_session === null ? {} : { parentSession: SessionId(row.parent_session) },
-    ...row.seed_length === null ? {} : { seedLength: row.seed_length },
+    ...row.seed_length === null ? { isSeeded: false } : { isSeeded: row.seed_length > 0 },
     ...row.origin === null ? {} : { origin: row.origin },
     ...row.delegation_depth === null ? {} : { delegationDepth: row.delegation_depth },
     ...row.agent_preset === null ? {} : { agentPreset: row.agent_preset },

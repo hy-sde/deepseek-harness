@@ -7,7 +7,9 @@
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
     {
       "path": "../../../vendor/cordis"
@@ -26,6 +28,9 @@
     },
     {
       "path": "../openwiki-core"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

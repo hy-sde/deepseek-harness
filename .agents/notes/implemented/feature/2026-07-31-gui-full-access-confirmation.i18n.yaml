@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-31-gui-full-access-confirmation.md
-2026-07-31-gui-full-access-confirmation.md: 31a68b16e729fe138bdd6fc3e612f5681a73ba15
-2026-07-31-gui-full-access-confirmation.zh.md: 6636b251020a64f23665ed3113cf095ecfacece5
+2026-07-31-gui-full-access-confirmation.md: cc2c75cb93d1f9b5665db64f4b224eb78742af83
+2026-07-31-gui-full-access-confirmation.zh.md: 561381785e14a6740ccffc1877d1479fe52d0ef8

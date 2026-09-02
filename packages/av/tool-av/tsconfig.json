@@ -4,7 +4,9 @@
     "rootDir": "src",
     "outDir": "lib/types"
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
     {
       "path": "../../../vendor/cordis"
@@ -20,6 +22,9 @@
     },
     {
       "path": "../../../packages/av/av"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

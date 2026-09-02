@@ -24,10 +24,13 @@
       "path": "../code-runtime"
     },
     {
+      "path": "../../util/timeout"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../util/timeout"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

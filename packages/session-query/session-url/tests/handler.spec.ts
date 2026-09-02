@@ -22,6 +22,7 @@ import type {
 } from '@deepseek-ai/dsh-session-query'
 import type { SessionTitleSnapshot } from '@deepseek-ai/dsh-session-title'
 import { SessionQueryError } from '@deepseek-ai/dsh-session-query'
+import { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
 import {
   SessionProtocolHandler,
@@ -67,6 +68,7 @@ function stubEngine(options: StubOptions = {}): SessionQueryEngine {
       if (log === undefined) throw new SessionQueryError(`session not found: ${id}`, 'SESSION_QUERY_SESSION_NOT_FOUND')
       return {
         session: { id, createdAt: 0, ...headers.get(id) } as SessionHeader,
+        inheritedEventCount: SessionLogOffset(0),
         events: log.map(item => ({ ...item, sessionId: id })),
       }
     },

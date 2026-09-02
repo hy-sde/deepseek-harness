@@ -27,10 +27,13 @@
       "path": "../session-persistence"
     },
     {
+      "path": "../../core/tools"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../core/tools"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

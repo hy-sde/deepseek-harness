@@ -22,6 +22,9 @@
     },
     {
       "path": "../../../packages/core/tools"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

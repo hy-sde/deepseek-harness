@@ -15,10 +15,13 @@
       "path": "../loader-smoke"
     },
     {
+      "path": "../../core/session"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../core/session"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

@@ -24,10 +24,13 @@
       "path": "../../session/session-persistence"
     },
     {
+      "path": "../session-query"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../session-query"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

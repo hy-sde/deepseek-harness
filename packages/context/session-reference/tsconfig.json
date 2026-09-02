@@ -33,9 +33,6 @@
       "path": "../../compaction/compaction"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../session-query/session-query"
     },
     {
@@ -46,6 +43,12 @@
     },
     {
       "path": "../../session/session-title"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

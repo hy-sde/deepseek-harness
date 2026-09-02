@@ -9,16 +9,12 @@
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { JsonValue } from '@deepseek-ai/dsh-session'
-import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { defineTool } from './schema.ts'
 import type { ToolDefinition, ToolExecutionResult, ToolRunContext } from './index.ts'
 
 /** The model-facing name of the catalog mode device transport. */
 export const DYN_NAME = 'dyn'
-
-/** Prompt order of the `tools:catalog` section, before any single-tool guidance. */
-export const CATALOG_SECTION_ORDER = FIRST_PARTY_SECTION_ORDER.CATALOG_ONLY
 
 /** UTF-8 byte cap for a device's one-line catalog summary. */
 export const DEVICE_SUMMARY_CAP = 200

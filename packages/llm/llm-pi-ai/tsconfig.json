@@ -12,6 +12,9 @@
       "path": "../../util/launch-environment"
     },
     {
+      "path": "../../util/brand"
+    },
+    {
       "path": "../../../vendor/cosmokit"
     },
     {
@@ -39,10 +42,13 @@
       "path": "../../settings/settings"
     },
     {
+      "path": "../../util/timeout"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../util/timeout"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

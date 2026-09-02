@@ -24,10 +24,13 @@
       "path": "../../core/tools"
     },
     {
+      "path": "../file-reference"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../file-reference"
+      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

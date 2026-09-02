@@ -6,7 +6,8 @@ import type { Scope } from '@deepseek-ai/dsh-scope'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { DYN_NAME, defineTool } from '@deepseek-ai/dsh-tools'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { JsonSchemaNode, JsonValue, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
+import type { JsonSchemaNode, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { SessionId } from '@deepseek-ai/dsh-session'
 
 const testToolSignal = new AbortController().signal
