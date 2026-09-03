@@ -478,13 +478,26 @@ export class GitService extends Service {
   }
 
   /**
-   * Push the current branch. `--no-follow-tags` so only the branch moves.
+   * Push the current branch (or an explicit branch to `remote`), keeping
+   * `--no-follow-tags` so only the branch moves. `setUpstream` records
+   * `remote`/`branch` tracking, which a freshly cut named-branch worktree
+   * needs before any PR flow can consume it; without it, a branch with no
+   * existing upstream fails like any plain `git push` does.
    * @param cwd - working directory inside the repository.
-   * @param options - optional force-with-lease and abort signal.
+   * @param options - remote, branch, upstream-recording, force-with-lease, abort signal.
    */
-  async push(cwd: string, options: { signal?: AbortSignal; forceWithLease?: boolean } = {}): Promise<void> {
+  async push(cwd: string, options: {
+    signal?: AbortSignal
+    forceWithLease?: boolean
+    remote?: string
+    branch?: string
+    setUpstream?: boolean
+  } = {}): Promise<void> {
     const args = ['push', '--no-follow-tags']
     if (options.forceWithLease) args.push('--force-with-lease')
+    if (options.setUpstream) args.push('--set-upstream')
+    if (options.remote !== undefined) args.push(options.remote)
+    if (options.branch !== undefined) args.push(options.branch)
     await this.checked(args, { cwd, signal: options.signal })
   }
 

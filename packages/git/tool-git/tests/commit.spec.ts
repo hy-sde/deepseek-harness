@@ -280,3 +280,74 @@ describe('commit_apply (execute)', () => {
     expect(leftover).toContain('NINE')
   })
 })
+
+describe('commit_apply --push (named-branch semantics)', () => {
+  let pushDir: string
+  let originDir: string
+
+  function runIn(cwd: string, args: string[]): string {
+    const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+    if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
+    return result.stdout
+  }
+
+  /** Move onto main, hard-reset, and clean so each test starts from the baseline. */
+  function resetPushRepo(branch?: string): void {
+    runIn(pushDir, ['checkout', '-qf', 'main'])
+    runIn(pushDir, ['reset', '--hard', '-q'])
+    runIn(pushDir, ['clean', '-fdq'])
+    if (branch !== undefined) runIn(pushDir, ['switch', '-qc', branch])
+  }
+
+  beforeAll(async () => {
+    pushDir = await mkdtemp(join(tmpdir(), 'dsh-tool-git-push-'))
+    originDir = await mkdtemp(join(tmpdir(), 'dsh-tool-git-origin-'))
+    rmSync(originDir, { recursive: true, force: true })
+    runIn(pushDir, ['init', '-q'])
+    runIn(pushDir, ['config', 'user.email', 'test@example.com'])
+    runIn(pushDir, ['config', 'user.name', 'Test User'])
+    await writeFile(join(pushDir, 'README.md'), '# push\n')
+    runIn(pushDir, ['add', 'README.md'])
+    runIn(pushDir, ['commit', '-qm', 'chore: baseline'])
+    runIn(pushDir, ['branch', '-M', 'main'])
+    spawnSync('git', ['init', '--bare', '-q', originDir], { encoding: 'utf8' })
+    runIn(pushDir, ['remote', 'add', 'origin', originDir])
+    runIn(pushDir, ['push', '-qu', 'origin', 'main'])
+  })
+
+  afterAll(async () => {
+    rmSync(pushDir, { recursive: true, force: true })
+    rmSync(originDir, { recursive: true, force: true })
+  })
+
+  it('pushes a named branch to origin and records upstream tracking', async () => {
+    resetPushRepo('feature/push-1')
+    await mkdir(join(pushDir, 'pkg'), { recursive: true })
+    await writeFile(join(pushDir, 'pkg/a.ts'), 'const a = 1;\n')
+    expect(spawnSync('git', ['add', '-A'], { cwd: pushDir, encoding: 'utf8' }).status).toBe(0)
+    const result = await call('commit_apply', {
+      cwd: pushDir,
+      commits: [{ changes: [{ path: 'pkg/a.ts' }], type: 'feat', scope: 'pkg', summary: 'add helper a', dependencies: [] }],
+      push: true,
+    })
+    const value = result.value as { mode: string; created: Array<{ hash: string }> }
+    expect(value.mode).toBe('single')
+    expect(value.created).toHaveLength(1)
+    // Branch now exists on origin with upstream tracking recorded.
+    expect(spawnSync('git', ['show-ref', '--verify', 'refs/heads/feature/push-1'], { cwd: originDir, encoding: 'utf8' }).status).toBe(0)
+    expect(runIn(pushDir, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim()).toBe('origin/feature/push-1')
+  })
+
+  it('fails with guidance on a detached HEAD instead of git’s raw error', async () => {
+    resetPushRepo('feature/push-2')
+    await mkdir(join(pushDir, 'pkg'), { recursive: true })
+    await writeFile(join(pushDir, 'pkg/b.ts'), 'const b = 2;\n')
+    expect(spawnSync('git', ['add', '-A'], { cwd: pushDir, encoding: 'utf8' }).status).toBe(0)
+    runIn(pushDir, ['checkout', '--detach', '-q'])
+    await expect(call('commit_apply', {
+      cwd: pushDir,
+      commits: [{ changes: [{ path: 'pkg/b.ts' }], type: 'feat', scope: 'pkg', summary: 'add helper b', dependencies: [] }],
+      push: true,
+    })).rejects.toThrow(/requires a named branch.*worktree acquire --branch/s)
+  })
+})

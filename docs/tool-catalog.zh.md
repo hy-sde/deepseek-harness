@@ -3054,7 +3054,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
     },
     "push": {
       "type": "boolean",
-      "description": "Push the branch after committing (default false)."
+      "description": "Push the current branch to `origin` after committing and record upstream tracking (`git push --set-upstream origin <branch>`), so PR flows can consume it. Requires a named branch: on a detached HEAD it fails with guidance (acquire a named-branch slot with `worktree acquire --branch`). Reruns stay no-follow-tags; force is never implied. Default false."
     },
     "cwd": {
       "type": "string",

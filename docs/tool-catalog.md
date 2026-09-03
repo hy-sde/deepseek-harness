@@ -3067,7 +3067,7 @@ Execute a validated split-commit plan on the staged changes. Requires the plan p
     },
     "push": {
       "type": "boolean",
-      "description": "Push the branch after committing (default false)."
+      "description": "Push the current branch to `origin` after committing and record upstream tracking (`git push --set-upstream origin <branch>`), so PR flows can consume it. Requires a named branch: on a detached HEAD it fails with guidance (acquire a named-branch slot with `worktree acquire --branch`). Reruns stay no-follow-tags; force is never implied. Default false."
     },
     "cwd": {
       "type": "string",

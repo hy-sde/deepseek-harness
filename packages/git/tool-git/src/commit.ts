@@ -467,7 +467,7 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
         },
       },
       dryRun: { type: 'boolean', description: 'Validate and print the exact commit messages without writing anything (default false).' },
-      push: { type: 'boolean', description: 'Push the branch after committing (default false).' },
+      push: { type: 'boolean', description: 'Push the current branch to `origin` after committing and record upstream tracking (`git push --set-upstream origin <branch>`), so PR flows can consume it. Requires a named branch: on a detached HEAD it fails with guidance (acquire a named-branch slot with `worktree acquire --branch`). Reruns stay no-follow-tags; force is never implied. Default false.' },
       cwd: { type: 'string', description: 'Working directory; defaults to the session workspace.' },
     },
     output: {
@@ -639,7 +639,24 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
         }
 
         if (args.push) {
-          await git.push(cwd, { signal: exec.signal })
+          // A1 semantics: push the named branch to origin and record upstream
+          // (`-u`), so a freshly cut `worktree acquire --branch` slot becomes
+          // consumable by PR tooling. Detached HEAD has no branch to push, so
+          // fail with guidance instead of git's raw "not on a branch" error.
+          const currentBranch = await git.branch(cwd, exec.signal)
+          if (currentBranch === undefined) {
+            throw new Error(
+              'commit_apply --push requires a named branch, but HEAD is detached: '
+              + 'acquire a named-branch slot with `worktree acquire --branch <name>` '
+              + 'or `git switch -c <name>` before pushing',
+            )
+          }
+          await git.push(cwd, {
+            signal: exec.signal,
+            remote: 'origin',
+            branch: currentBranch,
+            setUpstream: true,
+          })
         }
       }, exec.signal)
 

@@ -34,7 +34,7 @@ agent 化提交＋评审工作流（移植自 omp / oh-my-pi）的宿主 `ctx.gi
 - **仓库状态** — `isRepo`、`root`、`branch`、`status`、`hasStaged`。
 - **Diff 读取** — `diffText`、`fileDiffs`，以及包含派生读形状（`changedFiles`、`numstat`、`has`）的 `diff` 命名空间。diff 以 `--binary` 捕获，因此二进制变更能安然通过暂存往返。
 - **暂存** — `addAll`（`git add -A`）、`resetIndex`（`git reset`）、以及 `stageHunks`：把记录的 `--cached` diff 按 hunk 选择切回索引（omp `stage.hunks` 移植）。
-- **提交／推送／日志** — `commit`（消息经 stdin）、`push`（`--no-follow-tags`）、`log`。
+- **提交／推送／日志** — `commit`（消息经 stdin）、`push`（`--no-follow-tags`；可选 `remote`／`branch`／`setUpstream`，让新命名分支能够记录 `origin/<branch>` 上游跟踪）、`log`。
 
 `./worktree` 子路径另提供带**持久租约的工作树池** — 用 TypeScript 原生实现 firstmate／treehouse 的 `get --lease` 模型（每仓库的隔离工作树池，池根可配置、默认 `~/.treehouse`，租约所有权重启安全，prune／destroy 默认 dry-run，损坏状态可恢复）。见 [工作树池](#worktree-pool)。
 

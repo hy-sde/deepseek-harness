@@ -39,7 +39,7 @@ kind: "package-reference"
 在 `ctx.tools` 上注册三个工具，一个带提交／评审协商语法的 `git:` 系统提示词 section，并注入 `ctx.git`：
 
 - **`commit`（分析，只读）** — 快照已暂存 diff（在无暂存内容且 `stagedOnly: false` 时自动暂存工作区），报告按文件的增删计数、有界 diff、`trivial` 分类、`lockFilesPending` 与 `suggestedPlan` 骨架。它从不写入仓库。
-- **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。
+- **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。`push: true` 把当前分支推送到 `origin` 并记录上游（`git push --set-upstream origin <branch>`），供 PR 工具取用；detached HEAD（默认工作树槽位）会被拒绝并给出指向 `worktree acquire --branch` 的指引——该命名分支组合就是发布路径。
 - **`review`** — 按权重把已暂存 diff 切成至多 `maxReviewers` 份子代理运行，采用结构化评审者契约，按评审者置信度的最小值聚合 `ship`／`reject` 结论，按严重度排序 findings，并把传输失败报告为 errors（绝不静默批准未受评审的变更）。
 - **`worktree`** — 池管理器：`acquire` 切出或复用隔离的 git 工作树（`--branch` 得到命名分支 HEAD，供 `commit_apply --push`／PR 流程使用），并返回持久 `leaseId`；`release` 归还槽位（以精确租约 id 为条件；非 `force` 时拒绝脏工作）；`list` 显示池的实时状态；`prune` 与 `destroy` 在 `yes` 前都是 dry-run，绝不自动触碰租借或脏槽位。见 [Worktree 工具](#worktree-tool)。
 
@@ -53,7 +53,7 @@ kind: "package-reference"
 
 `worktree` 把 treehouse CLI 的动词面（acquire／release／list／prune／destroy）映射到 [`@deepseek-ai/dsh-git`](../git/README.zh.md#worktree-pool)（`./worktree`）的池引擎：
 
-- **`acquire`** — 先 fetch（除非 `noFetch`），然后仅在可证明空闲（未租借、含未跟踪文件在内干净、HEAD 已并入精确重置目标）时复用槽位，否则在默认／推断基底分支上切出新槽位。返回 `path` ＋ `leaseId` ＋ 持有者／基底——持久所有权记录。`branch` 切出命名分支 HEAD（`commit_apply --push` 路径）；`base` 覆盖切出点。
+- **`acquire`** — 先 fetch（除非 `noFetch`），然后仅在可证明空闲（未租借、含未跟踪文件在内干净、HEAD 已并入精确重置目标）时复用槽位，否则在默认／推断基底分支上切出新槽位。返回 `path` ＋ `leaseId` ＋ 持有者／基底——持久所有权记录。`branch` 切出命名分支 HEAD（`commit_apply --push` 路径——`--push` 会记录 `origin/<branch>` 上游，PR 流程可接着取用）；`base` 覆盖切出点。
 - **`release`** — 要求精确 `leaseId`（过期调用方永远无法释放他人的槽位），把槽位归还为 detached 于其基底待复用，非 `force` 时拒绝脏工作（`force` 则 `git clean -fdqx`）。
 - **`list`** — 每槽位实时池状态：`leased`／`idle`／`damaged`，附干净／已并入／存在标志与持有者。
 - **`prune`** — 默认 dry-run；`yes` 只移除未租借＋干净＋已并入槽位（`all` 遍历配置根下的所有池）。其余一律报告，从不猜测。
