@@ -23,6 +23,7 @@ export * from './trivial.ts'
 export * from './commit-message.ts'
 export * as vcs from './vcs.ts'
 export * from './repo-lock.ts'
+export * from './worktree.ts'
 export * as conventional from './conventional/index.ts'
 
 declare module '@deepseek-ai/cordis' {

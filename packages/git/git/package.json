@@ -46,6 +46,10 @@
       "types": "./lib/types/repo-lock.d.ts",
       "default": "./lib/types/repo-lock.js"
     },
+    "./worktree": {
+      "types": "./lib/types/worktree.d.ts",
+      "default": "./lib/types/worktree.js"
+    },
     "./conventional": {
       "types": "./lib/types/conventional/index.d.ts",
       "default": "./lib/types/conventional/index.js"
@@ -60,7 +64,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-atomic-write": "workspace:^"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
@@ -68,6 +73,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-atomic-write": "workspace:^",
     "@deepseek-ai/dsh-subprocess": "workspace:^"
   }
 }
