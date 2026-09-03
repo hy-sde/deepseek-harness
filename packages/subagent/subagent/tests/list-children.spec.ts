@@ -50,8 +50,10 @@ async function setup(
   const root = mkdtempSync(join(tmpdir(), 'dsh-subagent-list-'))
   roots.push(root)
   await ctx.plugin(JsonlSessionPersistence, { root })
-  await ctx.plugin(AgentLoop, { agents: [] })
+  // AgentLoop constructs (and thus provides ctx.agentLoop) only when every
+  // static-inject service is already mounted, so projections must precede it.
   if (options.sessionProjections !== false) await ctx.plugin(SessionProjectionRegistry)
+  await ctx.plugin(AgentLoop, { agents: [] })
   if (options.projectionCache === true) {
     const root = mkdtempSync(join(tmpdir(), 'dsh-subagent-projcache-'))
     projCacheRoots.push(root)
@@ -99,8 +101,14 @@ async function authorChild(
   events: SessionEvent[],
 ): Promise<SessionId> {
   const sessionId = SessionId(id)
-  const { seedLength, ...meta } = { version: SESSION_FORMAT_VERSION, id: sessionId, createdAt: 1, isSeeded: false, ...header }
-  await ctx.sessionPersistence.create(meta, seedLength === undefined ? undefined : SessionLogOffset(seedLength))
+  const { seedLength, ...rest } = { version: SESSION_FORMAT_VERSION, id: sessionId, createdAt: 1, isSeeded: false, ...header }
+  // The session refactor replaced the legacy `seedLength` header field with the
+  // boolean `isSeeded` plus a separate inheritedEventCount cut; a non-zero cut
+  // requires isSeeded to be true or the coordinator rejects the metadata.
+  await ctx.sessionPersistence.create(
+    seedLength === undefined ? rest : { ...rest, isSeeded: true },
+    seedLength === undefined ? undefined : SessionLogOffset(seedLength),
+  )
   await ctx.sessionPersistence.append(sessionId, events)
   return sessionId
 }
@@ -190,8 +198,11 @@ describe('SubagentRuntime.listChildren', () => {
   })
 
   it('fails loud when the projection registry is not mounted, even with no children', async () => {
-    const { ctx, parent } = await setup([], { sessionProjections: false })
-    await expect(ctx.subagents.listChildren(parent.id)).rejects.toThrow(
+    // No projections AND no parent fixture: the projection guard runs before
+    // any read, so a bare SessionId must reach it untouched.
+    const ctx = new Context()
+    await ctx.plugin(SubagentRuntime)
+    await expect(ctx.subagents.listChildren(SessionId('parent'))).rejects.toThrow(
       expect.objectContaining({ code: 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE' }) as Error,
     )
   })
@@ -381,7 +392,7 @@ describe('SubagentRuntime.listChildren', () => {
         },
         events: [],
         cursor: -1,
-        projections: { asOfSeq: SessionSeq(-1), values: {} },
+        projections: { asOfSeq: -1, values: {} },
         retain: vi.fn(),
         [Symbol.dispose]: dispose,
       } as unknown as SessionObservation)
@@ -1061,8 +1072,11 @@ describe('SubagentRuntime.listChildren', () => {
   })
 
   it('SubagentError from listChildren is typed with its stable code', async () => {
-    const { ctx, parent } = await setup([], { sessionProjections: false })
-    const caught: unknown = await ctx.subagents.listChildren(parent.id).catch((error: unknown) => error)
+    // No projections mount means no AgentLoop parent: the projection guard runs
+    // before any read, so a bare SessionId reaches it untouched.
+    const ctx = new Context()
+    await ctx.plugin(SubagentRuntime)
+    const caught: unknown = await ctx.subagents.listChildren(SessionId('parent')).catch((error: unknown) => error)
     expect(caught).toBeInstanceOf(SubagentError)
     expect((caught as SubagentError).code).toBe('SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE')
   })
@@ -1307,8 +1321,11 @@ describe('SubagentRuntime.listDescendants', () => {
   })
 
   it('fails loud when the projection registry is not mounted', async () => {
-    const { ctx, parent } = await setup([], { sessionProjections: false })
-    await expect(ctx.subagents.listDescendants(parent.id)).rejects.toThrow(
+    // No projections mount means no AgentLoop parent; the projection guard runs
+    // before any read, so a bare SessionId reaches it untouched.
+    const ctx = new Context()
+    await ctx.plugin(SubagentRuntime)
+    await expect(ctx.subagents.listDescendants(SessionId('parent'))).rejects.toThrow(
       expect.objectContaining({ code: 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE' }) as Error,
     )
   })

@@ -69,7 +69,7 @@ describe('subagent catalog Remote', () => {
     const listChildren = vi.spyOn(subagents, 'listChildren')
 
     await expect(subagents.remoteExportList(SessionId(''), signal))
-      .rejects.toMatchObject({ failure: emptyIdFailure('subagent.list', 'parentSessionId') })
+      .rejects.toMatchObject(emptyIdFailure('subagent.list', 'parentSessionId'))
     expect(listChildren).not.toHaveBeenCalled()
   })
 
@@ -118,25 +118,23 @@ describe('subagent catalog Remote', () => {
     aborted.abort()
     listChildren.mockRejectedValue(new Error('read stopped'))
     await expect(subagents.remoteExportList(PARENT, aborted.signal))
-      .rejects.toMatchObject({ failure: { code: 'cancelled' } })
+      .rejects.toMatchObject({ code: 'cancelled' })
 
     listChildren.mockRejectedValue(new SubagentError('cancelled', 'CANCELLED'))
     await expect(subagents.remoteExportList(PARENT, signal))
-      .rejects.toMatchObject({ failure: { code: 'cancelled' } })
+      .rejects.toMatchObject({ code: 'cancelled' })
 
     listChildren.mockRejectedValue(
       new SubagentError('no registry', 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE'),
     )
     await expect(subagents.remoteExportList(PARENT, signal)).rejects.toMatchObject({
-      failure: {
-        code: 'subagent/projections-unavailable',
-        message: expect.stringContaining('sessionProjections') as unknown as string,
-      },
+      code: 'subagent/projections-unavailable',
+      message: expect.stringContaining('sessionProjections') as unknown as string,
     })
 
     listChildren.mockRejectedValue(new Error('disk gone'))
     await expect(subagents.remoteExportList(PARENT, signal))
-      .rejects.toMatchObject({ failure: { code: 'internal', message: 'subagent catalog read failed' } })
+      .rejects.toMatchObject({ code: 'internal', message: 'subagent catalog read failed' })
   })
 })
 
@@ -154,7 +152,7 @@ describe('subagent prompt Remote', () => {
     ]
     for (const { field, request } of cases) {
       await expect(subagents.prompt(request, signal))
-        .rejects.toMatchObject({ failure: emptyIdFailure('subagent.prompt', field) })
+        .rejects.toMatchObject(emptyIdFailure('subagent.prompt', field))
     }
     expect(followup).not.toHaveBeenCalled()
   })
@@ -200,9 +198,7 @@ describe('subagent prompt Remote', () => {
 
     await expect(subagents.prompt(promptRequest('UTC'), signal)).resolves.toEqual({ messageId: 'm-3' })
     for (const zone of ['', ' UTC', 'Shanghai', 'Nowhere/Nowhere']) {
-      await expect(subagents.prompt(promptRequest(zone), signal)).rejects.toMatchObject({
-        failure: { code: 'subagent/invalid-time-zone', details: { value: zone } },
-      })
+      await expect(subagents.prompt(promptRequest(zone), signal)).rejects.toMatchObject({ code: 'subagent/invalid-time-zone', details: { value: zone } })
     }
   })
 
@@ -210,9 +206,7 @@ describe('subagent prompt Remote', () => {
     const { subagents } = await bench()
     const followup = vi.spyOn(subagents, 'followup')
 
-    await expect(subagents.prompt(promptRequest(), signal)).rejects.toMatchObject({
-      failure: { code: 'subagent/parent-unavailable', details: { parentSessionId: PARENT } },
-    })
+    await expect(subagents.prompt(promptRequest(), signal)).rejects.toMatchObject({ code: 'subagent/parent-unavailable', details: { parentSessionId: PARENT } })
     expect(followup).not.toHaveBeenCalled()
   })
 
@@ -229,12 +223,12 @@ describe('subagent prompt Remote', () => {
     for (const [thrown, code] of cases) {
       followup.mockRejectedValue(new SubagentError('refused', thrown))
       await expect(subagents.prompt(promptRequest(), signal))
-        .rejects.toMatchObject({ failure: { code } })
+        .rejects.toMatchObject({ code })
     }
 
     followup.mockRejectedValue(new Error('inbox exploded'))
     await expect(subagents.prompt(promptRequest(), signal))
-      .rejects.toMatchObject({ failure: { code: 'internal', message: 'subagent prompt failed' } })
+      .rejects.toMatchObject({ code: 'internal', message: 'subagent prompt failed' })
   })
 
   it('answers a caller-cancelled delivery as cancelled rather than a failure', async () => {
@@ -246,7 +240,7 @@ describe('subagent prompt Remote', () => {
     })
 
     await expect(subagents.prompt(promptRequest(), aborted.signal))
-      .rejects.toMatchObject({ failure: { code: 'cancelled' } })
+      .rejects.toMatchObject({ code: 'cancelled' })
   })
 
   it('preserves a cancellation reported by the continuation operation', async () => {
@@ -255,7 +249,7 @@ describe('subagent prompt Remote', () => {
       .mockRejectedValue(new SubagentError('stopped', 'CANCELLED'))
 
     await expect(subagents.prompt(promptRequest(), signal))
-      .rejects.toMatchObject({ failure: { code: 'cancelled' } })
+      .rejects.toMatchObject({ code: 'cancelled' })
   })
 })
 
@@ -270,9 +264,7 @@ describe('subagent interrupt Remote', () => {
     ] as const) {
       const field = childSessionId.length === 0 ? 'childSessionId' : 'parentSessionId'
       expect(() => subagents.interruptByParent(childSessionId, parentSessionId, 'continuable'))
-        .toThrow(expect.objectContaining({
-          failure: emptyIdFailure('subagent.interrupt', field),
-        }))
+        .toThrow(expect.objectContaining(emptyIdFailure('subagent.interrupt', field)))
     }
     expect(interrupt).not.toHaveBeenCalled()
   })
@@ -291,12 +283,16 @@ describe('subagent interrupt Remote', () => {
 
     interrupt.mockImplementation(() => { throw new SubagentError('not yours', 'UNAUTHORIZED') })
     expect(() => subagents.interruptByParent(CHILD, PARENT, 'continuable')).toThrow(
-      expect.objectContaining({ failure: { code: 'subagent/unauthorized', message: expect.any(String) as unknown as string, details: { childSessionId: CHILD } } }),
+      expect.objectContaining({
+        code: 'subagent/unauthorized',
+        message: expect.any(String) as unknown as string,
+        details: { childSessionId: CHILD },
+      }),
     )
 
     interrupt.mockImplementation(() => { throw new Error('boom') })
     expect(() => subagents.interruptByParent(CHILD, PARENT, 'continuable')).toThrow(
-      expect.objectContaining({ failure: { code: 'internal', message: 'subagent interrupt failed', details: {} } }),
+      expect.objectContaining({ code: 'internal', message: 'subagent interrupt failed', details: {} }),
     )
   })
 })
