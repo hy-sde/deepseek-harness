@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -132,6 +132,33 @@ describe('in-process policy inheritance', () => {
       expect(request.data.header.system).not.toContain('Approval prompts are disabled')
       expect(request.data.header.system).not.toContain('You are a delegated subagent')
       expect(parent.session.snapshotEvents()).toHaveLength(parentLogLength)
+    } finally {
+      await run.dispose()
+    }
+  })
+
+  it('bakes an explicit child workspace override as the durable session cwd', async () => {
+    const script: Script = []
+    const { parent } = await setupWalled(script)
+    const delegated = join(workspace, 'delegated')
+    await mkdir(delegated)
+    await writeFile(join(delegated, 'seed.txt'), 'delegated-seed\n')
+    await writeFile(join(workspace, 'seed.txt'), 'parent-seed\n')
+    script.push(
+      toolCallResponse('write', 'write', { file_path: 'out.txt', content: 'child-output' }),
+      textResponse('child done'),
+    )
+
+    const run = await startInProcessRun({ ...spawnRequest(parent), workspace: delegated }, {})
+    try {
+      const result = await run.result
+      const child = run.localAgent as Agent
+      expect(result.stopReason).toBe('completed')
+      // The child's durable workspace IS the override, not the parent's.
+      expect(child.session.header.cwd).toBe(delegated)
+      // File tools resolved against the child workspace, not the parent's.
+      await expect(readFile(join(delegated, 'out.txt'), 'utf8')).resolves.toBe('child-output')
+      await expect(readFile(join(workspace, 'out.txt'), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     } finally {
       await run.dispose()
     }

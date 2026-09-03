@@ -66,6 +66,7 @@ import type {
 import { normalizeDecisionKey } from './types.ts'
 import { SubagentError } from './error.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
+import { assertUsableCwd } from './out-of-process.ts'
 import { createActivationObserver, createLifecycleEmitter, observeRun } from './lifecycle.ts'
 import type { ActivationObserver, LifecycleEmitter } from './lifecycle.ts'
 import SubagentContinuationManager from './continuation.ts'
@@ -720,7 +721,6 @@ export class SubagentRuntime extends TypertRemoteService {
    * @returns the exact Cordis effect disposer.
    */
   registerContinuableSetup(contribution: ContinuableSetupContribution): () => void {
-    // oxlint-disable-next-line typescript/no-misused-promises -- synchronous disposer
     return this.ctx.effect(
       () => this.setupRegistry.register(contribution),
       'subagents.registerContinuableSetup()',
@@ -926,7 +926,6 @@ export class SubagentRuntime extends TypertRemoteService {
    */
   registerProvider(provider: SubagentProvider): () => void {
     const name = provider.name
-    // oxlint-disable-next-line typescript/no-misused-promises -- synchronous disposer
     return this.ctx.effect(function* (this: SubagentRuntime) {
       if (this.providers.has(name)) {
         throw new SubagentError(`a subagent provider named "${name}" is already registered`, 'DUPLICATE_PROVIDER')
@@ -973,6 +972,7 @@ export class SubagentRuntime extends TypertRemoteService {
     const provider = this.expectProvider(name)
     this.assertCapabilities(provider, request)
     assertSubagentMaxDepth(request.maxDepth)
+    if (request.workspace !== undefined) assertUsableCwd('subagent start', 'workspace', request.workspace)
     if (request.outputSchema !== undefined) assertObjectJsonSchema(request.outputSchema)
     const descriptor = snapshotSubagentDescriptor({
       mode: 'one-shot',
@@ -1043,6 +1043,7 @@ export class SubagentRuntime extends TypertRemoteService {
       { when: request.maxDepth !== undefined, cap: 'depthLimit' },
       { when: request.toolFilter !== undefined, cap: 'toolFilter' },
       { when: request.persona !== undefined, cap: 'persona' },
+      { when: request.workspace !== undefined, cap: 'workspace' },
     ]
     for (const { when, cap } of needs) {
       if (when && !provider.capabilities[cap]) {

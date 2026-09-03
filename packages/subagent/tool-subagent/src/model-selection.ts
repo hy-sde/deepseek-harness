@@ -66,6 +66,8 @@ export interface DelegationModelRequest {
   readonly provider?: string
   readonly model?: string
   readonly reasoning_effort?: string
+  /** Absolute child workspace directory (subagent `workspace` override). */
+  readonly workspace?: string
 }
 
 /**

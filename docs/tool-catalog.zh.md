@@ -2121,6 +2121,10 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
     "run_in_background": {
       "type": "boolean",
       "description": "Whether to run as a background job and return its id. Defaults to false; collect with job_output or stop with job_kill."
+    },
+    "workspace": {
+      "type": "string",
+      "description": "Absolute path of an existing directory the child works in — typically the `path` from a `worktree` acquire so one task owns one isolated git worktree. The child session workspace and its file tools resolve against this directory (which must be inside the deployment file-policy scope)."
     }
   },
   "required": [

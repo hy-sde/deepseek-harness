@@ -118,7 +118,8 @@ export function resolveChildAgentOptions(
 }
 
 /**
- * Build the child session's durable creation metadata: the parent's workspace,
+ * Build the child session's durable creation metadata: the child workspace
+ * (an explicit `workspace` override when given, else the parent's workspace),
  * its direct lineage, coarse product origin, the recursion budget that must
  * survive persistence, the seed boundary that separates inherited parent
  * history from child work, and the composition the child runs under.
@@ -132,17 +133,20 @@ export function resolveChildAgentOptions(
  * @param parent - the delegating parent agent.
  * @param childDepth - the resolved delegation depth to persist.
  * @param lineageSeedLength - how many leading events came from the parent's log.
+ * @param workspace - optional absolute override for the child's durable cwd.
  * @returns the `meta` for `ctx.agents.create()`.
  */
 export function childSessionMeta(
   parent: Agent,
   childDepth: number,
   lineageSeedLength: number,
+  workspace?: string,
 ): NonNullable<CreateAgentOptions['meta']> {
   const parentHeader = parent.session.header
   const agentPreset = parent.ctx.get('agentPresets')?.composedPreset(parent.ctx)
   return {
-    ...parentHeader.cwd !== undefined ? { cwd: parentHeader.cwd } : {},
+    ...workspace !== undefined ? { cwd: workspace }
+      : parentHeader.cwd !== undefined ? { cwd: parentHeader.cwd } : {},
     ...agentPreset === undefined ? {} : { agentPreset },
     parentSession: parentHeader.id,
     // Navigation classification only; the descriptor remains the authority
@@ -150,7 +154,10 @@ export function childSessionMeta(
     origin: 'subagent',
     // Durable: the recursion budget must survive persistence and resume.
     delegationDepth: childDepth,
-    ...lineageSeedLength > 0 ? { seedLength: lineageSeedLength } : {},
+    // Session headers carry the boolean `isSeeded` fork marker (the exact cut
+    // travels as the creator's `inheritedEventCount`), not the storage-side
+    // `seedLength` field.
+    ...lineageSeedLength > 0 ? { isSeeded: true } : {},
   }
 }
 

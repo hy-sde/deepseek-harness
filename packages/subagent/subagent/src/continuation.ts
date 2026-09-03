@@ -32,7 +32,7 @@ import type {
 } from '@deepseek-ai/dsh-agent'
 import { ReasoningEffortId, boundContextSummary, createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, MessageId, MessageSource } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import type { SessionObservation, SessionQueryEngine } from '@deepseek-ai/dsh-session-query'
@@ -335,6 +335,8 @@ interface MaterializeInputs {
     meta: NonNullable<CreateAgentOptions['meta']>
     /** Policy captured at the delegation boundary: the parent's sandbox override plus the approval pin. */
     delegatedPolicies: DelegatedPolicyOverrides
+    /** Exact fork-inherited prefix length (0 for a fresh unseeded child). */
+    readonly inheritedEventCount: SessionLogOffset
   }
   agentOptions: AgentOptions
   composition: { persona?: string | undefined; toolFilter?: ToolRestriction | undefined }
@@ -561,7 +563,12 @@ export class SubagentContinuationManager {
         childId,
         provider: spec.provider,
         parent,
-        create: { seed, meta: childSessionMeta(parent, childDepth, lineageSeedLength), delegatedPolicies },
+        create: {
+          seed,
+          meta: childSessionMeta(parent, childDepth, lineageSeedLength, request.workspace),
+          delegatedPolicies,
+          inheritedEventCount: SessionLogOffset(lineageSeedLength),
+        },
         agentOptions,
         composition: { persona: request.persona, toolFilter: request.toolFilter },
         signal: spec.signal,
@@ -707,7 +714,6 @@ export class SubagentContinuationManager {
    * @throws {SubagentError} when the sender is unauthorized, the parent is not
    *   live, or continuation admission is closing.
    */
-  // oxlint-disable-next-line typescript/require-await -- keep rejection semantics without yielding during admission
   async reportFrom(
     child: Agent,
     content: ContentBlock[],
@@ -1408,6 +1414,7 @@ export class SubagentContinuationManager {
         sessionId: childId,
         meta: create.meta,
         seed: create.seed,
+        inheritedEventCount: create.inheritedEventCount,
         agentOptions: inputs.agentOptions,
         signal: inputs.signal,
         setup,

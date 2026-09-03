@@ -418,6 +418,12 @@ export function apply(ctx: Context, config: Config): void {
                 : 'Whether to run as a background job and return its id. Defaults to false; collect with job_output or stop with job_kill.',
             },
           } : {},
+          ...subagentProvider.capabilities.workspace ? {
+            workspace: {
+              type: 'string' as const,
+              description: 'Absolute path of an existing directory the child works in — typically the `path` from a `worktree` acquire so one task owns one isolated git worktree. The child session workspace and its file tools resolve against this directory (which must be inside the deployment file-policy scope).',
+            },
+          } : {},
         },
         output: {
           schema: {
@@ -510,6 +516,7 @@ export function apply(ctx: Context, config: Config): void {
             prompt: [{ type: 'text', text: args.prompt }] as ContentBlock[],
             parent,
             ...requestedChildAgentOptions !== undefined ? { agentOptions: requestedChildAgentOptions } : {},
+            ...args.workspace !== undefined ? { workspace: args.workspace } : {},
             ...config.persona !== undefined ? { persona: config.persona } : {},
             ...config.toolFilter !== undefined ? { toolFilter: config.toolFilter } : {},
             ...maxDepth !== undefined ? { maxDepth } : {},

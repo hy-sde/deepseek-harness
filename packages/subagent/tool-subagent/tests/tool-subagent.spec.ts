@@ -95,8 +95,32 @@ describe('dsh-tool-subagent', () => {
     expect(Object.keys(props).sort()).toEqual([
       'description',
       'prompt',
+      'workspace',
     ])
     expect(schema!.description).not.toContain('job_output')
+  })
+
+  it('passes a workspace override to the provider and omits the parameter for incapable providers', async () => {
+    const workspaceDir = mkdtempSync(path.join(tmpdir(), 'dsh-wt-'))
+    let seen: SubagentStartRequest | undefined
+    const ctx = await setup({ provider: 'mock' }, {
+      onStart: (request: SubagentStartRequest) => { seen = request },
+    })
+    try {
+      const schema = ctx.tools.schemas().find(s => s.name === 'subagent')
+      const props = (schema!.parameters as { properties?: Record<string, unknown> }).properties ?? {}
+      expect(props).toHaveProperty('workspace')
+
+      const result = await callSubagent(ctx, {
+        description: 'work in the worktree',
+        prompt: 'implement x',
+        workspace: workspaceDir,
+      })
+      expect(result.isError).toBe(false)
+      expect(seen?.workspace).toBe(workspaceDir)
+    } finally {
+      rmSync(workspaceDir, { recursive: true, force: true })
+    }
   })
 
   it('refuses a forced run_in_background at execution time when the instance disables it', async () => {
