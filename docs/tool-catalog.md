@@ -45,7 +45,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
-| `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
+| `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review`, `worktree` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`, `logseq_list`, `logseq_query`, `logseq_remove`, `logseq_search`, `logseq_server`, `logseq_show`, `logseq_upsert` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle. |
@@ -3112,6 +3112,86 @@ Run a parallel code review over git changes (working tree, staged, or a commit r
       "description": "Working directory; defaults to the session workspace."
     }
   }
+}
+```
+
+Source: [`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+### `worktree`
+
+Manage isolated per-task git worktrees in a persistent pool with durable leases (firstmate/treehouse model). `acquire` cuts a fresh slot (`--branch` for a named-branch HEAD — the path for commit_apply --push and PRs) or reuses a provably-idle one, returning `path` + `leaseId`; `release` returns the slot (refuses dirty unless `force`) and is conditional on the exact lease id; `list` shows live pool status; `prune` removes only idle slots (dry-run without `yes`); `destroy` removes one slot (dry-run without `yes`, refuses leased/dirty unless the explicit flag). Work at `lease.path` — it is a normal git worktree of the same repository; finish with release before shipping.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "acquire | release | list | prune | destroy.",
+      "enum": [
+        "acquire",
+        "release",
+        "list",
+        "prune",
+        "destroy"
+      ]
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    },
+    "branch": {
+      "type": "string",
+      "description": "acquire only: cut HEAD at a new named branch (for commit_apply --push / PR flows)."
+    },
+    "base": {
+      "type": "string",
+      "description": "acquire only: cut from this branch instead of the configured/inferred default."
+    },
+    "holder": {
+      "type": "string",
+      "description": "acquire only: lease holder label (default `dsh`)."
+    },
+    "noFetch": {
+      "type": "boolean",
+      "description": "acquire only: skip the origin fetch."
+    },
+    "path": {
+      "type": "string",
+      "description": "release/destroy: the worktree path from the acquire result."
+    },
+    "leaseId": {
+      "type": "string",
+      "description": "release only: the exact lease id from the acquire result."
+    },
+    "force": {
+      "type": "boolean",
+      "description": "release only: discard uncommitted changes instead of refusing (git clean -fdqx)."
+    },
+    "name": {
+      "type": "string",
+      "description": "destroy only: pool-relative slot name (alternative to path)."
+    },
+    "yes": {
+      "type": "boolean",
+      "description": "prune/destroy only: execute instead of dry-running."
+    },
+    "includeLeased": {
+      "type": "boolean",
+      "description": "destroy only: allow destroying a slot that is still leased."
+    },
+    "includeUnlanded": {
+      "type": "boolean",
+      "description": "destroy only: allow discarding dirty/unmerged work (irreversible)."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "prune only: sweep every pool under the configured root."
+    }
+  },
+  "required": [
+    "action"
+  ]
 }
 ```
 

@@ -1,5 +1,5 @@
 ---
-description: "Model-facing commit, commit_apply, and review tools for the agentic git commit and review workflow, with read-preference routing between ctx.vcs and ctx.git."
+description: "Model-facing commit, commit_apply, and review tools for the agentic git commit and review workflow, plus the worktree pool tool (durable-lease isolated worktrees), with read-preference routing between ctx.vcs and ctx.git."
 kind: "package-reference"
 ---
 
@@ -9,13 +9,14 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The three model-facing tools — `commit`, `commit_apply`, and `review` — drive the agentic git commit and review workflow ported from omp (oh-my-pi). Reads route opportunistically through `ctx.vcs` when its `pi-vcs` probe is clean and fall back to `ctx.git`; mutation inputs always stay on `ctx.git`, so the write path is byte-for-byte unchanged. Choose this package when a composition wants the model to author deterministic split-commit plans and get bounded reviewer fan-out over the staged diff. The cost is one analysis call per commit plus reviewer fan-out capped by `maxReviewers` and `maxReviewerDiffChars`; the boundary is that commit-review quality stays the model's own negotiation — the tool surface enforces structure, not semantic judgment.
+The three commit/review tools — `commit`, `commit_apply`, and `review` — drive the agentic git commit and review workflow ported from omp (oh-my-pi), and `worktree` provides a model-facing worktree pool with durable leases (firstmate/treehouse model) so parallel tasks get isolated, restart-proof working directories of the same repository. Reads route opportunistically through `ctx.vcs` when its `pi-vcs` probe is clean and fall back to `ctx.git`; mutation inputs always stay on `ctx.git`, so the write path is byte-for-byte unchanged. Choose this package when a composition wants the model to author deterministic split-commit plans, get bounded reviewer fan-out over the staged diff, and run concurrent tasks in leased worktrees. The cost is one analysis call per commit plus reviewer fan-out capped by `maxReviewers` and `maxReviewerDiffChars`; the boundary is that commit-review quality stays the model's own negotiation — the tool surface enforces structure, not semantic judgment.
 
 ## Table of Contents
 
 - [Read-preference routing](#read-preference-routing)
 - [What it does](#what-it-does)
 - [Two-phase contract](#two-phase-contract)
+- [Worktree tool](#worktree-tool)
 - [Configuration](#configuration)
 - [Export shape](#export-shape)
 - [Model Experience](#model-experience)
@@ -38,10 +39,23 @@ Registers three tools on `ctx.tools`, a `git:` system-prompt section with the co
 - **`commit` (analyze, read-only)** — snapshots the staged diff (auto-staging the working tree when nothing is staged and `stagedOnly: false`), reports per-file add/delete counts, a bounded diff, `trivial` classification, `lockFilesPending`, and a `suggestedPlan` skeleton. It never writes to the repository.
 - **`commit_apply` (execute)** — validates a `SplitCommitPlan` against the actual staged state, then commits deterministically: every staged file planned exactly once, hunk selectors resolved against the real diff, groups ordered topologically (cycles rejected before any write), lock files auto-placed onto the group owning their sibling manifest. `dryRun: true` previews exact messages without committing; `cwd` selects the repository.
 - **`review`** — slices the staged diff by weight across `maxReviewers` subagent runs with a structured reviewer contract, aggregates a `ship`/`reject` verdict from the minimum reviewer confidence, ranks findings by severity, and reports transport failures as errors (never silently approving unreviewed changes).
+- **`worktree`** — the pool manager: `acquire` cuts or reuses an isolated git worktree (`--branch` for a named-branch HEAD that `commit_apply --push`/PR flows need) and returns a durable `leaseId`; `release` returns the slot (conditional on the exact lease id; refuses dirty work unless `force`); `list` shows live pool status; `prune` and `destroy` are dry-runs until `yes` and never touch leased or dirty slots automatically. See [Worktree tool](#worktree-tool).
 
 ## Two-phase contract
 
 The flow is intentionally model-driven but deterministic: `commit` returns ground truth plus a plan skeleton and guidance, the model authors a precise `SplitCommitPlan` (types, scopes, summaries, details, dependencies, optional hunk selections), and `commit_apply` validates and executes it without a hidden model session. Failures reset the index so no change is lost and every remaining edit stays inspectable in the worktree.
+
+## Worktree tool
+
+`worktree` maps the treehouse CLI verb surface (acquire/release/list/prune/destroy) onto the pool engine in [`@deepseek-ai/dsh-git`](../git/README.md#worktree-pool) (`./worktree`):
+
+- **`acquire`** — fetches (unless `noFetch`), then reuses a slot only when provably idle (unleased, clean including untracked, HEAD merged into the exact reset target) or cuts a new one at the default/inferred base branch. Returns `path` + `leaseId` + holder/base — the durable ownership record. `branch` cuts a named-branch HEAD (the `commit_apply --push` path); `base` overrides the cut point.
+- **`release`** — requires the exact `leaseId` (a stale caller can never release someone else's slot), parks the slot detached at its base for reuse, and refuses dirty work unless `force` (then `git clean -fdqx`).
+- **`list`** — live pool status per slot: `leased` / `idle` / `damaged` with clean/merged/exists flags and holder.
+- **`prune`** — dry-run by default; `yes` removes only unleased + clean + merged slots (`all` sweeps every pool under the configured root). Everything else is reported, never guessed.
+- **`destroy`** — dry-run by default; `includeLeased` / `includeUnlanded` are the explicit overrides for the irreversible cases.
+
+Why leases and not processes: DSH agents are host children, so a durable lease in `treehouse-state.json` — not a PID scan — is what survives a host restart, and the engine never terminates processes. Pool root is configurable (`worktreeRoot`, default `~/.treehouse`) so each workspace or machine can choose its own home for the pools.
 
 ## Configuration
 
@@ -49,6 +63,10 @@ The flow is intentionally model-driven but deterministic: `commit` returns groun
 - `maxReviewers` — max parallel reviewer runs (default 4).
 - `maxReviewerDiffChars` — per-reviewer diff window cap (default 25k).
 - `maxDiffChars` — analysis diff cap (default 60k).
+- `worktreeRoot` — pool root directory for `worktree` (default `~/.treehouse`).
+- `worktreeBaseBranch` — default cut branch for `worktree acquire` (default: inferred from origin HEAD / current branch).
+- `worktreeFetchBeforeAcquire` — fetch origin before acquiring (default true; skipped when the repo has no origin).
+- `worktreeLockWaitMs` — max wait for the pool-state lock (default 30s).
 
 The agent preset rows in this deployment mount `reviewProvider: spawn` and `maxReviewers: 4`.
 
@@ -62,7 +80,7 @@ A function/namespace plugin exporting `name` / `inject` / `apply` with no defaul
 
 #### What the model sees
 
-The generated [`commit`, `commit_apply`, and `review` schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-git), plus the `git:` section in the system prompt.
+The generated [`commit`, `commit_apply`, `review`, and `worktree` schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-git), plus the `git:` section in the system prompt.
 
 #### Token effect
 

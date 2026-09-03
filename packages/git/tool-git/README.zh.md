@@ -1,5 +1,5 @@
 ---
-description: "面向模型方的 commit、commit_apply、review 工具——agent 化 git 提交与评审工作流，读取在 ctx.vcs 与 ctx.git 之间按偏好路由。"
+description: "面向模型方的 commit、commit_apply、review 工具——agent 化 git 提交与评审工作流，外加 worktree 工作树池工具（持久租约的隔离工作树），读取在 ctx.vcs 与 ctx.git 之间按偏好路由。"
 kind: "package-reference"
 ---
 
@@ -9,13 +9,14 @@ kind: "package-reference"
 
 ## 概述
 
-面向模型方的三个工具——`commit`、`commit_apply`、`review`——驱动移植自 omp (oh-my-pi) 的 agent 化 git 提交与评审工作流。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时按机会路由到它，否则回退到 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径逐字节不变。组合需要让模型编写确定性的拆分提交计划并对已暂存 diff 做有界评审扇出时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；边界是提交评审质量仍由模型自行协商——工具面只强制结构，不评判语义。
+面向模型方的提交／评审三工具——`commit`、`commit_apply`、`review`——驱动移植自 omp (oh-my-pi) 的 agent 化 git 提交与评审工作流；`worktree` 提供面向模型的工作树池（firstmate／treehouse 模型）与持久租约，使并行任务获得同一仓库的隔离、重启安全的工作目录。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时按机会路由到它，否则回退到 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径逐字节不变。组合需要让模型编写确定性的拆分提交计划、对已暂存 diff 做有界评审扇出、并在租借工作树中并发执行任务时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；边界是提交评审质量仍由模型自行协商——工具面只强制结构，不评判语义。
 
 ## 目录
 
 - [读取偏好路由](#read-preference-routing)
 - [功能](#what-it-does)
 - [两阶段契约](#two-phase-contract)
+- [Worktree 工具](#worktree-tool)
 - [配置](#configuration)
 - [导出形状](#export-shape)
 - [Model Experience](#model-experience)
@@ -40,11 +41,25 @@ kind: "package-reference"
 - **`commit`（分析，只读）** — 快照已暂存 diff（在无暂存内容且 `stagedOnly: false` 时自动暂存工作区），报告按文件的增删计数、有界 diff、`trivial` 分类、`lockFilesPending` 与 `suggestedPlan` 骨架。它从不写入仓库。
 - **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。
 - **`review`** — 按权重把已暂存 diff 切成至多 `maxReviewers` 份子代理运行，采用结构化评审者契约，按评审者置信度的最小值聚合 `ship`／`reject` 结论，按严重度排序 findings，并把传输失败报告为 errors（绝不静默批准未受评审的变更）。
+- **`worktree`** — 池管理器：`acquire` 切出或复用隔离的 git 工作树（`--branch` 得到命名分支 HEAD，供 `commit_apply --push`／PR 流程使用），并返回持久 `leaseId`；`release` 归还槽位（以精确租约 id 为条件；非 `force` 时拒绝脏工作）；`list` 显示池的实时状态；`prune` 与 `destroy` 在 `yes` 前都是 dry-run，绝不自动触碰租借或脏槽位。见 [Worktree 工具](#worktree-tool)。
 
 <a id="two-phase-contract"></a>
 ## 两阶段契约
 
 流程刻意由模型驱动但确定：`commit` 返回地面真值加计划骨架与指引，模型编写精确的 `SplitCommitPlan`（类型、作用域、摘要、详情、依赖、可选 hunk 选择），`commit_apply` 校验并无隐藏模型会话地执行。失败会重置索引，因此不会丢失任何变更，其余编辑都以可检查状态保留在工作区。
+
+<a id="worktree-tool"></a>
+## Worktree 工具
+
+`worktree` 把 treehouse CLI 的动词面（acquire／release／list／prune／destroy）映射到 [`@deepseek-ai/dsh-git`](../git/README.zh.md#worktree-pool)（`./worktree`）的池引擎：
+
+- **`acquire`** — 先 fetch（除非 `noFetch`），然后仅在可证明空闲（未租借、含未跟踪文件在内干净、HEAD 已并入精确重置目标）时复用槽位，否则在默认／推断基底分支上切出新槽位。返回 `path` ＋ `leaseId` ＋ 持有者／基底——持久所有权记录。`branch` 切出命名分支 HEAD（`commit_apply --push` 路径）；`base` 覆盖切出点。
+- **`release`** — 要求精确 `leaseId`（过期调用方永远无法释放他人的槽位），把槽位归还为 detached 于其基底待复用，非 `force` 时拒绝脏工作（`force` 则 `git clean -fdqx`）。
+- **`list`** — 每槽位实时池状态：`leased`／`idle`／`damaged`，附干净／已并入／存在标志与持有者。
+- **`prune`** — 默认 dry-run；`yes` 只移除未租借＋干净＋已并入槽位（`all` 遍历配置根下的所有池）。其余一律报告，从不猜测。
+- **`destroy`** — 默认 dry-run；`includeLeased`／`includeUnlanded` 是不可逆场景的显式覆盖。
+
+为什么用租约而非进程：DSH agent 是宿主子进程，因此在 `treehouse-state.json` 中的持久租约——而非 PID 扫描——才是宿主重启后仍然有效的东西；引擎从不终止进程。池根可配置（`worktreeRoot`，默认 `~/.treehouse`），每个工作区或机器可选择自己的池宿目录。
 
 <a id="configuration"></a>
 ## 配置
@@ -53,6 +68,10 @@ kind: "package-reference"
 - `maxReviewers` — 最大并行评审者运行数（默认 4）。
 - `maxReviewerDiffChars` — 每个评审者的 diff 窗口上限（默认 25k）。
 - `maxDiffChars` — 分析 diff 上限（默认 60k）。
+- `worktreeRoot` — `worktree` 的池根目录（默认 `~/.treehouse`）。
+- `worktreeBaseBranch` — `worktree acquire` 的默认切出分支（默认：从 origin HEAD／当前分支推断）。
+- `worktreeFetchBeforeAcquire` — acquire 前是否 fetch origin（默认 true；仓库无 origin 时跳过）。
+- `worktreeLockWaitMs` — 池状态锁的最长等待（默认 30 秒）。
 
 本部署的 agent preset 行挂载 `reviewProvider: spawn` 与 `maxReviewers: 4`。
 
@@ -68,7 +87,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-生成的 [`commit`、`commit_apply`、`review` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-git)，以及系统提示词中的 `git:` section。
+生成的 [`commit`、`commit_apply`、`review`、`worktree` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-git)，以及系统提示词中的 `git:` section。
 
 #### Token effect
 

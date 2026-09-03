@@ -16,6 +16,7 @@ kind: "package-reference"
 - [功能](#what-it-does)
 - [执行模型](#execution-model)
 - [部分 hunk 暂存](#partial-hunk-staging)
+- [工作树池](#worktree-pool)
 - [配置](#configuration)
 - [Model Experience](#model-experience)
 - [已知限制与待办](#known-limitations-and-deferred-work)
@@ -35,6 +36,8 @@ agent 化提交＋评审工作流（移植自 omp / oh-my-pi）的宿主 `ctx.gi
 - **暂存** — `addAll`（`git add -A`）、`resetIndex`（`git reset`）、以及 `stageHunks`：把记录的 `--cached` diff 按 hunk 选择切回索引（omp `stage.hunks` 移植）。
 - **提交／推送／日志** — `commit`（消息经 stdin）、`push`（`--no-follow-tags`）、`log`。
 
+`./worktree` 子路径另提供带**持久租约的工作树池** — 用 TypeScript 原生实现 firstmate／treehouse 的 `get --lease` 模型（每仓库的隔离工作树池，池根可配置、默认 `~/.treehouse`，租约所有权重启安全，prune／destroy 默认 dry-run，损坏状态可恢复）。见 [工作树池](#worktree-pool)。
+
 diff 词汇位于 [`types.ts`](src/types.ts) 与 `diff.ts`（带重命名处理的 numstat、hunk 解析／选择／校验）；拆分机制对应 omp（拓扑提交排序、锁文件自动归位）。
 
 <a id="execution-model"></a>
@@ -46,6 +49,18 @@ diff 词汇位于 [`types.ts`](src/types.ts) 与 `diff.ts`（带重命名处理�
 ## 部分 hunk 暂存
 
 `stageHunks` 依据记录的 diff 重建补丁，并以 `git apply --cached` **不加** `--binary` 的方式应用于文本补丁：对携带 `index <old>..<new>` 的头部传入 `--binary`，会使 `git apply` 找到两个 blob 并暂存*整个*新 blob，静默破坏 hunk 粒度。内嵌二进制的补丁仍以 `--binary` 应用。
+
+<a id="worktree-pool"></a>
+## 工作树池
+
+`import { acquireWorktree, releaseWorktree, listWorktrees, pruneWorktrees, destroyWorktree } from '@deepseek-ai/dsh-git/worktree'` — 仿照 treehouse（`get --lease`）的每仓库 `git` 工作树池：
+
+- **池布局** — `<root>/<repo>-<hash6>/<n>/<repo>`，其中 `root` 可配置（默认 `~/.treehouse`），hash 为规范主仓库根的 sha256（链接工作树经 `--git-common-dir` 解析到主检出，因此一个仓库 = 一个池，即使 `realpath` 不同）。
+- **持久租约** — `acquireWorktree` 返回 `path` 与随机 `leaseId`，持久化到每池的 `treehouse-state.json`（原子 temp+rename 提交、跨进程 `withFileLock`、进程内 `withRepoLock` 于主仓库根）；已租借槽位在 `releaseWorktree` 以匹配 id 清除前绝不再次分配或被 prune。
+- **安全** — 仅在未租借＋干净（`--untracked-files=all`）＋HEAD 已并入精确重置目标时复用；release 在非 `force`（`git clean -fdqx`）时拒绝脏工作树；prune／destroy 默认 dry-run，无显式标志时拒绝租借／脏／未并入槽位；损坏／截断状态从 `git worktree list --porcelain` 重建并标记为租借未验证。
+- **命名分支（D1）** — `acquireWorktree({ branch })` 以 `git worktree add -b <branch>` 切出分支 HEAD，使 `commit_apply --push`／PR 流程有分支可取（git 拒绝 `--detach -b`）；该槽位仅对同名分支可复用。默认仍为 detached（与 treehouse 兼容）。
+
+所有权按租约记录在状态文件中（持有者标签），而非 PID：DSH 子进程是宿主进程，因此重启安全的所有权记录是租约而非进程扫描。本引擎从不终止进程。完整设计记录、偏差 D1–D5 与安全恒等式见 `firstmate-worktree-scope.md`（workspace）。
 
 <a id="configuration"></a>
 ## 配置

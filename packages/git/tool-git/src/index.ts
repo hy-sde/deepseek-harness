@@ -2,9 +2,11 @@
  * Model-facing agentic git tools over the host `ctx.git` service: `commit`
  * (analyze + suggest a split-plan skeleton), `commit_apply` (validate and
  * execute a model-authored split plan with dependency order, cycle rejection,
- * lock-file placement, and atomic hunk-staged commits), and `review` (parallel
- * reviewer subagents with P0–P3 findings and a ship/reject verdict), plus a
- * `git:tools` system-prompt section.
+ * lock-file placement, and atomic hunk-staged commits), `review` (parallel
+ * reviewer subagents with P0–P3 findings and a ship/reject verdict), and
+ * `worktree` (a persistent pool of isolated git worktrees with durable
+ * leases — the firstmate/treehouse model), plus a `git:tools` system-prompt
+ * section.
  *
  * Port of omp (oh-my-pi)'s commit + review surface for the DeepSeek Harness —
  * see port_omp.md item: commit/review. Agent-plane: this package mounts as a
@@ -19,11 +21,13 @@ import { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-git'
 import { applyCommitTool, applyCommitApplyTool } from './commit.ts'
 import { applyReviewTool } from './review.ts'
+import { applyWorktreeTool } from './worktree.ts'
+import type { WorktreeToolConfig } from './worktree.ts'
 import { buildGitPromptSection } from './prompt.ts'
 import type { GitPromptConfig } from './prompt.ts'
 
 /** Plugin configuration. */
-export interface Config extends GitPromptConfig {
+export interface Config extends GitPromptConfig, WorktreeToolConfig {
   /** `ctx.subagents` provider name for review reviewers (default `spawn`). */
   reviewProvider?: string
   /** Cap on parallel review reviewers (default 4). */
@@ -44,6 +48,8 @@ export type { ReadSurface, ReadRange } from './reads.ts'
 export type { CommitToolConfig, CommitAnalysisValue, CommitApplyValue } from './commit.ts'
 export { applyReviewTool } from './review.ts'
 export type { ReviewToolConfig, SliceResult } from './review.ts'
+export { applyWorktreeTool } from './worktree.ts'
+export type { WorktreeToolConfig } from './worktree.ts'
 
 /** Cordis plugin name for loader diagnostics. */
 export const name = 'tool-git'
@@ -52,7 +58,7 @@ export const name = 'tool-git'
 export const inject = ['tools', 'systemPrompt', 'git']
 
 /**
- * Register the three git tools and the `git:tools` prompt section.
+ * Register the four git tools and the `git:tools` prompt section.
  * @param ctx - the agent-plane plugin context (injects `tools`, `systemPrompt`, `git`; `vcs` is resolved opportunistically).
  * @param config - resolved plugin configuration.
  */
@@ -63,6 +69,12 @@ export function apply(ctx: Context, config: Config = {}): void {
     ...config.reviewProvider !== undefined ? { provider: config.reviewProvider } : {},
     ...config.maxReviewers !== undefined ? { maxReviewers: config.maxReviewers } : {},
     ...config.maxReviewerDiffChars !== undefined ? { maxReviewerDiffChars: config.maxReviewerDiffChars } : {},
+  })
+  applyWorktreeTool(ctx, {
+    ...config.worktreeRoot !== undefined ? { worktreeRoot: config.worktreeRoot } : {},
+    ...config.worktreeBaseBranch !== undefined ? { worktreeBaseBranch: config.worktreeBaseBranch } : {},
+    ...config.worktreeFetchBeforeAcquire !== undefined ? { worktreeFetchBeforeAcquire: config.worktreeFetchBeforeAcquire } : {},
+    ...config.worktreeLockWaitMs !== undefined ? { worktreeLockWaitMs: config.worktreeLockWaitMs } : {},
   })
   ctx.systemPrompt.section(buildGitPromptSection(config))
 }

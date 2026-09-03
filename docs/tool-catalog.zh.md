@@ -48,7 +48,7 @@
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
-| `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
+| `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review`、`worktree` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`、`ctx.browser`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 浏览器工具（omp 移植）：open/close/run/state 覆盖 launch（stealth 补丁）、CDP-attach 或本地 relay＋扩展；观察为带 click-by-selector 的 ARIA ref 树，截图写 PNG 路径。 |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`、`av_doctor`、`av_list`、`av_scan` | `ctx.tools`、`ctx.av`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。 |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`、`logseq_list`、`logseq_query`、`logseq_remove`、`logseq_search`、`logseq_server`、`logseq_show`、`logseq_upsert` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。 |
@@ -3100,6 +3100,86 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
       "description": "Working directory; defaults to the session workspace."
     }
   }
+}
+```
+
+来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
+### `worktree`
+
+管理持久池中带持久租约的隔离按任务 git 工作树（firstmate/treehouse 模型）。`acquire` 切出一个新槽位（`--branch` 用于命名分支 HEAD —— `commit_apply --push` 与 PR 的路径）或复用一个可证明空闲的槽位，返回 `path` ＋ `leaseId`；`release` 归还槽位（除非 `force`，否则拒绝脏工作），且以精确租约 id 为条件；`list` 显示池的实时状态；`prune` 只移除空闲槽位（无 `yes` 时 dry-run）；`destroy` 移除一个槽位（无 `yes` 时 dry-run，除非显式标志否则拒绝租借／脏工作）。在 `lease.path` 下工作——它是同一个仓库的普通 git 工作树；交付前先用 release 归还。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "acquire | release | list | prune | destroy.",
+      "enum": [
+        "acquire",
+        "release",
+        "list",
+        "prune",
+        "destroy"
+      ]
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory; defaults to the session workspace."
+    },
+    "branch": {
+      "type": "string",
+      "description": "acquire only: cut HEAD at a new named branch (for commit_apply --push / PR flows)."
+    },
+    "base": {
+      "type": "string",
+      "description": "acquire only: cut from this branch instead of the configured/inferred default."
+    },
+    "holder": {
+      "type": "string",
+      "description": "acquire only: lease holder label (default `dsh`)."
+    },
+    "noFetch": {
+      "type": "boolean",
+      "description": "acquire only: skip the origin fetch."
+    },
+    "path": {
+      "type": "string",
+      "description": "release/destroy: the worktree path from the acquire result."
+    },
+    "leaseId": {
+      "type": "string",
+      "description": "release only: the exact lease id from the acquire result."
+    },
+    "force": {
+      "type": "boolean",
+      "description": "release only: discard uncommitted changes instead of refusing (git clean -fdqx)."
+    },
+    "name": {
+      "type": "string",
+      "description": "destroy only: pool-relative slot name (alternative to path)."
+    },
+    "yes": {
+      "type": "boolean",
+      "description": "prune/destroy only: execute instead of dry-running."
+    },
+    "includeLeased": {
+      "type": "boolean",
+      "description": "destroy only: allow destroying a slot that is still leased."
+    },
+    "includeUnlanded": {
+      "type": "boolean",
+      "description": "destroy only: allow discarding dirty/unmerged work (irreversible)."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "prune only: sweep every pool under the configured root."
+    }
+  },
+  "required": [
+    "action"
+  ]
 }
 ```
 

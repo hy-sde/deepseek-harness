@@ -26,6 +26,10 @@
       "types": "./lib/types/review.d.ts",
       "default": "./lib/types/review.js"
     },
+    "./worktree": {
+      "types": "./lib/types/worktree.d.ts",
+      "default": "./lib/types/worktree.js"
+    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },

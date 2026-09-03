@@ -530,7 +530,7 @@ export async function acquireWorktree(
           leaseId,
           leaseHolder: options.holder ?? 'dsh',
           leasedAt,
-          baseBranch: options.base ?? settings.baseBranch ?? '',
+          baseBranch: options.base ?? settings.baseBranch ?? target,
           ...branch !== undefined ? { branch } : {},
           recovered: false,
         }
