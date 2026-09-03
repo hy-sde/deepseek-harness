@@ -55,6 +55,26 @@ export const SOFT_DEADLINE_MS = 5_000
  */
 export const HARD_DEADLINE_MS = 30_000
 
+/**
+ * Retries for the all-engines-failed aggregate when at least one engine died
+ * from a transport failure (HTTP 4xx/5xx or a timeout) — the anti-bot
+ * rate-limit signature. A retry re-runs the whole fan-out after a backoff, so
+ * a short engine throttle that strips the first attempt still yields results.
+ * 0 disables retrying.
+ */
+export const DEFAULT_MAX_RETRIES = 1
+
+/** Base delay before retry #1 (ms); doubles on each subsequent attempt. */
+export const DEFAULT_RETRY_DELAY_MS = 2_000
+
+/**
+ * Fast-fail window (ms) after a retry-exhausted rate-limit failure: searches in
+ * this window return a clear "retry in about Ns" error instead of re-blasting
+ * engines that just throttled us, which would deepen the block. 0 disables the
+ * window.
+ */
+export const DEFAULT_FAILURE_COOLDOWN_MS = 30_000
+
 /** Resolved provider options (the plugin's `apply` supplies config defaults). */
 export interface PublicSearchProviderOptions {
   /**
@@ -68,6 +88,18 @@ export interface PublicSearchProviderOptions {
   readonly softDeadlineMs?: number
   /** Hard aggregate deadline (ms). Default: {@link HARD_DEADLINE_MS}. */
   readonly hardDeadlineMs?: number
+  /**
+   * Retries for the all-failed aggregate on the rate-limit signature.
+   * Default: {@link DEFAULT_MAX_RETRIES}. 0 disables.
+   */
+  readonly maxRetries?: number
+  /** Base retry delay (ms), doubled per attempt. Default: {@link DEFAULT_RETRY_DELAY_MS}. */
+  readonly retryDelayMs?: number
+  /**
+   * Fast-fail window (ms) after a retry-exhausted rate-limit failure.
+   * Default: {@link DEFAULT_FAILURE_COOLDOWN_MS}. 0 disables.
+   */
+  readonly failureCooldownMs?: number
 }
 
 type EngineAttempt =
@@ -146,7 +178,22 @@ function toResult(merged: Map<string, MergedSource>, maxResults: number | undefi
 export class PublicSearchProvider implements WebSearchProvider {
   readonly id = PUBLIC_PROVIDER_ID
 
-  constructor(private readonly options: PublicSearchProviderOptions) {}
+  /** Resolved retry count (see {@link PublicSearchProviderOptions.maxRetries}). */
+  private readonly maxRetries: number
+  /** Resolved base retry delay (see {@link PublicSearchProviderOptions.retryDelayMs}). */
+  private readonly retryDelayMs: number
+  /** Resolved fast-fail window (see {@link PublicSearchProviderOptions.failureCooldownMs}). */
+  private readonly failureCooldownMs: number
+  /** Epoch ms of the last retry-exhausted rate-limit failure; 0 = none yet. */
+  private lastAllFailureAt = 0
+  /** Aggregate message of that last rate-limit failure, surfaced by fast-fails. */
+  private lastAllFailureMessage = ''
+
+  constructor(private readonly options: PublicSearchProviderOptions) {
+    this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES
+    this.retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS
+    this.failureCooldownMs = options.failureCooldownMs ?? DEFAULT_FAILURE_COOLDOWN_MS
+  }
 
   /** Credential-free: usable whenever at least one engine is configured. */
   available(): boolean {
@@ -155,10 +202,53 @@ export class PublicSearchProvider implements WebSearchProvider {
 
   async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
     if (signal?.aborted) throw aborted()
-    const engines = this.options.engines
-    if (engines.length === 0) {
+    if (this.options.engines.length === 0) {
       throw new WebError('no public search engines configured', 'WEB_PROVIDER_UNAVAILABLE')
     }
+    // Fast-fail during the cooldown window after a retry-exhausted rate-limit
+    // failure: re-blasting engines that just throttled us deepens the block, so
+    // surface a clear "try again shortly" error instead of burning requests.
+    if (this.failureCooldownMs > 0 && this.lastAllFailureAt > 0) {
+      const elapsed = Date.now() - this.lastAllFailureAt
+      if (elapsed < this.failureCooldownMs) {
+        const seconds = Math.ceil((this.failureCooldownMs - elapsed) / 1000)
+        throw new WebError(
+          `public search engines are rate limited (${this.lastAllFailureMessage}); retry in about ${seconds}s`,
+          'WEB_PROVIDER_ERROR',
+        )
+      }
+    }
+    // Retry the whole fan-out when every engine failed with a transport-level
+    // signature (HTTP 4xx/5xx or timeout) — the anti-bot rate-limit pattern. A
+    // pure all-no-results aggregate is query-level and fails immediately.
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.fanOut(request, signal)
+      } catch (error) {
+        if (
+          error instanceof WebError
+          && error.code === 'WEB_PROVIDER_ERROR'
+          && isTransportFailure(error.message)
+        ) {
+          if (attempt < this.maxRetries) {
+            await sleep(this.retryDelayMs * 2 ** attempt, signal)
+            continue
+          }
+          this.lastAllFailureAt = Date.now()
+          this.lastAllFailureMessage = error.message
+        }
+        throw error
+      }
+    }
+  }
+
+  /**
+   * One fan-out pass over every engine (the pre-retry aggregate): races the
+   * soft/hard deadlines, merges the consensus result, and throws
+   * `WEB_PROVIDER_ERROR` only when every engine failed.
+   */
+  private async fanOut(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
+    const engines = this.options.engines
     const softMs = this.options.softDeadlineMs ?? SOFT_DEADLINE_MS
     const hardMs = this.options.hardDeadlineMs ?? HARD_DEADLINE_MS
 
@@ -280,9 +370,31 @@ export class PublicSearchProvider implements WebSearchProvider {
   }
 }
 
-/** Resolve after `ms` ms; used to bound the fan-out race. */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => { setTimeout(resolve, ms) })
+/** Resolve after `ms` ms, or as soon as `signal` aborts; used to bound the fan-out race and the retry backoff. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) { resolve(); return }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    const onAbort = (): void => {
+      clearTimeout(timer)
+      resolve()
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+/**
+ * Whether an aggregate failure message carries the rate-limit signature: at
+ * least one engine died on a transport error (HTTP 4xx/5xx), a timeout, or a
+ * network-level fetch failure. Returns false for query-level aggregates where
+ * every engine answered "no results" — retrying those cannot help and they must
+ * not arm the cooldown.
+ */
+function isTransportFailure(message: string): boolean {
+  return /HTTP [45]\d\d|timed out|fetch failed/i.test(message)
 }
 
 function aborted(): WebError {

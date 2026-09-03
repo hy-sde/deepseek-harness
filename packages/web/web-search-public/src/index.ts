@@ -14,7 +14,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-web'
 import { createEngines } from './engines/index.ts'
-import { HARD_DEADLINE_MS, PublicSearchProvider, SOFT_DEADLINE_MS } from './provider.ts'
+import {
+  DEFAULT_FAILURE_COOLDOWN_MS,
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_RETRY_DELAY_MS,
+  HARD_DEADLINE_MS,
+  PublicSearchProvider,
+  SOFT_DEADLINE_MS,
+} from './provider.ts'
 import type { PublicEngineId } from './types.ts'
 import {
   DEFAULT_ENGINE_ORDER,
@@ -25,7 +32,13 @@ import {
 
 export { PUBLIC_PROVIDER_ID, dedupKey, mergeSources, PublicSearchProvider } from './provider.ts'
 export type { PublicSearchProviderOptions, MergedSource } from './provider.ts'
-export { HARD_DEADLINE_MS, SOFT_DEADLINE_MS } from './provider.ts'
+export {
+  DEFAULT_FAILURE_COOLDOWN_MS,
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_RETRY_DELAY_MS,
+  HARD_DEADLINE_MS,
+  SOFT_DEADLINE_MS,
+} from './provider.ts'
 export { createEngines } from './engines/index.ts'
 export {
   DEFAULT_ENGINE_ORDER,
@@ -54,6 +67,22 @@ export interface Config {
   softDeadlineMs?: number
   /** Hard aggregate deadline (ms): return whatever we have, even nothing. Default: 30000. */
   hardDeadlineMs?: number
+  /**
+   * Retries for the all-engines-failed aggregate when at least one engine died
+   * from a transport failure (HTTP 4xx/5xx or a timeout) — the rate-limit
+   * signature. Each retry re-runs the whole fan-out after a backoff, so a short
+   * engine throttle that strips the first attempt still yields results.
+   * Default: 1. 0 disables.
+   */
+  maxRetries?: number
+  /** Base delay before retry #1 (ms), doubled per attempt. Default: 2000. */
+  retryDelayMs?: number
+  /**
+   * Fast-fail window (ms) after a retry-exhausted rate-limit failure: searches
+   * in this window return a "retry in about Ns" error instead of re-blasting
+   * engines that just throttled us. Default: 30000. 0 disables.
+   */
+  failureCooldownMs?: number
 }
 
 export const Config: z<Config> = z.object({
@@ -62,12 +91,22 @@ export const Config: z<Config> = z.object({
   userAgent: z.string().default(DEFAULT_USER_AGENT),
   softDeadlineMs: z.number().step(1).min(1).default(SOFT_DEADLINE_MS),
   hardDeadlineMs: z.number().step(1).min(1).default(HARD_DEADLINE_MS),
+  maxRetries: z.number().step(1).min(0).default(DEFAULT_MAX_RETRIES),
+  retryDelayMs: z.number().step(1).min(1).default(DEFAULT_RETRY_DELAY_MS),
+  failureCooldownMs: z.number().step(1).min(0).default(DEFAULT_FAILURE_COOLDOWN_MS),
 })
 
 /** Configured timeout and deadlines must be positive integers; hard must not precede soft. */
 function assertPositiveInteger(name: string, value: number): void {
   if (!Number.isInteger(value) || value < 1) {
     throw new Error(`web-search-public: ${name} must be a positive integer`)
+  }
+}
+
+/** Configured retry/cooldown values must be non-negative integers. */
+function assertNonNegativeInteger(name: string, value: number): void {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`web-search-public: ${name} must be a non-negative integer`)
   }
 }
 
@@ -90,9 +129,21 @@ export function apply(ctx: Context, config: Config): void {
   const hardDeadlineMs = config.hardDeadlineMs !== undefined
     ? config.hardDeadlineMs
     : HARD_DEADLINE_MS
+  const maxRetries = config.maxRetries !== undefined
+    ? config.maxRetries
+    : DEFAULT_MAX_RETRIES
+  const retryDelayMs = config.retryDelayMs !== undefined
+    ? config.retryDelayMs
+    : DEFAULT_RETRY_DELAY_MS
+  const failureCooldownMs = config.failureCooldownMs !== undefined
+    ? config.failureCooldownMs
+    : DEFAULT_FAILURE_COOLDOWN_MS
   assertPositiveInteger('timeoutMs', timeoutMs)
   assertPositiveInteger('softDeadlineMs', softDeadlineMs)
   assertPositiveInteger('hardDeadlineMs', hardDeadlineMs)
+  assertNonNegativeInteger('maxRetries', maxRetries)
+  assertPositiveInteger('retryDelayMs', retryDelayMs)
+  assertNonNegativeInteger('failureCooldownMs', failureCooldownMs)
   if (hardDeadlineMs < softDeadlineMs) {
     throw new Error('web-search-public: hardDeadlineMs must be >= softDeadlineMs')
   }
@@ -101,5 +152,8 @@ export function apply(ctx: Context, config: Config): void {
     timeoutMs,
     softDeadlineMs,
     hardDeadlineMs,
+    maxRetries,
+    retryDelayMs,
+    failureCooldownMs,
   }))
 }

@@ -64,10 +64,28 @@ function stubEngine(id: PublicEngineId, options: StubOptions = {}): { engine: Pu
   return { engine, calls }
 }
 
-type ProviderOverrides = Partial<{ timeoutMs: number; softDeadlineMs: number; hardDeadlineMs: number }>
+type ProviderOverrides = Partial<{
+  timeoutMs: number
+  softDeadlineMs: number
+  hardDeadlineMs: number
+  maxRetries: number
+  retryDelayMs: number
+  failureCooldownMs: number
+}>
 
 function provider(engines: PublicEngine[], overrides: ProviderOverrides = {}): PublicSearchProvider {
-  return new PublicSearchProvider({ engines, timeoutMs: 10_000, softDeadlineMs: 5_000, hardDeadlineMs: 30_000, ...overrides })
+  return new PublicSearchProvider({
+    engines,
+    timeoutMs: 10_000,
+    softDeadlineMs: 5_000,
+    hardDeadlineMs: 30_000,
+    // Retries/cooldown are opt-in per test so the pre-existing aggregate-failure
+    // expectations keep their single-attempt timing.
+    maxRetries: 0,
+    retryDelayMs: 2_000,
+    failureCooldownMs: 30_000,
+    ...overrides,
+  })
 }
 
 afterEach(() => {
@@ -205,6 +223,77 @@ describe('PublicSearchProvider', () => {
     setTimeout(() => { controller.abort() }, 10)
     await expect(pending).rejects.toMatchObject({ code: 'WEB_ABORTED' })
     await vi.waitFor(() => { expect(slow.calls.length).toBe(1) })
+  })
+
+  it('retries the fan-out after an all-failed transport burst and recovers', async () => {
+    let calls = 0
+    const flaky: PublicEngine = {
+      id: 'mojeek',
+      async search(): Promise<WebSearchSource[]> {
+        calls += 1
+        if (calls === 1) throw new Error('HTTP 403')
+        return [{ url: 'https://m.test/7', title: 'Recovered' }]
+      },
+    }
+    const result = await provider([flaky], { maxRetries: 1, retryDelayMs: 5 }).search({ query: 'q' })
+    expect(calls).toBe(2)
+    expect(result.sources).toEqual([{ url: 'https://m.test/7', title: 'Recovered' }])
+  })
+
+  it('retries when every engine dies on a network-level fetch failure', async () => {
+    let calls = 0
+    const flaky: PublicEngine = {
+      id: 'duckduckgo',
+      async search(): Promise<WebSearchSource[]> {
+        calls += 1
+        if (calls === 1) throw new Error('fetch failed')
+        return [{ url: 'https://d.test/8', title: 'Back online' }]
+      },
+    }
+    const result = await provider([flaky], { maxRetries: 1, retryDelayMs: 5 }).search({ query: 'q' })
+    expect(calls).toBe(2)
+    expect(result.sources).toEqual([{ url: 'https://d.test/8', title: 'Back online' }])
+  })
+
+  it('exhausts retries on a transport failure and fast-fails inside the cooldown window', async () => {
+    const blocked = stubEngine('mojeek', { error: new Error('HTTP 403') })
+    const subject = provider([blocked.engine], { maxRetries: 1, retryDelayMs: 2, failureCooldownMs: 100 })
+    await expect(subject.search({ query: 'q' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' })
+    expect(blocked.calls).toHaveLength(2)
+    // The second call sits inside the cooldown: it fails fast with a clear
+    // rate-limit message and does not touch the engines again.
+    await expect(subject.search({ query: 'q' })).rejects.toMatchObject({
+      code: 'WEB_PROVIDER_ERROR',
+      message: /rate limited/,
+    })
+    expect(blocked.calls).toHaveLength(2)
+    // Past the cooldown window a normal search resumes (and fails again here).
+    await new Promise(resolve => setTimeout(resolve, 150))
+    await expect(subject.search({ query: 'q' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' })
+    expect(blocked.calls).toHaveLength(4)
+  })
+
+  it('does not retry or arm the cooldown when every engine returns no results', async () => {
+    const empty = stubEngine('mojeek', { sources: [] })
+    const subject = provider([empty.engine], { maxRetries: 3, retryDelayMs: 2, failureCooldownMs: 100 })
+    await expect(subject.search({ query: 'gibberish' })).rejects.toMatchObject({
+      code: 'WEB_PROVIDER_ERROR',
+      message: 'all public search engines failed: mojeek: no results',
+    })
+    expect(empty.calls).toHaveLength(1)
+    // No cooldown was armed, so the next search runs immediately.
+    await expect(subject.search({ query: 'other' })).rejects.toMatchObject({ code: 'WEB_PROVIDER_ERROR' })
+    expect(empty.calls).toHaveLength(2)
+  })
+
+  it('aborts promptly while sleeping through the retry backoff', async () => {
+    const blocked = stubEngine('mojeek', { error: new Error('HTTP 403') })
+    const controller = new AbortController()
+    const pending = provider([blocked.engine], { maxRetries: 1, retryDelayMs: 10_000 })
+      .search({ query: 'q' }, controller.signal)
+    setTimeout(() => { controller.abort() }, 5)
+    await expect(pending).rejects.toMatchObject({ code: 'WEB_ABORTED' })
+    expect(blocked.calls).toHaveLength(1)
   })
 })
 
