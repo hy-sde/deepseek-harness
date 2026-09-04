@@ -63,8 +63,15 @@ export class Entry {
   _initTask?: Promise<void>
   _disposing = 0
 
-  constructor(public loader: Loader) {
-    this.ctx = loader.ctx.extend({ [Entry.key]: this })
+  constructor(
+    public loader: Loader,
+    /** Context the entry's fiber extends from. A tree mounted under a scoped
+     * context seeds its rows from that scope (the tree context), so rows inherit
+     * the scope key and `scopeOf()`/scope-addressed services work inside them;
+     * unscoped host trees fall back to the loader context, unchanged. */
+    base?: Context,
+  ) {
+    this.ctx = (base ?? loader.ctx).extend({ [Entry.key]: this })
     this.context.emit('loader/entry-init', this)
   }
 

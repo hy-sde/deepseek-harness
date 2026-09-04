@@ -20,7 +20,7 @@ export class EntryGroup {
   async create(options: Omit<EntryOptions, 'id'>) {
     const id = this.tree.ensureId(options)
     const existing = this.tree.store[id]
-    const entry: Entry = existing ?? (this.tree.store[id] = new Entry(this.ctx.loader))
+    const entry: Entry = existing ?? (this.tree.store[id] = new Entry(this.ctx.loader, this.ctx))
     const previousParent = entry.parent
     // Entry may be moved from another group,
     // so we need to update the parent reference.
