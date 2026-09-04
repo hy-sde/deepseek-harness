@@ -169,7 +169,6 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // Fork-owned SQLite persistence backend: the schema and Zstandard dictionary are
   // read at runtime via new URL('../resources/...', import.meta.url), so they ship
   // beside the emitted JS. Upstream removed this package; the fork's release keeps it.
-  '@deepseek-ai/dsh-session-persistence-sqlite': ['resources/zstd-dictionary.bin', 'resources/sql/**/*.sql'],
   // Fork tool packages whose invariant companion shares a hashed tsdown chunk
   // with the entry (single bundle, hashed runtime chunk); the chunk must publish
   // beside the invariant bundle for the published package to resolve it.

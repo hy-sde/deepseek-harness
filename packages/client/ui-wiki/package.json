@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-wiki",
   "description": "Embedded wiki outliner pane over the LLM-wiki graph: a frame-wide drawer toggled from the sidebar foot that browses, reads, and edits wiki pages, blocks, tags, properties, and tasks headlessly through ctx.wikiGraph — no desktop Logseq needed",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

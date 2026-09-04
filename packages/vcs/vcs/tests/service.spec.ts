@@ -254,7 +254,12 @@ describe('VcsService', () => {
     })
     const events: unknown[] = []
     const dispose = service.watch('/work/checkout', event => events.push(event))
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // Load-tolerant wait: the shim emits one event per interval tick, and a
+    // saturated machine can stretch the first tick well past a fixed sleep.
+    const deadline = Date.now() + 10_000
+    while (events.length < 2 && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 25))
+    }
     dispose()
     expect(events).toEqual([
       { event: 'head', seq: 1 },

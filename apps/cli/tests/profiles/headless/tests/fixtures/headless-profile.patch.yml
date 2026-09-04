@@ -1,3 +1,6 @@
+- id: session-title-llm
+  disabled: true
+
 # Product headless profile patch for the keyless CLI snapshots.
 - id: agent-default-model
   config:

@@ -1,3 +1,6 @@
+- id: session-title-llm
+  disabled: true
+
 # Replay-backed continuable child settlement patch over the shipped headless profile.
 - id: headless-startup
   disabled: true

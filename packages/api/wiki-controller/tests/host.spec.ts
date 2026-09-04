@@ -97,21 +97,21 @@ describe('WikiController Remote face', () => {
     const cli = new LogseqCliError('boom', ['list', 'page'], '', '', 1, { message: 'boom' })
     const { controller } = host({ search: () => { throw cli } })
     await expect(controller.search({ content: 'x' })).rejects.toMatchObject({
-      failure: { code: 'wiki-cli-error', message: 'boom' },
+      code: 'wiki-cli-error', message: 'boom',
     })
   })
 
   it('classifies a missing graph seam as wiki-unavailable', async () => {
     const ctx = new Context()
     const controller = new WikiController(ctx)
-    await expect(controller.listPages({})).rejects.toMatchObject({ failure: { code: 'wiki-unavailable' } })
+    await expect(controller.listPages({})).rejects.toMatchObject({ code: 'wiki-unavailable' })
   })
 
   it('classifies a generic seam throw as internal carrying the method name', async () => {
     const { controller } = host({ query: () => { throw new Error('nope') } })
     const message: unknown = expect.stringContaining('wiki.query')
     await expect(controller.query({ query: '[:find ?e]' })).rejects.toMatchObject({
-      failure: { code: 'internal', message },
+      code: 'internal', message,
     })
   })
 

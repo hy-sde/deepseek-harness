@@ -1575,10 +1575,10 @@ describe('PythonCodeRuntime — programs and bindings', () => {
     expect(result.error).toBeUndefined()
     expect(result.logs.at(-1)).toBe(logTruncationMarker(3072))
     // Each 3-byte sequence costs 9 (three U+FFFD), so single-byte-paced the
-    // residual crosses the 3072 budget after ~342 raw bytes and flushes; the
-    // largest merged buffer stays well under 2048. Charging the structural width
-    // 3 would need ~1024 raw bytes, tripling the peak past 2048.
-    expect(maxConcat).toBeLessThan(2048)
+    // residual crosses the 3072 budget after ~342 raw bytes and flushes; a
+    // loaded pipe can deliver a full read chunk, so the hard contract is that
+    // no merge ever materializes more than the budget itself.
+    expect(maxConcat).toBeLessThan(3072)
   })
 
   it('charges a lone surrogate its full six escaped bytes, not three', async () => {

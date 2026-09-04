@@ -1,3 +1,6 @@
+- id: session-title-llm
+  disabled: true
+
 # Deterministic provider-retry patch over the shipped headless profile.
 - id: headless-startup
   disabled: true

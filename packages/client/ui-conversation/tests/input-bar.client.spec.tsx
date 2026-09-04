@@ -9,7 +9,7 @@
 // the shell (jsdom's beforeinput lacks the ranges Lexical needs).
 
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { $getRoot, $isTextNode } from 'lexical'
 import {
   bindSnapshotSelector, conversationSnapshot as conversationFixture, makeTranslate, RemoteError,
@@ -1353,7 +1353,10 @@ describe('command launcher chrome and control seats', () => {
     expect((view.getByLabelText(/^访问模式/) as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('submits Full access directly without a risk confirmation', async () => {
+  // rc.1 contract: the Full access pick is gated behind the shared
+  // RiskConfirmation acknowledgement flow (same as the settings row), so a
+  // bare pick never submits the command.
+  it('submits Full access only after acknowledging the risk confirmation', async () => {
     const command = vi.fn(() => Promise.resolve(true))
     const permissions = {
       options: [
@@ -1366,16 +1369,21 @@ describe('command launcher chrome and control seats', () => {
     fireEvent.click(view.getByLabelText(/^访问模式/))
     fireEvent.click(view.getByRole('menuitem', { name: '完全权限' }))
 
-    // No risk gate: the dialog never appears and the pick submits immediately.
-    expect(view.queryByRole('dialog')).toBeNull()
-    expect(command).toHaveBeenCalledOnce()
+    // The acknowledgement dialog appears and no command is submitted yet.
+    expect(command).not.toHaveBeenCalled()
+    const dialog = view.getByRole('dialog', { name: '确认启用完全权限？' })
+    const enable = view.getByRole('button', { name: '启用完全权限' })
+    expect((enable as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(view.getByRole('checkbox'))
+    fireEvent.click(enable)
+    await waitFor(() => { expect(command).toHaveBeenCalledOnce() })
     expect(command).toHaveBeenCalledWith('/permission danger-full-access')
-    // Optimistic pick + disable until the command settles.
+    expect(dialog.isConnected).toBe(false)
+    // The gate owns the disable; a settled dialog leaves the trigger usable
+    // while the label reflects the committed value.
     const busy = view.getByLabelText(/^访问模式/) as HTMLButtonElement
-    expect(busy.textContent).toBe('Full access')
-    expect(busy.disabled).toBe(true)
+    expect(busy.textContent).toBe('工作区内修改')
     await act(async () => {})
-    expect((view.getByLabelText(/^访问模式/) as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('registered entry fills its seat and receives the locked owner prop', () => {

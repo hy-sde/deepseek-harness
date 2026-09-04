@@ -15,6 +15,7 @@ import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
 import * as StreamRules from '@deepseek-ai/dsh-stream-rules'
 import type { Config } from '@deepseek-ai/dsh-stream-rules'
@@ -88,6 +89,7 @@ async function harness(config: Config = {}): Promise<{ ctx: Context; rulesDir: s
   const rulesDir = mkdtempSync(path.join(tmpdir(), 'stream-rules-wiring-'))
   createdDirs.push(rulesDir)
   await mountAgentLoopTestDependencies(ctx)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentLoop, { agents: [] })
   await ctx.plugin(StreamRules, Object.assign({ rulesDir }, config))
   ctx.tools.register(defineContentToolFixture({ name: 'probe', description: 'p', parameters: {}, async execute() { return [{ type: 'text', text: 'ok' }] } }))
@@ -117,7 +119,7 @@ describe('stream-rules guard: interrupt + retry', () => {
       textResponse('clean answer'),
     ])
     ctx.llm.registerAdapter(['mock'], adapter)
-    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write a note' }], source: { kind: 'user' } }))
     await settle(ctx, agent, adapter, 2)
 
@@ -157,7 +159,7 @@ describe('stream-rules guard: interrupt + retry', () => {
       textResponse('still forbidden words here'),
     ])
     ctx.llm.registerAdapter(['mock'], adapter)
-    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write sentences' }], source: { kind: 'user' } }))
     await settle(ctx, agent, adapter, 2)
 
@@ -183,7 +185,7 @@ describe('stream-rules guard: interrupt + retry', () => {
       textResponse('ok'),
     ])
     ctx.llm.registerAdapter(['mock'], adapter)
-    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
     await settle(ctx, agent, adapter, 2)
 
@@ -203,7 +205,7 @@ describe('stream-rules guard: non-interrupting tool rules', () => {
       textResponse('done'),
     ])
     ctx.llm.registerAdapter(['mock'], adapter)
-    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'call the probe' }], source: { kind: 'user' } }))
     await settle(ctx, agent, adapter, 2)
 
@@ -232,7 +234,7 @@ describe('stream-rules guard: discard mode', () => {
       textResponse('clean answer'),
     ])
     ctx.llm.registerAdapter(['mock'], adapter)
-    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write a note' }], source: { kind: 'user' } }))
     await settle(ctx, agent, adapter, 2)
 

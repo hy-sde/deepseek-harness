@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-logseq-graph",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "description": "Host-plane wiki-graph service over the Logseq CLI: one typed seam (ctx.wikiGraph) the web UI and host API read and write the LLM-wiki graph through, headlessly and without the desktop app.",
   "type": "module",
   "main": "lib/index.js",

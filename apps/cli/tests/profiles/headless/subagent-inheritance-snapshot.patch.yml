@@ -1,4 +1,7 @@
 # Patch for resuming one read-only parent over the shipped headless profile. The profile's
+- id: session-title-llm
+  disabled: true
+
 # workspace-write deployment default must lose to the session override in its child.
 - id: headless-startup
   disabled: true

@@ -1,3 +1,6 @@
+- id: session-title-llm
+  disabled: true
+
 # Patch for resuming one seeded semantic-checkpoint session over the shipped headless profile.
 - id: headless-startup
   disabled: true

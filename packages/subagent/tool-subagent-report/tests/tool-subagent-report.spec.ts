@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { loadStoredSession } from './persistence-helpers.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -77,7 +78,7 @@ async function setup(options: { load?: boolean; config?: tool.Config } = {}) {
     : await ctx.plugin(tool, options.config ?? { reportDelivery: 'quiet' })
   const adapter = new HeldAdapter()
   ctx.llm.registerAdapter(['mock'], adapter)
-  const parent = ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
+  const parent = await ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
   cleanups.push(async () => {
     adapter.release()
     await ctx.fiber.dispose()
@@ -610,7 +611,7 @@ describe('dsh-tool-subagent-report result independence', () => {
     // continuation service's, carried under its own `subagent-settled` source.
     // Nothing turns the child's final answer into a report it did not send.
     expect(reports(parent)).toEqual([])
-    expect(userTexts((await ctx.sessionPersistence.load(started.childId)).events)).toEqual(['child task'])
+    expect(userTexts((await loadStoredSession(ctx.sessionPersistence, started.childId)).events)).toEqual(['child task'])
     expect(ctx.get('jobs')).toBeUndefined()
   })
 })

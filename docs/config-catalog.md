@@ -119,7 +119,7 @@ export interface Config {
 
 Depends on: [`AgentOptions`](subsystems/core.md) · [`SessionId`](subsystems/core.md)
 
-Source: [`packages/core/agent-loop/src/index.ts:311`](../packages/core/agent-loop/src/index.ts)
+Source: [`packages/core/agent-loop/src/index.ts:318`](../packages/core/agent-loop/src/index.ts)
 
 <a id="deepseek-aidsh-agent-presets"></a>
 
@@ -258,7 +258,7 @@ export interface GoalConfig {
 
 Depends on: [`AgentLoopConfig`](#deepseek-aidsh-agent-loop) · [`GoalDomainConfig`](#deepseek-aidsh-goal) · [`InvariantConfig`](#deepseek-aidsh-invariants) · [`JobsConfig`](#deepseek-aidsh-jobs-local) · [`SessionTitleConfig`](#deepseek-aidsh-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#deepseek-aidsh-skill) · [`SystemPromptConfig`](#deepseek-aidsh-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
 
-Source: [`packages/examples/agent-spine-demo/src/index.ts:89`](../packages/examples/agent-spine-demo/src/index.ts)
+Source: [`packages/examples/agent-spine-demo/src/index.ts:91`](../packages/examples/agent-spine-demo/src/index.ts)
 
 <a id="deepseek-aidsh-agent-tool-presentation"></a>
 
@@ -310,14 +310,16 @@ Requires: `agentDefaultModel` · `agents` · `attachments` · `llm` · `sessions
 ```ts config-catalog
 /** Session Controller deployment policy. */
 export interface Config {
-  /** Maximum cold Session artifact size eligible for one full projection observation. */
+  /** Maximum stat-reported event count eligible for one full cold projection observation; `0` disables the event-count gate. */
+  readonly coldBlankProbeMaxEvents?: number
+  /** Maximum stat-reported artifact byte size eligible for one full cold projection observation; `0` disables the byte-size gate. */
   readonly coldBlankProbeMaxBytes?: number
   /** Override platform desktop-opener detection. */
   readonly nativeOpen?: boolean
 }
 ```
 
-Source: [`packages/api/session-controller/src/index.ts:68`](../packages/api/session-controller/src/index.ts)
+Source: [`packages/api/session-controller/src/index.ts:72`](../packages/api/session-controller/src/index.ts)
 
 <a id="deepseek-aidsh-api-settings-controller"></a>
 
@@ -703,7 +705,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/e2b/e2b/src/index.ts:43`](../packages/e2b/e2b/src/index.ts)
+Source: [`packages/e2b/e2b/src/index.ts:45`](../packages/e2b/e2b/src/index.ts)
 
 <a id="deepseek-aidsh-experimental-agent-team"></a>
 
@@ -727,7 +729,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/experimental/agent-team/src/types.ts:131`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/experimental/agent-team/src/types.ts:130`](../packages/experimental/agent-team/src/types.ts)
 
 <a id="deepseek-aidsh-experimental-code-runtime-python"></a>
 
@@ -1031,7 +1033,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/hooks/hooks-claude-code/src/index.ts:46`](../packages/hooks/hooks-claude-code/src/index.ts)
+Source: [`packages/hooks/hooks-claude-code/src/index.ts:45`](../packages/hooks/hooks-claude-code/src/index.ts)
 
 <a id="deepseek-aidsh-hooks-codex"></a>
 
@@ -1058,7 +1060,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/hooks/hooks-codex/src/index.ts:45`](../packages/hooks/hooks-codex/src/index.ts)
+Source: [`packages/hooks/hooks-codex/src/index.ts:44`](../packages/hooks/hooks-codex/src/index.ts)
 
 <a id="deepseek-aidsh-host-directory-picker-browse"></a>
 
@@ -1586,7 +1588,7 @@ Requires: `agents` · `sessionProjections`
 export type Config = Readonly<Record<string, never>>
 ```
 
-Source: [`packages/llm/llm-retry/src/index.ts:25`](../packages/llm/llm-retry/src/index.ts)
+Source: [`packages/llm/llm-retry/src/index.ts:30`](../packages/llm/llm-retry/src/index.ts)
 
 <a id="deepseek-aidsh-llm-slots"></a>
 
@@ -2109,13 +2111,11 @@ export interface Config {
 export type SessionLogCompressionLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 ```
 
-Source: [`packages/session-query/session-log-export/src/index.ts:42`](../packages/session-query/session-log-export/src/index.ts)
+Source: [`packages/session-query/session-log-export/src/index.ts:45`](../packages/session-query/session-log-export/src/index.ts)
 
 <a id="deepseek-aidsh-session-persistence-jsonl"></a>
 
 ## `@deepseek-ai/dsh-session-persistence-jsonl`
-
-Requires: `sessions`
 
 ```ts config-catalog
 /** Plugin config: where the JSONL backend keeps its session logs, and the packed-row write switch. */
@@ -2138,44 +2138,13 @@ export interface Config {
   packChunks?: boolean
   /** Physical encoding; defaults to checksummed Zstandard frames. */
   compression?: JsonlCompression
-  /** Maximum cold Session preparations retained for history-to-resume reuse. */
-  preparedSessionCacheSize?: number
-  /** Fixed live-event coalescing window; not a backend completion deadline. */
-  writeBatchMaxDelayMs?: number
 }
 
 /** Physical encoding selected for JSONL session artifacts. */
 export type JsonlCompression = 'zstd' | 'none'
 ```
 
-Source: [`packages/session/session-persistence-jsonl/src/index.ts:77`](../packages/session/session-persistence-jsonl/src/index.ts)
-
-<a id="deepseek-aidsh-session-persistence-sqlite"></a>
-
-## `@deepseek-ai/dsh-session-persistence-sqlite`
-
-Requires: `sessions`
-
-```ts config-catalog
-/** Plugin configuration. */
-export interface Config {
-  /** SQLite database path, or `:memory:` for an in-process database. */
-  path: string
-  /** Durable SQLite journal mode; defaults to `wal`. */
-  journalMode?: JournalMode
-  /** Maximum wait for another SQLite connection's lock; defaults to 5,000 ms. */
-  busyTimeoutMs?: number
-  /** Maximum cold Session preparations retained for history-to-resume reuse. */
-  preparedSessionCacheSize?: number
-  /** Fixed live-event coalescing window; not a backend completion deadline. */
-  writeBatchMaxDelayMs?: number
-}
-
-/** Durable journal modes accepted by the backend. */
-export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
-```
-
-Source: [`packages/session/session-persistence-sqlite/src/index.ts:40`](../packages/session/session-persistence-sqlite/src/index.ts)
+Source: [`packages/session/session-persistence-jsonl/src/index.ts:80`](../packages/session/session-persistence-jsonl/src/index.ts)
 
 <a id="deepseek-aidsh-session-projection-cache"></a>
 
@@ -2232,8 +2201,10 @@ export interface Config extends SessionQueryConfig {
   maxLimit?: number
   /** Maximum snippet length in Unicode code points. Defaults to 240. */
   snippetChars?: number
-  /** Maximum concurrent persisted-log inspections in one inherited batch read. Defaults to 4. */
-  persistedInspectConcurrency?: number
+  /** Maximum concurrent persisted-log reads in one inherited batch read. Defaults to 4. */
+  persistedReadConcurrency?: number
+  /** Maximum cold prepared-Session observations the inherited reader retains for reuse. Defaults to 5. */
+  preparedSessionCacheSize?: number
 }
 
 /** SQLite module/handle opening phase; `never` disables full-text search entirely. */
@@ -2245,7 +2216,7 @@ export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 
 Depends on: [`SessionQueryConfig`](../packages/session-query/session-query/src/index.ts)
 
-Source: [`packages/session-query/session-query-sqlite/src/index.ts:96`](../packages/session-query/session-query-sqlite/src/index.ts)
+Source: [`packages/session-query/session-query-sqlite/src/index.ts:92`](../packages/session-query/session-query-sqlite/src/index.ts)
 
 <a id="deepseek-aidsh-session-reference"></a>
 
@@ -2395,7 +2366,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/shell/shell-env/src/index.ts:29`](../packages/shell/shell-env/src/index.ts)
+Source: [`packages/shell/shell-env/src/index.ts:28`](../packages/shell/shell-env/src/index.ts)
 
 <a id="deepseek-aidsh-skill"></a>
 
@@ -2674,7 +2645,7 @@ export interface SubagentConfig {
 }
 ```
 
-Source: [`packages/subagent/subagent/src/index.ts:214`](../packages/subagent/subagent/src/index.ts)
+Source: [`packages/subagent/subagent/src/index.ts:216`](../packages/subagent/subagent/src/index.ts)
 
 <a id="deepseek-aidsh-subagent-acp"></a>
 
@@ -3297,7 +3268,7 @@ Requires: `tools` · `systemPrompt` · `git`
 
 ```ts config-catalog
 /** Plugin configuration. */
-export interface Config extends GitPromptConfig {
+export interface Config extends GitPromptConfig, WorktreeToolConfig {
   /** `ctx.subagents` provider name for review reviewers (default `spawn`). */
   reviewProvider?: string
   /** Cap on parallel review reviewers (default 4). */
@@ -3313,9 +3284,21 @@ export interface GitPromptConfig {
   /** Disable the prompt section entirely (default false). */
   enabled?: boolean
 }
+
+/** Configuration consumed by the worktree tool (pool settings). */
+export interface WorktreeToolConfig {
+  /** Pool root directory (default `~/.treehouse`). */
+  worktreeRoot?: string
+  /** Default branch to cut worktrees from (default: inferred from origin HEAD / current branch). */
+  worktreeBaseBranch?: string
+  /** Fetch origin before acquire (default true; skipped when the repo has no origin). */
+  worktreeFetchBeforeAcquire?: boolean
+  /** Max ms to wait for the cross-process pool-state lock (default 30000). */
+  worktreeLockWaitMs?: number
+}
 ```
 
-Source: [`packages/git/tool-git/src/index.ts:26`](../packages/git/tool-git/src/index.ts)
+Source: [`packages/git/tool-git/src/index.ts:30`](../packages/git/tool-git/src/index.ts)
 
 <a id="deepseek-aidsh-tool-goal"></a>
 
@@ -3849,7 +3832,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/vcs/vcs/src/service.ts:37`](../packages/vcs/vcs/src/service.ts)
+Source: [`packages/vcs/vcs/src/service.ts:46`](../packages/vcs/vcs/src/service.ts)
 
 <a id="deepseek-aidsh-web"></a>
 
@@ -3943,12 +3926,28 @@ export interface Config {
   softDeadlineMs?: number
   /** Hard aggregate deadline (ms): return whatever we have, even nothing. Default: 30000. */
   hardDeadlineMs?: number
+  /**
+   * Retries for the all-engines-failed aggregate when at least one engine died
+   * from a transport failure (HTTP 4xx/5xx or a timeout) — the rate-limit
+   * signature. Each retry re-runs the whole fan-out after a backoff, so a short
+   * engine throttle that strips the first attempt still yields results.
+   * Default: 1. 0 disables.
+   */
+  maxRetries?: number
+  /** Base delay before retry #1 (ms), doubled per attempt. Default: 2000. */
+  retryDelayMs?: number
+  /**
+   * Fast-fail window (ms) after a retry-exhausted rate-limit failure: searches
+   * in this window return a "retry in about Ns" error instead of re-blasting
+   * engines that just throttled us. Default: 30000. 0 disables.
+   */
+  failureCooldownMs?: number
 }
 
 export type PublicEngineId = (typeof PUBLIC_ENGINE_IDS)[number]
 ```
 
-Source: [`packages/web/web-search-public/src/index.ts:45`](../packages/web/web-search-public/src/index.ts)
+Source: [`packages/web/web-search-public/src/index.ts:58`](../packages/web/web-search-public/src/index.ts)
 
 <a id="deepseek-aidsh-webhook-github"></a>
 
@@ -4136,6 +4135,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@deepseek-ai/dsh-hashline` ([`packages/edit/hashline/src/index.ts`](../packages/edit/hashline/src/index.ts))
 - `@deepseek-ai/dsh-home-paths` ([`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts))
 - `@deepseek-ai/dsh-hook-protocol` ([`packages/hooks/hook-protocol/src/index.ts`](../packages/hooks/hook-protocol/src/index.ts))
+- `@deepseek-ai/dsh-http-proxy` ([`packages/util/http-proxy/src/index.ts`](../packages/util/http-proxy/src/index.ts))
 - `@deepseek-ai/dsh-launch-environment` ([`packages/util/launch-environment/src/index.ts`](../packages/util/launch-environment/src/index.ts))
 - `@deepseek-ai/dsh-llm-mock-server` ([`packages/test-support/llm-mock-server/src/index.ts`](../packages/test-support/llm-mock-server/src/index.ts))
 - `@deepseek-ai/dsh-loader-smoke` ([`packages/test-support/loader-smoke/src/index.ts`](../packages/test-support/loader-smoke/src/index.ts))

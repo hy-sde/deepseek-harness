@@ -20,7 +20,7 @@ const replayOverride = join(fixtureDir, 'replay.override.json')
 const childReplay = join(fixtureDir, 'child.replay.jsonl')
 const parentExpected = join(fixtureDir, 'parent.expected.jsonl')
 const childExpected = join(fixtureDir, 'child.expected.jsonl')
-const configPath = fileURLToPath(new URL('../subagent-inheritance.cordis.snapshot.yml', import.meta.url))
+const configPath = fileURLToPath(new URL('../subagent-inheritance-snapshot.patch.yml', import.meta.url))
 const binScript = fileURLToPath(new URL('../../../../../../packages/test-support/loader-smoke/tests/fixtures/headless-driver.ts', import.meta.url))
 const tsconfigPath = fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url))
 const sessionId = SessionId('subagent-inheritance-parent')
@@ -62,8 +62,13 @@ async function seedReadOnlyParent(root: string, cwd: string): Promise<void> {
     { type: 'turn/end', seq: SessionSeq(4), time: 14, data: { turn: 1, reason: { kind: 'completed' } } },
   ]
   try {
-    await ctx.sessionPersistence.create(meta)
-    await ctx.sessionPersistence.append(sessionId, events)
+    const seeded = await ctx.sessionPersistence.create(meta)
+    try {
+      await seeded.append(events)
+      await seeded.flush()
+    } finally {
+      await seeded.close()
+    }
   } finally {
     await ctx.fiber.dispose()
   }

@@ -35,11 +35,7 @@ Registers one host service on the composition (`ctx.git`). The surface:
 - **Staging** — `addAll` (`git add -A`), `resetIndex` (`git reset`), and `stageHunks`: slices a recorded `--cached` diff back onto the index by hunk selection (omp `stage.hunks` port).
 - **Commit / push / log** — `commit` (message via stdin), `push` (`--no-follow-tags`; optional `remote`/`branch`/`setUpstream` so a fresh named branch can record `origin/<branch>` tracking), `log`.
 
-The `./worktree` subpath additionally exposes a **worktree pool with durable
-leases** — the firstmate/treehouse `get --lease` model natively in TypeScript
-(per-repository pool of isolated worktrees under a configurable root, default
-`~/.treehouse`, with restart-proof lease ownership, dry-run prune/destroy and
-corrupt-state recovery). See [Worktree pool](#worktree-pool).
+The `./worktree` subpath additionally exposes a **worktree pool with durable leases** — the firstmate/treehouse `get --lease` model natively in TypeScript (per-repository pool of isolated worktrees under a configurable root, default `~/.treehouse`, with restart-proof lease ownership, dry-run prune/destroy and corrupt-state recovery). See [Worktree pool](#worktree-pool).
 
 The diff vocabulary lives in [`types.ts`](src/types.ts)` and `diff.ts` (numstat with rename handling, hunk parsing/selection/validation); the split machinery mirrors omp (topological commit ordering, lock-file autoplacement).
 

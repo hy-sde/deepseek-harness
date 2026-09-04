@@ -42,6 +42,10 @@ export const testInvariantCompanions: Readonly<Record<string, () => Promise<Test
 /** Manual-topology suites whose names cannot follow the focused invariant convention. */
 const MANUAL_INVARIANT_TEST_EXCEPTIONS = [
   '/packages/runtime-diagnostics/invariants/tests/service.spec.ts',
+  // The demo bundle owns invariant service selection (global enablement,
+  // package filters) and forwards them into its own composition, so the
+  // global host's fixed `{ enabled: true }` service must not swallow them.
+  '/packages/examples/agent-spine-demo/tests/agent-core.spec.ts',
 ] as const
 
 interface InvariantHost {

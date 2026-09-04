@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest'
 const fixtureDir = fileURLToPath(new URL('./expected/subagent-diagnostic', import.meta.url))
 const replayOverride = join(fixtureDir, 'replay.override.json')
 const parentExpected = join(fixtureDir, 'parent.expected.jsonl')
-const configPath = fileURLToPath(new URL('../subagent-diagnostic.cordis.snapshot.yml', import.meta.url))
+const configPath = fileURLToPath(new URL('../subagent-diagnostic-snapshot.patch.yml', import.meta.url))
 const binScript = fileURLToPath(new URL('../../../../../../packages/test-support/loader-smoke/tests/fixtures/headless-driver.ts', import.meta.url))
 const tsconfigPath = fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url))
 const parentId = SessionId('subagent-diagnostic-parent')
@@ -64,10 +64,15 @@ async function seedDescriptorlessChild(root: string, cwd: string): Promise<void>
     { type: 'turn/end', seq: SessionSeq(1), time: 21, data: { turn: 1, reason: { kind: 'interrupted' } } },
   ]
   try {
-    await ctx.sessionPersistence.create(parentMeta)
-    await ctx.sessionPersistence.append(parentId, parentEvents)
-    await ctx.sessionPersistence.create(childMeta)
-    await ctx.sessionPersistence.append(childId, childEvents)
+    for (const [meta, events] of [[parentMeta, parentEvents], [childMeta, childEvents]] as const) {
+      const seeded = await ctx.sessionPersistence.create(meta)
+      try {
+        await seeded.append(events)
+        await seeded.flush()
+      } finally {
+        await seeded.close()
+      }
+    }
   } finally {
     await ctx.fiber.dispose()
   }

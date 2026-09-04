@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-search-public",
   "description": "Credential-free public web search provider (startpage → duckduckgo → ecosia → google → mojeek) for the DeepSeek Harness web capability seam (ctx.web)",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

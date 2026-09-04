@@ -118,7 +118,16 @@ describe('ui-permission browser plugin', () => {
     expect(again.find(option => option.id === 'read-only')?.detail).toBe('Reads only.')
     // English built-ins use product labels; other kebab-case names title-case.
     expect(again.map(option => option.label)).toEqual(['Read Only', 'Workspace Write', 'Full access'])
-    b.values.set(sid('s1'), { ...SELECT, options: [{ value: 'plain', name: 'Ask Every Time' }] })
+    // Non-built-in names pass through: kebab-case keys title-case, free-text
+    // names and odd keys survive verbatim. The projection supplies all of
+    // them; this set deliberately covers both shapes.
+    b.values.set(sid('s1'), { ...SELECT, options: [
+      { value: 'workspace-write', name: 'Project Files' },
+      { value: 'danger-full-access', name: 'Operator Mode' },
+      { value: 'custom-mode', name: 'custom-mode' },
+      { value: '__proto__', name: '__proto__' },
+      { value: 'plain', name: 'Ask Every Time' },
+    ] })
     const passthrough = await c.ui.options(proj, new AbortController().signal)
     expect(passthrough.map(option => option.label)).toEqual([
       'Project Files', 'Operator Mode', 'Custom Mode', '__proto__', 'Ask Every Time',

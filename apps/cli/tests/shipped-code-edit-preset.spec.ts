@@ -10,14 +10,27 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import AgentPresets from '@deepseek-ai/dsh-agent-presets'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import SandboxPolicy from '@deepseek-ai/dsh-sandbox-policy'
 import { describe, expect, it } from 'vitest'
 
-/** The shipped roster this deployment mounts, exactly as profile-boot reads it. */
+/**
+ * The shipped roster this deployment mounts, exactly as profile-boot reads it.
+ * The CLI keeps its own shipped root inside apps/cli so dev-monorepo mounts
+ * resolve `@deepseek-ai/*` rows through apps/cli's node_modules (the package
+ * rostered in packages/preset/agent-presets/presets serves installed shells).
+ */
 const SHIPPED_ROOT = fileURLToPath(new URL('../config/agent-presets', import.meta.url))
+
+/**
+ * The agent-presets package's own bundled roster — the shipped presets an
+ * installed shell mounts. The CLI test context resolves `@deepseek-ai/*` rows
+ * through apps/cli's node_modules, so both roots share one base.
+ */
+const PACKAGE_PRESETS_ROOT = fileURLToPath(new URL('../../../packages/preset/agent-presets/presets', import.meta.url))
 
 /**
  * The `code-edit` preset must mount exactly as a session start would: its
@@ -39,6 +52,7 @@ describe('shipped code-edit preset', () => {
     await ctx.plugin(SystemPrompt, { persona: '' })
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(AgentLoop, { agents: [] })
     // The host services production mounts behind these rows: fs-local and
     // subprocess-local provide the real services `tool-fs`, `tool-fs-search`
@@ -52,7 +66,10 @@ describe('shipped code-edit preset', () => {
     ctx.provide('userQuestions', {})
     await ctx.plugin(AgentPresets, {
       default: 'code-edit',
-      roots: [{ path: SHIPPED_ROOT, trust: 'system' }],
+      roots: [
+        { path: SHIPPED_ROOT, trust: 'system' },
+        { path: PACKAGE_PRESETS_ROOT, trust: 'system' },
+      ],
       includeUserRoot: false,
       includeShippedRoot: false,
     })
@@ -99,6 +116,7 @@ describe('shipped code-edit preset', () => {
     await ctx.plugin(SystemPrompt, { persona: '' })
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(AgentLoop, { agents: [] })
     await ctx.plugin(LocalFileSystem)
     await ctx.plugin(LocalSubprocessRuntime)
@@ -109,7 +127,10 @@ describe('shipped code-edit preset', () => {
     ctx.provide('userQuestions', {})
     await ctx.plugin(AgentPresets, {
       default: 'minimal',
-      roots: [{ path: SHIPPED_ROOT, trust: 'system' }],
+      roots: [
+        { path: SHIPPED_ROOT, trust: 'system' },
+        { path: PACKAGE_PRESETS_ROOT, trust: 'system' },
+      ],
       includeUserRoot: false,
       includeShippedRoot: false,
     })

@@ -85,7 +85,10 @@ describe('Oxlint repository rule fingerprint', () => {
   const overrides: readonly unknown[] = parsed.overrides
 
   it('pins every override field', () => {
-    expect(overrides).toHaveLength(9)
+    // The fork ships an extra fs-archive override between the shared profile
+    // overrides (indexes 0-5, which the profiles below still reference) and
+    // the upstream fixture carve-outs.
+    expect(overrides).toHaveLength(10)
   })
 
   it.each(Object.entries(profiles))('pins the %s rule profile', (_name, profile) => {

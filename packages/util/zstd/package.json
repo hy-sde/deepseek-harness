@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-zstd-frame",
   "description": "Zstandard frame primitives (scan / compress / decompress / multi-frame decoder) shared by the session persistence backend and the project memory bank",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

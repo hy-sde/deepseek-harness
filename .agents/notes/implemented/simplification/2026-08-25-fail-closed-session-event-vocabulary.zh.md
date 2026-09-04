@@ -36,6 +36,6 @@ Status: implemented
 
 较旧构建在较新的同版本日志包含任何未知事件类型后都无法恢复该日志，即使新事件仅用于信息。这是对未使用的前向降级行为的有意放弃，换取单一事件 envelope 与单一失败规则。如果真实生产方以后需要较旧读取器跳过可选事件并继续会话，设计必须只对事件类型分类一次，让 `Session.append()` 自动发出持久分类，并覆盖两个持久化后端和线上表示。
 
-第一方 JSONL 会话字节保持不变，包括打包行与 `SESSION_FORMAT_VERSION = 0`。现有第一方 JSONL 会话仍可读。SQLite 是可选功能，并遵循预发布 schema 策略：schema 18 不从 schema 17 迁移，不兼容数据库会被拒绝而不是改写。[SQLite 物理压缩决策](../architecture/2026-08-18-sqlite-physical-chunk-row-compression.zh.md)拥有该后端的打包行表示。
+第一方 JSONL 会话字节保持不变，包括打包行与 `SESSION_FORMAT_VERSION = 0`。现有第一方 JSONL 会话仍可读。SQLite 是可选功能，并遵循预发布 schema 策略：schema 18 不从 schema 17 迁移，不兼容数据库会被拒绝而不是改写。[SQLite 物理压缩决策](../../archived/architecture/2026-08-18-sqlite-physical-chunk-row-compression.md)拥有该后端的打包行表示。
 
 组装后的 headless 拒绝测试证明用户会看到未知类型、序号、更新写入方方向与原始 JSONL 路径。核心 seed 测试拒绝当前事件 envelope 以外的字段；持久化约定测试拒绝每个未知类型；SQLite codec 与差分测试覆盖标量与打包判别、后缀读取、修复与跨后端逻辑相等。生成的持久化目录与已知事件模块使读取器集合与仓库所有的声明保持同步。

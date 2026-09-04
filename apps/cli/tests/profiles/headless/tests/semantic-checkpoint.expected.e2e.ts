@@ -14,7 +14,7 @@ const fixtureDir = join(dirname(fileURLToPath(import.meta.url)), 'expected/seman
 const replayFixture = join(fixtureDir, 'replay.jsonl')
 const replayOverride = join(fixtureDir, 'replay.override.json')
 const sessionExpected = join(fixtureDir, 'session.expected.jsonl')
-const configPath = fileURLToPath(new URL('../semantic-checkpoint.cordis.snapshot.yml', import.meta.url))
+const configPath = fileURLToPath(new URL('../semantic-checkpoint-snapshot.patch.yml', import.meta.url))
 const binScript = fileURLToPath(new URL('../../../../../../packages/test-support/loader-smoke/tests/fixtures/headless-driver.ts', import.meta.url))
 const tsconfigPath = fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url))
 const sessionId = SessionId('semantic-checkpoint-unknown-outcome')
@@ -71,11 +71,18 @@ async function seedInterruptedSession(root: string, cwd: string): Promise<string
     },
   ]
   try {
-    await ctx.sessionPersistence.create(meta)
-    await ctx.sessionPersistence.append(sessionId, events)
-    const location = ctx.sessionPersistence.locate(meta)
+    const seeded = await ctx.sessionPersistence.create(meta)
+    try {
+      await seeded.append(events)
+      await seeded.flush()
+    } finally {
+      await seeded.close()
+    }
+    const location = await (ctx.sessionPersistence as unknown as {
+      resolveLog(id: SessionId): Promise<string | undefined>
+    }).resolveLog(sessionId)
     if (location === undefined) throw new Error('JSONL backend did not locate the seeded session')
-    return location.path
+    return location
   } finally {
     await ctx.fiber.dispose()
   }

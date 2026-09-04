@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-git",
   "description": "Agentic git plumbing: the host ctx.git service (diff capture/parsing, hunk staging, commit/push/log over the subprocess seam) backing the commit and review tools in @deepseek-ai/dsh-tool-git",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

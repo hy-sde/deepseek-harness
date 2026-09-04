@@ -35,7 +35,7 @@ import type { Scoped } from '@deepseek-ai/dsh-scope'
 import z from '@deepseek-ai/schemastery'
 import { admitPromptContent } from '@deepseek-ai/dsh-attachment'
 import { assertObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import type { ContentBlock, GenerateOptions, MessageId, StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, GenerateOptions, MessageId, MessageSource, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
@@ -65,6 +65,7 @@ import type {
 } from './types.ts'
 import { normalizeDecisionKey } from './types.ts'
 import { SubagentError } from './error.ts'
+import { deliverSubagentPrompt, type HostPromptDeliveryMode, type HostPromptDeliverer } from './internal.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
 import { assertUsableCwd } from './out-of-process.ts'
 import { createActivationObserver, createLifecycleEmitter, observeRun } from './lifecycle.ts'
@@ -264,7 +265,7 @@ interface BrowserPromptSource {
 }
 
 /** Named provider registry with one-shot runs, durable discovery, and continuable-child operations. */
-export class SubagentRuntime extends TypertRemoteService {
+export class SubagentRuntime extends TypertRemoteService implements HostPromptDeliverer {
   static Config: z<SubagentConfig> = z.object({
     wakeCoalesceMs: z.natural().default(SUBAGENT_DEFAULTS.wakeCoalesceMs),
     wedgeStaleMs: z.natural().default(SUBAGENT_DEFAULTS.wedgeStaleMs),
@@ -385,6 +386,41 @@ export class SubagentRuntime extends TypertRemoteService {
    * @param authority - the human parent address or exact live ancestor Agent.
    * @throws {SubagentError} `UNAUTHORIZED` when the authority does not own the
    *   live target.
+   */
+  /**
+   * Deliver one host-protocol message to a direct continuable child.
+   * Symbol-keyed so host adapters can preserve their own provenance without
+   * widening the public Service Definition or impersonating an Agent sender.
+   * @param parent - exact live direct parent authorizing delivery.
+   * @param childId - durable direct-child session id.
+   * @param content - host-authored content to deliver.
+   * @param source - durable host-protocol provenance.
+   * @param signal - caller cancellation before inbox acceptance.
+   * @param delivery - Queue as a distinct turn or Steer at the nearest step.
+   * @returns the accepted message's inbox id.
+   */
+  /** Host-playbook rendezvous: reached by `steerHostSubagentPrompt` under its
+   * shared symbol (agent-team's compiled mailbox casts the service), not by
+   * name, so the interface marks the contract for the type checker. */
+  [deliverSubagentPrompt](
+    parent: Agent,
+    childId: SessionId,
+    content: ContentBlock[],
+    source: MessageSource,
+    signal: AbortSignal,
+    delivery: HostPromptDeliveryMode,
+  ): Promise<MessageId> {
+    return delivery === 'steer'
+      ? this.requireContinuations().steerPrompt(parent, childId, content, source, signal)
+      : this.requireContinuations().queuePrompt(parent, childId, content, source, signal)
+  }
+
+  /**
+   * Interrupt one live continuable child's current turn without disposing its
+   * Activation: the child settles at its next step boundary and the parent
+   * receives the settlement through its own lifecycle notification.
+   * @param targetSessionId - the durable child session to interrupt.
+   * @param authority - the interrupt authority this runtime acts under.
    */
   interrupt(targetSessionId: SessionId, authority: SubagentInterruptAuthority): void {
     this.continuations?.interrupt(targetSessionId, authority)

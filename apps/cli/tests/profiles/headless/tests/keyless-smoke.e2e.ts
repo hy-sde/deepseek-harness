@@ -8,7 +8,7 @@ import { LOADER_SMOKE_TEST_TIMEOUT_MS, runLoaderSmoke } from '@deepseek-ai/dsh-l
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 
 const binScript = fileURLToPath(new URL('../../../../../../packages/test-support/loader-smoke/tests/fixtures/headless-driver.ts', import.meta.url))
-const configPath = fileURLToPath(new URL('./fixtures/cli.cordis.yml', import.meta.url))
+const configPath = fileURLToPath(new URL('./fixtures/cli.patch.yml', import.meta.url))
 const tsconfigPath = fileURLToPath(new URL('../../../../../../tsconfig.json', import.meta.url))
 const decompress = promisify(zstdDecompress)
 

@@ -99,7 +99,7 @@ async function boot(
       resumeSessionId: SessionId('parent'),
       agentOptions: { provider: 'mock', model: 'mock' },
     })).agent
-    : ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
+    : await ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
   if (options.parkParent !== false) parkParent(ctx, parent)
   return { ctx, parent, adapter, root, disposePersistence }
 }

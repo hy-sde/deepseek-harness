@@ -28,6 +28,10 @@ async function bench(served?: string[]) {
   const locale = new LocaleRuntime(ctx)
   locale.setLocale('zh')
   ctx.provide('locale', locale)
+  // The plugin injects the connection service (its cards ride connection/reset
+  // for adapter generation); without this provide the cordis fiber stays
+  // PENDING and apply never runs. Same stub as ui-jobs/ui-layout specs.
+  ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
   const describeCredentials = vi.fn(() => Promise.resolve({
     ok: false, error: new RemoteError('gateway/internal', 'no provider', {}),
   }))

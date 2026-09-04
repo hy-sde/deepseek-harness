@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-logseq",
   "description": "Model-facing Logseq CLI tools (logseq_list/upsert/remove/query/show/search/graph/server) that drive a Logseq database graph from the terminal — headless-capable alternative to the desktop MCP bridge",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

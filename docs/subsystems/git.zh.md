@@ -163,11 +163,15 @@ async resetIndex(cwd: string, files: readonly string[] = [], signal?: AbortSigna
 async commit(cwd: string, message: string, options: { signal?: AbortSignal; allowEmpty?: boolean } = {}): Promise<CommandRun>
 
 /**
- * Push the current branch. `--no-follow-tags` so only the branch moves.
+ * Push the current branch (or an explicit branch to `remote`), keeping
+ * `--no-follow-tags` so only the branch moves. `setUpstream` records
+ * `remote`/`branch` tracking, which a freshly cut named-branch worktree
+ * needs before any PR flow can consume it; without it, a branch with no
+ * existing upstream fails like any plain `git push` does.
  * @param cwd - working directory inside the repository.
- * @param options - optional force-with-lease and abort signal.
+ * @param options - remote, branch, upstream-recording, force-with-lease, abort signal.
  */
-async push(cwd: string, options: { signal?: AbortSignal; forceWithLease?: boolean } = {}): Promise<void>
+async push(cwd: string, options: { signal?: AbortSignal forceWithLease?: boolean remote?: string branch?: string setUpstream?: boolean } = {}): Promise<void>
 
 /**
  * Recent commits (default 20), parseable fields only.

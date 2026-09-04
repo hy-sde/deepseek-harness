@@ -99,7 +99,10 @@ describe('PermissionRow', () => {
     expect(mutate).toHaveBeenCalledOnce()
   })
 
-  it('selects Full access directly without a risk confirmation', async () => {
+  // rc.1 contract: the Full access default is gated behind the shared
+  // RiskConfirmation (upstream added the explicit acknowledgement flow), so
+  // the row cannot persist it on a bare pick.
+  it('requires explicit acknowledgement before saving full access', async () => {
     const mutate = vi.fn(() => Promise.resolve(ok(view('danger-full-access', 1))))
     const controller = derivedController({
       settings: {
@@ -108,15 +111,20 @@ describe('PermissionRow', () => {
       },
     })
     mount(controller)
-    fireEvent.click(await screen.findByRole('button', { name: 'Read Only' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Full access' }))
+    fireEvent.click(await screen.findByRole('button', { name: '仅可查看' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '完全权限' }))
+    expect(mutate).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '取消' }))
+    expect(screen.queryByRole('dialog', { name: '确认启用完全权限？' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '仅可查看' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '完全权限' }))
+    const dialog = screen.getByRole('dialog', { name: '确认启用完全权限？' })
+    const enable = screen.getByRole('button', { name: '启用完全权限' })
+    expect((enable as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(enable)
     await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
-    expect(mutate).toHaveBeenCalledWith({
-      ns: 'permission',
-      ops: [{ op: 'set', path: ['defaultPreset'], value: 'danger-full-access' }],
-      expectedRevision: 0,
-    })
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(dialog.isConnected).toBe(false)
   })
 
   it('hides an unavailable namespace and disables a read-only provider', async () => {

@@ -19,6 +19,8 @@ import ToolRuntime, { type Config as ToolsConfig } from '@deepseek-ai/dsh-tools'
 import SkillRegistry, { type Config as SkillRegistryConfig } from '@deepseek-ai/dsh-skill'
 import * as SkillFileSystem from '@deepseek-ai/dsh-skill-filesystem'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
+import * as SessionInvariant from '@deepseek-ai/dsh-session/invariant'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import GoalService, { type Config as GoalDomainConfig } from '@deepseek-ai/dsh-goal'
 import * as goalSession from '@deepseek-ai/dsh-goal-round-driver'
 import * as toolGoal from '@deepseek-ai/dsh-tool-goal'
@@ -232,6 +234,7 @@ export function apply(ctx: Context, config: Config): void {
     ctx.plugin(SkillFileSystem, Object.assign({}, config.skills?.filesystem, { dshHome }))
   }
   ctx.plugin(AgentRegistry)
+  ctx.plugin(SessionProjectionRegistry)
   ctx.plugin(llmRetry)
   if (config.goals !== undefined && config.goals !== false) {
     ctx.plugin(GoalService, config.goals.domain ?? {})
@@ -240,6 +243,7 @@ export function apply(ctx: Context, config: Config): void {
   }
   ctx.plugin(LocalJobRegistry, config.jobs ?? {})
   ctx.plugin(InvariantRegistry, config.invariants ?? {})
+  ctx.plugin(SessionInvariant)
   if (config.toolBash !== false) {
     ctx.plugin(bashEnv, { dshHome })
     ctx.plugin(toolBash, config.toolBash ?? {})

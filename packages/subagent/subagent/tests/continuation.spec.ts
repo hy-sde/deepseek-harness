@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { loadStoredSession } from './persistence-helpers'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -91,7 +92,7 @@ async function setupWith(
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
   ctx.llm.registerAdapter(['mock'], adapter)
-  const parent = ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
+  const parent = await ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
   return { ctx, parent, disposePersistence, root }
 }
 
@@ -204,7 +205,7 @@ describe('SubagentRuntime.startContinuable', () => {
     expect(adapter.requests).toEqual([])
 
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'child task')).toBe(true)
   })
 
@@ -230,7 +231,7 @@ describe('SubagentRuntime.startContinuable', () => {
 
     release.resolve(undefined)
     await waitNoActivation(ctx, reservedId)
-    const loaded = await ctx.sessionPersistence.load(reservedId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, reservedId)
     expect(loaded.meta.id).toBe(reservedId)
 
     await expect(ctx.subagents.startContinuable({
@@ -268,7 +269,7 @@ describe('SubagentRuntime.startContinuable', () => {
     const started = await ctx.subagents.startContinuable(startSpec(parent))
     await waitNoActivation(ctx, started.childId)
 
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     const descriptorIndex = loaded.events.findIndex(event => event.type === 'subagent/descriptor')
     const turnStartIndex = loaded.events.findIndex(event => event.type === 'turn/start')
     expect(descriptorIndex).toBeGreaterThanOrEqual(0)
@@ -314,7 +315,7 @@ describe('SubagentRuntime.startContinuable', () => {
       },
     })
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(loaded.events.find(event => event.type === 'subagent/descriptor')?.data)
       .toMatchObject({ agentReasoningEffort: 'max' })
 
@@ -395,7 +396,7 @@ describe('SubagentRuntime.startContinuable', () => {
     const { ctx } = await setup([])
     // A routeless parent declares no provider/model, and this start declares no
     // persona or tool filter, so the descriptor records only what exists.
-    const routeless = ctx.agentLoop.create(SessionId('routeless'), {})
+    const routeless = await ctx.agentLoop.create(SessionId('routeless'), {})
     const started = await ctx.subagents.startContinuable(startSpec(routeless))
     const child = await vi.waitFor(() => {
       const found = ctx.agents.get(started.childId)
@@ -426,7 +427,7 @@ describe('SubagentRuntime.startContinuable', () => {
       },
       execute: () => Promise.resolve({}),
     }))
-    const routeless = ctx.agentLoop.create(SessionId('routeless-filtered'), {})
+    const routeless = await ctx.agentLoop.create(SessionId('routeless-filtered'), {})
     const started = await ctx.subagents.startContinuable({
       ...startSpec(routeless),
       request: { prompt: message('filtered work'), parent: routeless, toolFilter: { deny: ['noop'] } },
@@ -450,7 +451,7 @@ describe('SubagentRuntime.startContinuable', () => {
 
   it('cold-resumes without inventing a model route the descriptor never declared', async () => {
     const { ctx, root } = await setup([textResponse('first')])
-    const routeless = ctx.agentLoop.create(SessionId('routeless-resume'), {})
+    const routeless = await ctx.agentLoop.create(SessionId('routeless-resume'), {})
     const started = await ctx.subagents.startContinuable(startSpec(routeless))
     await waitNoActivation(ctx, started.childId)
 
@@ -465,7 +466,7 @@ describe('SubagentRuntime.startContinuable', () => {
     await fresh.plugin(TestSessionQuery)
     await fresh.plugin(SubagentRuntime)
     await fresh.plugin(SubagentSpawn, { providerName: 'spawn' })
-    const freshParent = fresh.agentLoop.create(SessionId('routeless-resume'), {})
+    const freshParent = await fresh.agentLoop.create(SessionId('routeless-resume'), {})
     await followup(fresh, freshParent, started.childId, message('resume routeless'))
 
     const resumed = await vi.waitFor(() => {
@@ -490,7 +491,7 @@ describe('SubagentRuntime.startContinuable', () => {
     const started = await ctx.subagents.startContinuable(startSpec(parent, 'fork'))
     await waitNoActivation(ctx, started.childId)
 
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     const descriptorIndex = loaded.events.findIndex(event => event.type === 'subagent/descriptor')
     const childTurn = loaded.events.slice(descriptorIndex + 1)
       .find(event => event.type === 'turn/start')
@@ -513,14 +514,14 @@ describe('SubagentRuntime.startContinuable', () => {
     })
     await waitNoActivation(ctx, started.childId)
 
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     const descriptor = loaded.events.find(event => event.type === 'subagent/descriptor')
     expect(descriptor?.data).toMatchObject({ persona: 'You are scoped.' })
 
     // Cold resume reconstructs the declared composition from that descriptor.
     await followup(ctx, parent, started.childId, message('resume it'))
     await waitNoActivation(ctx, started.childId)
-    const resumed = await ctx.sessionPersistence.load(started.childId)
+    const resumed = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(resumed.events, 'resume it')).toBe(true)
   })
 })
@@ -558,7 +559,7 @@ describe('SubagentRuntime.followup residency routing', () => {
 
     releaseFirst.resolve(undefined)
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(userTexts(loaded.events)).toEqual(['child task', 'first follow-up', 'second follow-up'])
   })
 
@@ -571,7 +572,7 @@ describe('SubagentRuntime.followup residency routing', () => {
     expect(messageId).toBeTypeOf('string')
     await waitNoActivation(ctx, started.childId)
 
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(userTexts(loaded.events)).toEqual(['child task', 'continue please'])
     // One descriptor only: cold resume never re-seeds it.
     expect(loaded.events.filter(event => event.type === 'subagent/descriptor')).toHaveLength(1)
@@ -604,20 +605,23 @@ describe('SubagentRuntime.followup residency routing', () => {
 
     expect(starts.map(info => info.provider)).toEqual(['retired', 'retired'])
     expect(ends.map(info => info.runId)).toEqual(starts.map(info => info.runId))
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(userTexts(loaded.events)).toEqual(['child task', 'continue without provider'])
   })
 
   it('wakes a waiting Activation instead of cold-resuming it', async () => {
     const releaseGrandchild = Promise.withResolvers<undefined>()
+    const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
-      // The child delegates, then finishes its own turn while the grandchild runs.
-      { chunks: textResponse('child done') },
+      // The child must still be running when its own grandchild materializes,
+      // so gate its turn until after the grandchild is admitted.
+      { chunks: textResponse('child done'), gate: releaseChild.promise },
       { chunks: textResponse('grandchild'), gate: releaseGrandchild.promise },
       { chunks: textResponse('woken') },
     ])
     const { ctx, parent } = await setupWith(adapter)
     const started = await ctx.subagents.startContinuable(startSpec(parent))
+
     const child = await vi.waitFor(() => {
       const found = ctx.agents.get(started.childId)
       expect(found).toBeDefined()
@@ -625,6 +629,7 @@ describe('SubagentRuntime.followup residency routing', () => {
     })
     // The child starts its own continuable grandchild, then goes quiescent.
     const grandchild = await ctx.subagents.startContinuable(startSpec(child))
+    releaseChild.resolve(undefined)
     await vi.waitFor(() => { expect(adapter.requests.length).toBeGreaterThanOrEqual(2) })
     await vi.waitFor(() => {
       expect(child.status).toBe('idle')
@@ -640,7 +645,7 @@ describe('SubagentRuntime.followup residency routing', () => {
     releaseGrandchild.resolve(undefined)
     await waitNoActivation(ctx, grandchild.childId)
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     // This child is itself a parent, so its grandchild's settlement notice is
     // an ordinary later user message in its log.
     expect(userTexts(loaded.events).slice(0, 2)).toEqual(['child task', 'while waiting'])
@@ -651,7 +656,7 @@ describe('SubagentRuntime.followup residency routing', () => {
     const { ctx, parent } = await setup([textResponse('first')])
     const started = await ctx.subagents.startContinuable(startSpec(parent))
     await waitNoActivation(ctx, started.childId)
-    const stranger = ctx.agentLoop.create(SessionId('stranger'), { provider: 'mock', model: 'mock' })
+    const stranger = await ctx.agentLoop.create(SessionId('stranger'), { provider: 'mock', model: 'mock' })
 
     await expect(followup(ctx, stranger, started.childId, message('mine now')))
       .rejects.toThrow(/belongs to another parent session/)
@@ -686,7 +691,10 @@ describe('SubagentRuntime.followup residency routing', () => {
     const started = await ctx.subagents.startContinuable(startSpec(parent))
     await waitNoActivation(ctx, started.childId)
     const inspectStarted = Promise.withResolvers<undefined>()
-    const inspect = vi.spyOn(ctx.sessionPersistence, 'borrowSession').mockImplementation((_id, signal) => {
+    const origOpen = ctx.sessionPersistence.open.bind(ctx.sessionPersistence)
+    const inspect = vi.spyOn(ctx.sessionPersistence, 'open').mockImplementation((_id, access, options) => {
+      if (access !== 'read') return origOpen(_id, access, options)
+      const signal = options?.signal
       return new Promise<never>((_resolve, reject) => {
         if (signal === undefined) {
           reject(new Error('cold inspection must receive the followup signal'))
@@ -738,7 +746,7 @@ describe('SubagentRuntime.followup residency routing', () => {
 
     await expect(delivery).resolves.toBeTypeOf('string')
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'raced')).toBe(true)
   })
 })
@@ -746,8 +754,9 @@ describe('SubagentRuntime.followup residency routing', () => {
 describe('continuable child ownership', () => {
   it('keeps a parent Activation waiting until its child completes disposal', async () => {
     const releaseGrandchild = Promise.withResolvers<undefined>()
+    const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
-      { chunks: textResponse('child done') },
+      { chunks: textResponse('child done'), gate: releaseChild.promise },
       { chunks: textResponse('grandchild'), gate: releaseGrandchild.promise },
     ])
     const { ctx, parent } = await setupWith(adapter)
@@ -758,6 +767,7 @@ describe('continuable child ownership', () => {
       return found!
     })
     const grandchild = await ctx.subagents.startContinuable(startSpec(child))
+    releaseChild.resolve(undefined)
 
     await vi.waitFor(() => {
       expect(child.status).toBe('idle')
@@ -851,8 +861,9 @@ describe('continuable durability and teardown', () => {
 
   it('disposes every live Activation forest child-first on manager teardown', async () => {
     const hold = Promise.withResolvers<undefined>()
+    const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
-      { chunks: textResponse('child done') },
+      { chunks: textResponse('child done'), gate: releaseChild.promise },
       { chunks: textResponse('grandchild'), gate: hold.promise },
     ])
     const { ctx, parent } = await setupWith(adapter)
@@ -863,6 +874,7 @@ describe('continuable durability and teardown', () => {
       return found!
     })
     const grandchild = await ctx.subagents.startContinuable(startSpec(child))
+    releaseChild.resolve(undefined)
     await vi.waitFor(() => { expect(ctx.agents.get(grandchild.childId)).toBeDefined() })
 
     const disposals: SessionId[] = []
@@ -877,7 +889,7 @@ describe('continuable durability and teardown', () => {
     expect(disposals.indexOf(grandchild.childId))
       .toBeLessThan(disposals.indexOf(started.childId))
     // Durable sessions survive process-local teardown.
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(loaded.meta.id).toBe(started.childId)
   })
 
@@ -892,7 +904,7 @@ describe('continuable durability and teardown', () => {
       { chunks: textResponse('sibling follow-up') },
     ])
     const { ctx, parent } = await setupWith(adapter)
-    const siblingParent = ctx.agentLoop.create(
+    const siblingParent = await ctx.agentLoop.create(
       SessionId('sibling-parent'),
       { provider: 'mock', model: 'mock' },
     )
@@ -1031,7 +1043,7 @@ describe('continuable durability and teardown', () => {
     const release = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([{ chunks: textResponse('target'), gate: release.promise }])
     const { ctx, parent } = await setupWith(adapter)
-    const other = ctx.agentLoop.create(SessionId('other-parent'), { provider: 'mock', model: 'mock' })
+    const other = await ctx.agentLoop.create(SessionId('other-parent'), { provider: 'mock', model: 'mock' })
     const target = await ctx.subagents.startContinuable(startSpec(parent))
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
 
@@ -1251,7 +1263,7 @@ describe('continuable durability and teardown', () => {
     await drained
     await waitNoActivation(ctx, started.childId)
 
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     // Only what actually reached the log is reconstructable.
     expect(hasUserText(loaded.events, 'never logged')).toBe(false)
   })
@@ -1268,17 +1280,18 @@ describe('continuable review regressions', () => {
     const started = await ctx.subagents.startContinuable(startSpec(originalParent.agent))
     await waitNoActivation(ctx, started.childId)
 
-    const manager = (ctx.subagents as unknown as {
-      continuations: { ownerCtx: Context }
-    }).continuations
-    const ownerAgents = manager.ownerCtx.agents
-    const originalResume = ownerAgents.resume.bind(ownerAgents)
+    // Pause the cold-resume materialization at its persisted-log open, giving
+    // the test a deterministic window to replace the exact live parent between
+    // the header authorization and the submit-time liveness recheck.
+    const origOpen = ctx.sessionPersistence.open.bind(ctx.sessionPersistence)
     const resumed = Promise.withResolvers<undefined>()
     const releaseResume = Promise.withResolvers<undefined>()
-    const resumeSpy = vi.spyOn(ownerAgents, 'resume').mockImplementation(async (options) => {
-      const handle = await originalResume(options)
-      resumed.resolve(undefined)
-      await releaseResume.promise
+    const openSpy = vi.spyOn(ctx.sessionPersistence, 'open').mockImplementation(async (id, access, options) => {
+      const handle = await origOpen(id, access, options)
+      if (id === started.childId && access === 'write') {
+        resumed.resolve(undefined)
+        await releaseResume.promise
+      }
       return handle
     })
 
@@ -1290,16 +1303,16 @@ describe('continuable review regressions', () => {
     )
     await resumed.promise
     await originalParent.dispose()
-    const replacement = await ctx.agents.create({
-      sessionId: parentId,
+    const replacement = await ctx.agents.resume({
+      resumeSessionId: parentId,
       agentOptions: { provider: 'mock', model: 'mock' },
     })
     releaseResume.resolve(undefined)
 
     await expect(delivery).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
-    resumeSpy.mockRestore()
+    openSpy.mockRestore()
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'must not cross parent replacement')).toBe(false)
     await replacement.dispose()
   })
@@ -1368,7 +1381,7 @@ describe('continuable review regressions', () => {
     // Nothing was enqueued, so no later turn can carry it.
     releaseFirst.resolve(undefined)
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'cancelled')).toBe(false)
     expect(before).toBeGreaterThan(0)
   })
@@ -1575,7 +1588,7 @@ describe('continuable review regressions', () => {
     await drained
 
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'discarded')).toBe(false)
   })
 
@@ -1601,7 +1614,7 @@ describe('continuable review regressions', () => {
     // Retaining the discarded id would pin residency at `running` forever, so
     // reaching no-Activation without an explicit drain is the assertion.
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'doomed')).toBe(false)
   })
 
@@ -1684,7 +1697,7 @@ describe('continuable review regressions', () => {
     // Two child turns; the third request is the parent's own turn on the
     // settlement notice.
     expect(adapter.requests.filter(request => request.sessionId === started.childId)).toHaveLength(2)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'queued')).toBe(true)
   })
 })
@@ -1831,7 +1844,7 @@ describe('continuable settlement delivery', () => {
     await vi.waitFor(() => { expect(settlementNotices(parent)).toHaveLength(1) })
     // The parent must not be told the child finished: the delivery it is still
     // waiting on was claimed out of the inbox and then swallowed by the failure.
-    const child = await ctx.sessionPersistence.load(started.childId)
+    const child = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(child.events, 'second task')).toBe(false)
     expect(settlementNotices(parent)[0]!.text).toBe(
       `Background subagent ${started.childId} failed before it finished.`
@@ -2048,8 +2061,9 @@ describe('continuable settlement delivery', () => {
   it('holds a maintaining parent live until it can read the notice', async () => {
     const releaseFirst = Promise.withResolvers<undefined>()
     const releaseSecond = Promise.withResolvers<undefined>()
+    const releaseOuter = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
-      { chunks: textResponse('outer') },
+      { chunks: textResponse('outer'), gate: releaseOuter.promise },
       { chunks: textResponse('first inner'), gate: releaseFirst.promise },
       { chunks: textResponse('second inner'), gate: releaseSecond.promise },
       { chunks: textResponse('outer reacts') },
@@ -2064,6 +2078,7 @@ describe('continuable settlement delivery', () => {
     })
     const first = await ctx.subagents.startContinuable(startSpec(middle))
     const second = await ctx.subagents.startContinuable(startSpec(middle))
+    releaseOuter.resolve(undefined)
     await vi.waitFor(() => { expect(middle.status).toBe('idle') })
 
     // `Agent.status` folds maintenance into `idle`, and a waking send behind it
@@ -2089,8 +2104,9 @@ describe('continuable settlement delivery', () => {
 
   it('delivers before releasing the ownership that lets the parent settle', async () => {
     const releaseChild = Promise.withResolvers<undefined>()
+    const releaseOuter = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
-      { chunks: textResponse('outer') },
+      { chunks: textResponse('outer'), gate: releaseOuter.promise },
       { chunks: textResponse('inner'), gate: releaseChild.promise },
       { chunks: textResponse('outer reacts') },
     ])
@@ -2102,6 +2118,7 @@ describe('continuable settlement delivery', () => {
       return live!
     })
     const inner = await ctx.subagents.startContinuable(startSpec(middle))
+    releaseOuter.resolve(undefined)
     await vi.waitFor(() => { expect(middle.status).toBe('idle') })
 
     const manager = (ctx.subagents as unknown as {
@@ -2189,7 +2206,7 @@ describe('continuable settlement delivery', () => {
     expect(settlementNotices(resumed.agent)).toEqual([])
     await resumed.dispose()
     // The account is still in the durable log: delivered, then cancelled unread.
-    const persisted = await ctx.sessionPersistence.load(parentId)
+    const persisted = await loadStoredSession(ctx.sessionPersistence, parentId)
     expect(persisted.events.flatMap(event => event.type === 'agent/inbox/spliced'
       ? [{ inserted: event.data.inserted.length, removed: event.data.removedCount ?? 0 }]
       : [])).toEqual([{ inserted: 1, removed: 0 }, { inserted: 0, removed: 1 }])
@@ -2318,7 +2335,7 @@ describe('continuable public API', () => {
     await expect(followup(ctx, parent, started.childId, message('aborted'), controller.signal))
       .rejects.toThrow()
 
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'aborted')).toBe(false)
   })
 
@@ -2339,7 +2356,7 @@ describe('continuable public API', () => {
 
     releaseFirst.resolve(undefined)
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(hasUserText(loaded.events, 'survives')).toBe(true)
   })
 })
@@ -2405,8 +2422,9 @@ describe('continuable errors', () => {
 
   it('reports a failing branch after every branch settles, without pinning the rest', async () => {
     const hold = Promise.withResolvers<undefined>()
+    const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
-      { chunks: textResponse('child done') },
+      { chunks: textResponse('child done'), gate: releaseChild.promise },
       { chunks: textResponse('grandchild'), gate: hold.promise },
     ])
     const { ctx, parent } = await setupWith(adapter)
@@ -2417,6 +2435,7 @@ describe('continuable errors', () => {
       return found!
     })
     const grandchild = await ctx.subagents.startContinuable(startSpec(child))
+    releaseChild.resolve(undefined)
     await vi.waitFor(() => { expect(ctx.agents.get(grandchild.childId)).toBeDefined() })
     // Make the grandchild's own handle disposal reject: scope teardown failure
     // propagates, unlike a contained `agent/disposed` listener throw.
@@ -2435,7 +2454,7 @@ describe('continuable errors', () => {
     await expect(drained).rejects.toMatchObject({ code: 'ACTIVATION_TEARDOWN_FAILED' })
     // The other branch still released, and durable sessions survive.
     expect(ctx.agents.get(started.childId)).toBeUndefined()
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(loaded.meta.id).toBe(started.childId)
   })
 
@@ -2485,7 +2504,7 @@ describe('continuable errors', () => {
       },
     })
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(loaded.events.find(event => event.type === 'subagent/descriptor')?.data)
       .toMatchObject({
         agentProvider: 'mock',
@@ -2502,7 +2521,7 @@ describe('continuable errors', () => {
       })
     })
     await waitNoActivation(ctx, started.childId)
-    const resumed = await ctx.sessionPersistence.load(started.childId)
+    const resumed = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(resumed.events.flatMap(event => event.type === 'request/header'
       ? [event.data.header.config.reasoningEffort]
       : [])).toEqual([effort, effort])
@@ -2524,7 +2543,7 @@ describe('continuable errors', () => {
     const serviceFiber = await ctx.plugin(SubagentRuntime)
     await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
     ctx.llm.registerAdapter(['mock'], adapter)
-    const parent = ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
+    const parent = await ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
     const started = await ctx.subagents.startContinuable(startSpec(parent))
     await vi.waitFor(() => { expect(ctx.agents.get(started.childId)).toBeDefined() })
 
@@ -2571,7 +2590,7 @@ describe('SubagentRuntime.interrupt', () => {
     // run before it in the existing FIFO order.
     await followup(ctx, parent, started.childId, message('waking D'))
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(started.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, started.childId)
     expect(userTexts(loaded.events)).toEqual(['child task', 'parked B', 'parked C', 'waking D'])
     const turnEnds = loaded.events
       .filter(event => event.type === 'turn/end')
@@ -2610,7 +2629,7 @@ describe('SubagentRuntime.interrupt', () => {
     releaseGrandchild.resolve(undefined)
     await waitNoActivation(ctx, grandchild.childId)
     await waitNoActivation(ctx, started.childId)
-    const loaded = await ctx.sessionPersistence.load(grandchild.childId)
+    const loaded = await loadStoredSession(ctx.sessionPersistence, grandchild.childId)
     const turnEnds = loaded.events
       .filter(event => event.type === 'turn/end')
       .map(event => (event).data.reason.kind)
@@ -2682,7 +2701,7 @@ describe('SubagentRuntime.interrupt', () => {
     const siblingStart = await ctx.subagents.startContinuable(startSpec(parent))
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(2) })
     const sibling = ctx.agents.get(siblingStart.childId)!
-    const stranger = ctx.agentLoop.create(SessionId('stranger'), { provider: 'mock', model: 'mock' })
+    const stranger = await ctx.agentLoop.create(SessionId('stranger'), { provider: 'mock', model: 'mock' })
     const stale = { ...parent, id: parent.id } as unknown as Agent
     const cancelSpy = vi.spyOn(target, 'cancel')
 
