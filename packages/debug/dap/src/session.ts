@@ -1943,10 +1943,10 @@ export class DapSessionManager {
   #prepareStopOutcome(session: DapSession, signal?: AbortSignal, timeoutMs: number = 30_000): Promise<unknown> {
     const { promise, resolve, reject } = Promise.withResolvers<unknown>()
     const rootSessionId = this.#getRootSession(session).id
-    const abortHandler = () =>
-      waiter.reject(signal?.reason instanceof Error ? signal.reason : new Error('Debug operation aborted'))
+    const abortHandler = () => {
+      waiter.reject(signal?.reason instanceof Error ? signal.reason : new Error('Debug operation aborted')) }
     const timeout = setTimeout(
-      () => waiter.reject(new Error(`DAP session tree outcome timed out after ${timeoutMs}ms`)),
+      () => { waiter.reject(new Error(`DAP session tree outcome timed out after ${timeoutMs}ms`)) },
       timeoutMs,
     )
     const cleanup = () => {
@@ -2251,7 +2251,7 @@ function untilAborted<T>(signal: AbortSignal | undefined, promise: Promise<T>): 
   if (signal === undefined) return promise
   if (signal.aborted) return Promise.reject(signal.reason instanceof Error ? signal.reason : new Error('Aborted'))
   return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(signal.reason instanceof Error ? signal.reason : new Error('Aborted'))
+    const onAbort = () => { reject(signal.reason instanceof Error ? signal.reason : new Error('Aborted')) }
     signal.addEventListener('abort', onAbort, { once: true })
     promise.then(
       (value) => {

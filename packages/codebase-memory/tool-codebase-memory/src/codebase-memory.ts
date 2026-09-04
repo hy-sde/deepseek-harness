@@ -267,7 +267,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
     },
     output: { schema: OUTPUT_SCHEMA, render: (_a, v) => [{ type: 'text', text: v.text }] },
     async execute(args) {
-      const a = args as { project?: string }
+      const a = args
       const { payload } = await call('index_status', withProject(a), baseTimeout)
       return { text: renderPayload(payload, maxChars) }
     },
@@ -316,7 +316,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
     },
     output: { schema: OUTPUT_SCHEMA, render: (_a, v) => [{ type: 'text', text: v.text }] },
     async execute(args) {
-      const a = args as { query?: string; project?: string; maxRows?: number }
+      const a = args
       if (!a.query) throw new CodebaseMemoryCliError('query is required', [], '', '', null)
       const payload: Record<string, unknown> = { query: a.query, ...withProject(a) }
       if (a.maxRows !== undefined) payload.max_rows = a.maxRows

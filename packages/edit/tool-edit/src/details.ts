@@ -73,5 +73,5 @@ export function fileDiffsFromMeta(meta: unknown): FileDiff[] | undefined {
       && typeof newText === 'string'
   }
   if (!diffs.every(isFileDiff)) return undefined
-  return diffs as FileDiff[]
+  return diffs
 }

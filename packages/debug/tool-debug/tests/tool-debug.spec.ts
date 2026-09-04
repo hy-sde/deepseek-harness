@@ -370,7 +370,7 @@ async function mount(capabilities: DapCapabilities = ALL_CAPABILITIES, config: T
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
-  await ctx.plugin(StubDap, capabilities as never)
+  await ctx.plugin(StubDap, capabilities)
   await ctx.plugin(ToolDebug, config)
   return { ctx, dap: ctx.get('dap') as unknown as StubDap }
 }
@@ -410,11 +410,11 @@ describe('tool-debug registration', () => {
   })
 
   it('rejects a non-positive request timeout config at load', async () => {
-    await expect(mount(undefined, { requestTimeoutSec: 0 } as never)).rejects.toThrow(/requestTimeoutSec/)
+    await expect(mount(undefined, { requestTimeoutSec: 0 })).rejects.toThrow(/requestTimeoutSec/)
   })
 
   it('rejects a tool timeout above the Node timer range at load', async () => {
-    await expect(mount(undefined, { timeoutMs: MAX_TIMER_DELAY_MS + 1 } as never)).rejects.toThrow(/timeoutMs/)
+    await expect(mount(undefined, { timeoutMs: MAX_TIMER_DELAY_MS + 1 })).rejects.toThrow(/timeoutMs/)
   })
 })
 

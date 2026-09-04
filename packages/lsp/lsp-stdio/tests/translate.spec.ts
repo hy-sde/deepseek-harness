@@ -105,8 +105,8 @@ describe('applyEditsToText', () => {
 describe('normalizeDiagnostics', () => {
   const diagnostic = (start: [number, number], end: [number, number], message: string) => ({
     range: {
-      start: { line: start[0] as number, character: start[1] as number },
-      end: { line: end[0] as number, character: end[1] as number },
+      start: { line: start[0], character: start[1] },
+      end: { line: end[0], character: end[1] },
     },
     message,
   })

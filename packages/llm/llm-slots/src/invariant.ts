@@ -3,7 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import type { ModelSlotsService, ModelSlotsStats } from './index.ts'
+import type { ModelSlotsStats } from './index.ts'
 
 const PACKAGE_NAME = '@deepseek-ai/dsh-llm-slots'
 
@@ -14,7 +14,7 @@ export const inject = ['invariants']
 
 /** Read live admission stats, or `undefined` when the plugin is not mounted. */
 function readStats(ctx: Context): ModelSlotsStats | undefined {
-  const slots = ctx.get('modelSlots') as ModelSlotsService | undefined
+  const slots = ctx.get('modelSlots')
   if (slots === undefined) return undefined
   try {
     return slots.stats()

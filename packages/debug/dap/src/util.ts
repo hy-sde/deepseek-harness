@@ -13,7 +13,8 @@ export function isErrnoException(value: unknown): value is NodeJS.ErrnoException
     value !== null &&
     typeof value === 'object' &&
     typeof (value as NodeJS.ErrnoException).code === 'string' &&
-    'errno' in Object(value) === false
+    !(
+      'errno' in Object(value))
   )
 }
 

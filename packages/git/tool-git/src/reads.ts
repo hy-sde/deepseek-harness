@@ -95,7 +95,7 @@ class GitBackendReads implements ReadSurface {
     if (this.signal !== undefined) all.signal = this.signal
     return this.git.diff.changedFiles(
       this.cwd,
-      all as { cached?: boolean; files?: readonly string[]; signal?: AbortSignal },
+      all,
     )
   }
 

@@ -158,7 +158,7 @@ describe('persistent kernels — failure taxonomy', () => {
       await withManager(async (manager) => {
         const controller = new AbortController()
         const pending = manager.run({ language, code: language === 'python' ? 'while True:\n    pass' : 'await new Promise(() => {})', signal: controller.signal })
-        setTimeout(() => controller.abort(new Error('caller gave up')), 80)
+        setTimeout(() => { controller.abort(new Error('caller gave up')) }, 80)
         const result = await pending
         expect(result.error?.kind).toBe('abort')
       })

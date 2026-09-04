@@ -85,16 +85,16 @@ function mergeAdapters(
       ? {
         ...existing,
         ...config,
-        launchDefaults: isRecord((config as Record<string, unknown>).launchDefaults)
+        launchDefaults: isRecord((config).launchDefaults)
           ? {
             ...(existing?.launchDefaults ?? {}),
-            ...normalizeObject((config as Record<string, unknown>).launchDefaults),
+            ...normalizeObject((config).launchDefaults),
           }
           : existing?.launchDefaults,
-        attachDefaults: isRecord((config as Record<string, unknown>).attachDefaults)
+        attachDefaults: isRecord((config).attachDefaults)
           ? {
             ...(existing?.attachDefaults ?? {}),
-            ...normalizeObject((config as Record<string, unknown>).attachDefaults),
+            ...normalizeObject((config).attachDefaults),
           }
           : existing?.attachDefaults,
       }

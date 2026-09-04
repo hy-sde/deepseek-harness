@@ -330,7 +330,7 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       ctx.effect(() => {
         const timer = setInterval(() => this.runSupervision(Date.now()), this.config.supervisorTickMs)
         timer.unref?.()
-        return () => clearInterval(timer)
+        return () => { clearInterval(timer) }
       }, 'subagents.supervision()')
     }
   }
@@ -701,7 +701,7 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
   private raiseWedgeDecision(
     probe: WedgeProbe,
     idleForMs: number,
-    slots?: { running: number; waiting: number; capacity: number } | undefined,
+    slots?: { running: number; waiting: number; capacity: number }  ,
   ): void {
     const childId = probe.childId as unknown as SessionId
     const parentId = probe.parentSession as unknown as SessionId

@@ -190,7 +190,7 @@ export function parseDebugArgs(args: unknown): DebugToolArgs {
   if (!isDebugAction(raw.action)) {
     throw new Error(`action must be one of ${DEBUG_ACTIONS.join(', ')}`)
   }
-  return { ...raw, action: raw.action as DebugToolArgs['action'] } as DebugToolArgs
+  return { ...raw, action: raw.action }
 }
 
 /** Adapter-unavailable hints keyed by well-known adapter ids. */

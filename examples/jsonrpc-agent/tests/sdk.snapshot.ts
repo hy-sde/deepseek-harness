@@ -452,7 +452,7 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
           expect(contexts).toEqual([])
         } else {
           expect(contexts).toHaveLength(1)
-          const context = contexts[0] as string
+          const context = contexts[0]
           for (const clause of scenario.runtimeContext.includes) expect(context).toContain(clause)
           for (const clause of scenario.runtimeContext.excludes) expect(context).not.toContain(clause)
           const system = assembledSystem(parent)

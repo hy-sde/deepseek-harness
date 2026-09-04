@@ -89,7 +89,7 @@ async function realCbmAvailable(): Promise<string | null> {
   const candidates = ['codebase-memory-mcp', join(homedir(), '.local', 'bin', 'codebase-memory-mcp')]
   for (const candidate of candidates) {
     const ok = await new Promise<boolean>((resolve) => {
-      execFile(candidate, ['--version'], { timeout: 8000 }, err => resolve(!err))
+      execFile(candidate, ['--version'], { timeout: 8000 }, (err) => { resolve(!err) })
     })
     if (ok) return candidate
   }

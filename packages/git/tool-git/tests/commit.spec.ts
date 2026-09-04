@@ -402,7 +402,7 @@ describe('P2 review gate on commit_apply --push', () => {
     rmSync(gateOrigin, { recursive: true, force: true })
   })
 
-  beforeEach(() => clearReviewVerdicts())
+  beforeEach(() => { clearReviewVerdicts() })
 
   const commitPlan = (path: string) => [{
     changes: [{ path }],

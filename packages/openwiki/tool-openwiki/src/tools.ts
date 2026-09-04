@@ -14,7 +14,6 @@ import { HostSessionManager } from '@deepseek-ai/dsh-openwiki-core'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type {
   BeginRequest,
-  NextPageRequest,
   SubmitPageRequest,
   SubmitPlanRequest,
 } from '@deepseek-ai/dsh-openwiki-core'
@@ -150,7 +149,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
         })),
         ...(a.deletePages ? { deletePages: a.deletePages } : {}),
       }) as PlanView
-      return { ...planned, text: renderValue(planned) } as PlanView
+      return { ...planned, text: renderValue(planned) }
     },
   }))
 
@@ -209,7 +208,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       ],
     },
     async execute(args) {
-      const a = args as NextPageRequest
+      const a = args
       return projectNext(await requireManager().nextPage(a))
     },
   }))
@@ -274,7 +273,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
           evidence: c.evidence.map(e => ({ resource: e.resource })),
         })),
       }) as PageView
-      return { ...submitted, text: renderValue(submitted) } as PageView
+      return { ...submitted, text: renderValue(submitted) }
     },
   }))
 
@@ -302,9 +301,9 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       ],
     },
     async execute(args) {
-      const a = args as NextPageRequest
+      const a = args
       const finished = await requireManager().finish(a) as FinishView
-      return { ...finished, text: renderValue(finished) } as FinishView
+      return { ...finished, text: renderValue(finished) }
     },
   }))
 }

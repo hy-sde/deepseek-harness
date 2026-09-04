@@ -170,12 +170,12 @@ export class DapClient {
   }): Promise<DapClient> {
     const { adapter, cwd, host, port } = options
     const exited = Promise.withResolvers<void>()
-    const closed = () => exited.resolve()
+    const closed = () => { exited.resolve() }
     const socket = netConnect({ host, port })
     socket.setNoDelay(true)
     const pair = socketTransport(socket, closed)
     const client = new DapClient(adapter, cwd, procLike(exited.promise), pair.sink, pair.transport, port)
-    void exited.promise.then(() => client.#handleProcessExit()).catch(() => undefined)
+    void exited.promise.then(() => { client.#handleProcessExit() }).catch(() => undefined)
     void exited.promise.catch(() => undefined)
     client.#startMessageReader()
     return Promise.resolve(client)
@@ -805,7 +805,7 @@ export class DapClient {
     })
     const timeoutPromise = new Promise<never>((_, reject) => {
       const timer = setTimeout(
-        () => reject(new Error(`${adapter.name} did not connect within ${timeoutMs}ms`)),
+        () => { reject(new Error(`${adapter.name} did not connect within ${timeoutMs}ms`)) },
         timeoutMs,
       )
       timer.unref?.()
@@ -834,7 +834,7 @@ export class DapClient {
   static #procFromHandle(handle: SubprocessHandle): DapClient['proc'] {
     return {
       exitCode: null,
-      kill: () => handle.terminate(),
+      kill: () => { handle.terminate() },
       exited: handle.done.then(() => undefined, () => undefined),
       stderrTail: () => handle.collected.stderr?.readFrom(0).text ?? '',
       stdin: handle.stdin,
@@ -843,7 +843,7 @@ export class DapClient {
   }
 
   static #wireExit(client: DapClient, proc: DapClient['proc']): void {
-    void proc.exited.then(() => client.#handleProcessExit()).catch(() => undefined)
+    void proc.exited.then(() => { client.#handleProcessExit() }).catch(() => undefined)
     void proc.exited.catch(() => undefined)
   }
 }
@@ -863,7 +863,7 @@ function stdioTransport(proc: {
     for (const handler of closeHandlers) handler(error)
     closeHandlers = []
   }
-  void proc.exited.then(() => fire(new Error('DAP adapter process exited'))).catch(() => {})
+  void proc.exited.then(() => { fire(new Error('DAP adapter process exited')) }).catch(() => {})
   const transport: DapTransport = {
     onData(handler) {
       proc.stdout?.on('data', handler)
@@ -872,7 +872,7 @@ function stdioTransport(proc: {
       closeHandlers.push(handler)
     },
     close() {
-      void proc.kill()
+      proc.kill()
     },
   }
   return {
@@ -913,9 +913,9 @@ function socketTransport(
     for (const handler of closeHandlers) handler(error)
     closeHandlers = []
   }
-  socket.on('close', () => fire(new Error('DAP socket closed')))
-  socket.on('error', error => fire(error))
-  socket.on('end', () => fire(new Error('DAP socket ended by peer')))
+  socket.on('close', () => { fire(new Error('DAP socket closed')) })
+  socket.on('error', (error) => { fire(error) })
+  socket.on('end', () => { fire(new Error('DAP socket ended by peer')) })
   return {
     transport: {
       onData(handler) {
@@ -967,7 +967,7 @@ async function reserveTcpPort(): Promise<number> {
   }
   const port = address.port
   await new Promise<void>((resolve, reject) => {
-    server.close(error => (error ? reject(error) : resolve()))
+    server.close((error) => { if (error) reject(error); else resolve() })
   })
   return port
 }
@@ -1042,7 +1042,7 @@ function connectUnixSocket(path: string, timeoutMs: number): Promise<Socket> {
     const socket = netConnect({ path })
     let settled = false
     const timer = setTimeout(
-      () => reject(new Error(`Timed out connecting to unix socket ${path} after ${timeoutMs}ms`)),
+      () => { reject(new Error(`Timed out connecting to unix socket ${path} after ${timeoutMs}ms`)) },
       timeoutMs,
     )
     timer.unref?.()
@@ -1086,8 +1086,8 @@ async function waitForTcpServerListening(handle: SubprocessHandle, port: number,
     }
   }
   stdout.on('data', onData)
-  stdout.on('end', () => ready.resolve())
-  stdout.on('error', () => ready.resolve())
+  stdout.on('end', () => { ready.resolve() })
+  stdout.on('error', () => { ready.resolve() })
   await Promise.race([ready.promise, sleepMs(timeoutMs)])
   stdout.off('data', onData)
 }

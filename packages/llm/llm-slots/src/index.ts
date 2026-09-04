@@ -140,7 +140,7 @@ export class ModelSlotGate {
         },
         cleanup: () => signal?.removeEventListener('abort', onAbort),
       }
-      const onAbort = (): void => waiter.reject(admissionAborted())
+      const onAbort = (): void => { waiter.reject(admissionAborted()) }
       signal?.addEventListener('abort', onAbort, { once: true })
       this.queue.push(waiter)
     })

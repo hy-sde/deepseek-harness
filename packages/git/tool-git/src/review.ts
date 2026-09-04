@@ -381,7 +381,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           return { kind: 'error', error: 'subagents or calling agent unavailable' }
         }
         const controller = new AbortController()
-        const forwardAbort = (): void => controller.abort()
+        const forwardAbort = (): void => { controller.abort() }
         if (exec.signal !== undefined) exec.signal.addEventListener('abort', forwardAbort, { once: true })
         let run: SubagentRun
         try {

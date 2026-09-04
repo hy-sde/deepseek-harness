@@ -174,7 +174,7 @@ function spawnHandle(spec: SubprocessSpawnSpec, scriptPath: string): SubprocessH
     stderrText += c.toString('utf8')
   })
   const done = new Promise<SubprocessOutcome>((resolve) => {
-    child.on('close', (code, signal) => resolve({ exitCode: code ?? 0, signal: signal ?? null }))
+    child.on('close', (code, signal) => { resolve({ exitCode: code ?? 0, signal: signal ?? null }) })
   })
   return {
     pid: child.pid ?? -1,
@@ -195,9 +195,9 @@ function spawnHandle(spec: SubprocessSpawnSpec, scriptPath: string): SubprocessH
     },
     waitForExit(signal?: AbortSignal) {
       return new Promise((resolve) => {
-        if (signal?.aborted) return resolve(false)
-        child.once('close', () => resolve(true))
-        signal?.addEventListener('abort', () => resolve(false), { once: true })
+        if (signal?.aborted) {  resolve(false); return }
+        child.once('close', () => { resolve(true) })
+        signal?.addEventListener('abort', () => { resolve(false) }, { once: true })
       })
     },
   }

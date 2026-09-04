@@ -88,7 +88,7 @@ describe('ModelSlotGate', () => {
     await expect(gate.acquire()).resolves.toBe(false)
     expect(gate.snapshot().running).toBe(0)
     expect(gate.snapshot().acquiredTotal).toBe(0)
-    expect(() => gate.release()).toThrow(/released with no held slot/)
+    expect(() => { gate.release() }).toThrow(/released with no held slot/)
   })
 
   it('supports runtime reconfigure through setCapacity semantics', () => {

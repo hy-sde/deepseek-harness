@@ -90,7 +90,7 @@ function stubEngineFetch(captured: CapturedEngineFetch[]): void {
         headers: { 'content-type': 'text/html' },
       })
     }
-    return originalFetch(input as RequestInfo | URL, init)
+    return originalFetch(input, init)
   }))
 }
 

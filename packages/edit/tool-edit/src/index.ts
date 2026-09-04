@@ -13,8 +13,6 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type { FileSystem } from '@deepseek-ai/dsh-fs'
-import type { LspService } from '@deepseek-ai/dsh-lsp'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView, ToolResultView } from '@deepseek-ai/dsh-tools'
 import {
@@ -165,8 +163,8 @@ function toolExecFor(ctx: Context): ToolRunExec {
 }
 
 function buildSession(ctx: Context, resolved: ResolvedConfig, exec: ToolRunExec): EditSession {
-  const lsp = ctx.get('lsp') as LspService | undefined
-  const fs = ctx.fs as FileSystem
+  const lsp = ctx.get('lsp')
+  const fs = ctx.fs
   return createEditSession({ ctx, fs, lsp, config: resolved, exec: exec as never })
 }
 
@@ -314,7 +312,7 @@ function registerEditTool(ctx: Context, config: ResolvedConfig): void {
       // not derivable from a string output, so they fall back to the generic card.
       presentationMeta: (args) => {
         const resolved = resolveConfig(config)
-        if (dispatchMode(resolved, args as Record<string, unknown>) !== 'replace') return {}
+        if (dispatchMode(resolved, args) !== 'replace') return {}
         const path = String((args as Record<string, unknown>).path ?? '')
         const old_string = String((args as Record<string, unknown>).old_string ?? '')
         const new_string = String((args as Record<string, unknown>).new_string ?? '')

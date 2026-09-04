@@ -49,7 +49,7 @@ interface ReplyMessage {
 import { format } from 'node:util'
 
 /** Global-object accessor for program-scope globals keyed by identifier. */
-const g: Record<string, unknown> = globalThis as unknown as Record<string, unknown>
+const g: Record<string, unknown> = globalThis
 
 /** The original stdout sink, captured before suppression of program writes. */
 const rawStdout: NodeJS.WriteStream = process.stdout

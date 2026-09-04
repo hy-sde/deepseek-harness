@@ -384,7 +384,7 @@ describe('subagent wedge supervision', () => {
     const started = await ctx.subagents.startContinuable(startSpec(parent))
     const childId = started.childId
     // The model issued the tool call; let the loop enter tool execution.
-    await vi.waitFor(() => expect(adapter.requests).toHaveLength(1))
+    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
     await new Promise(resolve => setTimeout(resolve, 50))
 
     const first = ctx.subagents.runSupervision(Date.now() + 10_000)
@@ -411,7 +411,7 @@ describe('subagent wedge supervision', () => {
     const adapter = new GatedAdapter([{ chunks: textResponse('done'), gate: release.promise }])
     const { ctx, parent } = await setupWith(adapter, { wedgeStaleMs: 5, supervisorTickMs: 0 })
     const started = await ctx.subagents.startContinuable(startSpec(parent))
-    await vi.waitFor(() => expect(adapter.requests).toHaveLength(1))
+    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
 
     // A far-future pass with the stream still held must not raise a wedge.
     const pass = ctx.subagents.runSupervision(Date.now() + 60_000)

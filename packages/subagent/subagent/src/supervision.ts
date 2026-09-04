@@ -111,7 +111,7 @@ export const WEDGE_DECISION_STATUS = 'blocked' as const
 export function wedgeDecisionSummary(
   probe: WedgeProbe,
   idleForMs: number,
-  slots?: { running: number; waiting: number; capacity: number } | undefined,
+  slots?: { running: number; waiting: number; capacity: number }  ,
 ): string {
   const since = new Date(probe.lastProgress > 0 ? probe.lastProgress : Date.now()).toISOString()
   const slotLine = slots === undefined

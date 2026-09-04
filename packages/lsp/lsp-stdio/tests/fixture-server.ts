@@ -167,7 +167,7 @@ function handle(message: { id?: number; method?: string; params?: unknown; resul
     const doc = params?.textDocument
     if (typeof doc?.uri === 'string') {
       openVersions.set(doc.uri, typeof doc.version === 'number' ? doc.version : 0)
-      const trigger = (publishPlan?.forUri ?? publishPlan?.uri) as string | undefined
+      const trigger = (publishPlan?.forUri ?? publishPlan?.uri)
       if (trigger !== undefined && doc.uri === trigger) schedulePublish(doc.uri)
     }
     if (openMarker !== undefined) {

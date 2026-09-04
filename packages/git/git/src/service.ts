@@ -153,7 +153,7 @@ export class GitService extends Service {
       timedOut = true
       controller.abort()
     }, limit)
-    const forward = (): void => controller.abort()
+    const forward = (): void => { controller.abort() }
     if (signal !== undefined) {
       signal.addEventListener('abort', forward, { once: true })
     }

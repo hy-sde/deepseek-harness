@@ -79,7 +79,7 @@ describe('presentation projectors (pure)', () => {
     expect(meta.executionCount).toBe(2)
     expect(meta.logs).toEqual(['step 1', 'step 2'])
 
-    const view = presentRunKernelCodeResult({ language: 'python', code: 'x = 1' }, { isError: false, content: [], meta: meta as never })
+    const view = presentRunKernelCodeResult({ language: 'python', code: 'x = 1' }, { isError: false, content: [], meta: meta })
     expect(view?.card).toBe('terminal')
     expect(view?.output).toContain('42')
     expect(view?.output).toContain('step 2')

@@ -75,7 +75,7 @@ esac
 
 async function realLogseqAvailable(): Promise<boolean> {
   return new Promise((resolve) => {
-    execFile('logseq', ['--version'], { timeout: 8000 }, err => resolve(!err))
+    execFile('logseq', ['--version'], { timeout: 8000 }, (err) => { resolve(!err) })
   })
 }
 

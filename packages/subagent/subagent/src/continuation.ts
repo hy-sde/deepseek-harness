@@ -874,7 +874,7 @@ export class SubagentContinuationManager {
       this.flushDecisionWake(parent.id)
       return
     }
-    queue.timer = setTimeout(() => this.flushDecisionWake(parent.id), this.wakeCoalesceMs)
+    queue.timer = setTimeout(() => { this.flushDecisionWake(parent.id) }, this.wakeCoalesceMs)
   }
 
   /**
@@ -1504,8 +1504,8 @@ export class SubagentContinuationManager {
         if (activation.accepted.delete(message.id)) this.wake(activation)
         this.recordActivity(activation)
       })
-      handle.agent.ctx.on('agent/inbox/inserted', () => this.recordActivity(activation))
-      handle.agent.ctx.on('agent/status', () => this.recordActivity(activation))
+      handle.agent.ctx.on('agent/inbox/inserted', () => { this.recordActivity(activation) })
+      handle.agent.ctx.on('agent/status', () => { this.recordActivity(activation) })
       // Agent creation committed setup at its publication boundary;
       // revocations from here on are immediate live revocation.
       // Publish the start edge before any turn can run, so observers see this

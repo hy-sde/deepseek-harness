@@ -249,7 +249,7 @@ export function watch(repo: VcsRepo, onChange: () => void, intervalMs: number = 
     if (curr.mtimeMs !== prev.mtimeMs || curr.ino !== prev.ino || curr.size !== prev.size) onChange()
   }
   watchFile(target, { interval: intervalMs }, listener).unref()
-  return () => unwatchFile(target, listener)
+  return () => { unwatchFile(target, listener) }
 }
 
 /**
