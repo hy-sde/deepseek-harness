@@ -98,13 +98,10 @@
 # (stateless shell-out wrapper); this row contributes the model-facing tools
 # `commit` (analyze + suggest a split plan), `commit_apply` (validate and
 # execute a plan with dependency order/cycle rejection), and `review` (parallel
-# P0-P3 reviewers via the subagent provider named in the config). No realm —
-# the tools only consume host instances.
-- id: tool-git
-  name: '@deepseek-ai/dsh-tool-git'
-  config:
-    reviewProvider: spawn
-    maxReviewers: 4
+# P0-P3 reviewers via the subagent provider named in the config). The row lives
+# in the `delegation` group below, not loose, because it also consumes the
+# per-session `orchestrationPolicy` service (the same-quality review gate) —
+# a consumer outside that realm would resolve nothing and silently lose the gate.
 
 # Port of omp's browser tool (stealth + relay/CDP-attach). The `browser` SERVICE
 # stays host-plane (one browser-process group per host); this row contributes the
@@ -292,19 +289,43 @@
 # that host registry.
 #
 # `workflows` is different — nothing outside an agent reads it — so every row
-# that reaches it shares one entry-local realm here, and a consumer left
+# that reaches it shares one entry-local realm, and a consumer left
 # outside would resolve a host registry this preset does not populate.
+#
+# `orchestrationPolicy` is the same shape: a per-session SERVICE provided by
+# the policy row below. Every consumer lives in this realm with it — the
+# delegation tools read it via `ctx.get` for the isolation guard, and
+# `tool-git` reads it for the review gate on `commit_apply --push`. A consumer
+# outside the realm would resolve a host instance that does not exist and
+# contribute nothing, so `tool-git` moved in here rather than sitting loose.
 - id: delegation
   name: cordis:group
   group: true
   isolate:
     workflowEngine: true
+    orchestrationPolicy: true
   config:
     - id: tool-subagent-control
       name: '@deepseek-ai/dsh-tool-subagent-control'
 
     - id: tool-subagent-list-agents
       name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+
+    # The firstmate orchestration policy (P1-P3) under one row: isolation guard
+    # at the subagent starts, same-quality review gate on `commit_apply --push`,
+    # outcomes-not-mechanics reporting. Everything is schema-defaulted except the
+    # master switch — `enabled: false` anywhere in this group's config turns the
+    # whole layer off (and the preset's tool behavior reverts to ungated).
+    - id: orchestration-policy
+      name: '@deepseek-ai/dsh-orchestration-policy'
+      config:
+        enabled: true
+
+    - id: tool-git
+      name: '@deepseek-ai/dsh-tool-git'
+      config:
+        reviewProvider: spawn
+        maxReviewers: 4
 
     - id: tool-subagent
       name: '@deepseek-ai/dsh-tool-subagent'
