@@ -25,6 +25,16 @@ type WorkspaceViewState = {
   sessionOrderByAccount: Record<string, string[]>
   /** Last observed update timestamps per order account for one-time promotion events. */
   sessionUpdatedAtByAccount: Record<string, Record<string, number>>
+  /**
+   * Accounts that already received one complete recency sort under the current
+   * ordering code. Absent/`false` on state persisted by older builds (or never
+   * synced): the first render in "Last updated" mode re-sorts that account by
+   * recency once, then marks it, so a stale legacy order self-heals while later
+   * activity follows the one-time promotion policy.
+   */
+  // Optional: state persisted by older builds predates this field, so after
+  // store rehydration it is legitimately undefined until the first sync.
+  sessionRecencyInitializedByAccount?: Record<string, boolean>
 }
 
 /**
@@ -41,6 +51,7 @@ type WorkspaceViewActions = {
     accountKey: string,
     order: string[],
     updatedAt: Record<string, number>,
+    recencyInitialized?: boolean,
   ) => void
   setSessionOrder: (draft: WorkspaceViewState, accountKey: string, order: string[]) => void
 }
@@ -57,6 +68,7 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       groupExpansion: {},
       sessionOrderByAccount: {},
       sessionUpdatedAtByAccount: {},
+      sessionRecencyInitializedByAccount: {},
     }),
     persist: 'dsh.workspace.view.v5',
     actions: {
@@ -74,10 +86,24 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         d.sessionUpdatedAtByAccount = Object.fromEntries(
           Object.entries(d.sessionUpdatedAtByAccount).filter(([key]) => retained.has(key)),
         )
+        const initialized = d.sessionRecencyInitializedByAccount ?? {}
+        d.sessionRecencyInitializedByAccount = Object.fromEntries(
+          Object.entries(initialized).filter(([key]) => retained.has(key)),
+        )
       },
-      syncSessionOrderAccount: (d, accountKey: string, order: string[], updatedAt: Record<string, number>) => {
+      syncSessionOrderAccount: (
+        d,
+        accountKey: string,
+        order: string[],
+        updatedAt: Record<string, number>,
+        recencyInitialized?: boolean,
+      ) => {
         d.sessionOrderByAccount[accountKey] = order
         d.sessionUpdatedAtByAccount[accountKey] = updatedAt
+        if (recencyInitialized === true) {
+          if (d.sessionRecencyInitializedByAccount === undefined) d.sessionRecencyInitializedByAccount = {}
+          d.sessionRecencyInitializedByAccount[accountKey] = true
+        }
       },
       setSessionOrder: (d, accountKey: string, order: string[]) => {
         d.sessionOrderByAccount[accountKey] = order

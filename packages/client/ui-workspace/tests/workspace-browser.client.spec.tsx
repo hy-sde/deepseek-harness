@@ -431,6 +431,44 @@ describe('WorkspaceBrowser', () => {
     expect(screen.queryByText('gone-s')).toBeNull()
   })
 
+  it('self-heals a stale legacy order once and then keeps activity promotion', async () => {
+    const store = createWorkspaceViewStore().create()
+    store.actions.setOrderBy('updated')
+    // State persisted by an older build: a non-recency order whose activity
+    // timestamps were already captured (so the one-time promotion policy alone
+    // can never repair it) and no recency-initialized marker.
+    store.actions.syncSessionOrderAccount('alpha', ['oldest', 'newest', 'middle'], {
+      newest: 5, middle: 4, oldest: 3,
+    })
+    mount({
+      useSessions: hook(sessionState([summary('newest', 5), summary('middle', 4), summary('oldest', 3)])),
+      useWorkspaces: hook(workspaceState([workspace('alpha', ['oldest', 'middle', 'newest'])])),
+      useStore: bindSnapshotSelector(store),
+      actions: store.actions,
+    })
+    // First render in Last updated mode performs one complete recency sort and
+    // marks the account, so later activity follows the promotion policy again.
+    await waitFor(() => {
+      expect(store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['newest', 'middle', 'oldest'])
+      expect(store.getSnapshot().sessionRecencyInitializedByAccount?.alpha).toBe(true)
+    })
+    fireEvent.click(screen.getByText('alpha'))
+    await waitFor(() => {
+      const rows = screen.getAllByRole('treeitem').slice(1)
+      expect(rows.map(row => row.textContent)).toEqual([
+        expect.stringContaining('newest'),
+        expect.stringContaining('middle'),
+        expect.stringContaining('oldest'),
+      ])
+    })
+
+    // Once marked, a drag still sticks until real activity promotes again.
+    store.actions.setSessionOrder('alpha', ['middle', 'newest', 'oldest'])
+    await waitFor(() => {
+      expect(store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['middle', 'newest', 'oldest'])
+    })
+  })
+
   it('logs and keeps the tree when the archive call rejects', async () => {
     const rejection = new Error('archive exploded')
     const archiveSession = vi.fn(async () => { throw rejection })

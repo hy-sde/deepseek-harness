@@ -120,19 +120,30 @@ function compareSessionRecency(a: SessionId, b: SessionId, byId: SessionListStat
   return a < b ? -1 : 1
 }
 
+/** Stable empty flags object: legacy view state may hydrate the recency marker as undefined. */
+const EMPTY_RECENCY_FLAGS: Readonly<Record<string, boolean>> = {}
+
 /** Reconcile one editable order account and apply its activity-promotion policy. */
 function nextSessionOrderAccount({
-  sessionIds, previousOrder, previousUpdatedAt, list, orderBy, sortByRecency,
+  sessionIds, previousOrder, previousUpdatedAt, list, orderBy, recencyInitialized, switchedToUpdated,
 }: {
   sessionIds: readonly SessionId[]
   previousOrder: readonly string[] | undefined
   previousUpdatedAt: Readonly<Record<string, number>>
   list: SessionListState
   orderBy: SessionOrderBy
-  sortByRecency: boolean
-}): { order: SessionId[]; updatedAt: Record<string, number>; changed: boolean } {
+  recencyInitialized: boolean
+  switchedToUpdated: boolean
+}): { order: SessionId[]; updatedAt: Record<string, number>; changed: boolean; recencySorted: boolean } {
   let order = reconciledSessionOrder(sessionIds, previousOrder)
-  if (sortByRecency) {
+  // A complete recency sort happens on account first contact (no stored order),
+  // when the mode flips to "Last updated", and — the self-heal — whenever the
+  // account was persisted by an older build that never produced a recency order
+  // (the flag is absent). Without the last clause a stale legacy order would be
+  // preserved forever by the promotion-only policy below.
+  const recencySorted = orderBy === 'updated'
+    && (!recencyInitialized || previousOrder === undefined || switchedToUpdated)
+  if (recencySorted) {
     order.sort((a, b) => compareSessionRecency(a, b, list.byId))
   } else if (orderBy === 'updated') {
     const promoted = sessionIds
@@ -157,7 +168,7 @@ function nextSessionOrderAccount({
     || order.some((id, index) => id !== previousOrder[index])
   const timestampsChanged = Object.keys(updatedAt).length !== Object.keys(previousUpdatedAt).length
     || Object.entries(updatedAt).some(([id, timestamp]) => previousUpdatedAt[id] !== timestamp)
-  return { order, updatedAt, changed: orderChanged || timestampsChanged }
+  return { order, updatedAt, changed: orderChanged || timestampsChanged, recencySorted }
 }
 
 /** Grouping and ordering menu; own open state so it resets with the wide chrome. */
@@ -246,8 +257,12 @@ type SessionTreeProps = Pick<
   sessionOrderByAccount: Readonly<Record<string, readonly string[]>>
   /** Last update timestamps observed for one-time recent-update promotions. */
   sessionUpdatedAtByAccount: Readonly<Record<string, Readonly<Record<string, number>>>>
+  /** Accounts that already received one complete recency sort (see the store field). */
+  sessionRecencyInitializedByAccount: Readonly<Record<string, boolean>>
   /** Replace one shared order and its observed timestamps. */
-  syncSessionOrderAccount: (accountKey: string, order: string[], updatedAt: Record<string, number>) => void
+  syncSessionOrderAccount: (
+    accountKey: string, order: string[], updatedAt: Record<string, number>, recencyInitialized?: boolean,
+  ) => void
   /** Apply a drag to one shared order. */
   setSessionOrder: (accountKey: string, order: string[]) => void
   /** Registry-global archive set (hidden rows). */
@@ -270,7 +285,8 @@ function SessionTree({
   onRenameRequest, onDeleteRequest, onSessionRename, onSessionArchive,
   insertWorkspaceBefore, insertSessionBefore, orderBy,
   groupExpansion, setGroupExpanded,
-  sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, setSessionOrder, home, t,
+  sessionOrderByAccount, sessionUpdatedAtByAccount, sessionRecencyInitializedByAccount,
+  syncSessionOrderAccount, setSessionOrder, home, t,
 }: SessionTreeProps) {
   const list = useSessions(s => s)
   const pendingInteractions = useSessionPendingInteraction(s => s)
@@ -314,19 +330,24 @@ function SessionTree({
     for (const { key, sessionIds } of accounts) {
       const previousOrder = sessionOrderByAccount[key]
       const previousUpdatedAt = sessionUpdatedAtByAccount[key] ?? {}
+      const recencyInitialized = sessionRecencyInitializedByAccount[key] === true
       const next = nextSessionOrderAccount({
         sessionIds,
         previousOrder,
         previousUpdatedAt,
         list,
         orderBy,
-        sortByRecency: orderBy === 'updated' && (previousOrder === undefined || switchedToUpdated),
+        recencyInitialized,
+        switchedToUpdated,
       })
       if (next.changed) {
-        syncSessionOrderAccount(key, next.order.map(id => id as string), next.updatedAt)
+        syncSessionOrderAccount(
+          key, next.order.map(id => id as string), next.updatedAt, next.recencySorted,
+        )
       }
     }
-  }, [list, orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, ungroupedSessionIds, workspaces])
+  }, [list, orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, sessionRecencyInitializedByAccount,
+    syncSessionOrderAccount, ungroupedSessionIds, workspaces])
   const orderedWorkspaces = useMemo(() => {
     return workspaces.map((workspace) => {
       const stored = sessionOrderByAccount[workspace.workspaceId as string]
@@ -594,7 +615,8 @@ function SessionTree({
 function FlatList({
   useSessions, useSessionPendingInteraction, open, forkSession, onSessionRename, onSessionArchive,
   archivedSessionIds,
-  orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, setSessionOrder, t,
+  orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, sessionRecencyInitializedByAccount,
+  syncSessionOrderAccount, setSessionOrder, t,
 }: Pick<
   SessionTreeProps,
   | 'useSessions'
@@ -607,6 +629,7 @@ function FlatList({
   | 'orderBy'
   | 'sessionOrderByAccount'
   | 'sessionUpdatedAtByAccount'
+  | 'sessionRecencyInitializedByAccount'
   | 'syncSessionOrderAccount'
   | 'setSessionOrder'
   | 't'
@@ -623,6 +646,7 @@ function FlatList({
     if (list.phase !== 'ready') return
     const previousOrder = sessionOrderByAccount[FLAT_SESSION_ORDER_KEY]
     const previousUpdatedAt = sessionUpdatedAtByAccount[FLAT_SESSION_ORDER_KEY] ?? {}
+    const recencyInitialized = sessionRecencyInitializedByAccount[FLAT_SESSION_ORDER_KEY] === true
     const switchedToUpdated = previousOrderBy.current !== 'updated' && orderBy === 'updated'
     previousOrderBy.current = orderBy
     const next = nextSessionOrderAccount({
@@ -631,12 +655,16 @@ function FlatList({
       previousUpdatedAt,
       list,
       orderBy,
-      sortByRecency: orderBy === 'updated' && (previousOrder === undefined || switchedToUpdated),
+      recencyInitialized,
+      switchedToUpdated,
     })
     if (next.changed) {
-      syncSessionOrderAccount(FLAT_SESSION_ORDER_KEY, next.order.map(id => id as string), next.updatedAt)
+      syncSessionOrderAccount(
+        FLAT_SESSION_ORDER_KEY, next.order.map(id => id as string), next.updatedAt, next.recencySorted,
+      )
     }
-  }, [list, orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, sessionIds, syncSessionOrderAccount])
+  }, [list, orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, sessionRecencyInitializedByAccount,
+    sessionIds, syncSessionOrderAccount])
   const rows = useMemo(() => {
     const byId = new Map(baseRows.map(row => [row.id, row]))
     return reconciledSessionOrder(sessionIds, sessionOrderByAccount[FLAT_SESSION_ORDER_KEY])
@@ -836,6 +864,7 @@ export function WorkspaceBrowser({
   const groupExpansion = useStore(s => s.groupExpansion)
   const sessionOrderByAccount = useStore(s => s.sessionOrderByAccount)
   const sessionUpdatedAtByAccount = useStore(s => s.sessionUpdatedAtByAccount)
+  const sessionRecencyInitializedByAccount = useStore(s => s.sessionRecencyInitializedByAccount ?? EMPTY_RECENCY_FLAGS)
   const currentBlankSessionId = useSessions((state) => {
     const current = state.current
     return current !== undefined && state.byId[current]?.blank === true ? current : undefined
@@ -1225,6 +1254,7 @@ export function WorkspaceBrowser({
                 orderBy={orderBy}
                 sessionOrderByAccount={sessionOrderByAccount}
                 sessionUpdatedAtByAccount={sessionUpdatedAtByAccount}
+                sessionRecencyInitializedByAccount={sessionRecencyInitializedByAccount}
                 syncSessionOrderAccount={actions.syncSessionOrderAccount}
                 setSessionOrder={actions.setSessionOrder}
                 t={t}
@@ -1242,6 +1272,7 @@ export function WorkspaceBrowser({
                 setGroupExpanded={actions.setGroupExpanded}
                 sessionOrderByAccount={sessionOrderByAccount}
                 sessionUpdatedAtByAccount={sessionUpdatedAtByAccount}
+                sessionRecencyInitializedByAccount={sessionRecencyInitializedByAccount}
                 syncSessionOrderAccount={actions.syncSessionOrderAccount}
                 setSessionOrder={actions.setSessionOrder}
                 archivedSessionIds={archivedSessionIds}
