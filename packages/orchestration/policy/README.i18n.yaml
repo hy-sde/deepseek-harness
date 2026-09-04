@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/orchestration/policy/README.md
 README.md: 4d0ba304384e3067280c545ff93736051da3ebd3
-README.zh.md: 295fc4397528ca02c842794b1a9f6e8488f0e0e7
+README.zh.md: 6b10f2a61625a54c919ec8bc61a670ba299bd9b9

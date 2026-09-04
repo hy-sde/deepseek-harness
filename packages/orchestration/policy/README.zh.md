@@ -7,7 +7,7 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
 `dsh-orchestration-policy` 是「默认并行」工作方式的 P1 策略层：当请求可以分解为相互独立的任务块时，代理将它们扇出为隔离的任务子代理（`worktree acquire --branch` → `subagent { workspace }`），上限为已配置的并发数，并且只在存在真实依赖时才串行化。该策略由三部分组成，其中只有两部分是强制执行：
 
@@ -24,7 +24,7 @@ kind: "package-reference"
 - [进一步探索](#further-exploration)
 - [模型体验](#model-experience)
 - [已知限制与待办](#known-limitations-and-deferred-work)
-- [开发者注记](#dev-note)
+- [开发备注](#dev-note)
 
 -----
 
@@ -181,7 +181,7 @@ Announce the plan once before dispatch: N isolated tasks, what each owns, expect
 
 **运行时不变式：** 不发布伴生进程。本包除工具接口处的可选服务查找外，不持有同进程不变式可观察的持续运行时关系；其行为由包内测试套件保证（守卫矩阵、配置校验、提示渲染以及真实 git 波次 E2E）。
 
-### 开发者注记
+### 开发备注
 
 <details>
 <summary>维护者工作上下文 — 点击展开</summary>
