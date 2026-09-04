@@ -24,6 +24,7 @@ import {
 } from '@deepseek-ai/dsh-subagent'
 import type { SubagentProvider, SubagentResult, SubagentRun } from '@deepseek-ai/dsh-subagent'
 import type { JobOutcome } from '@deepseek-ai/dsh-jobs'
+import type { OrchestrationPolicyService } from '@deepseek-ai/dsh-orchestration-policy'
 import {
   assertAllowedModelSelection,
   hasConfiguredLlmSelection,
@@ -434,6 +435,7 @@ export function apply(ctx: Context, config: Config): void {
                 properties: {
                   kind: { type: 'string', required: true, const: 'background' },
                   jobId: { type: 'string', required: true },
+                  warnings: { type: 'array', items: { type: 'string' } },
                 },
               },
               {
@@ -442,6 +444,7 @@ export function apply(ctx: Context, config: Config): void {
                 properties: {
                   kind: { type: 'string', required: true, const: 'continuable' },
                   subagentId: { type: 'string', required: true },
+                  warnings: { type: 'array', items: { type: 'string' } },
                 },
               },
               {
@@ -451,18 +454,22 @@ export function apply(ctx: Context, config: Config): void {
                   kind: { type: 'string', required: true, const: 'foreground' },
                   runId: { type: 'string', required: true },
                   output: { type: 'array', required: true, items: { type: 'json' } },
+                  warnings: { type: 'array', items: { type: 'string' } },
                 },
               },
             ],
           },
-          render: (_args, value) => [{
-            type: 'text',
-            text: value.kind === 'background'
-              ? `started background subagent job ${value.jobId}`
-              : value.kind === 'continuable'
-                ? `started subagent ${value.subagentId}`
-                : outputValueText(value.output),
-          }],
+          render: (_args, value) => [
+            ...(value.warnings ?? []).map(warning => ({ type: 'text' as const, text: `warning: ${warning}` })),
+            {
+              type: 'text' as const,
+              text: value.kind === 'background'
+                ? `started background subagent job ${value.jobId}`
+                : value.kind === 'continuable'
+                  ? `started subagent ${value.subagentId}`
+                  : outputValueText(value.output),
+            },
+          ],
         },
         // Children never mutate the parent session; the one parent-owned write
         // (tasks.start) is a synchronous commutative insertion.
@@ -522,6 +529,13 @@ export function apply(ctx: Context, config: Config): void {
             ...maxDepth !== undefined ? { maxDepth } : {},
           }
 
+          // Fail-closed isolation guard (P1): armed ONLY when the
+          // orchestration-policy plugin is mounted in this composition. Absent
+          // service = today's behavior; a required-isolation violation throws
+          // with the fix; an incapable provider degrades to a REPORTED warning.
+          const policy = runtimeCtx.get('orchestrationPolicy') as OrchestrationPolicyService | undefined
+          const policyWarning = policy?.assertWorkspace(args.workspace, subagentProvider.capabilities.workspace === true)
+
           const runSpec = resolveDelegationRun(args, { backgroundEnabled, continuable })
           if (runSpec.runInBackground) {
             if (continuable) {
@@ -533,7 +547,11 @@ export function apply(ctx: Context, config: Config): void {
                 request,
                 signal: exec.signal,
               })
-              return { kind: 'continuable' as const, subagentId: started.childId }
+              return {
+                kind: 'continuable' as const,
+                subagentId: started.childId,
+                ...policyWarning !== undefined ? { warnings: [policyWarning] } : {},
+              }
             }
             const jobs = runtimeCtx.get('jobs')
             if (jobs === undefined) {
@@ -557,14 +575,19 @@ export function apply(ctx: Context, config: Config): void {
                 }
               },
             })
-            return { kind: 'background' as const, jobId: id }
+            return {
+              kind: 'background' as const,
+              jobId: id,
+              ...policyWarning !== undefined ? { warnings: [policyWarning] } : {},
+            }
           }
 
           const run: SubagentRun = await runtimeCtx.subagents.start(config.provider, {
             ...request,
             signal: exec.signal,
           })
-          return settleForegroundRun(run)
+          const foreground = await settleForegroundRun(run)
+          return policyWarning !== undefined ? { ...foreground, warnings: [policyWarning] } : foreground
         },
       }))
       mounted = { subagentProvider, disposeTool }

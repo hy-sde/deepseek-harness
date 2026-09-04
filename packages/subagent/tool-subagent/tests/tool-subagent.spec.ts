@@ -22,6 +22,7 @@ import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-a
 import { loadStoredSession } from '../../subagent/tests/persistence-helpers.ts'
 import * as mock from './scripted-provider.ts'
 import * as tool from '../src/index.ts'
+import policyPackage from '@deepseek-ai/dsh-orchestration-policy'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import {
   callSubagent,
@@ -1491,5 +1492,79 @@ describe('depth budget configuration', () => {
     await callSubagent(ctx, { description: 'd', prompt: 'p' })
     expect(requests[0]?.maxDepth).toBeUndefined()
     expect(requests[0]?.toolFilter).toBeUndefined()
+  })
+})
+
+describe('dsh-tool-subagent orchestration policy isolation guard', () => {
+  /** Mount the policy on the setup ctx (guard reads it lazily at execute). */
+  async function armedSetup(mockConfig: Partial<mock.Config> = {}, policyConfig: Record<string, unknown> = { enabled: true }) {
+    const ctx = await setup({ provider: 'mock' }, mockConfig)
+    await ctx.plugin(policyPackage, policyConfig)
+    return ctx
+  }
+
+  it('fail-closed: rejects a workspace-less start when isolation is required', async () => {
+    const ctx = await armedSetup({ reply: 'child done' })
+    try {
+      const result = await callSubagent(ctx, { description: 'unguarded task', prompt: 'p' })
+      expect(result.isError).toBe(true)
+      const message = text(result)
+      expect(message).toContain('worktree acquire')
+      expect(message).toContain('workspace')
+    } finally {
+      await disposeSetupProvider(ctx)
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('no-op by default: a disabled policy leaves today\'s behavior unchanged', async () => {
+    const ctx = await armedSetup({ reply: 'child done' }, { enabled: false })
+    try {
+      const result = await callSubagent(ctx, { description: 'default task', prompt: 'p' })
+      expect(result.isError).toBe(false)
+      expect(text(result)).toContain('child done')
+    } finally {
+      await disposeSetupProvider(ctx)
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('degrades to a REPORTED warning (not silent) when the provider cannot isolate', async () => {
+    const ctx = await armedSetup({ reply: 'child done', capabilities: { workspace: false } })
+    try {
+      const result = await callSubagent(ctx, { description: 'incapable provider', prompt: 'p' })
+      expect(result.isError).toBe(false)
+      expect(text(result)).toContain('warning: orchestration-policy')
+      expect(text(result)).toContain('cannot honor `workspace`')
+      expect((result.value as { warnings?: string[] }).warnings).toHaveLength(1)
+    } finally {
+      await disposeSetupProvider(ctx)
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('allows a start carrying the isolated workspace without warning', async () => {
+    const ctx = await armedSetup({ reply: 'child done' })
+    try {
+      const isolatedRoot = mkdtempSync(path.join(tmpdir(), 'dsh-policy-worktree-'))
+      const result = await callSubagent(ctx, { description: 'isolated task', prompt: 'p', workspace: isolatedRoot })
+      expect(result.isError).toBe(false)
+      expect(text(result)).not.toContain('warning:')
+    } finally {
+      await disposeSetupProvider(ctx)
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('relaxes the guard when isolation is suggested', async () => {
+    const ctx = await armedSetup({ reply: 'child done' }, { enabled: true, isolation: 'suggested' })
+    try {
+      const result = await callSubagent(ctx, { description: 'suggested task', prompt: 'p' })
+      expect(result.isError).toBe(false)
+      expect(text(result)).toContain('child done')
+    } finally {
+      await disposeSetupProvider(ctx)
+      await ctx.fiber.dispose()
+    }
   })
 })

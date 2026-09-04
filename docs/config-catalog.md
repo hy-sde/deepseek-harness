@@ -1793,6 +1793,36 @@ export interface Config {
 
 Source: [`packages/feedback/message-feedback/src/index.ts:50`](../packages/feedback/message-feedback/src/index.ts)
 
+<a id="deepseek-aidsh-orchestration-policy"></a>
+
+## `@deepseek-ai/dsh-orchestration-policy`
+
+Requires: `systemPrompt`
+
+```ts config-catalog
+/** Plugin configuration (all optional; defaults in {@link DEFAULT_POLICY_CONFIG}). */
+export interface OrchestrationPolicyConfig {
+  /** Master switch. The guard and prompt text are inert until true (default false). */
+  enabled?: boolean
+  /** Default posture for work that decomposes (default `parallel`). */
+  defaultMode?: 'parallel' | 'serial'
+  /** Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave (default 6). */
+  maxFanOut?: number
+  /** `required` = fail-closed isolation; `suggested` = prompt-only (default `required`). */
+  isolation?: 'required' | 'suggested'
+  /** Whether the seam guard enforces isolation when `isolation: required` (default true). */
+  enforceWorkspace?: boolean
+  /** Accepted serialize reasons; anything else is rejected at load (default: all four). */
+  serializeReasons?: SerializeReason[]
+  /** Show the captain one plan summary before a wave is dispatched (default true). */
+  announcePlan?: boolean
+}
+
+export type SerializeReason = typeof SERIALIZE_REASONS[number]
+```
+
+Source: [`packages/orchestration/policy/src/index.ts:40`](../packages/orchestration/policy/src/index.ts)
+
 <a id="deepseek-aidsh-permission-presets"></a>
 
 ## `@deepseek-ai/dsh-permission-presets`
@@ -3295,6 +3325,8 @@ export interface WorktreeToolConfig {
   worktreeFetchBeforeAcquire?: boolean
   /** Max ms to wait for the cross-process pool-state lock (default 30000). */
   worktreeLockWaitMs?: number
+  /** Cap on total pooled slots per repository (default 0 = unlimited; reuse still allowed at the cap). */
+  worktreeMaxSlots?: number
 }
 ```
 
@@ -3614,7 +3646,7 @@ export interface Config {
 
 Depends on: [`AgentOptions`](subsystems/core.md)
 
-Source: [`packages/subagent/tool-subagent/src/index.ts:47`](../packages/subagent/tool-subagent/src/index.ts)
+Source: [`packages/subagent/tool-subagent/src/index.ts:48`](../packages/subagent/tool-subagent/src/index.ts)
 
 <a id="deepseek-aidsh-tool-subagent-report"></a>
 

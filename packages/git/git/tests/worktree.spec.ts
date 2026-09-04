@@ -321,6 +321,36 @@ describe('destroyWorktree', () => {
   })
 })
 
+describe('maxSlots cap', () => {
+  it('refuses to cut a new slot at the cap, allows provable reuse, and maxSlots 0 is unlimited', async () => {
+    const f = await makeFixture()
+    const capped = { root: f.pool, maxSlots: 1 }
+    const a = await acquireWorktree(f.git, f.dir, capped)
+    await expectCode(
+      acquireWorktree(f.git, f.dir, capped),
+      'MaxSlots',
+    )
+    // The cap limits NEW slots only: provable reuse is still allowed.
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const b = await acquireWorktree(f.git, f.dir, capped)
+    expect(b.path).toBe(a.path)
+    // Explicitly unlimited: cuts beyond the former cap.
+    const c = await acquireWorktree(f.git, f.dir, { root: f.pool, maxSlots: 0 })
+    expect(c.path).not.toBe(b.path)
+  })
+
+  it('refuses to cut past the cap even when a dirty/leased slot blocks reuse', async () => {
+    const f = await makeFixture()
+    const capped = { root: f.pool, maxSlots: 1 }
+    const a = await acquireWorktree(f.git, f.dir, capped)
+    await writeFile(join(a.path, 'wip.txt'), 'wip\n')
+    await expectCode(
+      acquireWorktree(f.git, f.dir, capped),
+      'MaxSlots',
+    )
+  })
+})
+
 describe('corrupt state recovery', () => {
   it('rebuilds entries as damaged/unverified and keeps the safety guards', async () => {
     const f = await makeFixture()

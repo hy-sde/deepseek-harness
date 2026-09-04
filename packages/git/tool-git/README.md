@@ -67,6 +67,7 @@ Why leases and not processes: DSH agents are host children, so a durable lease i
 - `worktreeBaseBranch` — default cut branch for `worktree acquire` (default: inferred from origin HEAD / current branch).
 - `worktreeFetchBeforeAcquire` — fetch origin before acquiring (default true; skipped when the repo has no origin).
 - `worktreeLockWaitMs` — max wait for the pool-state lock (default 30s).
+- `worktreeMaxSlots` — cap on total pooled worktrees per repository (default 0 = unlimited; reuse of a provably idle slot is still allowed at the cap, only cutting a new slot is refused).
 
 The agent preset rows in this deployment mount `reviewProvider: spawn` and `maxReviewers: 4`.
 

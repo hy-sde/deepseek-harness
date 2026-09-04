@@ -1,0 +1,163 @@
+---
+description: "Parallelize-by-default orchestration policy: config-driven fan-out rules, a fail-closed task-isolation guard, and the rendered `orchestration:policy` system-prompt section (firstmate dispatch-profile shape, P1)."
+kind: "package-reference"
+---
+
+# @deepseek-ai/dsh-orchestration-policy
+
+English | [中文](README.zh.md)
+
+## Summary
+
+`dsh-orchestration-policy` is the P1 policy layer for parallelize-by-default work: when a request decomposes into independent chunks, the agent fans them out as isolated task children (`worktree acquire --branch` → `subagent { workspace }`) up to a configured ceiling, and serializes only for a true dependency. The policy has three parts, and only two are enforcement:
+
+1. **Policy text** — the `orchestration:policy` [system-prompt section](#model-experience), rendered from the *same config* that arms the guard, so text and enforcement cannot drift.
+2. **Config knobs** — a `cordis.yml` config row (every knob optional, defaults below). The whole policy is **inert unless `enabled: true`**: default OFF keeps today's model-discretion behavior byte-stable until a deployment opts in.
+3. **Seam guard** — the optional `ctx.orchestrationPolicy` service. `tool-subagent` reads it with `ctx.get` (never `inject`), so mounting this plugin is the *only* thing that arms enforcement; an absent service is today's behavior. Under `isolation: required` a task child started without an isolated `workspace` is **rejected** with an actionable fix message (fail-closed); a provider that cannot honor `workspace` (out-of-process backends) **degrades to a reported warning, never a silent ignore**.
+
+## Table of Contents
+
+- [Use this package](#use-this-package)
+- [Understand the implementation](#understand-the-implementation)
+- [Further Exploration](#further-exploration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
+
+-----
+
+<a id="use-this-package"></a>
+## Use this package
+
+Mount next to `dsh-tool-subagent` and the `worktree` tool (`dsh-tool-git`) in a composition whose deployment wants parallelize-by-default:
+
+```yaml
+- name: '@deepseek-ai/dsh-subagent'
+- name: '@deepseek-ai/dsh-subagent-spawn-in-process'
+- name: '@deepseek-ai/dsh-git'
+- name: '@deepseek-ai/dsh-tool-git'
+- name: '@deepseek-ai/dsh-tool-subagent'
+  config:
+    provider: spawn
+- name: '@deepseek-ai/dsh-orchestration-policy'
+  config:
+    enabled: true
+```
+
+### Configuration knobs (all optional)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `enabled` | `false` | Master switch: guard and prompt text are inert until `true`. |
+| `defaultMode` | `parallel` | Posture for decomposable work: `parallel` (default) or `serial`. |
+| `maxFanOut` | `6` | Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave. |
+| `isolation` | `required` | `required` = fail-closed isolation; `suggested` = prompt-only. |
+| `enforceWorkspace` | `true` | Whether the seam guard enforces isolation when `isolation: required`. |
+| `serializeReasons` | all four | Accepted reasons to serialize: `same-file-edit`, `semantic-dependency`, `shared-mutable-state`, `incompatible-concurrency`. |
+| `announcePlan` | `true` | Show the captain one plan summary before a wave is dispatched. |
+
+**Precedence is fixed** (firstmate precedence): explicit captain instruction in the moment > configured rule > configured default > built-in default. **Malformed configuration fails at LOAD** with an actionable message (`maxFanOut` must be a positive integer; unknown isolation mode; unknown serialize reason) — never silently ignored or selected around.
+
+### What the policy changes
+
+1. **Classify, then fan out**: independent chunks (different files/subsystems, no shared mutable state, no ordering) are dispatched in parallel — one task per isolated working copy. **Serialize only for a true dependency** named in `serializeReasons`; *same-file edits alone are not a reason* (split by intent and merge instead).
+2. **Isolation is enforced, not requested**: `isolation: required` + `enforceWorkspace` means a `subagent` start **without** a `workspace` is rejected with the fix (pass the `path` from `worktree acquire`). A provider that cannot honor `workspace` degrades to a reported warning instead of silently running unisolated.
+3. **Announce + steer**: one plan summary before a wave (`announcePlan`), `send_message` steering at the nearest step boundary, `interrupt_agent` cancellation, and lease release after each child settles (never `force` without the captain's word).
+
+A companion engine knob: `dsh-tool-git`'s `worktreeMaxSlots` caps the pool per repository (default `0` = unlimited); at the cap `acquire` refuses to **cut** a new slot (`MaxSlots` error, reuse of a provably idle slot is still allowed) — run `release`/`prune`/`destroy` or raise the cap.
+
+-----
+
+<a id="understand-the-implementation"></a>
+## Understand the implementation
+
+<details>
+<summary>Implementation internals — click to expand</summary>
+
+This section explains the guard mechanics; observable behavior is in [Use this package](#use-this-package).
+
+### Three parts, one source of truth
+
+`resolvePolicyConfig()` validates and resolves partial config (throwing actionable errors at load), and the prompt section is rendered from that resolved config — the same object the guard reads. Configuration and prompt prose therefore cannot drift.
+
+### Service registration is the arming switch
+
+`OrchestrationPolicyService extends Service` and registers under `orchestrationPolicy` (auto-removed with the owning fiber). `tool-subagent` reads it per execution via `ctx.get('orchestrationPolicy')` — an optional service lookup, never an `inject`, so *absence is a first-class state*: today's byte-stable behavior. `ctx.get` carries no inject requirement, so the guard cannot break a composition that never mounts this package.
+
+### Guard semantics matrix
+
+| Policy state | Provider can isolate | `workspace` given | Result |
+|---|---|---|---|
+| not mounted / `enabled: false` | any | any | no-op (today's behavior) |
+| `required` + `enforceWorkspace` | yes | no | **throws** `OrchestrationPolicyError` (fix: `worktree acquire` → pass `path`) |
+| `required` + `enforceWorkspace` | no | no | **warning string returned** (caller surfaces it in tool output) |
+| `required` + `enforceWorkspace` | any | yes | allowed |
+| `suggested` or `enforceWorkspace: false` | any | any | no-op (prompt-only guidance) |
+
+The guard sits at the model-facing `tool-subagent` seam (both one-shot and continuable starts). SDK/ACP/API paths do not go through the tool and never see the guard.
+
+</details>
+
+-----
+
+<a id="further-exploration"></a>
+## Further Exploration
+
+- The engine behind the isolation requirement: [`@deepseek-ai/dsh-git`](../git/README.md) worktree pool with durable leases, and the `worktree` tool in [`@deepseek-ai/dsh-tool-git`](../git/tool-git/README.md) — `acquire --branch`, `release`, `list`, `prune`, `destroy`.
+- The delegated child boundary: [`@deepseek-ai/dsh-tool-subagent`](../subagent/tool-subagent/README.md) `workspace` argument and the `send_message`/`interrupt_agent` steering tools in [`@deepseek-ai/dsh-tool-subagent-control`](../subagent/tool-subagent-control/README.md).
+- The port plan: the P1 scoping note `firstmate-policy-scope.md` (kept alongside `port_firstmate.md` in the fork workspace), P2 review gate and P3 outcomes-not-mechanics reporting.
+
+-----
+
+<a id="model-experience"></a>
+## Model Experience
+
+### System prompt section
+
+#### What the model sees
+
+`orchestration:policy` (order 129) — rendered from the *resolved config* at mount; empty text while `enabled: false`. The section speaks in "isolated working copies / task children" and never exposes policy internals (firstmate §9 shape).
+
+##### Section template
+
+```markdown
+# Orchestration policy (parallelize-by-default)
+Goal: same quality, more velocity, less captain cognitive load. Fan out independent chunks as isolated task children; today's serial behavior is the exception.
+
+1. Classify before doing: independent chunks (different files/subsystems, no shared mutable state, no ordering) or one unit of work.
+2. Serialize ONLY for a true dependency — the accepted reasons are:
+- same-file-edit: two chunks edit the same file
+- semantic-dependency: one change is an input to the next
+- shared-mutable-state: lockfiles, migrations, generated code, credentials
+- incompatible-concurrency: both rework the same subsystem in conflicting ways
+   Same-file edits ALONE are not a reason to serialize: split by intent and merge; a shared-file edit with conflicting intent is `incompatible-concurrency`.
+3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 6 per wave; beyond that announce the rest as a follow-up wave.
+One task = one isolated working copy. A task child MUST be started with `workspace` set to a `worktree acquire` path — the guard rejects a start without one (this is fail-closed, not a preference).
+4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain's explicit word.
+Announce the plan once before dispatch: N isolated tasks, what each owns, expected overlap (rare), who merges. One summary — never per-child chatter in the captain-facing thread.
+```
+
+#### Token effect
+
+One fixed section while `enabled: true`; empty text (zero tokens) while disabled. The section length is independent of wave size — per-chunk detail stays in each child's own turn, not the parent prefix.
+
+#### KV Cache effect
+
+Prefix-stable while the config (mode, ceiling, reasons, isolation) is unchanged; changing a knob changes the rendered text and invalidates the corresponding prefix.
+
+## Known Limitations and Deferred Work
+
+- **Only the isolation guard is fail-closed.** The classification, fan-out ceiling, announce-plan, and steering steps are prompt-level guidance — the model remains the executor; there is no scheduler daemon.
+- **Incapable providers warn, they do not fail.** An out-of-process backend (no `workspace` capability) degrades to a reported warning; if a deployment wants hard failure instead, enforce at the composition level (`isolation: required` with an in-process provider).
+- **Deferred to P2/P3:** the review gate (a `ship` verdict blocking `commit_apply --push` under a `review-gated` posture) and outcomes-not-mechanics reporting.
+
+**Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe beyond the optional service lookup at the tool seam; its behavior is enforced by its package test suites (guard matrix, config validation, prompt rendering, and a real-git wave E2E).
+
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+Direct `apply()` + `Service` (no Schemastery config class): `resolvePolicyConfig()` runs eagerly in `apply` so malformed config fails at LOAD (a bare `ctx.plugin` without the `systemPrompt` inject satisfied stays pending forever, which is why the load-failure test mounts `SystemPrompt` first). The guard is exercised through the real tool path in `tool-subagent`'s spec (mounted policy after setup — the guard reads it lazily at execute) and in this package's wave E2E over a real temp git repo.
+
+</details>

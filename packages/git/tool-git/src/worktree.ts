@@ -44,6 +44,8 @@ export interface WorktreeToolConfig {
   worktreeFetchBeforeAcquire?: boolean
   /** Max ms to wait for the cross-process pool-state lock (default 30000). */
   worktreeLockWaitMs?: number
+  /** Cap on total pooled slots per repository (default 0 = unlimited; reuse still allowed at the cap). */
+  worktreeMaxSlots?: number
 }
 
 type WorktreeAction = 'acquire' | 'release' | 'list' | 'prune' | 'destroy'
@@ -96,12 +98,14 @@ function engineSettings(config: WorktreeToolConfig): {
   baseBranch?: string
   fetchBeforeAcquire?: boolean
   lockWaitMs?: number
+  maxSlots?: number
 } {
   return {
     ...config.worktreeRoot !== undefined ? { root: config.worktreeRoot } : {},
     ...config.worktreeBaseBranch !== undefined ? { baseBranch: config.worktreeBaseBranch } : {},
     ...config.worktreeFetchBeforeAcquire !== undefined ? { fetchBeforeAcquire: config.worktreeFetchBeforeAcquire } : {},
     ...config.worktreeLockWaitMs !== undefined ? { lockWaitMs: config.worktreeLockWaitMs } : {},
+    ...config.worktreeMaxSlots !== undefined ? { maxSlots: config.worktreeMaxSlots } : {},
   }
 }
 

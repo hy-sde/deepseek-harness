@@ -55,6 +55,7 @@ export type WorktreeErrorCode =
   | 'UnlandedWorktree'
   | 'LeasedWorktree'
   | 'GitFailed'
+  | 'MaxSlots'
 
 /** A typed worktree-pool failure: semantic codes for the tool layer to branch on. */
 export class WorktreeError extends Error {
@@ -89,6 +90,13 @@ export interface WorktreeSettings {
   fetchBeforeAcquire?: boolean
   /** Max ms to wait for the cross-process pool-state lock (default 30000). */
   lockWaitMs?: number
+  /**
+   * Cap on total pooled slots for one repository (default 0 = unlimited).
+   * `acquireWorktree` still reuses a provably-idle slot when the cap is
+   * reached; it refuses to CUT a new slot and fails with code `MaxSlots`,
+   * leaving release/prune/destroy (or raising the cap) as the fix.
+   */
+  maxSlots?: number
 }
 
 /** Per-acquire options. */
@@ -506,6 +514,20 @@ export async function acquireWorktree(
           return true
         })
 
+        const atCap = settings.maxSlots !== undefined && settings.maxSlots > 0
+          && entries.length >= settings.maxSlots
+        // A cap limits NEW slots only: provable reuse is always allowed.
+        const cutNew = (): Promise<WorktreeStateEntry> => {
+          if (atCap) {
+            throw new WorktreeError(
+              'MaxSlots',
+              `pool "${poolRoot}" is at its maxSlots cap (${settings.maxSlots}): no new slot can be cut — release a lease, prune/destroy an idle slot, or raise maxSlots`,
+              poolRoot,
+            )
+          }
+          return cutNewSlot(git, repoRoot, poolRoot, entries, target, branch, options.signal)
+        }
+
         let entry: WorktreeStateEntry
         if (reusable !== undefined) {
           const clean = await isClean(git, reusable.path, options.signal)
@@ -516,10 +538,10 @@ export async function acquireWorktree(
             entry = await reuseSlot(git, reusable, target, branch, options.signal)
           } else {
             // Safety unprovable: keep the slot untouched and cut a new one.
-            entry = await cutNewSlot(git, repoRoot, poolRoot, entries, target, branch, options.signal)
+            entry = await cutNew()
           }
         } else {
-          entry = await cutNewSlot(git, repoRoot, poolRoot, entries, target, branch, options.signal)
+          entry = await cutNew()
         }
 
         const leasedAt = new Date().toISOString()

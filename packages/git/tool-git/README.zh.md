@@ -72,6 +72,7 @@ kind: "package-reference"
 - `worktreeBaseBranch` — `worktree acquire` 的默认切出分支（默认：从 origin HEAD／当前分支推断）。
 - `worktreeFetchBeforeAcquire` — acquire 前是否 fetch origin（默认 true；仓库无 origin 时跳过）。
 - `worktreeLockWaitMs` — 池状态锁的最长等待（默认 30 秒）。
+- `worktreeMaxSlots` — 每个仓库工作树池的总槽位上限（默认 0 = 不限制；达到上限后仍可复用可证明空闲的槽位，仅拒绝新建槽位）。
 
 本部署的 agent preset 行挂载 `reviewProvider: spawn` 与 `maxReviewers: 4`。
 
