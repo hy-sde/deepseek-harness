@@ -14,6 +14,7 @@ import policyPackage, {
   OrchestrationPolicyService,
   buildOrchestrationPromptSection,
   resolvePolicyConfig,
+  resolvePosture,
 } from '../src/index.ts'
 
 describe('resolvePolicyConfig', () => {
@@ -168,5 +169,93 @@ describe('plugin mount', () => {
     } finally {
       await ctx.fiber.dispose()
     }
+  })
+})
+
+describe('reviewGate config resolution', () => {
+  it('defaults the gate active under the sad posture when the policy is enabled', () => {
+    const resolved = resolvePolicyConfig({ enabled: true })
+    expect(resolved.reviewGate).toEqual({
+      enabled: true,
+      default: 'review-gated',
+      posture: {},
+      requireVerdict: 'ship',
+      onUnavailable: 'block',
+    })
+    expect(resolved.scoutPolicy.knowledgeOnly).toHaveLength(5)
+  })
+
+  it('resolves a partial reviewGate + scoutPolicy over the defaults', () => {
+    const resolved = resolvePolicyConfig({
+      enabled: true,
+      reviewGate: { default: 'fast', posture: { '/trusted': 'fast', '/gated': 'review-gated', '*': 'review-gated' }, onUnavailable: 'warn' },
+      scoutPolicy: { knowledgeOnly: ['diagnose', 'audit'] },
+    })
+    expect(resolved.reviewGate.enabled).toBe(true)
+    expect(resolved.reviewGate.default).toBe('fast')
+    expect(resolved.reviewGate.onUnavailable).toBe('warn')
+    expect(resolved.reviewGate.requireVerdict).toBe('ship')
+    expect(resolved.scoutPolicy.knowledgeOnly).toEqual(['diagnose', 'audit'])
+  })
+
+  it('rejects malformed reviewGate config with actionable messages', () => {
+    const cases: Array<[Record<string, unknown>, string]> = [
+      [{ reviewGate: { enabled: 'yes' } }, 'reviewGate.enabled'],
+      [{ reviewGate: { default: 'strict' } }, 'reviewGate.default'],
+      [{ reviewGate: { posture: { '/x': 'sometimes' } } }, 'posture for "/x"'],
+      [{ reviewGate: { requireVerdict: 'approve' } }, 'reviewGate.requireVerdict'],
+      [{ reviewGate: { onUnavailable: 'ignore' } }, 'reviewGate.onUnavailable'],
+      [{ reviewGate: 'on' }, 'reviewGate'],
+      [{ scoutPolicy: { knowledgeOnly: 'investigate' } }, 'knowledgeOnly'],
+    ]
+    for (const [config, needle] of cases) {
+      let failure: unknown
+      try {
+        resolvePolicyConfig(config as never)
+      } catch (error: unknown) {
+        failure = error
+      }
+      expect(String(failure), JSON.stringify(config)).toContain(needle)
+    }
+  })
+})
+
+describe('resolvePosture', () => {
+  it('picks the most specific matching prefix, then *, then the default', () => {
+    const posture = { '/a': 'fast', '/a/b': 'review-gated', '*': 'review-gated' } as const
+    expect(resolvePosture(posture, '/a/b/c', 'review-gated')).toBe('review-gated')
+    expect(resolvePosture(posture, '/a/x', 'review-gated')).toBe('fast')
+    expect(resolvePosture(posture, '/z', 'review-gated')).toBe('review-gated')
+    expect(resolvePosture({}, '/z', 'fast')).toBe('fast')
+    expect(resolvePosture({ '*': 'fast' }, '/z', 'review-gated')).toBe('fast')
+  })
+})
+
+describe('P2 prompt rendering', () => {
+  it('renders the quality-gate rule and scout guidance when the policy is enabled', () => {
+    const section = buildOrchestrationPromptSection(resolvePolicyConfig({
+      enabled: true,
+      scoutPolicy: { knowledgeOnly: ['audit'] },
+    }))
+    expect(section.text).toContain('Quality gate')
+    expect(section.text).toContain('review --target staged')
+    expect(section.text).toContain('commit_apply --push')
+    expect(section.text).toContain('explicit `fast` posture')
+    expect(section.text).toContain('Knowledge-only intents (audit)')
+  })
+
+  it('omits the gate rule when reviewGate.enabled is false (scout guidance stays)', () => {
+    const section = buildOrchestrationPromptSection(resolvePolicyConfig({
+      enabled: true,
+      reviewGate: { enabled: false },
+    }))
+    expect(section.text).not.toContain('Quality gate')
+    expect(section.text).toContain('Knowledge-only intents')
+  })
+
+  it('renders every serialize reason with its description', () => {
+    const section = buildOrchestrationPromptSection(resolvePolicyConfig({ enabled: true }))
+    expect(section.text).toContain('same-file-edit: two chunks edit the same file')
+    expect(section.text).toContain('incompatible-concurrency: both rework the same subsystem in conflicting ways')
   })
 })

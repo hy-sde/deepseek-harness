@@ -58,6 +58,7 @@
     "@deepseek-ai/dsh-subagent": "workspace:^",
     "@deepseek-ai/dsh-system-prompt": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^",
-    "@deepseek-ai/dsh-vcs": "workspace:^"
+    "@deepseek-ai/dsh-vcs": "workspace:^",
+    "@deepseek-ai/dsh-orchestration-policy": "workspace:^"
   }
 }

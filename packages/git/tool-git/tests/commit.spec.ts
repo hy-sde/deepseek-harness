@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
@@ -18,6 +18,8 @@ import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import * as Git from '@deepseek-ai/dsh-git'
 import toolGitPackage from '@deepseek-ai/dsh-tool-git'
+import policyPackage from '@deepseek-ai/dsh-orchestration-policy'
+import { clearReviewVerdicts, recordReviewVerdict } from '../src/push-gate.ts'
 
 let dir: string
 let ctx: Context
@@ -349,5 +351,146 @@ describe('commit_apply --push (named-branch semantics)', () => {
       commits: [{ changes: [{ path: 'pkg/b.ts' }], type: 'feat', scope: 'pkg', summary: 'add helper b', dependencies: [] }],
       push: true,
     })).rejects.toThrow(/requires a named branch.*worktree acquire --branch/s)
+  })
+})
+
+describe('P2 review gate on commit_apply --push', () => {
+  let gateDir: string
+  let gateOrigin: string
+  let gateRoot: string
+
+  function gateGit(args: string[]): string {
+    const result = spawnSync('git', args, { cwd: gateDir, encoding: 'utf8' })
+    if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
+    return result.stdout
+  }
+
+  function resetGateRepo(branch?: string): void {
+    gateGit(['checkout', '-qf', 'main'])
+    gateGit(['reset', '--hard', '-q'])
+    gateGit(['clean', '-fdq'])
+    if (branch !== undefined) gateGit(['switch', '-qc', branch])
+  }
+
+  async function stage(path: string, content: string): Promise<void> {
+    const target = join(gateDir, path)
+    await mkdir(target.slice(0, target.lastIndexOf('/')), { recursive: true })
+    await writeFile(target, content)
+    expect(spawnSync('git', ['add', path], { cwd: gateDir, encoding: 'utf8' }).status).toBe(0)
+  }
+
+  beforeAll(async () => {
+    gateDir = await mkdtemp(join(tmpdir(), 'dsh-tool-git-gate-'))
+    gateOrigin = await mkdtemp(join(tmpdir(), 'dsh-tool-git-gate-origin-'))
+    rmSync(gateOrigin, { recursive: true, force: true })
+    gateGit(['init', '-q'])
+    gateGit(['config', 'user.email', 'test@example.com'])
+    gateGit(['config', 'user.name', 'Test User'])
+    await writeFile(join(gateDir, 'README.md'), '# gate\n')
+    gateGit(['add', 'README.md'])
+    gateGit(['commit', '-qm', 'chore: baseline'])
+    gateGit(['branch', '-M', 'main'])
+    spawnSync('git', ['init', '--bare', '-q', gateOrigin], { encoding: 'utf8' })
+    gateGit(['remote', 'add', 'origin', gateOrigin])
+    gateGit(['push', '-qu', 'origin', 'main'])
+    gateRoot = gateGit(['rev-parse', '--show-toplevel']).trim()
+    await ctx.plugin(policyPackage, { enabled: true, reviewGate: { default: 'review-gated' } })
+  })
+
+  afterAll(async () => {
+    rmSync(gateDir, { recursive: true, force: true })
+    rmSync(gateOrigin, { recursive: true, force: true })
+  })
+
+  beforeEach(() => clearReviewVerdicts())
+
+  const commitPlan = (path: string) => [{
+    changes: [{ path }],
+    type: 'feat',
+    summary: 'add gated change',
+    dependencies: [],
+  }]
+
+  it('refuses a gated push with no verdict, naming `review` as the fix', async () => {
+    resetGateRepo('feature/gated-1')
+    await stage('pkg/gated-a.ts', 'export const a = 1;\n')
+    await expect(call('commit_apply', {
+      cwd: gateDir,
+      commits: commitPlan('pkg/gated-a.ts'),
+      push: true,
+    })).rejects.toThrow(/review gate.*never been reviewed.*review --target staged/s)
+  })
+
+  it('releases a push carrying a current ship verdict over the same staged range', async () => {
+    resetGateRepo('feature/gated-2')
+    await stage('pkg/gated-b.ts', 'export const b = 2;\n')
+    const beforeHead = gateGit(['rev-parse', 'HEAD']).trim()
+    const indexTree = gateGit(['write-tree']).trim()
+    recordReviewVerdict({
+      root: gateRoot,
+      target: 'staged',
+      verdict: 'ship',
+      beforeHead,
+      indexTree,
+      at: Date.now(),
+    })
+    const result = await call('commit_apply', {
+      cwd: gateDir,
+      commits: commitPlan('pkg/gated-b.ts'),
+      push: true,
+    })
+    const value = result.value as { mode: string; warnings: string[] }
+    expect(value.mode).toBe('single')
+    expect(value.warnings.some(text => text.includes('push gated') && text.includes('ship'))).toBe(true)
+    expect(gateGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim()).toBe('origin/feature/gated-2')
+  })
+
+  it('refuses when the staged range changed after the review (stale verdict)', async () => {
+    resetGateRepo('feature/gated-3')
+    await stage('pkg/gated-c.ts', 'export const c = 3;\n')
+    recordReviewVerdict({
+      root: gateRoot,
+      target: 'staged',
+      verdict: 'ship',
+      beforeHead: gateGit(['rev-parse', 'HEAD']).trim(),
+      indexTree: gateGit(['write-tree']).trim(),
+      at: Date.now(),
+    })
+    // A second staged change invalidates the reviewed range identity.
+    await stage('pkg/gated-d.ts', 'export const d = 4;\n')
+    await expect(call('commit_apply', {
+      cwd: gateDir,
+      commits: commitPlan('pkg/gated-d.ts'),
+      push: true,
+    })).rejects.toThrow(/stale review verdict/)
+  })
+
+  it('refuses a push after a reject verdict (fail-closed)', async () => {
+    resetGateRepo('feature/gated-4')
+    await stage('pkg/gated-e.ts', 'export const e = 5;\n')
+    recordReviewVerdict({
+      root: gateRoot,
+      target: 'staged',
+      verdict: 'reject',
+      beforeHead: gateGit(['rev-parse', 'HEAD']).trim(),
+      indexTree: gateGit(['write-tree']).trim(),
+      at: Date.now(),
+    })
+    await expect(call('commit_apply', {
+      cwd: gateDir,
+      commits: commitPlan('pkg/gated-e.ts'),
+      push: true,
+    })).rejects.toThrow(/verdict was `reject`/)
+  })
+
+  it('leaves local commits ungated when push is not requested', async () => {
+    resetGateRepo('feature/gated-5')
+    await stage('pkg/gated-f.ts', 'export const f = 6;\n')
+    const result = await call('commit_apply', {
+      cwd: gateDir,
+      commits: commitPlan('pkg/gated-f.ts'),
+      push: false,
+    })
+    expect((result.value as { mode: string }).mode).toBe('single')
   })
 })

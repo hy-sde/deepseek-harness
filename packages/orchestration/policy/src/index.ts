@@ -52,7 +52,53 @@ export interface OrchestrationPolicyConfig {
   serializeReasons?: SerializeReason[]
   /** Show the captain one plan summary before a wave is dispatched (default true). */
   announcePlan?: boolean
+  /** Same-quality gate on `commit_apply --push` (active whenever the policy is enabled; see {@link ReviewGateConfig}). */
+  reviewGate?: ReviewGateConfig
+  /** Scout classification rule set (prompt-rendered guidance in P2; enforcement stays at the push boundary). */
+  scoutPolicy?: ScoutPolicyConfig
 }
+
+/** Push-posture values recognized by the review gate. */
+export type PushPosture = 'review-gated' | 'fast'
+
+/** The P2 same-quality gate: no unreviewed change leaves the repo under a gated posture. */
+export interface ReviewGateConfig {
+  /** Gate active whenever the policy is enabled; explicitly `false` exits it (default: active). */
+  enabled?: boolean
+  /** Standing posture for repositories without an explicit entry (default `review-gated`). */
+  default?: PushPosture
+  /**
+   * Explicit standing posture per repository-root prefix (`*` = global default;
+   * most-specific = longest matching prefix wins). Host-owned config only — a
+   * repo-writable posture file is an injection surface.
+   */
+  posture?: Record<string, PushPosture>
+  /** Only this verdict releases a push (default `ship`; today the only accepted value). */
+  requireVerdict?: 'ship'
+  /**
+   * Behavior when there is no current `ship` verdict: `block` (default,
+   * fail-closed refusal) or `warn` (degrade with a loud warning). A `reject`
+   * verdict always blocks in both modes.
+   */
+  onUnavailable?: 'block' | 'warn'
+}
+
+/** Scout classification: which intents are knowledge-only (never PR-shaped). */
+export interface ScoutPolicyConfig {
+  /** Intent labels whose output is a scout (prompt-rendered guidance; default the five firstmate labels). */
+  knowledgeOnly?: string[]
+}
+
+/** Fully-resolved review-gate config (every knob present). */
+export interface ResolvedReviewGateConfig {
+  enabled: boolean
+  default: PushPosture
+  posture: Record<string, PushPosture>
+  requireVerdict: 'ship'
+  onUnavailable: 'block' | 'warn'
+}
+
+export const DEFAULT_KNOWLEDGE_ONLY = ['investigate', 'diagnose', 'plan', 'audit', 'reproduce'] as const
 
 /** Fully-resolved config (every knob present). */
 export interface ResolvedPolicyConfig {
@@ -63,6 +109,8 @@ export interface ResolvedPolicyConfig {
   enforceWorkspace: boolean
   serializeReasons: SerializeReason[]
   announcePlan: boolean
+  reviewGate: ResolvedReviewGateConfig
+  scoutPolicy: { knowledgeOnly: readonly string[] }
 }
 
 export const DEFAULT_POLICY_CONFIG: ResolvedPolicyConfig = {
@@ -73,6 +121,25 @@ export const DEFAULT_POLICY_CONFIG: ResolvedPolicyConfig = {
   enforceWorkspace: true,
   serializeReasons: [...SERIALIZE_REASONS],
   announcePlan: true,
+  reviewGate: {
+    enabled: true,
+    default: 'review-gated',
+    posture: {},
+    requireVerdict: 'ship',
+    onUnavailable: 'block',
+  },
+  scoutPolicy: { knowledgeOnly: [...DEFAULT_KNOWLEDGE_ONLY] },
+}
+
+/** The SCHEMA-DEFAULT review gate, shared by resolution and the service. */
+function defaultReviewGate(): ResolvedReviewGateConfig {
+  return {
+    enabled: true,
+    default: 'review-gated',
+    posture: {},
+    requireVerdict: 'ship',
+    onUnavailable: 'block',
+  }
 }
 
 /** Validate + resolve partial config; malformed input throws an actionable error. */
@@ -97,7 +164,93 @@ export function resolvePolicyConfig(config: OrchestrationPolicyConfig = {}): Res
       )
     }
   }
-  return { ...DEFAULT_POLICY_CONFIG, ...config }
+  let reviewGate = defaultReviewGate()
+  if (config.reviewGate !== undefined) {
+    const gate = config.reviewGate
+    if (gate === null || typeof gate !== 'object' || Array.isArray(gate)) {
+      throw new Error('orchestration-policy: `reviewGate` must be an object')
+    }
+    if (gate.enabled !== undefined && typeof gate.enabled !== 'boolean') {
+      throw new Error(`orchestration-policy: \`reviewGate.enabled\` must be a boolean (got ${JSON.stringify(gate.enabled)})`)
+    }
+    if (gate.default !== undefined && !PUSH_POSTURES.includes(gate.default)) {
+      throw new Error(
+        `orchestration-policy: \`reviewGate.default\` must be 'review-gated' or 'fast' (got ${JSON.stringify(gate.default)})`,
+      )
+    }
+    if (gate.requireVerdict !== undefined && gate.requireVerdict !== 'ship') {
+      throw new Error(`orchestration-policy: \`reviewGate.requireVerdict\` must be 'ship' (got ${JSON.stringify(gate.requireVerdict)})`)
+    }
+    if (gate.onUnavailable !== undefined && !GATE_UNAVAILABLE_MODES.includes(gate.onUnavailable)) {
+      throw new Error(
+        `orchestration-policy: \`reviewGate.onUnavailable\` must be 'block' or 'warn' (got ${JSON.stringify(gate.onUnavailable)})`,
+      )
+    }
+    const posture = { ...gate.posture }
+    if (gate.posture !== undefined) {
+      if (gate.posture === null || typeof gate.posture !== 'object' || Array.isArray(gate.posture)) {
+        throw new Error('orchestration-policy: `reviewGate.posture` must be a record of repository prefix \u2192 posture')
+      }
+      for (const [key, value] of Object.entries(gate.posture)) {
+        if (!PUSH_POSTURES.includes(value)) {
+          throw new Error(
+            `orchestration-policy: posture for ${JSON.stringify(key)} must be 'review-gated' or 'fast' (got ${JSON.stringify(value)})`,
+          )
+        }
+      }
+    }
+    reviewGate = {
+      enabled: gate.enabled ?? true,
+      default: gate.default ?? 'review-gated',
+      posture,
+      requireVerdict: gate.requireVerdict ?? 'ship',
+      onUnavailable: gate.onUnavailable ?? 'block',
+    }
+  }
+  let knowledgeOnly: readonly string[] = DEFAULT_KNOWLEDGE_ONLY
+  if (config.scoutPolicy !== undefined) {
+    const scout = config.scoutPolicy
+    if (scout === null || typeof scout !== 'object' || Array.isArray(scout)) {
+      throw new Error('orchestration-policy: `scoutPolicy` must be an object')
+    }
+    if (scout.knowledgeOnly !== undefined) {
+      if (!Array.isArray(scout.knowledgeOnly) || scout.knowledgeOnly.some(item => typeof item !== 'string')) {
+        throw new Error('orchestration-policy: `scoutPolicy.knowledgeOnly` must be an array of intent labels')
+      }
+      knowledgeOnly = scout.knowledgeOnly
+    }
+  }
+  return {
+    ...DEFAULT_POLICY_CONFIG,
+    ...config,
+    reviewGate,
+    scoutPolicy: { knowledgeOnly },
+  }
+}
+
+const PUSH_POSTURES = ['review-gated', 'fast'] as const
+const GATE_UNAVAILABLE_MODES = ['block', 'warn'] as const
+
+/**
+ * Resolve one repository's standing push posture.
+ * @param posture - the configured posture map (`*` = global default; empty = all).
+ * @param repoRoot - absolute repository root (`git rev-parse --show-toplevel`).
+ * @param defaultPosture - the configured default for unlisted repositories.
+ * @returns the most-specific matching posture: longest matching key prefix wins,
+ *          then `*`, then `defaultPosture`.
+ */
+export function resolvePosture(
+  posture: Readonly<Record<string, PushPosture>>,
+  repoRoot: string,
+  defaultPosture: PushPosture,
+): PushPosture {
+  let best: string | undefined
+  for (const key of Object.keys(posture)) {
+    if (key === '*') continue
+    if (repoRoot.startsWith(key) && (best === undefined || key.length > best.length)) best = key
+  }
+  if (best !== undefined) return posture[best] as PushPosture
+  return posture['*'] ?? defaultPosture
 }
 
 /** A policy rejection: the fail-closed start that violates `isolation: required`. */
@@ -145,7 +298,7 @@ function reasonText(reasons: readonly SerializeReason[]): string {
     '- shared-mutable-state: lockfiles, migrations, generated code, credentials',
     '- incompatible-concurrency: both rework the same subsystem in conflicting ways',
   ]
-  const kept = reasons.map(reason => lines.find(line => line.endsWith(`: ${reason}`)) ?? `- ${reason}`)
+  const kept = reasons.map(reason => lines.find(line => line.startsWith(`- ${reason}:`)) ?? `- ${reason}`)
   return kept.join('\n')
 }
 
@@ -166,16 +319,29 @@ export function buildOrchestrationPromptSection(config: ResolvedPolicyConfig = D
   const plan = config.announcePlan
     ? 'Announce the plan once before dispatch: N isolated tasks, what each owns, expected overlap (rare), who merges. One summary — never per-child chatter in the captain-facing thread.'
     : ''
-  const text = [
-    '# Orchestration policy (parallelize-by-default)',
-    `Goal: same quality, more velocity, less captain cognitive load. ${mode}`,
-    '',
+  const rules: string[] = [
     '1. Classify before doing: independent chunks (different files/subsystems, no shared mutable state, no ordering) or one unit of work.',
     `2. Serialize ONLY for a true dependency — the accepted reasons are:\n${reasons}`,
     '   Same-file edits ALONE are not a reason to serialize: split by intent and merge; a shared-file edit with conflicting intent is `incompatible-concurrency`.',
     `3. Fan out: per chunk \`worktree acquire --branch <task>\` then \`subagent { workspace: <lease path> }\` — parallel, up to ${config.maxFanOut} per wave; beyond that announce the rest as a follow-up wave.`,
     isolation,
     '4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain\'s explicit word.',
+  ]
+  const post: string[] = []
+  if (config.reviewGate.enabled) {
+    post.push(
+      '5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.',
+    )
+  }
+  post.push(
+    `Knowledge-only intents (${config.scoutPolicy.knowledgeOnly.join(', ')}) produce investigation notes, not PR-shaped changes.`,
+  )
+  const text = [
+    '# Orchestration policy (parallelize-by-default)',
+    `Goal: same quality, more velocity, less captain cognitive load. ${mode}`,
+    '',
+    ...rules,
+    ...post,
     plan,
   ].filter(Boolean).join('\n')
   return { name: SECTION_NAME, order: SECTION_ORDER, text }

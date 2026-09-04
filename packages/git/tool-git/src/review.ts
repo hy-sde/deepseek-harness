@@ -19,6 +19,8 @@ import { parseFileDiffs } from '@deepseek-ai/dsh-git'
 import type { SubagentRun } from '@deepseek-ai/dsh-subagent'
 import { resolveCwd } from './commit.ts'
 import { openReads, type ReadSurface } from './reads.ts'
+import { headOf, indexTreeOf, recordReviewVerdict } from './push-gate.ts'
+import type { GitService } from '@deepseek-ai/dsh-git'
 
 /** Configuration consumed by the review tool. */
 export interface ReviewToolConfig {
@@ -119,6 +121,24 @@ export function toPriority(value: unknown): FindingPriority {
   if (value === 1 || value === '1') return 'P1'
   if (value === 2 || value === '2') return 'P2'
   return 'P3'
+}
+
+/** Record a staged review verdict for the push gate (no-op for other targets). */
+async function recordStagedVerdict(
+  git: GitService,
+  cwd: string,
+  signal: AbortSignal | undefined,
+  value: ReviewValue,
+): Promise<void> {
+  if (value.target !== 'staged') return
+  recordReviewVerdict({
+    root: await git.root(cwd, signal),
+    target: value.target,
+    verdict: value.verdict,
+    beforeHead: await headOf(git, cwd, signal),
+    indexTree: await indexTreeOf(git, cwd, signal),
+    at: Date.now(),
+  })
 }
 
 export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): void {
@@ -254,7 +274,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
       }
 
       if (files.length === 0) {
-        return {
+        const value: ReviewValue = {
           target,
           files: [],
           diffTruncated: false,
@@ -265,7 +285,9 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           slices: [],
           errors: [],
           warnings,
-        } satisfies ReviewValue
+        }
+        await recordStagedVerdict(ctx.git, cwd, exec.signal, value)
+        return value
       }
 
       // Cap the inline diff handed to any one reviewer up front.
@@ -331,7 +353,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
             + (slicesResult.length > 0 ? ` (${slicesResult.length} reviewer(s))` : '') + '.'
             + (findings.length > 0 ? ` ${findings.length} non-blocking finding(s) remain.` : '')
 
-      return {
+      const value: ReviewValue = {
         target,
         files,
         diffTruncated: anyTruncated,
@@ -342,7 +364,9 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
         slices: slicesResult,
         errors,
         warnings,
-      } satisfies ReviewValue
+      }
+      await recordStagedVerdict(ctx.git, cwd, exec.signal, value)
+      return value
 
       async function collectSlice(sliceFiles: string[], index: number): Promise<
         { kind: 'ok'; slice: SliceResult } | { kind: 'error'; error: string }

@@ -14,6 +14,7 @@ English | [中文](README.zh.md)
 1. **Policy text** — the `orchestration:policy` [system-prompt section](#model-experience), rendered from the *same config* that arms the guard, so text and enforcement cannot drift.
 2. **Config knobs** — a `cordis.yml` config row (every knob optional, defaults below). The whole policy is **inert unless `enabled: true`**: default OFF keeps today's model-discretion behavior byte-stable until a deployment opts in.
 3. **Seam guard** — the optional `ctx.orchestrationPolicy` service. `tool-subagent` reads it with `ctx.get` (never `inject`), so mounting this plugin is the *only* thing that arms enforcement; an absent service is today's behavior. Under `isolation: required` a task child started without an isolated `workspace` is **rejected** with an actionable fix message (fail-closed); a provider that cannot honor `workspace` (out-of-process backends) **degrades to a reported warning, never a silent ignore**.
+4. **Same-quality gate (P2)** — when the policy is enabled, the review gate is active too (opt out with `reviewGate.enabled: false`). Under the default `review-gated` posture a `commit_apply --push` is **refused until `review --target staged` returns `ship` for the exact current staged range** (identity = pre-commit HEAD + index tree, so any re-stage or amend makes it stale); `reject` verdicts always block. Only an explicit `fast` posture entry skips the gate — trust is never inferred.
 
 ## Table of Contents
 
@@ -55,6 +56,12 @@ Mount next to `dsh-tool-subagent` and the `worktree` tool (`dsh-tool-git`) in a 
 | `enforceWorkspace` | `true` | Whether the seam guard enforces isolation when `isolation: required`. |
 | `serializeReasons` | all four | Accepted reasons to serialize: `same-file-edit`, `semantic-dependency`, `shared-mutable-state`, `incompatible-concurrency`. |
 | `announcePlan` | `true` | Show the captain one plan summary before a wave is dispatched. |
+| `reviewGate.enabled` | `active` | The gate is active whenever the policy is enabled; `false` exits it. |
+| `reviewGate.default` | `review-gated` | Standing posture for repositories without an explicit entry. |
+| `reviewGate.posture` | `{}` | Explicit standing posture per repository-root prefix (`*` = global; longest matching prefix wins). Host-owned config — never repo files. |
+| `reviewGate.requireVerdict` | `ship` | The only verdict that releases a push today. |
+| `reviewGate.onUnavailable` | `block` | No current `ship` verdict: `block` (fail-closed refusal) or `warn` (loud degrade). A `reject` verdict always blocks in both modes. |
+| `scoutPolicy.knowledgeOnly` | the five labels | Intent labels whose output is scout, not PR-shaped (prompt-rendered guidance). |
 
 **Precedence is fixed** (firstmate precedence): explicit captain instruction in the moment > configured rule > configured default > built-in default. **Malformed configuration fails at LOAD** with an actionable message (`maxFanOut` must be a positive integer; unknown isolation mode; unknown serialize reason) — never silently ignored or selected around.
 
@@ -63,6 +70,7 @@ Mount next to `dsh-tool-subagent` and the `worktree` tool (`dsh-tool-git`) in a 
 1. **Classify, then fan out**: independent chunks (different files/subsystems, no shared mutable state, no ordering) are dispatched in parallel — one task per isolated working copy. **Serialize only for a true dependency** named in `serializeReasons`; *same-file edits alone are not a reason* (split by intent and merge instead).
 2. **Isolation is enforced, not requested**: `isolation: required` + `enforceWorkspace` means a `subagent` start **without** a `workspace` is rejected with the fix (pass the `path` from `worktree acquire`). A provider that cannot honor `workspace` degrades to a reported warning instead of silently running unisolated.
 3. **Announce + steer**: one plan summary before a wave (`announcePlan`), `send_message` steering at the nearest step boundary, `interrupt_agent` cancellation, and lease release after each child settles (never `force` without the captain's word).
+4. **Gate the boundary**: under `review-gated` posture a push without a current `ship` verdict for the same staged range is refused with the fix (`review --target staged`); a verdict recorded before a re-stage/amend is *stale* and re-review is required. Verdicts live in the host process — a host restart clears them, which is deliberately fail-closed.
 
 A companion engine knob: `dsh-tool-git`'s `worktreeMaxSlots` caps the pool per repository (default `0` = unlimited); at the cap `acquire` refuses to **cut** a new slot (`MaxSlots` error, reuse of a provably idle slot is still allowed) — run `release`/`prune`/`destroy` or raise the cap.
 
@@ -96,6 +104,10 @@ This section explains the guard mechanics; observable behavior is in [Use this p
 
 The guard sits at the model-facing `tool-subagent` seam (both one-shot and continuable starts). SDK/ACP/API paths do not go through the tool and never see the guard.
 
+### Push gate mechanics (P2)
+
+`review --target staged` records `{ root, beforeHead, indexTree, verdict }` per repository (one record per target, so a later worktree review cannot shadow a staged verdict). `commit_apply --push` snapshots the same two identities **before** any staging/commit, resolves the repository posture (`resolvePosture`: longest prefix match → `*` → configured default → `review-gated`), and consults the record: missing → `block`/`warn` per `onUnavailable`; identity mismatch → stale (always block); `reject` → always block; `ship` + matching identity → release with a recorded note. Local commits (`push: false`) are never gated — the gate lives at the boundary.
+
 </details>
 
 -----
@@ -103,8 +115,8 @@ The guard sits at the model-facing `tool-subagent` seam (both one-shot and conti
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- The engine behind the isolation requirement: [`@deepseek-ai/dsh-git`](../git/README.md) worktree pool with durable leases, and the `worktree` tool in [`@deepseek-ai/dsh-tool-git`](../git/tool-git/README.md) — `acquire --branch`, `release`, `list`, `prune`, `destroy`.
-- The delegated child boundary: [`@deepseek-ai/dsh-tool-subagent`](../subagent/tool-subagent/README.md) `workspace` argument and the `send_message`/`interrupt_agent` steering tools in [`@deepseek-ai/dsh-tool-subagent-control`](../subagent/tool-subagent-control/README.md).
+- The engine behind the isolation requirement: [`@deepseek-ai/dsh-git`](../../git/git/README.md) worktree pool with durable leases, and the `worktree` tool in [`@deepseek-ai/dsh-tool-git`](../../git/tool-git/README.md) — `acquire --branch`, `release`, `list`, `prune`, `destroy`.
+- The delegated child boundary: [`@deepseek-ai/dsh-tool-subagent`](../../subagent/tool-subagent/README.md) `workspace` argument and the `send_message`/`interrupt_agent` steering tools in [`@deepseek-ai/dsh-tool-subagent-control`](../../subagent/tool-subagent-control/README.md).
 - The port plan: the P1 scoping note `firstmate-policy-scope.md` (kept alongside `port_firstmate.md` in the fork workspace), P2 review gate and P3 outcomes-not-mechanics reporting.
 
 -----
@@ -123,7 +135,6 @@ The guard sits at the model-facing `tool-subagent` seam (both one-shot and conti
 ```markdown
 # Orchestration policy (parallelize-by-default)
 Goal: same quality, more velocity, less captain cognitive load. Fan out independent chunks as isolated task children; today's serial behavior is the exception.
-
 1. Classify before doing: independent chunks (different files/subsystems, no shared mutable state, no ordering) or one unit of work.
 2. Serialize ONLY for a true dependency — the accepted reasons are:
 - same-file-edit: two chunks edit the same file
@@ -134,6 +145,8 @@ Goal: same quality, more velocity, less captain cognitive load. Fan out independ
 3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 6 per wave; beyond that announce the rest as a follow-up wave.
 One task = one isolated working copy. A task child MUST be started with `workspace` set to a `worktree acquire` path — the guard rejects a start without one (this is fail-closed, not a preference).
 4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain's explicit word.
+5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.
+Knowledge-only intents (investigate, diagnose, plan, audit, reproduce) produce investigation notes, not PR-shaped changes.
 Announce the plan once before dispatch: N isolated tasks, what each owns, expected overlap (rare), who merges. One summary — never per-child chatter in the captain-facing thread.
 ```
 
@@ -149,7 +162,9 @@ Prefix-stable while the config (mode, ceiling, reasons, isolation) is unchanged;
 
 - **Only the isolation guard is fail-closed.** The classification, fan-out ceiling, announce-plan, and steering steps are prompt-level guidance — the model remains the executor; there is no scheduler daemon.
 - **Incapable providers warn, they do not fail.** An out-of-process backend (no `workspace` capability) degrades to a reported warning; if a deployment wants hard failure instead, enforce at the composition level (`isolation: required` with an in-process provider).
-- **Deferred to P2/P3:** the review gate (a `ship` verdict blocking `commit_apply --push` under a `review-gated` posture) and outcomes-not-mechanics reporting.
+- **Verdicts are in-process.** A host restart clears them, so a gated deployment must re-review after a restart before the gate releases a push — deliberately fail-closed, never inferred.
+- **Posture is host-owned config.** Per-repository `fast` opt-outs live in the policy config row; opening a repo-writable posture file is an injection surface and is not supported.
+- **Deferred to P3:** outcomes-not-mechanics reporting.
 
 **Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe beyond the optional service lookup at the tool seam; its behavior is enforced by its package test suites (guard matrix, config validation, prompt rendering, and a real-git wave E2E).
 

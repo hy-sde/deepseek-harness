@@ -1922,9 +1922,44 @@ export interface OrchestrationPolicyConfig {
   serializeReasons?: SerializeReason[]
   /** Show the captain one plan summary before a wave is dispatched (default true). */
   announcePlan?: boolean
+  /** Same-quality gate on `commit_apply --push` (active whenever the policy is enabled; see {@link ReviewGateConfig}). */
+  reviewGate?: ReviewGateConfig
+  /** Scout classification rule set (prompt-rendered guidance in P2; enforcement stays at the push boundary). */
+  scoutPolicy?: ScoutPolicyConfig
 }
 
 export type SerializeReason = typeof SERIALIZE_REASONS[number]
+
+/** The P2 same-quality gate: no unreviewed change leaves the repo under a gated posture. */
+export interface ReviewGateConfig {
+  /** Gate active whenever the policy is enabled; explicitly `false` exits it (default: active). */
+  enabled?: boolean
+  /** Standing posture for repositories without an explicit entry (default `review-gated`). */
+  default?: PushPosture
+  /**
+   * Explicit standing posture per repository-root prefix (`*` = global default;
+   * most-specific = longest matching prefix wins). Host-owned config only — a
+   * repo-writable posture file is an injection surface.
+   */
+  posture?: Record<string, PushPosture>
+  /** Only this verdict releases a push (default `ship`; today the only accepted value). */
+  requireVerdict?: 'ship'
+  /**
+   * Behavior when there is no current `ship` verdict: `block` (default,
+   * fail-closed refusal) or `warn` (degrade with a loud warning). A `reject`
+   * verdict always blocks in both modes.
+   */
+  onUnavailable?: 'block' | 'warn'
+}
+
+/** Scout classification: which intents are knowledge-only (never PR-shaped). */
+export interface ScoutPolicyConfig {
+  /** Intent labels whose output is a scout (prompt-rendered guidance; default the five firstmate labels). */
+  knowledgeOnly?: string[]
+}
+
+/** Push-posture values recognized by the review gate. */
+export type PushPosture = 'review-gated' | 'fast'
 ```
 
 来源：[`packages/orchestration/policy/src/index.ts:40`](../packages/orchestration/policy/src/index.ts)

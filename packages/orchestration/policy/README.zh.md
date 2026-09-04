@@ -14,6 +14,7 @@ kind: "package-reference"
 1. **策略文案** —— `orchestration:policy` [系统提示段](#model-experience)，由**启用守卫的同一份配置**渲染，因此文案与强制执行不会漂移。
 2. **配置旋钮** —— `cordis.yml` 配置行（每个旋钮均可选，默认值见下）。整个策略在 `enabled: true` 之前**完全不生效**：默认关闭可保持当前「由模型自由裁量」的行为字节级稳定，直到某个部署显式开启。
 3. **接口守卫** —— 可选的 `ctx.orchestrationPolicy` 服务。`tool-subagent` 通过 `ctx.get`（而非 `inject`）读取它，因此**挂载本插件是启用强制执行的唯一途径**；服务不存在即保持当前行为。在 `isolation: required` 下，未携带隔离 `workspace` 启动的任务子代理会被**拒绝**并返回可操作的修复提示（fail-closed）；无法支持 `workspace` 的提供方（进程外后端）则**降级为可见警告，绝不静默忽略**。
+4. **同质量门（P2）** —— 策略启用时审查门同样生效（可用 `reviewGate.enabled: false` 退出）。在默认的 `review-gated` 姿态下，`commit_apply --push` 会被**拒绝，直到 `review --target staged` 对**完全相同的当前暂存范围**返回 `ship`**（身份 = 提交前 HEAD + 索引树，任何重新暂存或 amend 都会使其过期）；`reject` 结论始终阻止推送。只有显式的 `fast` 姿态条目才能跳过门——绝不推断信任。
 
 ## 目录
 
@@ -55,6 +56,12 @@ kind: "package-reference"
 | `enforceWorkspace` | `true` | 在 `isolation: required` 时是否由接口守卫强制执行隔离。 |
 | `serializeReasons` | 全部四项 | 允许串行化的原因：`same-file-edit`、`semantic-dependency`、`shared-mutable-state`、`incompatible-concurrency`。 |
 | `announcePlan` | `true` | 派发波次前向船长展示一次计划摘要。 |
+| `reviewGate.enabled` | 生效 | 策略启用时审查门即生效；`false` 退出。 |
+| `reviewGate.default` | `review-gated` | 无显式条目仓库的常设姿态。 |
+| `reviewGate.posture` | `{}` | 按仓库根前缀的显式常设姿态（`*` = 全局；最长匹配前缀获胜）。宿主自有配置——绝不使用仓库文件。 |
+| `reviewGate.requireVerdict` | `ship` | 当前唯一可释放推送的结论。 |
+| `reviewGate.onUnavailable` | `block` | 无当前 `ship` 结论时：`block`（fail-closed 拒绝）或 `warn`（明确的降级）。两种模式下 `reject` 结论都始终阻止。 |
+| `scoutPolicy.knowledgeOnly` | 五个标签 | 输出为「侦察」而非 PR 形态的意图标签（提示层引导）。 |
 
 **优先级固定**（沿用 firstmate 优先级）：当下船长的明确指示 > 已配置规则 > 已配置默认值 > 内置默认值。**配置错误在加载时即失败**并给出可操作信息（`maxFanOut` 必须为正整数；未知的隔离模式；未知的串行化原因）——绝不静默忽略或绕行。
 
@@ -63,6 +70,7 @@ kind: "package-reference"
 1. **先分类，再扇出**：相互独立的任务块（不同文件/子系统、无共享可变状态、无顺序依赖）并行派发——每个任务一个隔离工作副本。**仅当命中 `serializeReasons` 中的真实依赖才串行化**；*仅同文件编辑不构成串行化理由*（按意图拆分后合并即可）。
 2. **隔离是强制而非请求**：`isolation: required` + `enforceWorkspace` 意味着未携带 `workspace` 的 `subagent` 启动会被拒绝并提示修复方法（传入 `worktree acquire` 返回的 `path`）。无法支持 `workspace` 的提供方降级为可见警告，而不是静默地非隔离运行。
 3. **先公告，再操控**：波次前一次计划摘要（`announcePlan`），`send_message` 在最近的步骤边界操控，`interrupt_agent` 取消，子代理结束后释放租约（未经船长明确同意绝不 `force`）。
+4. **在边界把关**：在 `review-gated` 姿态下，没有对同一暂存范围的当前 `ship` 结论就推送会被拒绝并给出修复方法（`review --target staged`）；审查后重新暂存/amend 得出的结论为**过期**，需重新审查。结论存于宿主进程——宿主重启即清空，这是刻意的 fail-closed。
 
 配套引擎旋钮：`dsh-tool-git` 的 `worktreeMaxSlots` 限制每个仓库的工作树池（默认 `0` = 不限制）；达到上限时 `acquire` 拒绝**新建**槽位（`MaxSlots` 错误，仍然允许复用可证明空闲的槽位）——可执行 `release`/`prune`/`destroy` 或提高上限。
 
@@ -96,6 +104,10 @@ kind: "package-reference"
 
 守卫位于面向模型的 `tool-subagent` 接口（一次性与续接启动均覆盖）。SDK/ACP/API 路径不经过该工具，永远不会看到守卫。
 
+### 推送门机制（P2）
+
+`review --target staged` 按仓库记录 `{ root, beforeHead, indexTree, verdict }`（每个目标一条记录，因此后续 worktree 审查不会遮蔽暂存结论）。`commit_apply --push` 在**任何暂存/提交之前**快照同一对身份，解析仓库姿态（`resolvePosture`：最长前缀匹配 → `*` → 配置默认 → `review-gated`），并查阅记录：缺失 → 按 `onUnavailable` 执行 `block`/`warn`；身份不匹配 → 过期（始终阻止）；`reject` → 始终阻止；`ship` 且身份匹配 → 放行并记录提示。本地提交（`push: false`）永不过门——门只守边界。
+
 </details>
 
 -----
@@ -103,8 +115,8 @@ kind: "package-reference"
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- 隔离要求背后的引擎：[`@deepseek-ai/dsh-git`](../git/README.md) 工作树池与持久租约，以及 [`@deepseek-ai/dsh-tool-git`](../git/tool-git/README.md) 中的 `worktree` 工具——`acquire --branch`、`release`、`list`、`prune`、`destroy`。
-- 子代理边界：[`@deepseek-ai/dsh-tool-subagent`](../subagent/tool-subagent/README.md) 的 `workspace` 参数与 [`@deepseek-ai/dsh-tool-subagent-control`](../subagent/tool-subagent-control/README.md) 中的 `send_message`/`interrupt_agent` 操控工具。
+- 隔离要求背后的引擎：[`@deepseek-ai/dsh-git`](../../git/git/README.zh.md) 工作树池与持久租约，以及 [`@deepseek-ai/dsh-tool-git`](../../git/tool-git/README.zh.md) 中的 `worktree` 工具——`acquire --branch`、`release`、`list`、`prune`、`destroy`。
+- 子代理边界：[`@deepseek-ai/dsh-tool-subagent`](../../subagent/tool-subagent/README.zh.md) 的 `workspace` 参数与 [`@deepseek-ai/dsh-tool-subagent-control`](../../subagent/tool-subagent-control/README.zh.md) 中的 `send_message`/`interrupt_agent` 操控工具。
 - 移植计划：P1 范围说明 `firstmate-policy-scope.md`（与 `port_firstmate.md` 一同保存在 fork 工作区），P2 审查门与 P3「结果而非机制」报告。
 
 -----
@@ -123,7 +135,6 @@ kind: "package-reference"
 ```markdown
 # Orchestration policy (parallelize-by-default)
 Goal: same quality, more velocity, less captain cognitive load. Fan out independent chunks as isolated task children; today's serial behavior is the exception.
-
 1. Classify before doing: independent chunks (different files/subsystems, no shared mutable state, no ordering) or one unit of work.
 2. Serialize ONLY for a true dependency — the accepted reasons are:
 - same-file-edit: two chunks edit the same file
@@ -134,6 +145,8 @@ Goal: same quality, more velocity, less captain cognitive load. Fan out independ
 3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 6 per wave; beyond that announce the rest as a follow-up wave.
 One task = one isolated working copy. A task child MUST be started with `workspace` set to a `worktree acquire` path — the guard rejects a start without one (this is fail-closed, not a preference).
 4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain's explicit word.
+5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.
+Knowledge-only intents (investigate, diagnose, plan, audit, reproduce) produce investigation notes, not PR-shaped changes.
 Announce the plan once before dispatch: N isolated tasks, what each owns, expected overlap (rare), who merges. One summary — never per-child chatter in the captain-facing thread.
 ```
 
@@ -149,7 +162,9 @@ Announce the plan once before dispatch: N isolated tasks, what each owns, expect
 
 - **只有隔离守卫是 fail-closed 的。** 分类、扇出上限、计划公告与操控步骤属于提示层引导——模型仍是执行者；不存在调度守护进程。
 - **无能力的提供方仅警告、不失败。** 进程外后端（无 `workspace` 能力）降级为可见警告；若部署希望硬失败，请改为在组合层强制（`isolation: required` + 进程内提供方）。
-- **推迟到 P2/P3：** 审查门（`review-gated` 姿态下 `ship` 结论阻止 `commit_apply --push`）与「结果而非机制」报告。
+- **结论存于进程内。** 宿主重启即清空，因此被把关的部署在重启后必须先重新审查，门才会释放推送——刻意的 fail-closed，绝不推断。
+- **姿态是宿主自有配置。** 逐仓库的 `fast` 退出项位于策略配置行；支持仓库可写的姿态文件属于注入面，不予支持。
+- **推迟到 P3：** 「结果而非机制」报告。
 
 **运行时不变式：** 不发布伴生进程。本包除工具接口处的可选服务查找外，不持有同进程不变式可观察的持续运行时关系；其行为由包内测试套件保证（守卫矩阵、配置校验、提示渲染以及真实 git 波次 E2E）。
 

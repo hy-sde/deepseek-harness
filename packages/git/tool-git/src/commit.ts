@@ -16,6 +16,9 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { openReads } from './reads.ts'
+import type { OrchestrationPolicyService } from '@deepseek-ai/dsh-orchestration-policy'
+import { resolvePosture } from '@deepseek-ai/dsh-orchestration-policy'
+import { decidePushGate, headOf, indexTreeOf, latestStagedVerdict } from './push-gate.ts'
 import {
   formatCommitMessage,
   assignLockFilesToPlan,
@@ -33,6 +36,13 @@ import type { CommitType, NumstatEntry, SplitCommitGroup, SplitCommitPlan } from
 const COMMIT_TYPES: readonly CommitType[] = [...conventional.COMMIT_TYPE_ORDER]
 
 /** Call working directory resolution shared by the git tools. */
+/** Read the optional policy service; the gate is active only when the policy is enabled and its gate is on. */
+export function reviewGateOf(ctx: Context): import('@deepseek-ai/dsh-orchestration-policy').ResolvedReviewGateConfig | undefined {
+  const policy = ctx.get('orchestrationPolicy') as OrchestrationPolicyService | undefined
+  if (policy === undefined || !policy.config.enabled) return undefined
+  return policy.config.reviewGate.enabled ? policy.config.reviewGate : undefined
+}
+
 export function resolveCwd(exec: ToolExecution, cwdArg: string | undefined): string {
   const base = exec.agent?.session.header.cwd
   if (typeof base === 'string' && base.length > 0) {
@@ -523,6 +533,29 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
       const warnings = [...plan.warnings]
       if (stagedFiles.length === 0) {
         throw new Error('nothing is staged; run `commit` (adds changes) or `git add` first, or review `commit` with stagedOnly')
+      }
+
+      // P2 review gate (fail-closed): before any write, a gated push must carry
+      // a current ship verdict for THIS staged range. The identity snapshot
+      // happens before staging/committing so an unaffected index still matches.
+      const pushGate = reviewGateOf(ctx)
+      if (args.push && pushGate !== undefined) {
+        const root = await git.root(cwd, exec.signal)
+        const posture = resolvePosture(pushGate.posture, root, pushGate.default)
+        if (posture === 'review-gated') {
+          const gateDecision = decidePushGate({
+            posture,
+            record: latestStagedVerdict(root),
+            beforeHead: await headOf(git, cwd, exec.signal),
+            indexTree: await indexTreeOf(git, cwd, exec.signal),
+            requireVerdict: pushGate.requireVerdict,
+            onUnavailable: pushGate.onUnavailable,
+          })
+          if (!gateDecision.allowed) {
+            throw new Error(`commit_apply --push refused by the review gate: ${gateDecision.reason}`)
+          }
+          warnings.push(gateDecision.reason)
+        }
       }
 
       assignLockFilesToPlan(plan, stagedFiles)

@@ -28,6 +28,9 @@
     },
     {
       "path": "../../../packages/vcs/vcs"
+    },
+    {
+      "path": "../../../packages/orchestration/policy"
     }
   ]
 }
