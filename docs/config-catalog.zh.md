@@ -1926,6 +1926,8 @@ export interface OrchestrationPolicyConfig {
   reviewGate?: ReviewGateConfig
   /** Scout classification rule set (prompt-rendered guidance in P2; enforcement stays at the push boundary). */
   scoutPolicy?: ScoutPolicyConfig
+  /** P3 outcomes-not-mechanics reporting contract (prompt-rendered; default `outcomes`). */
+  reporting?: ReportingConfig
 }
 
 export type SerializeReason = typeof SERIALIZE_REASONS[number]
@@ -1956,6 +1958,16 @@ export interface ReviewGateConfig {
 export interface ScoutPolicyConfig {
   /** Intent labels whose output is a scout (prompt-rendered guidance; default the five firstmate labels). */
   knowledgeOnly?: string[]
+}
+
+/** P3 outcomes-not-mechanics reporting (prompt contract; rendered from the same config). */
+export interface ReportingConfig {
+  /** `outcomes` = the captain sees what happened, not how (default); `verbose` = today's behavior, for debugging. */
+  mode?: 'outcomes' | 'verbose'
+  /** Per-task detail in the one-block wave summary: `summary` (one line per task, default) or `detail`. */
+  includePerTask?: 'summary' | 'detail'
+  /** Mechanics vocabulary to translate or omit in captain-facing text (default the seven firstmate terms). */
+  forbiddenTerms?: string[]
 }
 
 /** Push-posture values recognized by the review gate. */

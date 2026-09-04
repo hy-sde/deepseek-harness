@@ -15,6 +15,7 @@ English | [中文](README.zh.md)
 2. **Config knobs** — a `cordis.yml` config row (every knob optional, defaults below). The whole policy is **inert unless `enabled: true`**: default OFF keeps today's model-discretion behavior byte-stable until a deployment opts in.
 3. **Seam guard** — the optional `ctx.orchestrationPolicy` service. `tool-subagent` reads it with `ctx.get` (never `inject`), so mounting this plugin is the *only* thing that arms enforcement; an absent service is today's behavior. Under `isolation: required` a task child started without an isolated `workspace` is **rejected** with an actionable fix message (fail-closed); a provider that cannot honor `workspace` (out-of-process backends) **degrades to a reported warning, never a silent ignore**.
 4. **Same-quality gate (P2)** — when the policy is enabled, the review gate is active too (opt out with `reviewGate.enabled: false`). Under the default `review-gated` posture a `commit_apply --push` is **refused until `review --target staged` returns `ship` for the exact current staged range** (identity = pre-commit HEAD + index tree, so any re-stage or amend makes it stale); `reject` verdicts always block. Only an explicit `fast` posture entry skips the gate — trust is never inferred.
+5. **Outcomes-not-mechanics reporting (P3)** — captain-facing prose follows an outcome contract (one block per wave; every "needs you" item is a decision, blocker, credential need, or review-ready result; mechanics vocabulary translated or omitted; detail available on request). `reporting.mode: verbose` restores today's transcript-style reporting for debugging. This is policy text, not a render seam — tool outputs are unchanged for the agent's own use.
 
 ## Table of Contents
 
@@ -62,6 +63,9 @@ Mount next to `dsh-tool-subagent` and the `worktree` tool (`dsh-tool-git`) in a 
 | `reviewGate.requireVerdict` | `ship` | The only verdict that releases a push today. |
 | `reviewGate.onUnavailable` | `block` | No current `ship` verdict: `block` (fail-closed refusal) or `warn` (loud degrade). A `reject` verdict always blocks in both modes. |
 | `scoutPolicy.knowledgeOnly` | the five labels | Intent labels whose output is scout, not PR-shaped (prompt-rendered guidance). |
+| `reporting.mode` | `outcomes` | Captain-facing prose follows the outcome contract; `verbose` = today's behavior (debugging). |
+| `reporting.includePerTask` | `summary` | Per-task detail in the one-block wave summary: `summary` (one line per task) or `detail` (blocks). |
+| `reporting.forbiddenTerms` | the seven terms | Mechanics vocabulary to translate or omit in captain-facing text (default: subagent, workspace, lease, worktree, pool, continuation, provider). |
 
 **Precedence is fixed** (firstmate precedence): explicit captain instruction in the moment > configured rule > configured default > built-in default. **Malformed configuration fails at LOAD** with an actionable message (`maxFanOut` must be a positive integer; unknown isolation mode; unknown serialize reason) — never silently ignored or selected around.
 
@@ -71,6 +75,7 @@ Mount next to `dsh-tool-subagent` and the `worktree` tool (`dsh-tool-git`) in a 
 2. **Isolation is enforced, not requested**: `isolation: required` + `enforceWorkspace` means a `subagent` start **without** a `workspace` is rejected with the fix (pass the `path` from `worktree acquire`). A provider that cannot honor `workspace` degrades to a reported warning instead of silently running unisolated.
 3. **Announce + steer**: one plan summary before a wave (`announcePlan`), `send_message` steering at the nearest step boundary, `interrupt_agent` cancellation, and lease release after each child settles (never `force` without the captain's word).
 4. **Gate the boundary**: under `review-gated` posture a push without a current `ship` verdict for the same staged range is refused with the fix (`review --target staged`); a verdict recorded before a re-stage/amend is *stale* and re-review is required. Verdicts live in the host process — a host restart clears them, which is deliberately fail-closed.
+5. **Report outcomes, not mechanics**: the captain reads one block per wave (decided / shipped / blocked / needs captain) instead of N child transcripts; mechanics vocabulary is translated or omitted; every "needs you" is a decision, a blocker, a credential need, or a review-ready result. Detail is available on request.
 
 A companion engine knob: `dsh-tool-git`'s `worktreeMaxSlots` caps the pool per repository (default `0` = unlimited); at the cap `acquire` refuses to **cut** a new slot (`MaxSlots` error, reuse of a provably idle slot is still allowed) — run `release`/`prune`/`destroy` or raise the cap.
 
@@ -107,6 +112,10 @@ The guard sits at the model-facing `tool-subagent` seam (both one-shot and conti
 ### Push gate mechanics (P2)
 
 `review --target staged` records `{ root, beforeHead, indexTree, verdict }` per repository (one record per target, so a later worktree review cannot shadow a staged verdict). `commit_apply --push` snapshots the same two identities **before** any staging/commit, resolves the repository posture (`resolvePosture`: longest prefix match → `*` → configured default → `review-gated`), and consults the record: missing → `block`/`warn` per `onUnavailable`; identity mismatch → stale (always block); `reject` → always block; `ship` + matching identity → release with a recorded note. Local commits (`push: false`) are never gated — the gate lives at the boundary.
+
+### Reporting contract (P3)
+
+`buildReportingRules` renders the outcome contract from resolved config (`mode`, `includePerTask`, `forbiddenTerms`) — empty under `mode: 'verbose'` so today's behavior is one knob away. The section is pure prompt text: the model owns the final message; there is no tool-side render seam. The contract (one block per wave, needs-you taxonomy, per-task knob, forbidden vocabulary) is pinned by spec as a pure-function contract, not by golden prose.
 
 </details>
 
@@ -146,6 +155,10 @@ Goal: same quality, more velocity, less captain cognitive load. Fan out independ
 One task = one isolated working copy. A task child MUST be started with `workspace` set to a `worktree acquire` path — the guard rejects a start without one (this is fail-closed, not a preference).
 4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain's explicit word.
 5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.
+6. Report OUTCOMES, not mechanics: after each wave, give the captain ONE block — what was decided, what shipped, what is blocked, and what needs the captain.
+Every "needs you" item is one of: a decision, a blocker, a credential need, or a review-ready result — never a child transcript.
+Per-task detail: one line per task in the wave summary (detail stays available on request).
+Translate or omit mechanics vocabulary in captain-facing text: subagent, workspace, lease, worktree, pool, continuation, provider. When the captain asks for details, give them (escrow, don't dump).
 Knowledge-only intents (investigate, diagnose, plan, audit, reproduce) produce investigation notes, not PR-shaped changes.
 Announce the plan once before dispatch: N isolated tasks, what each owns, expected overlap (rare), who merges. One summary — never per-child chatter in the captain-facing thread.
 ```
@@ -164,7 +177,7 @@ Prefix-stable while the config (mode, ceiling, reasons, isolation) is unchanged;
 - **Incapable providers warn, they do not fail.** An out-of-process backend (no `workspace` capability) degrades to a reported warning; if a deployment wants hard failure instead, enforce at the composition level (`isolation: required` with an in-process provider).
 - **Verdicts are in-process.** A host restart clears them, so a gated deployment must re-review after a restart before the gate releases a push — deliberately fail-closed, never inferred.
 - **Posture is host-owned config.** Per-repository `fast` opt-outs live in the policy config row; opening a repo-writable posture file is an injection surface and is not supported.
-- **Deferred to P3:** outcomes-not-mechanics reporting.
+- **Reporting is policy text only.** The outcome contract shapes the captain-facing final message; there is no render seam (tool outputs stay as-is for the agent's own use, per the scoped honest limit). If debriefs drift, tighten `forbiddenTerms` / `includePerTask` — or introduce a real seam once the violation rate proves the prompt contract too soft.
 
 **Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe beyond the optional service lookup at the tool seam; its behavior is enforced by its package test suites (guard matrix, config validation, prompt rendering, and a real-git wave E2E).
 

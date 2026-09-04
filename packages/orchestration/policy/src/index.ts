@@ -56,6 +56,8 @@ export interface OrchestrationPolicyConfig {
   reviewGate?: ReviewGateConfig
   /** Scout classification rule set (prompt-rendered guidance in P2; enforcement stays at the push boundary). */
   scoutPolicy?: ScoutPolicyConfig
+  /** P3 outcomes-not-mechanics reporting contract (prompt-rendered; default `outcomes`). */
+  reporting?: ReportingConfig
 }
 
 /** Push-posture values recognized by the review gate. */
@@ -89,6 +91,34 @@ export interface ScoutPolicyConfig {
   knowledgeOnly?: string[]
 }
 
+/** P3 outcomes-not-mechanics reporting (prompt contract; rendered from the same config). */
+export interface ReportingConfig {
+  /** `outcomes` = the captain sees what happened, not how (default); `verbose` = today's behavior, for debugging. */
+  mode?: 'outcomes' | 'verbose'
+  /** Per-task detail in the one-block wave summary: `summary` (one line per task, default) or `detail`. */
+  includePerTask?: 'summary' | 'detail'
+  /** Mechanics vocabulary to translate or omit in captain-facing text (default the seven firstmate terms). */
+  forbiddenTerms?: string[]
+}
+
+/** Fully-resolved reporting config (every knob present). */
+export interface ResolvedReportingConfig {
+  mode: 'outcomes' | 'verbose'
+  includePerTask: 'summary' | 'detail'
+  forbiddenTerms: string[]
+}
+
+/** The seven firstmate mechanics terms that never appear in captain-facing prose by default. */
+export const DEFAULT_FORBIDDEN_TERMS = [
+  'subagent',
+  'workspace',
+  'lease',
+  'worktree',
+  'pool',
+  'continuation',
+  'provider',
+] as const
+
 /** Fully-resolved review-gate config (every knob present). */
 export interface ResolvedReviewGateConfig {
   enabled: boolean
@@ -111,6 +141,7 @@ export interface ResolvedPolicyConfig {
   announcePlan: boolean
   reviewGate: ResolvedReviewGateConfig
   scoutPolicy: { knowledgeOnly: readonly string[] }
+  reporting: ResolvedReportingConfig
 }
 
 export const DEFAULT_POLICY_CONFIG: ResolvedPolicyConfig = {
@@ -129,6 +160,11 @@ export const DEFAULT_POLICY_CONFIG: ResolvedPolicyConfig = {
     onUnavailable: 'block',
   },
   scoutPolicy: { knowledgeOnly: [...DEFAULT_KNOWLEDGE_ONLY] },
+  reporting: {
+    mode: 'outcomes',
+    includePerTask: 'summary',
+    forbiddenTerms: [...DEFAULT_FORBIDDEN_TERMS],
+  },
 }
 
 /** The SCHEMA-DEFAULT review gate, shared by resolution and the service. */
@@ -166,7 +202,7 @@ export function resolvePolicyConfig(config: OrchestrationPolicyConfig = {}): Res
   }
   let reviewGate = defaultReviewGate()
   if (config.reviewGate !== undefined) {
-    const gate = config.reviewGate
+    const gate = config.reviewGate as ReviewGateConfig | null | undefined
     if (gate === null || typeof gate !== 'object' || Array.isArray(gate)) {
       throw new Error('orchestration-policy: `reviewGate` must be an object')
     }
@@ -178,7 +214,8 @@ export function resolvePolicyConfig(config: OrchestrationPolicyConfig = {}): Res
         `orchestration-policy: \`reviewGate.default\` must be 'review-gated' or 'fast' (got ${JSON.stringify(gate.default)})`,
       )
     }
-    if (gate.requireVerdict !== undefined && gate.requireVerdict !== 'ship') {
+    const requireVerdict: unknown = gate.requireVerdict
+    if (requireVerdict !== undefined && requireVerdict !== 'ship') {
       throw new Error(`orchestration-policy: \`reviewGate.requireVerdict\` must be 'ship' (got ${JSON.stringify(gate.requireVerdict)})`)
     }
     if (gate.onUnavailable !== undefined && !GATE_UNAVAILABLE_MODES.includes(gate.onUnavailable)) {
@@ -187,11 +224,12 @@ export function resolvePolicyConfig(config: OrchestrationPolicyConfig = {}): Res
       )
     }
     const posture = { ...gate.posture }
-    if (gate.posture !== undefined) {
-      if (gate.posture === null || typeof gate.posture !== 'object' || Array.isArray(gate.posture)) {
+    const postureConfig = gate.posture as Record<string, PushPosture> | null | undefined
+    if (postureConfig !== undefined) {
+      if (postureConfig === null || typeof postureConfig !== 'object' || Array.isArray(postureConfig)) {
         throw new Error('orchestration-policy: `reviewGate.posture` must be a record of repository prefix \u2192 posture')
       }
-      for (const [key, value] of Object.entries(gate.posture)) {
+      for (const [key, value] of Object.entries(postureConfig)) {
         if (!PUSH_POSTURES.includes(value)) {
           throw new Error(
             `orchestration-policy: posture for ${JSON.stringify(key)} must be 'review-gated' or 'fast' (got ${JSON.stringify(value)})`,
@@ -207,9 +245,34 @@ export function resolvePolicyConfig(config: OrchestrationPolicyConfig = {}): Res
       onUnavailable: gate.onUnavailable ?? 'block',
     }
   }
+  let reporting = defaultReporting()
+  if (config.reporting !== undefined) {
+    const rep = config.reporting as ReportingConfig | null | undefined
+    if (rep === null || typeof rep !== 'object' || Array.isArray(rep)) {
+      throw new Error('orchestration-policy: `reporting` must be an object')
+    }
+    if (rep.mode !== undefined && !REPORTING_MODES.includes(rep.mode)) {
+      throw new Error(`orchestration-policy: \`reporting.mode\` must be 'outcomes' or 'verbose' (got ${JSON.stringify(rep.mode)})`)
+    }
+    if (rep.includePerTask !== undefined && !REPORTING_PER_TASK.includes(rep.includePerTask)) {
+      throw new Error(
+        `orchestration-policy: \`reporting.includePerTask\` must be 'summary' or 'detail' (got ${JSON.stringify(rep.includePerTask)})`,
+      )
+    }
+    if (rep.forbiddenTerms !== undefined) {
+      if (!Array.isArray(rep.forbiddenTerms) || rep.forbiddenTerms.some(term => typeof term !== 'string' || term.length === 0)) {
+        throw new Error('orchestration-policy: `reporting.forbiddenTerms` must be an array of non-empty strings')
+      }
+    }
+    reporting = {
+      mode: rep.mode ?? 'outcomes',
+      includePerTask: rep.includePerTask ?? 'summary',
+      forbiddenTerms: rep.forbiddenTerms ?? [...DEFAULT_FORBIDDEN_TERMS],
+    }
+  }
   let knowledgeOnly: readonly string[] = DEFAULT_KNOWLEDGE_ONLY
   if (config.scoutPolicy !== undefined) {
-    const scout = config.scoutPolicy
+    const scout = config.scoutPolicy as ScoutPolicyConfig | null | undefined
     if (scout === null || typeof scout !== 'object' || Array.isArray(scout)) {
       throw new Error('orchestration-policy: `scoutPolicy` must be an object')
     }
@@ -225,8 +288,21 @@ export function resolvePolicyConfig(config: OrchestrationPolicyConfig = {}): Res
     ...config,
     reviewGate,
     scoutPolicy: { knowledgeOnly },
+    reporting,
   }
 }
+
+/** The SCHEMA-DEFAULT reporting config, shared by resolution and the service. */
+function defaultReporting(): ResolvedReportingConfig {
+  return {
+    mode: 'outcomes',
+    includePerTask: 'summary',
+    forbiddenTerms: [...DEFAULT_FORBIDDEN_TERMS],
+  }
+}
+
+const REPORTING_MODES = ['outcomes', 'verbose'] as const
+const REPORTING_PER_TASK = ['summary', 'detail'] as const
 
 const PUSH_POSTURES = ['review-gated', 'fast'] as const
 const GATE_UNAVAILABLE_MODES = ['block', 'warn'] as const
@@ -307,6 +383,26 @@ function reasonText(reasons: readonly SerializeReason[]): string {
  * @param config - resolved policy configuration.
  * @returns the {@link PromptSection} to register (empty text when disabled).
  */
+/**
+ * The P3 reporting contract as prompt rules. Empty under `mode: 'verbose'`
+ * (today's behavior); otherwise one block: one summary per wave, the
+ * needs-you taxonomy, the per-task detail knob, and the forbidden mechanics
+ * vocabulary.
+ */
+export function buildReportingRules(config: ResolvedReportingConfig): string[] {
+  if (config.mode !== 'outcomes') return []
+  const perTask = config.includePerTask === 'detail'
+    ? 'Per-task detail: include a short detail block per task when something needs the captain\u2019s eye.'
+    : 'Per-task detail: one line per task in the wave summary (detail stays available on request).'
+  const terms = config.forbiddenTerms.length > 0 ? config.forbiddenTerms.join(', ') : 'none by configuration'
+  return [
+    'Report OUTCOMES, not mechanics: after each wave, give the captain ONE block \u2014 what was decided, what shipped, what is blocked, and what needs the captain.',
+    'Every "needs you" item is one of: a decision, a blocker, a credential need, or a review-ready result \u2014 never a child transcript.',
+    perTask,
+    `Translate or omit mechanics vocabulary in captain-facing text: ${terms}. When the captain asks for details, give them (escrow, don't dump).`,
+  ]
+}
+
 export function buildOrchestrationPromptSection(config: ResolvedPolicyConfig = DEFAULT_POLICY_CONFIG): PromptSection {
   if (!config.enabled) return { name: SECTION_NAME, order: SECTION_ORDER, text: '' }
   const mode = config.defaultMode === 'parallel'
@@ -328,10 +424,17 @@ export function buildOrchestrationPromptSection(config: ResolvedPolicyConfig = D
     '4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain\'s explicit word.',
   ]
   const post: string[] = []
+  let number = 5
   if (config.reviewGate.enabled) {
     post.push(
-      '5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.',
+      `${number}. Quality gate: under the \`review-gated\` posture (the default for any repository without an explicit \`fast\` entry), a push is REFUSED until \`review --target staged\` returns \`ship\` for the CURRENT staged range — run \`review\` after staging, before \`commit_apply --push\`. Any change after the review makes the verdict stale and a re-review is required; a \`reject\` verdict always blocks (even under \`onUnavailable: warn\`). Only an explicit \`fast\` posture skips the gate — never infer trust.`,
     )
+    number += 1
+  }
+  const reporting = buildReportingRules(config.reporting)
+  if (reporting.length > 0) {
+    post.push(`${number}. ${reporting[0]}`)
+    post.push(...reporting.slice(1))
   }
   post.push(
     `Knowledge-only intents (${config.scoutPolicy.knowledgeOnly.join(', ')}) produce investigation notes, not PR-shaped changes.`,

@@ -13,6 +13,7 @@ import policyPackage, {
   OrchestrationPolicyError,
   OrchestrationPolicyService,
   buildOrchestrationPromptSection,
+  buildReportingRules,
   resolvePolicyConfig,
   resolvePosture,
 } from '../src/index.ts'
@@ -211,7 +212,7 @@ describe('reviewGate config resolution', () => {
     for (const [config, needle] of cases) {
       let failure: unknown
       try {
-        resolvePolicyConfig(config as never)
+        resolvePolicyConfig(config)
       } catch (error: unknown) {
         failure = error
       }
@@ -257,5 +258,78 @@ describe('P2 prompt rendering', () => {
     const section = buildOrchestrationPromptSection(resolvePolicyConfig({ enabled: true }))
     expect(section.text).toContain('same-file-edit: two chunks edit the same file')
     expect(section.text).toContain('incompatible-concurrency: both rework the same subsystem in conflicting ways')
+  })
+})
+
+describe('P3 reporting', () => {
+  it("buildReportingRules is empty under verbose mode (today's behavior)", () => {
+    expect(buildReportingRules({ mode: 'verbose', includePerTask: 'summary', forbiddenTerms: ['x'] })).toEqual([])
+  })
+
+  it('renders the contract: ONE block per wave, needs-you taxonomy, forbidden terms, summary per-task', () => {
+    const rules = buildReportingRules({
+      mode: 'outcomes',
+      includePerTask: 'summary',
+      forbiddenTerms: ['subagent', 'workspace'],
+    })
+    expect(rules[0]).toContain('ONE block')
+    expect(rules[0]).toContain('after each wave')
+    expect(rules[1]).toContain('a decision, a blocker, a credential need, or a review-ready result')
+    expect(rules[2]).toContain('one line per task')
+    expect(rules[3]).toContain('subagent, workspace')
+    expect(rules[3]).toContain("don't dump")
+  })
+
+  it('switches per-task detail to detail blocks', () => {
+    const rules = buildReportingRules({
+      mode: 'outcomes',
+      includePerTask: 'detail',
+      forbiddenTerms: [],
+    })
+    expect(rules[2]).toContain('detail block per task')
+    expect(rules[3]).toContain('none by configuration')
+  })
+
+  it('renders the reporting block from config (outcomes default) with default forbidden terms', () => {
+    const section = buildOrchestrationPromptSection(resolvePolicyConfig({ enabled: true }))
+    expect(section.text).toContain('6. Report OUTCOMES, not mechanics')
+    expect(section.text).toContain('subagent, workspace, lease, worktree, pool, continuation, provider')
+    expect(section.text).toContain('one line per task in the wave summary')
+  })
+
+  it('omits only the reporting block under reporting.mode verbose', () => {
+    const section = buildOrchestrationPromptSection(resolvePolicyConfig({
+      enabled: true,
+      reporting: { mode: 'verbose' },
+    }))
+    expect(section.text).not.toContain('Report OUTCOMES')
+    expect(section.text).toContain('Quality gate')
+    expect(section.text).toContain('Knowledge-only intents')
+  })
+
+  it('renumbers the reporting block when the gate is disabled', () => {
+    const section = buildOrchestrationPromptSection(resolvePolicyConfig({
+      enabled: true,
+      reviewGate: { enabled: false },
+    }))
+    expect(section.text).toContain('5. Report OUTCOMES, not mechanics')
+    expect(section.text).not.toContain('6. Report')
+  })
+
+  it('rejects malformed reporting config at load', () => {
+    expect(() => resolvePolicyConfig({ enabled: true, reporting: 'on' as never })).toThrow(/reporting.*must be an object/)
+    expect(() => resolvePolicyConfig({ enabled: true, reporting: { mode: 'chatty' as never } })).toThrow(/reporting\.mode/)
+    expect(() => resolvePolicyConfig({ enabled: true, reporting: { includePerTask: 'full' as never } })).toThrow(/includePerTask/)
+    expect(() => resolvePolicyConfig({ enabled: true, reporting: { forbiddenTerms: [42 as never] } })).toThrow(/forbiddenTerms/)
+  })
+
+  it('uses configured forbidden terms verbatim and defaults when absent', () => {
+    expect(resolvePolicyConfig({ enabled: true }).reporting.forbiddenTerms).toEqual([
+      'subagent', 'workspace', 'lease', 'worktree', 'pool', 'continuation', 'provider',
+    ])
+    const custom = resolvePolicyConfig({ enabled: true, reporting: { forbiddenTerms: ['qemu'] } })
+    expect(custom.reporting.forbiddenTerms).toEqual(['qemu'])
+    const section = buildOrchestrationPromptSection(custom)
+    expect(section.text).toContain('qemu')
   })
 })
