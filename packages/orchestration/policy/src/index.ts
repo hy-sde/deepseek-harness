@@ -42,7 +42,7 @@ export interface OrchestrationPolicyConfig {
   enabled?: boolean
   /** Default posture for work that decomposes (default `parallel`). */
   defaultMode?: 'parallel' | 'serial'
-  /** Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave (default 6). */
+  /** Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave (default 3). */
   maxFanOut?: number
   /** `required` = fail-closed isolation; `suggested` = prompt-only (default `required`). */
   isolation?: 'required' | 'suggested'
@@ -147,7 +147,7 @@ export interface ResolvedPolicyConfig {
 export const DEFAULT_POLICY_CONFIG: ResolvedPolicyConfig = {
   enabled: false,
   defaultMode: 'parallel',
-  maxFanOut: 6,
+  maxFanOut: 3,
   isolation: 'required',
   enforceWorkspace: true,
   serializeReasons: [...SERIALIZE_REASONS],

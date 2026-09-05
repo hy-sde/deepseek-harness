@@ -52,7 +52,7 @@ kind: "package-reference"
 |---|---|---|
 | `enabled` | `false` | 总开关：为 `true` 之前守卫与提示文案均不生效。 |
 | `defaultMode` | `parallel` | 可分解工作的姿态：`parallel`（默认）或 `serial`。 |
-| `maxFanOut` | `6` | 单个扇出波次的上限；超出部分作为后续波次。 |
+| `maxFanOut` | `3` | 单个扇出波次的上限；超出部分作为后续波次。 |
 | `isolation` | `required` | `required` = fail-closed 隔离；`suggested` = 仅提示。 |
 | `enforceWorkspace` | `true` | 在 `isolation: required` 时是否由接口守卫强制执行隔离。 |
 | `serializeReasons` | 全部四项 | 允许串行化的原因：`same-file-edit`、`semantic-dependency`、`shared-mutable-state`、`incompatible-concurrency`。 |
@@ -151,7 +151,7 @@ Goal: same quality, more velocity, less captain cognitive load. Fan out independ
 - shared-mutable-state: lockfiles, migrations, generated code, credentials
 - incompatible-concurrency: both rework the same subsystem in conflicting ways
    Same-file edits ALONE are not a reason to serialize: split by intent and merge; a shared-file edit with conflicting intent is `incompatible-concurrency`.
-3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 6 per wave; beyond that announce the rest as a follow-up wave.
+3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 3 per wave; beyond that announce the rest as a follow-up wave.
 One task = one isolated working copy. A task child MUST be started with `workspace` set to a `worktree acquire` path — the guard rejects a start without one (this is fail-closed, not a preference).
 4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain's explicit word.
 5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.

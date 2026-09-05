@@ -24,7 +24,7 @@ describe('resolvePolicyConfig', () => {
     expect(DEFAULT_POLICY_CONFIG).toMatchObject({
       enabled: false,
       defaultMode: 'parallel',
-      maxFanOut: 6,
+      maxFanOut: 3,
       isolation: 'required',
       enforceWorkspace: true,
       announcePlan: true,

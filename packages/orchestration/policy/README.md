@@ -52,7 +52,7 @@ Mount next to `dsh-tool-subagent` and the `worktree` tool (`dsh-tool-git`) in a 
 |---|---|---|
 | `enabled` | `false` | Master switch: guard and prompt text are inert until `true`. |
 | `defaultMode` | `parallel` | Posture for decomposable work: `parallel` (default) or `serial`. |
-| `maxFanOut` | `6` | Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave. |
+| `maxFanOut` | `3` | Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave. |
 | `isolation` | `required` | `required` = fail-closed isolation; `suggested` = prompt-only. |
 | `enforceWorkspace` | `true` | Whether the seam guard enforces isolation when `isolation: required`. |
 | `serializeReasons` | all four | Accepted reasons to serialize: `same-file-edit`, `semantic-dependency`, `shared-mutable-state`, `incompatible-concurrency`. |
@@ -151,7 +151,7 @@ Goal: same quality, more velocity, less captain cognitive load. Fan out independ
 - shared-mutable-state: lockfiles, migrations, generated code, credentials
 - incompatible-concurrency: both rework the same subsystem in conflicting ways
    Same-file edits ALONE are not a reason to serialize: split by intent and merge; a shared-file edit with conflicting intent is `incompatible-concurrency`.
-3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 6 per wave; beyond that announce the rest as a follow-up wave.
+3. Fan out: per chunk `worktree acquire --branch <task>` then `subagent { workspace: <lease path> }` — parallel, up to 3 per wave; beyond that announce the rest as a follow-up wave.
 One task = one isolated working copy. A task child MUST be started with `workspace` set to a `worktree acquire` path — the guard rejects a start without one (this is fail-closed, not a preference).
 4. Steer with `send_message` at the nearest step boundary; `interrupt_agent` cancels; `list_agents` shows the fleet. Collect every child before merging; release each lease after its child settles — never `force` a release without the captain's explicit word.
 5. Quality gate: under the `review-gated` posture (the default for any repository without an explicit `fast` entry), a push is REFUSED until `review --target staged` returns `ship` for the CURRENT staged range — run `review` after staging, before `commit_apply --push`. Any change after the review makes the verdict stale and a re-review is required; a `reject` verdict always blocks (even under `onUnavailable: warn`). Only an explicit `fast` posture skips the gate — never infer trust.
