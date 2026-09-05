@@ -1176,7 +1176,7 @@ function materializeEdits(originalLines: readonly string[], edits: readonly Appl
         afterInsertLines.push(edit.text)
       } else if (edit.kind === 'insert') {
         beforeInsertLines.push(edit.text)
-      } else if (edit.kind === 'delete') {
+      } else {
         deleteLine = true
       }
     }

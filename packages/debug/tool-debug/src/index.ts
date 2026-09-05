@@ -163,9 +163,7 @@ export function apply(ctx: Context, config: Config): void {
       }
       const requestTimeoutMs = (input.timeout ?? resolved.requestTimeoutSec) * 1000
       const timeoutSignal = AbortSignal.timeout(requestTimeoutMs)
-      const combinedSignal = exec.signal
-        ? AbortSignal.any([exec.signal, timeoutSignal])
-        : timeoutSignal
+      const combinedSignal = AbortSignal.any([exec.signal, timeoutSignal])
 
       const dap = ctx.dap
       return dispatchDebugAction(dap, input, workspace, combinedSignal, requestTimeoutMs, resolved.maxResultChars)

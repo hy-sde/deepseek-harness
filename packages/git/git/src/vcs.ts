@@ -162,7 +162,7 @@ export function repo(dir: string): VcsRepo | null {
     root: info.root,
     gitDir: info.gitDir,
     watchTarget: join(info.gitDir, 'HEAD'),
-    supports: (feature: VcsFeature): boolean => feature === 'stagedDiff' || feature === 'revDiff',
+    supports: (): boolean => true,
   }
 }
 

@@ -249,9 +249,6 @@ function validateOperation(operation: ClaimOperation): void {
       )
     }
   }
-  if (operation.op !== 'add' && operation.op !== 'update') {
-    throw new ClaimSessionError('Unsupported claim operation.')
-  }
   if (operation.statement !== undefined && !operation.statement.trim()) {
     throw new ClaimSessionError('Claim statement cannot be empty.')
   }

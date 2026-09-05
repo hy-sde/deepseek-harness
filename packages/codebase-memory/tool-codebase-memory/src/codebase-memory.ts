@@ -82,7 +82,7 @@ export async function runCli(cmd: string, args: string[], options: { timeoutMs: 
       windowsHide: true,
     }, (err, stdout, stderr) => {
       if (!err) {
-        resolve({ stdout: stdout ?? '', stderr: stderr ?? '', exitCode: 0 })
+        resolve({ stdout, stderr, exitCode: 0 })
         return
       }
       const e = err as unknown as { code?: number | string; signal?: string }
@@ -90,13 +90,13 @@ export async function runCli(cmd: string, args: string[], options: { timeoutMs: 
       if (e.code === 'ENOENT') {
         reject(new CodebaseMemoryCliError(
           `codebase-memory CLI not found (\`${cmd}\`). Install it from the codebase-memory-mcp releases (https://github.com/DeusData/codebase-memory-mcp/releases): tar xzf then ./install.sh, or set config.cliPath.`,
-          args, stdout ?? '', stderr ?? '', code))
+          args, stdout, stderr, code))
         return
       }
-      const tail = (stderr ?? '').trim().slice(0, 400)
+      const tail = stderr.trim().slice(0, 400)
       reject(new CodebaseMemoryCliError(
         `codebase-memory CLI exited with ${code === null ? 'unknown error' : `code ${code}`}${tail ? `: ${tail}` : ''}`,
-        args, stdout ?? '', stderr ?? '', code))
+        args, stdout, stderr, code))
     })
   })
 }
@@ -110,6 +110,15 @@ interface Envelope {
   stdout: string
   stderr: string
   exitCode: number | null
+}
+
+/** Narrows a parsed error payload to its optional error/hint fields. */
+function asErrorPayload(value: unknown): { error?: unknown; hint?: unknown } {
+  if (typeof value !== 'object' || value === null) return {}
+  return {
+    error: 'error' in value ? value.error : undefined,
+    hint: 'hint' in value ? value.hint : undefined,
+  }
 }
 
 /**
@@ -148,7 +157,7 @@ export function parseEnvelope(run: RunResult): Envelope {
     }
   }
   if (root.isError) {
-    const err = (payload as { error?: unknown; hint?: unknown }) ?? {}
+    const err = asErrorPayload(payload)
     const message = typeof err.error === 'string' ? err.error : 'codebase-memory tool error'
     const hint = typeof err.hint === 'string' ? ` ${err.hint}` : ''
     throw new CodebaseMemoryCliError(message + hint, ['cli', '--json'], run.stdout, run.stderr, run.exitCode, payload)
@@ -193,7 +202,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
     const argv: string[] = ['cli', '--json', tool]
     let tmp: string | undefined
     try {
-      if (args && Object.keys(args).length > 0) {
+      if (Object.keys(args).length > 0) {
         tmp = join(tmpdir(), `cbm-${randomUUID()}.json`)
         await writeFile(tmp, JSON.stringify(args), 'utf8')
         argv.push('--args-file', tmp)

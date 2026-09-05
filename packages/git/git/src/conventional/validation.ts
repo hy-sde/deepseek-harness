@@ -35,8 +35,8 @@ export interface ValidationReport {
 const PAST_BY_PRESENT: Record<string, string> = {}
 const IRREGULAR_PAST = new Set(VALIDATION_RESOURCE.irregular_past.map(value => value.toLowerCase()))
 for (const pair of VALIDATION_RESOURCE.past_tense) {
-  const present = pair[0]?.toLowerCase()
-  const past = pair[1]?.toLowerCase()
+  const present = pair[0].toLowerCase()
+  const past = pair[1].toLowerCase()
   if (!present || !past) continue
   PAST_BY_PRESENT[present] = past
   if (present === past) IRREGULAR_PAST.add(past)

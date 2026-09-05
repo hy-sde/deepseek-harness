@@ -93,7 +93,7 @@ describe('discovery', () => {
     const outside = join(dir, '..', `no-repo-${Date.now()}`)
     const discovered = require(dir, 'stagedDiff')
     expect(discovered.kind).toBe('git')
-    expect(() => require(outside)).toThrowError(/not a repository/)
+    expect(() => require(outside)).toThrow(/not a repository/)
     try {
       require(outside)
       throw new Error('should have thrown')
@@ -106,7 +106,7 @@ describe('discovery', () => {
     const discovered = requireGit(dir)
     expect(discovered.root).toBe(dir)
     const outside = join(dir, '..', `no-repo-${Date.now()}`)
-    expect(() => requireGit(outside)).toThrowError(/not a repository/)
+    expect(() => requireGit(outside)).toThrow(/not a repository/)
   })
 
   it('isPureJj is always false (no jj backend on the fork)', () => {
@@ -198,7 +198,7 @@ describe('watch', () => {
       expect(calls).toBeGreaterThan(0)
     } finally {
       dispose()
-      await rmSync(headPath, { force: true })
+      rmSync(headPath, { force: true })
     }
   })
 
@@ -213,6 +213,6 @@ describe('watch', () => {
     await writeFile(headPath, 'ref: refs/heads/other\n', 'utf8')
     await new Promise(resolve => setTimeout(resolve, 80))
     expect(calls).toBe(0)
-    await rmSync(headPath, { force: true })
+    rmSync(headPath, { force: true })
   })
 })

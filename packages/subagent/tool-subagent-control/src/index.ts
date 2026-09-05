@@ -198,11 +198,11 @@ export function apply(ctx: Context): void {
           ? `no open decisions${args.subagent_id !== undefined ? ` from subagent ${args.subagent_id}` : ''}`
           : `${value.decisions.length} open decision(s)${args.subagent_id !== undefined ? ` from subagent ${args.subagent_id}` : ''}: `
             + value.decisions
-              .map(d => `${d.key} (${d.status}, ${d.label ?? d.child_id}) — ${d.summary}`)
+              .map(d => `${d.key} (${d.status}, ${d.label}) — ${d.summary}`)
               .join('; '),
       }],
     },
-    async execute(args, exec) {
+    execute(args, exec) {
       const caller = exec.agent
       if (!caller) {
         throw new Error('pending_decisions requires a calling agent (exec.agent was undefined)')
@@ -211,7 +211,7 @@ export function apply(ctx: Context): void {
       const filtered = args.subagent_id !== undefined
         ? rows.filter(entry => entry.childId === args.subagent_id)
         : rows
-      return {
+      return Promise.resolve({
         decisions: filtered.map(entry => ({
           child_id: entry.childId.toString(),
           label: entry.label,
@@ -221,7 +221,7 @@ export function apply(ctx: Context): void {
           opened_at: entry.openedAt,
           ...entry.wedge === true ? { wedge: true } : {},
         })),
-      }
+      })
     },
   }))
 }

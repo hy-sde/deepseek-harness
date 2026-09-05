@@ -188,7 +188,10 @@ function parseLineRange(
     )
   }
   const startLine = Number(match[1])
-  const endLine = Number(match[2] ?? match[1])
+  // RegExpExecArray types its captures as `string`, but the optional `-L…`
+  // group is absent at runtime, so the fallback restores the runtime contract.
+  const endText = match[2] as string | undefined
+  const endLine = Number(endText ?? match[1])
   if (!Number.isSafeInteger(startLine) || !Number.isSafeInteger(endLine)) {
     throw new EvidenceResourceError(
       `Evidence line range exceeds the supported integer range: ${resource}`,
@@ -250,7 +253,7 @@ function areLineRangesEqual(
  * @returns Whether the value contains a C0 or delete control character.
  */
 function containsControlCharacter(value: string): boolean {
-  return [...value].some((character) => {
+  return Array.from(value).some((character) => {
     const codePoint = character.codePointAt(0)
     return codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f)
   })

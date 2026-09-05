@@ -94,6 +94,11 @@ export const Config: z<Config> = z.object({
 /** Smallest cap that can represent the counted payloads: an empty logs array plus an empty JSON failure message. */
 const MIN_OUTPUT_BYTES = 4
 
+/** Whether a configured language names one of the two kernels this plugin spawns. */
+function isKernelLanguage(language: string): language is 'python' | 'typescript' {
+  return language === 'python' || language === 'typescript'
+}
+
 /** Constructor for a timeout-flavored abort reason, surfacing the budget in the result. */
 class RunTimeoutError extends Error {
   constructor(message: string) {
@@ -248,7 +253,7 @@ export class KernelManager {
       throw new Error('dsh-code-runtime-kernels: config.languages must not be empty')
     }
     for (const language of resolved.languages) {
-      if (language !== 'python' && language !== 'typescript') {
+      if (!isKernelLanguage(language)) {
         throw new Error(`dsh-code-runtime-kernels: unknown language ${JSON.stringify(language)}`)
       }
     }
@@ -582,7 +587,7 @@ export function presentRunKernelCodeResult(_args: RunKernelCodeArgs, result: Too
  * the plugin), and register `run_kernel_code` against `ctx.tools` so a plain
  * upstream harness exposes the persistent kernels with zero source changes.
  */
-export async function apply(ctx: Context, config: Config): Promise<void> {
+export function apply(ctx: Context, config: Config): void {
   const toolTimeoutMs = config.toolTimeoutMs ?? 30_000
   if (toolTimeoutMs > MAX_TIMER_DELAY_MS) {
     throw new Error(`dsh-code-runtime-kernels: config.toolTimeoutMs must be no greater than ${MAX_TIMER_DELAY_MS}`)

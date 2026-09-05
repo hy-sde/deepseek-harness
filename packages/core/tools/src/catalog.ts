@@ -37,11 +37,11 @@ export type CatalogOp = 'search' | 'docs' | 'invoke'
 /** Registry-private capabilities the transport receives at construction. */
 export interface DynBridgeOptions {
   /** Render one bounded catalog row per currently visible device tool, in stable order. */
-  entries(agent: Agent | undefined): readonly CatalogEntry[]
+  entries: (agent: Agent | undefined) => readonly CatalogEntry[]
   /** Render full docs + JSON schema for one device; undefined when absent or not a device. */
-  docsFor(name: string, agent: Agent | undefined): string | undefined
+  docsFor: (name: string, agent: Agent | undefined) => string | undefined
   /** Run a device through the guarded pipeline as a nested transport dispatch. */
-  invoke(name: string, args: JsonValue, exec: ToolRunContext): Promise<ToolExecutionResult>
+  invoke: (name: string, args: JsonValue, exec: ToolRunContext) => Promise<ToolExecutionResult>
 }
 
 /** The canonical value returned by the `dyn` transport, op-tagged for the model. */

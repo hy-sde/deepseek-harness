@@ -295,7 +295,7 @@ describe('VcsService', () => {
     // head without base is rejected
     await expect(service.diff('/work/checkout', { head: 'HEAD' })).rejects.toMatchObject({
       message: expect.stringContaining('base'),
-    })
+    } as Record<string, unknown>)
   })
 
   it('collects changed file names and numstat rows', async () => {

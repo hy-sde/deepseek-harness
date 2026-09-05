@@ -106,7 +106,7 @@ describe('commit (analyze)', () => {
     await call('commit', { stagedOnly: true })
     await write('only.txt', 'x\ny\n')
     // uncommitted change to the same file; nothing staged → report empty
-    await runGit(['reset', '-q'])
+    runGit(['reset', '-q'])
     const result = await call('commit', { stagedOnly: true })
     const value = result.value as { staged: boolean; warnings: string[] }
     expect(value.staged).toBe(false)

@@ -69,8 +69,11 @@ const SEEN_LINE_REVEAL_MAX_COLUMNS = 512
 export interface PatcherOptions {
   /** Storage backend used for all reads and writes. */
   fs: Filesystem
-  /** Snapshot store that minted and resolves hashline section tags. Required. */
-  snapshots: SnapshotStore
+  /**
+   * Snapshot store that minted and resolves hashline section tags. The
+   * constructor throws when omitted (a tag is an opaque store pointer).
+   */
+  snapshots?: SnapshotStore
   /**
 	 * Resolves `replace_block N:` anchors to concrete line spans via tree-sitter.
 	 * Optional: when omitted, any `replace_block N:` edit throws on apply (the
@@ -634,7 +637,7 @@ export class Patcher {
     if (!seen || seen.size === 0) return
     const unseen = section.collectAnchorLines().filter(line => !seen.has(line))
     if (unseen.length === 0) return
-    const sourceLines = matchedSnapshot?.text.split('\n') ?? []
+    const sourceLines = matchedSnapshot.text.split('\n')
     const revealed: RevealedLine[] = []
     const revealCount = Math.min(unseen.length, SEEN_LINE_REVEAL_CAP)
     let columnTruncated = false

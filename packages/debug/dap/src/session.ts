@@ -185,7 +185,7 @@ interface DapStartRequestFailure {
 }
 
 function trackDapStartRequest<T>(promise: Promise<T>, failure: DapStartRequestFailure): Promise<T> {
-  const tracked = promise.catch((error) => {
+  const tracked = promise.catch((error: unknown) => {
     failure.rejected = true
     failure.error = error
     throw error
@@ -407,7 +407,7 @@ export class DapSessionManager {
     signal?: AbortSignal,
     timeoutMs: number = 30_000,
   ): Promise<DapSessionSummary> {
-    await this.#ensureLaunchSlot()
+    this.#ensureLaunchSlot()
     const client = await DapClient.spawn({
       adapter: options.adapter,
       cwd: options.cwd,
@@ -472,7 +472,7 @@ export class DapSessionManager {
       }
       return buildSummary(resultSession)
     } catch (error) {
-      await this.#disposeSession(session)
+      this.#disposeSession(session)
       const mapped = mapDebugpyMissingModule(options.adapter.name, error)
       if (mapped) throw mapped
       throw error
@@ -491,7 +491,7 @@ export class DapSessionManager {
     signal?: AbortSignal,
     timeoutMs: number = 30_000,
   ): Promise<DapSessionSummary> {
-    await this.#ensureLaunchSlot()
+    this.#ensureLaunchSlot()
     const client = await DapClient.spawn({
       adapter: options.adapter,
       cwd: options.cwd,
@@ -546,7 +546,7 @@ export class DapSessionManager {
       }
       return buildSummary(resultSession)
     } catch (error) {
-      await this.#disposeSession(session)
+      this.#disposeSession(session)
       const mapped = mapDebugpyMissingModule(options.adapter.name, error)
       if (mapped) throw mapped
       throw error
@@ -593,7 +593,7 @@ export class DapSessionManager {
     await this.#serializeBreakpointMutation(
       origin,
       async () => {
-        const response = await this.#sendRequestWithConfig<{ breakpoints?: DapBreakpoint[] }>(
+        const response = await this.#sendRequestWithConfig<{ breakpoints?: DapBreakpoint[] } | undefined>(
           origin,
           command,
           args,
@@ -612,7 +612,7 @@ export class DapSessionManager {
             await this.#serializeBreakpointMutation(
               session,
               async () => {
-                const response = await this.#sendRequestWithConfig<{ breakpoints?: DapBreakpoint[] }>(
+                const response = await this.#sendRequestWithConfig<{ breakpoints?: DapBreakpoint[] } | undefined>(
                   session,
                   command,
                   args,
@@ -1039,7 +1039,7 @@ export class DapSessionManager {
     timeoutMs: number = 30_000,
   ): Promise<{ snapshot: DapSessionSummary; instructions: DapDisassembledInstruction[] }> {
     const session = this.#touchActiveSession()
-    const response = await this.#sendRequestWithConfig<DapDisassembleResponse>(
+    const response = await this.#sendRequestWithConfig<DapDisassembleResponse | undefined>(
       session,
       'disassemble',
       {
@@ -1072,7 +1072,7 @@ export class DapSessionManager {
     timeoutMs: number = 30_000,
   ): Promise<{ snapshot: DapSessionSummary; address: string; data: string | undefined; unreadableBytes: number | undefined }> {
     const session = this.#touchActiveSession()
-    const response = await this.#sendRequestWithConfig<DapReadMemoryResponse>(
+    const response = await this.#sendRequestWithConfig<DapReadMemoryResponse | undefined>(
       session,
       'readMemory',
       {
@@ -1110,7 +1110,7 @@ export class DapSessionManager {
     timeoutMs: number = 30_000,
   ): Promise<{ snapshot: DapSessionSummary; offset: number | undefined; bytesWritten: number | undefined }> {
     const session = this.#touchActiveSession()
-    const response = await this.#sendRequestWithConfig<DapWriteMemoryResponse>(
+    const response = await this.#sendRequestWithConfig<DapWriteMemoryResponse | undefined>(
       session,
       'writeMemory',
       {
@@ -1144,7 +1144,7 @@ export class DapSessionManager {
     timeoutMs: number = 30_000,
   ): Promise<{ snapshot: DapSessionSummary; modules: DapModule[] }> {
     const session = this.#touchActiveSession()
-    const response = await this.#sendRequestWithConfig<DapModulesResponse>(
+    const response = await this.#sendRequestWithConfig<DapModulesResponse | undefined>(
       session,
       'modules',
       {
@@ -1168,7 +1168,7 @@ export class DapSessionManager {
     timeoutMs: number = 30_000,
   ): Promise<{ snapshot: DapSessionSummary; sources: DapSource[] }> {
     const session = this.#touchActiveSession()
-    const response = await this.#sendRequestWithConfig<DapLoadedSourcesResponse>(
+    const response = await this.#sendRequestWithConfig<DapLoadedSourcesResponse | undefined>(
       session,
       'loadedSources',
       {},
@@ -1303,7 +1303,7 @@ export class DapSessionManager {
     for (const target of targets) {
       let threads: DapThread[]
       try {
-        const response = await this.#sendRequestWithConfig<DapThreadsResponse>(
+        const response = await this.#sendRequestWithConfig<DapThreadsResponse | undefined>(
           target,
           'threads',
           undefined,
@@ -1349,7 +1349,7 @@ export class DapSessionManager {
   ): Promise<{ snapshot: DapSessionSummary; stackFrames: DapStackFrame[]; totalFrames: number | undefined }> {
     const session = this.#touchActiveSession()
     const threadId = await this.#resolveThreadId(session, signal, timeoutMs)
-    const response = await this.#sendRequestWithConfig<DapStackTraceResponse>(
+    const response = await this.#sendRequestWithConfig<DapStackTraceResponse | undefined>(
       session,
       'stackTrace',
       {
@@ -1385,7 +1385,7 @@ export class DapSessionManager {
     if (resolvedFrameId === undefined) {
       throw new Error('No active stack frame. Run stackTrace first or supply frame_id.')
     }
-    const response = await this.#sendRequestWithConfig<DapScopesResponse>(
+    const response = await this.#sendRequestWithConfig<DapScopesResponse | undefined>(
       session,
       'scopes',
       { frameId: resolvedFrameId } satisfies DapScopesArguments,
@@ -1408,7 +1408,7 @@ export class DapSessionManager {
     timeoutMs: number = 30_000,
   ): Promise<{ snapshot: DapSessionSummary; variables: DapVariable[] }> {
     const session = this.#touchActiveSession()
-    const response = await this.#sendRequestWithConfig<DapVariablesResponse>(
+    const response = await this.#sendRequestWithConfig<DapVariablesResponse | undefined>(
       session,
       'variables',
       { variablesReference: variableReference } satisfies DapVariablesArguments,
@@ -1518,7 +1518,7 @@ export class DapSessionManager {
         warn('DAP idle session cleanup failed', { error: toErrorMessage(error) })
       }
     }, this.#cleanupIntervalMs)
-    this.#cleanupTimer.unref?.()
+    this.#cleanupTimer.unref()
   }
 
   #cleanupIdleSessions(): void {
@@ -1578,7 +1578,7 @@ export class DapSessionManager {
       }
       await startPromise
     } catch (error) {
-      await this.#disposeSession(child)
+      this.#disposeSession(child)
       throw error
     }
   }
@@ -1591,7 +1591,7 @@ export class DapSessionManager {
     const root = this.#getRootSession(session)
     for (const [sourcePath, entries] of root.breakpoints) {
       try {
-        const response = await session.client.sendRequest<{ breakpoints?: DapBreakpoint[] }>(
+        const response = await session.client.sendRequest<{ breakpoints?: DapBreakpoint[] } | undefined>(
           'setBreakpoints',
           {
             source: { path: sourcePath, name: path.basename(sourcePath) },
@@ -1614,7 +1614,7 @@ export class DapSessionManager {
     }
     if (root.functionBreakpoints.length > 0) {
       try {
-        const response = await session.client.sendRequest<{ breakpoints?: DapBreakpoint[] }>(
+        const response = await session.client.sendRequest<{ breakpoints?: DapBreakpoint[] } | undefined>(
           'setFunctionBreakpoints',
           {
             breakpoints: root.functionBreakpoints.map<DapFunctionBreakpoint>(entry => ({
@@ -1667,7 +1667,7 @@ export class DapSessionManager {
     }
   }
 
-  async #ensureLaunchSlot(): Promise<void> {
+  #ensureLaunchSlot(): void {
     for (const session of [...this.#sessions.values()]) {
       if (session.status === 'terminated' || !session.client.isAlive()) {
         this.#disposeSession(session)
@@ -1716,7 +1716,7 @@ export class DapSessionManager {
       capabilities: undefined,
       heartbeat: undefined,
     }
-    client.onReverseRequest('runInTerminal', async (rawArgs) => {
+    client.onReverseRequest('runInTerminal', (rawArgs) => {
       const args = (rawArgs ?? {}) as DapRunInTerminalArguments
       if (!Array.isArray(args.args) || args.args.length === 0) {
         throw new Error('runInTerminal request did not include a command')
@@ -1811,7 +1811,7 @@ export class DapSessionManager {
       // the interval only keeps session-wide bookkeeping honest on the rare
       // path where the process outlives its own exit task.
     }, 30_000)
-    heartbeat.unref?.()
+    heartbeat.unref()
     session.heartbeat = heartbeat
     void client.proc.exited.finally(() => {
       clearInterval(heartbeat)
@@ -1907,7 +1907,7 @@ export class DapSessionManager {
   async #fetchTopFrame(session: DapSession, signal?: AbortSignal, timeoutMs: number = 5_000): Promise<void> {
     if (session.stop.threadId === undefined) return
     try {
-      const response = await session.client.sendRequest<DapStackTraceResponse>(
+      const response = await session.client.sendRequest<DapStackTraceResponse | undefined>(
         'stackTrace',
         { threadId: session.stop.threadId, levels: 1 } satisfies DapStackTraceArguments,
         signal,
@@ -2021,7 +2021,7 @@ export class DapSessionManager {
         return threadId
       }
     }
-    const response = await session.client.sendRequest<DapThreadsResponse>('threads', undefined, signal, timeoutMs)
+    const response = await session.client.sendRequest<DapThreadsResponse | undefined>('threads', undefined, signal, timeoutMs)
     session.threads = response?.threads ?? []
     const threadId = session.threads[0]?.id
     if (threadId === undefined) {
@@ -2258,9 +2258,9 @@ function untilAborted<T>(signal: AbortSignal | undefined, promise: Promise<T>): 
         signal.removeEventListener('abort', onAbort)
         resolve(value)
       },
-      (error) => {
+      (error: unknown) => {
         signal.removeEventListener('abort', onAbort)
-        reject(error)
+        reject(error instanceof Error ? error : new Error(String(error)))
       },
     )
   })

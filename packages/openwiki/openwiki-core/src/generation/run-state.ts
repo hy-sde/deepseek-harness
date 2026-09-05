@@ -250,7 +250,7 @@ const PersistedPreparedWikiStateSchema = z
 
 const PageJobSchema = z
   .object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     path: z.string().min(1),
     title: z.string().trim().min(1),
     purpose: z.string().trim().min(1),
@@ -265,7 +265,7 @@ const PageJobSchema = z
 const RepositoryRunStateSchema = z
   .object({
     schemaVersion: z.literal(REPOSITORY_RUN_STATE_SCHEMA_VERSION),
-    runId: z.string().uuid(),
+    runId: z.uuid(),
     mode: z.enum(['init', 'update']),
     phase: z.enum(['planning', 'generating']),
     startedAt: z.string().min(1),

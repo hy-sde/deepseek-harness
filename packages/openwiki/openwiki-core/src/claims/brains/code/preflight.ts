@@ -109,6 +109,6 @@ function compareGroundingIssues(
   return (
     left.page.localeCompare(right.page) ||
     left.kind.localeCompare(right.kind) ||
-    (left.claimId ?? '').localeCompare(right.claimId ?? '')
+    left.claimId.localeCompare(right.claimId)
   )
 }

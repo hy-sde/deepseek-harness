@@ -22,6 +22,7 @@ import type { FsInfo, FsTarget, FsVersion } from '@deepseek-ai/dsh-fs'
 import type { FileSystem } from '@deepseek-ai/dsh-fs'
 import type { LspService } from '@deepseek-ai/dsh-lsp'
 import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
+import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { createWritethrough } from './lsp/writethrough.ts'
 import type { WritethroughCallback } from './lsp/writethrough.ts'
@@ -110,7 +111,8 @@ export function toolCwdFromExec(exec: ToolRunContext): string {
 export function createEditSession(args: CreateEditSessionArgs): EditSession {
   const { ctx, fs, lsp, config, exec } = args
   const cwd = toolCwdFromExec(exec)
-  const sandboxPolicy = ctx.fs.sandboxMode === undefined ? undefined : (ctx.get('sandboxPolicy'))
+  const sandboxPolicy: SandboxPolicyService | undefined =
+    ctx.fs.sandboxMode === undefined ? undefined : ctx.get('sandboxPolicy')
 
   const resolveSandbox = (): SandboxExecutionPolicy | undefined =>
     sandboxPolicy?.resolve({

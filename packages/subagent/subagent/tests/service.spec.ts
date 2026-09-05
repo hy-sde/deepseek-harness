@@ -315,7 +315,11 @@ describe('SubagentRuntime', () => {
     ctx.logger.warn = ((message: unknown) => void warnings.push(String(message))) as typeof ctx.logger.warn
     const heard: string[] = []
     ctx.on('subagent/provider-removed', () => { throw new Error('sync boom') })
-    ctx.on('subagent/provider-removed', async () => { throw new Error('async boom') })
+    // Deliberately async despite the void listener contract: the contained
+    // emitter must log a rejected returned promise without starving peers, so
+    // the listener returns it (typed unknown, as the event contract cannot
+    // express the returned promise).
+    ctx.on('subagent/provider-removed', (): unknown => (async () => { throw new Error('async boom') })())
     ctx.on('subagent/provider-removed', () => { throw { toString: () => { throw new Error('coercion') } } })
     ctx.on('subagent/provider-removed', name => void heard.push(name))
     const dispose = subagents.registerProvider(new StubProvider('contained'))

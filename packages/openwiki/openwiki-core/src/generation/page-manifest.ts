@@ -65,7 +65,7 @@ export interface RepositoryPageManifest {
   /**
    * Canonical factual page paths mapped to their latest durable coverage.
    */
-  pages: Record<string, RepositoryPageManifestEntry>
+  pages: Record<string, RepositoryPageManifestEntry | undefined>
 }
 
 const SourceFingerprintSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/u)
@@ -76,7 +76,7 @@ const ManifestEntrySchema = z
     sourceFingerprint: SourceFingerprintSchema.optional(),
     pageVersion: PageVersionSchema,
     completedBy: z.string().trim().min(1).optional(),
-    completedRunId: z.string().uuid().optional(),
+    completedRunId: z.uuid().optional(),
   })
   .strict()
 const ManifestSchema = z

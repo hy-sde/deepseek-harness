@@ -38,7 +38,7 @@ function call(name: string, args: unknown) {
 }
 
 let ctx: Context
-let kernelsFiber: Awaited<ReturnType<Context['plugin']>>
+let kernelsFiber: ReturnType<Context['plugin']>
 
 describe('hostile-peer frame parser', () => {
   it('builds exact typed frames from well-formed wire lines', () => {

@@ -44,7 +44,7 @@ export interface DapTransport {
 /** Handler invoked for each adapter→client event. */
 export type DapEventHandler = (body: unknown, event: DapEventMessage) => void | Promise<void>
 /** Handler invoked for each adapter→client reverse request. */
-export type DapReverseRequestHandler = (args: unknown) => unknown | Promise<unknown>
+export type DapReverseRequestHandler = (args: unknown) => unknown
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000
 /** Hard cap on a single message write. A wedged adapter stdin used to hang the
@@ -276,7 +276,7 @@ export class DapClient {
     const cleanup = () => {
       unsubscribe()
       this.#eventWaiterRejectors.delete(closeHandler)
-      if (timeout) clearTimeout(timeout)
+      clearTimeout(timeout)
       if (signal) {
         signal.removeEventListener('abort', abortHandler)
       }
@@ -344,7 +344,7 @@ export class DapClient {
       reject(new Error(`DAP request ${command} timed out after ${timeoutMs}ms`))
     }, timeoutMs)
     const cleanup = () => {
-      if (timeout) clearTimeout(timeout)
+      clearTimeout(timeout)
       if (signal) {
         signal.removeEventListener('abort', abortHandler)
       }
@@ -372,7 +372,7 @@ export class DapClient {
     // Fire the write in the background. Awaiting it here would let a wedged
     // stdin flush block the caller's `timeoutMs`; if it fails, propagate the
     // failure into `promise` — the timer or abort may still win the race.
-    void this.#writeMessage(request).catch((error) => {
+    void this.#writeMessage(request).catch((error: unknown) => {
       if (!this.#pendingRequests.has(requestSeq)) return
       this.#pendingRequests.delete(requestSeq)
       cleanup()
@@ -808,7 +808,7 @@ export class DapClient {
         () => { reject(new Error(`${adapter.name} did not connect within ${timeoutMs}ms`)) },
         timeoutMs,
       )
-      timer.unref?.()
+      timer.unref()
     })
 
     try {
@@ -1045,7 +1045,7 @@ function connectUnixSocket(path: string, timeoutMs: number): Promise<Socket> {
       () => { reject(new Error(`Timed out connecting to unix socket ${path} after ${timeoutMs}ms`)) },
       timeoutMs,
     )
-    timer.unref?.()
+    timer.unref()
     const onerror = (error: Error) => {
       if (settled) return
       settled = true

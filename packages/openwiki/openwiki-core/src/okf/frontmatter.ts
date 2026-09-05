@@ -277,8 +277,10 @@ function isIsoDateTimeWithOffset(value: string): boolean {
 
   const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
     match
-  const offsetHourText = match[7]
-  const offsetMinuteText = match[8]
+  // RegExpExecArray types its captures as `string`, but the optional `(±HH:mm)`
+  // group is absent at runtime when the timestamp has no offset.
+  const offsetHourText = match[7] as string | undefined
+  const offsetMinuteText = match[8] as string | undefined
   const year = Number(yearText)
   const month = Number(monthText)
   const day = Number(dayText)

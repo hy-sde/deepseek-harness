@@ -76,7 +76,7 @@ export const BeginInput: z.ZodType<BeginRequest> = z
  */
 export const RunInput: z.ZodType<RunRequest> = z
   .object({
-    runId: z.string().uuid(),
+    runId: z.uuid(),
   })
   .strict()
 
@@ -99,7 +99,7 @@ export const PlanPageInput = z
  */
 export const SubmitPlanInput = z
   .object({
-    runId: z.string().uuid(),
+    runId: z.uuid(),
     // Empty is valid for an update that has no documentation page work or only
     // planned deletions. Init validation still requires quickstart downstream.
     pages: z.array(PlanPageInput),
@@ -128,8 +128,8 @@ export const ProposedPageClaimInput = z
  */
 export const SubmitPageInput = z
   .object({
-    runId: z.string().uuid(),
-    jobId: z.string().uuid(),
+    runId: z.uuid(),
+    jobId: z.uuid(),
     // Every PageJob is a factual concept page. Structural index pages are
     // deterministic and never become jobs, so a completed page must establish
     // at least one material repository-grounded Claim.

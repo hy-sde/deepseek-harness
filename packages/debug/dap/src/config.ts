@@ -238,7 +238,7 @@ async function resolveDefaultJsDebugAdapter(
   const serverPath = await resolveJsDebugServerPath(ctx.cwd)
   if (!serverPath) return null
   const nodeCommand = await ctx.resolveExecutable('node', undefined, ctx.signal).catch(() => null)
-  const resolvedCommand = nodeCommand ?? process.execPath ?? 'node'
+  const resolvedCommand = nodeCommand ?? process.execPath
   return {
     name: adapterName,
     command: 'node',

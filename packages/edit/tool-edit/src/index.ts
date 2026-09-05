@@ -122,12 +122,17 @@ function leadPathFromInput(input: string): string {
 
 function presentCall(args: Record<string, unknown>, resolved: ResolvedConfig): ToolCallView {
   const mode = dispatchMode(resolved, args)
-  const path = (typeof args.path === 'string' ? args.path : '') || leadPathFromInput(String(args.input ?? ''))
+  const path = (typeof args.path === 'string' ? args.path : '') ||
+    leadPathFromInput(typeof args.input === 'string' ? args.input : '')
   if (mode === 'replace') {
     return {
       card: 'diff',
       title: `Edit ${path}`,
-      diffs: buildReplaceDiffs(path, String(args.old_string ?? ''), String(args.new_string ?? '')),
+      diffs: buildReplaceDiffs(
+        path,
+        typeof args.old_string === 'string' ? args.old_string : '',
+        typeof args.new_string === 'string' ? args.new_string : '',
+      ),
       locations: [{ path }],
     }
   }
@@ -313,9 +318,10 @@ function registerEditTool(ctx: Context, config: ResolvedConfig): void {
       presentationMeta: (args) => {
         const resolved = resolveConfig(config)
         if (dispatchMode(resolved, args) !== 'replace') return {}
-        const path = String((args as Record<string, unknown>).path ?? '')
-        const old_string = String((args as Record<string, unknown>).old_string ?? '')
-        const new_string = String((args as Record<string, unknown>).new_string ?? '')
+        const raw = args as Record<string, unknown>
+        const path = typeof raw.path === 'string' ? raw.path : ''
+        const old_string = typeof raw.old_string === 'string' ? raw.old_string : ''
+        const new_string = typeof raw.new_string === 'string' ? raw.new_string : ''
         const diffs = buildReplaceDiffs(path, old_string, new_string).map(
           diff => ({ path: diff.path, oldText: diff.oldText, newText: diff.newText }),
         )
@@ -341,7 +347,7 @@ function registerEditTool(ctx: Context, config: ResolvedConfig): void {
           case 'hashline':
             return await runHashline(ctx, resolved, args as Record<string, unknown>)
           default:
-            throw new Error(`tool-edit: unknown mode ${String(mode)}`)
+            throw new Error(`tool-edit: unknown mode ${mode}`)
         }
       } catch (error) {
         if (error instanceof ApplyPatchError) throw new Error(errorMessage(error))

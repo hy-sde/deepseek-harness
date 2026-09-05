@@ -15,7 +15,7 @@ describe('encodeDapMessage', () => {
     const encoded = encodeDapMessage({ seq: 1, type: 'request', command: 'foo', arguments: { x: 1 } })
     const headerEnd = encoded.indexOf(Buffer.from('\r\n\r\n'))
     const header = encoded.subarray(0, headerEnd).toString('utf8')
-    const body = JSON.parse(encoded.subarray(headerEnd + 4).toString('utf8'))
+    const body: unknown = JSON.parse(encoded.subarray(headerEnd + 4).toString('utf8'))
     expect(header).toMatch(/^Content-Length: \d+$/m)
     expect(encoded.subarray(0, headerEnd)).toEqual(
       Buffer.from(`Content-Length: ${Buffer.byteLength(JSON.stringify({ seq: 1, type: 'request', command: 'foo', arguments: { x: 1 } }))}`, 'ascii'),

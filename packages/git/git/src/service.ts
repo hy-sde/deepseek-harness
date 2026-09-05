@@ -148,9 +148,9 @@ export class GitService extends Service {
     }
     const limit = options.timeoutMs ?? this.timeoutMs
     const controller = new AbortController()
-    let timedOut = false
+    const timerState: { timedOut: boolean } = { timedOut: false }
     const timer = setTimeout(() => {
-      timedOut = true
+      timerState.timedOut = true
       controller.abort()
     }, limit)
     const forward = (): void => { controller.abort() }
@@ -176,7 +176,7 @@ export class GitService extends Service {
       if (signal?.aborted) {
         throw new GitCommandError('git command was aborted before completion', { exitCode: null, stderr: '', cause: error })
       }
-      if (timedOut) {
+      if (timerState.timedOut) {
         throw new GitCommandError(`git ${argv[0] ?? ''} timed out after ${limit}ms`, { exitCode: null, stderr: '', cause: error })
       }
       throw new GitCommandError(`git ${argv[0] ?? ''} could not start (launch failed)`, {
@@ -191,7 +191,7 @@ export class GitService extends Service {
     } catch (error: unknown) {
       clearTimeout(timer)
       if (signal !== undefined) signal.removeEventListener('abort', forward)
-      if (timedOut) {
+      if (timerState.timedOut) {
         throw new GitCommandError(`git ${argv[0] ?? ''} timed out after ${limit}ms`, { exitCode: null, stderr: '', cause: error })
       }
       throw new GitCommandError(`git ${argv[0] ?? ''} could not start (launch failed)`, {
@@ -210,7 +210,7 @@ export class GitService extends Service {
         stderr: '',
       })
     }
-    if (timedOut) {
+    if (timerState.timedOut) {
       throw new GitCommandError(`git ${argv[0] ?? ''} timed out after ${limit}ms`, { exitCode: null, stderr: stderr.text })
     }
     if (outcome.signal !== null) {

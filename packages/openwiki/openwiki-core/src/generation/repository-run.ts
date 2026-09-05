@@ -1072,12 +1072,14 @@ async function assertPageClaimsDurable(
     )
   }
 
-  if (!persisted.verification) {
+  const verification = persisted.verification
+  if (!verification) {
     throw new RepositoryRunError(
       'invalid_state',
       `Claims for ${page} were not verified; retry ${retryOperation}.`,
     )
   }
+  const { by: verificationBy, at: verificationAt } = verification
 
   const verified: unknown = parseFrontmatterFields(
     await store.readMarkdown(page),
@@ -1090,8 +1092,8 @@ async function assertPageClaimsDurable(
   const verificationProjected = verificationEvents.some(
     event =>
       isVerificationEvent(event) &&
-      event.by === persisted.verification?.by &&
-      event.at === persisted.verification?.at,
+      event.by === verificationBy &&
+      event.at === verificationAt,
   )
   if (!verificationProjected) {
     throw new RepositoryRunError(
@@ -1248,7 +1250,7 @@ export async function finishRepositoryRun(
   for (const [page, entry] of Object.entries(
     (await readRepositoryPageManifest(run.root)).pages,
   )) {
-    if (entry.completedBy && entry.completedRunId === run.state.runId) {
+    if (entry && entry.completedBy && entry.completedRunId === run.state.runId) {
       producerActorsByPage.set(page, entry.completedBy)
     }
   }

@@ -299,7 +299,8 @@ export interface DapScopesArguments {
 /** A variable scope of a stack frame. */
 export interface DapScope {
   name: string
-  presentationHint?: 'arguments' | 'locals' | 'registers' | string
+  /** DAP scope presentation hint (`arguments` | `locals` | `registers`, or adapter-specific). */
+  presentationHint?: string
   variablesReference: number
   expensive: boolean
   source?: DapSource
@@ -469,7 +470,8 @@ export interface DapThreadsResponse {
 
 /** Body of the `output` event. */
 export interface DapOutputEventBody {
-  category?: 'console' | 'important' | 'stdout' | 'stderr' | 'telemetry' | string
+  /** DAP output category (`console` | `important` | `stdout` | `stderr` | `telemetry`, or adapter-specific). */
+  category?: string
   output: string
   group?: 'start' | 'startCollapsed' | 'end'
   variablesReference?: number

@@ -55,11 +55,11 @@ export interface DebugOutputSession {
  */
 export function projectSession(snapshot: DapSessionSummary): DebugOutputSession {
   const record: DebugOutputSession = {}
-  if (snapshot.id !== undefined) record.id = snapshot.id
-  if (snapshot.adapter !== undefined) record.adapter = snapshot.adapter
-  if (snapshot.cwd !== undefined) record.cwd = snapshot.cwd
+  record.id = snapshot.id
+  record.adapter = snapshot.adapter
+  record.cwd = snapshot.cwd
   if (snapshot.program !== undefined) record.program = snapshot.program
-  if (snapshot.status !== undefined) record.status = snapshot.status
+  record.status = snapshot.status
   if (snapshot.stopReason !== undefined) record.stopReason = snapshot.stopReason
   if (snapshot.frameName !== undefined) record.frameName = snapshot.frameName
   if (snapshot.line !== undefined) record.line = snapshot.line
@@ -67,9 +67,7 @@ export function projectSession(snapshot: DapSessionSummary): DebugOutputSession 
   if (snapshot.instructionPointerReference !== undefined) {
     record.instructionPointerReference = snapshot.instructionPointerReference
   }
-  if (snapshot.needsConfigurationDone !== undefined) {
-    record.needsConfigurationDone = snapshot.needsConfigurationDone
-  }
+  record.needsConfigurationDone = snapshot.needsConfigurationDone
   if (snapshot.exitCode !== undefined) record.exitCode = snapshot.exitCode
   return record
 }
@@ -338,8 +336,8 @@ export function formatTable(headers: string[], rows: string[][]): string {
   const widths = headers.map((header, index) =>
     Math.max(header.length, ...rows.map(row => (row[index] ?? '').length)),
   )
-  const formatRow = (row: string[]) => row.map((cell, index) => (cell ?? '').padEnd(widths[index] ?? 0)).join('  ')
-  return [formatRow(headers), formatRow(widths.map(width => '-'.repeat(width ?? 0))), ...rows.map(formatRow)].join('\n')
+  const formatRow = (row: string[]) => row.map((cell, index) => cell.padEnd(widths[index] ?? 0)).join('  ')
+  return [formatRow(headers), formatRow(widths.map(width => '-'.repeat(width))), ...rows.map(formatRow)].join('\n')
 }
 
 /**
@@ -440,6 +438,12 @@ export function formatDataBreakpoints(breakpoints: DapDataBreakpointRecord[]): s
   return lines.join('\n')
 }
 
+/** JSON.stringify is typed as returning string but returns undefined for
+ *  undefined/function/symbol inputs; keep the 'null' fallback explicit. */
+function stringifyForDisplay(value: unknown): string | undefined {
+  return JSON.stringify(value, null, 2)
+}
+
 /**
  * Format a custom DAP request response.
  * @param command - the custom request command name.
@@ -449,7 +453,7 @@ export function formatDataBreakpoints(breakpoints: DapDataBreakpointRecord[]): s
 export function formatCustomResponse(command: string, body: unknown): string {
   let serialized = ''
   try {
-    serialized = JSON.stringify(body, null, 2) ?? 'null'
+    serialized = stringifyForDisplay(body) ?? 'null'
   } catch {
     serialized = String(body)
   }
@@ -540,7 +544,7 @@ export const DEBUG_OUTPUT_SCHEMA = {
  * @returns the message text.
  */
 export function renderDebugCall(_args: DebugToolArgs, value: DebugToolOutput): string {
-  return value.message ?? '(no output)'
+  return value.message
 }
 
 /**

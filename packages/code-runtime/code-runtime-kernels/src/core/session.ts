@@ -124,6 +124,16 @@ export class SessionRegistry {
     session.idleTimer.unref()
   }
 
+  /**
+   * Throw when the registry is already disposed. Reads the field fresh, so a
+   * check after an await point cannot be narrowed away by an earlier one.
+   */
+  #assertNotDisposed(): void {
+    if (this.#disposed) {
+      throw new Error(`${this.#config.label} session registry disposed while acquiring kernel`)
+    }
+  }
+
   async #acquireKernel(sessionId: string, session: KernelSession): Promise<KernelHost> {
     if (session.kernel !== null && session.kernel.isAlive()) return session.kernel
     const previous = session.kernel
@@ -131,16 +141,14 @@ export class SessionRegistry {
       await previous.shutdown().catch(() => {})
       session.kernel = null
     }
-    if (this.#disposed) {
-      throw new Error(`${this.#config.label} session registry disposed while acquiring kernel`)
-    }
+    this.#assertNotDisposed()
     if (this.#sessions.get(sessionId) !== session) {
       throw new Error(`${this.#config.label} session invalidated while acquiring kernel`)
     }
     const kernel = await this.#config.start()
     if (this.#disposed) {
       await kernel.shutdown().catch(() => {})
-      throw new Error(`${this.#config.label} session registry disposed while acquiring kernel`)
+      this.#assertNotDisposed()
     }
     if (this.#sessions.get(sessionId) !== session) {
       await kernel.shutdown().catch(() => {})

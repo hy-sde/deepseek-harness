@@ -756,7 +756,7 @@ export class SubagentContinuationManager {
    * @throws {SubagentError} when the sender is unauthorized, the parent is not
    *   live, or continuation admission is closing.
    */
-  async reportFrom(
+  reportFrom(
     child: Agent,
     content: ContentBlock[],
     options: SubagentReportOptions,
@@ -765,7 +765,9 @@ export class SubagentContinuationManager {
     this.assertAdmitting(child)
     const activation = this.authorizeReporter(child)
     const parent = this.resolveReportParent(child)
-    return this.deliverReport(activation, parent, content, options.delivery, options.report)
+    // Deliver synchronously and surface the message id as the same resolved
+    // promise an `async` declaration would have produced.
+    return Promise.resolve(this.deliverReport(activation, parent, content, options.delivery, options.report))
   }
 
   /** Authorize only the exact Agent of one resident Activation. */

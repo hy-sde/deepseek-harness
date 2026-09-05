@@ -50,10 +50,12 @@ export interface SubagentDecisionEventData {
   /** Set on `open` when wedge supervision raised the decision. */
   readonly wedge?: true
   /**
-   * Epoch milliseconds when the decision opened. Re-opens keep the event's
-   * own time (`event.time`), so refresh does not rewrite the original `open`.
+   * Epoch milliseconds when the decision opened. Absent on logs written
+   * before this field existed; the fold falls back to `event.time`. Re-opens
+   * keep the event's own time (`event.time`), so refresh does not rewrite the
+   * original `open`.
    */
-  readonly openedAt: number
+  readonly openedAt?: number
 }
 
 /**

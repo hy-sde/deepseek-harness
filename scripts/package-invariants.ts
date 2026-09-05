@@ -213,7 +213,7 @@ function projectReferencesInvariants(root: string, ownerDir: string, entryPath: 
     if (configPath === undefined) break
     if (visited.has(configPath)) continue
     visited.add(configPath)
-    const config = ts.readConfigFile(configPath, ts.sys.readFile)
+    const config = ts.readConfigFile(configPath, path => ts.sys.readFile(path))
     if (config.error !== undefined) {
       throw new Error(`package-invariants: ${configPath}: cannot parse tsconfig: ${ts.flattenDiagnosticMessageText(config.error.messageText, '\n')}`)
     }

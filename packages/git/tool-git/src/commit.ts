@@ -359,12 +359,12 @@ export interface CommitApplyValue {
 }
 
 /** Validate a plan's group fields; returns a readable error per problem. */
-function validateGroupFields(commits: readonly SplitCommitGroup[]): string[] {
+function validateGroupFields(commits: readonly LooseCommitGroup[]): string[] {
   const errors: string[] = []
   for (const [i, group] of commits.entries()) {
     const label = `group ${i + 1}`
     if (!COMMIT_TYPES.includes(group.type)) {
-      errors.push(`${label}: unknown commit type "${String(group.type)}"; use one of ${COMMIT_TYPES.join(', ')}`)
+      errors.push(`${label}: unknown commit type "${group.type}"; use one of ${COMMIT_TYPES.join(', ')}`)
     }
     if (typeof group.summary !== 'string' || group.summary.trim().length === 0) {
       errors.push(`${label}: summary is required and must be non-empty`)
@@ -399,8 +399,8 @@ function collectConventionalAdvisories(
       type: group.type,
       scope: group.scope ?? null,
       summary: group.summary,
-      body: (group.details ?? []).map(detail => detail.text),
-      footers: (group.issueRefs ?? []).map(ref => `Refs: ${ref}`),
+      body: group.details.map(detail => detail.text),
+      footers: group.issueRefs.map(ref => `Refs: ${ref}`),
     }
     const report = conventional.validateSummaryQuality(group.summary, group.type)
     for (const issue of report.errors) {
@@ -606,7 +606,7 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
           throw new Error('Plan rejected before anything was written: commit order references an unknown group')
         }
         return formatCommitMessage(
-          { type: group.type, scope: group.scope, details: group.details ?? [], issueRefs: group.issueRefs ?? [] },
+          { type: group.type, scope: group.scope, details: group.details, issueRefs: group.issueRefs },
           normalizeSummary(group.summary),
         )
       })
@@ -643,7 +643,7 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
               )
             }
             const message = formatCommitMessage(
-              { type: group.type, scope: group.scope, details: group.details ?? [], issueRefs: group.issueRefs ?? [] },
+              { type: group.type, scope: group.scope, details: group.details, issueRefs: group.issueRefs },
               normalizeSummary(group.summary),
             )
             try {
@@ -707,7 +707,7 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
 /** Deep-clone an input group into the service's own table (schema-validated fields). */
 function cloneGroup(group: LooseCommitGroup): SplitCommitGroup {
   return {
-    changes: (group.changes ?? []).map(change => ({
+    changes: group.changes.map(change => ({
       path: change.path,
       hunks: normalizeHunks(change.hunks),
     })),

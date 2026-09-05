@@ -86,7 +86,7 @@ async function* bytesFromReadableStream(stream: ReadableStream<Uint8Array>): Asy
     while (true) {
       const { done, value } = await reader.read()
       if (done) return
-      if (value) yield value
+      yield value
     }
   } finally {
     reader.releaseLock()

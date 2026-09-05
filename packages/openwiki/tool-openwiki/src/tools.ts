@@ -139,7 +139,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       const a = args as SubmitPlanRequest & { runId: string }
       const planned = await requireManager().submitPlan({
         runId: a.runId,
-        pages: (a.pages ?? []).map(p => ({
+        pages: a.pages.map(p => ({
           path: p.path,
           title: p.title,
           purpose: p.purpose,
@@ -267,7 +267,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       const submitted = await requireManager().submitPage({
         runId: a.runId,
         jobId: a.jobId,
-        claims: (a.claims ?? []).map(c => ({
+        claims: a.claims.map(c => ({
           ...(c.id !== undefined ? { id: c.id } : {}),
           statement: c.statement,
           evidence: c.evidence.map(e => ({ resource: e.resource })),

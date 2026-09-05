@@ -336,7 +336,7 @@ function extractMarkdownLinks(
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]
     for (const match of line.matchAll(MARKDOWN_LINK_PATTERN)) {
-      if (match.index !== undefined && line[match.index - 1] === '!') {
+      if (line[match.index - 1] === '!') {
         continue
       }
       links.push({ href: match[2], line: index + 1 })

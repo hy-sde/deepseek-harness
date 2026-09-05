@@ -382,7 +382,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
         }
         const controller = new AbortController()
         const forwardAbort = (): void => { controller.abort() }
-        if (exec.signal !== undefined) exec.signal.addEventListener('abort', forwardAbort, { once: true })
+        exec.signal.addEventListener('abort', forwardAbort, { once: true })
         let run: SubagentRun
         try {
           run = await subagents.start(provider, {
@@ -393,7 +393,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
             outputSchema: REVIEWER_SCHEMA,
           })
         } catch (error: unknown) {
-          if (exec.signal !== undefined) exec.signal.removeEventListener('abort', forwardAbort)
+          exec.signal.removeEventListener('abort', forwardAbort)
           return { kind: 'error', error: `start failed: ${String(error)}` }
         }
         try {
@@ -416,7 +416,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
         } catch (error: unknown) {
           return { kind: 'error', error: String(error) }
         } finally {
-          if (exec.signal !== undefined) exec.signal.removeEventListener('abort', forwardAbort)
+          exec.signal.removeEventListener('abort', forwardAbort)
           try {
             await run.dispose()
           } catch {

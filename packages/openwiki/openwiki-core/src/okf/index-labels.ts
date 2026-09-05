@@ -35,7 +35,7 @@ export const ENGLISH_INDEX_LABELS: IndexLabels = {
  * `zh-CN` versus `zh-TW`) may key on the full tag; a bare primary-subtag entry
  * (for example `zh`) supplies the default for every region of that language.
  */
-const INDEX_LABELS: Record<string, IndexLabels> = {
+const INDEX_LABELS: Record<string, IndexLabels | undefined> = {
   en: ENGLISH_INDEX_LABELS,
   ar: { files: 'ملفات', directories: 'مجلدات' },
   bg: { files: 'Файлове', directories: 'Директории' },
@@ -111,7 +111,7 @@ export const ENGLISH_CONCEPT_TYPE = 'Reference'
  * may key on its full form while a bare primary-subtag entry supplies the
  * default for every region of that language.
  */
-const CONCEPT_TYPE_LABELS: Record<string, string> = {
+const CONCEPT_TYPE_LABELS: Record<string, string | undefined> = {
   en: ENGLISH_CONCEPT_TYPE,
   ar: 'مرجع',
   ca: 'Referència',

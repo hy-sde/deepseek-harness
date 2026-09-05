@@ -79,7 +79,7 @@ export async function runCli(cmd: string, args: string[], options: { timeoutMs: 
       windowsHide: true,
     }, (err, stdout, stderr) => {
       if (!err) {
-        resolve({ stdout: stdout ?? '', stderr: stderr ?? '', exitCode: 0 })
+        resolve({ stdout, stderr, exitCode: 0 })
         return
       }
       const e = err as unknown as { code?: number | string; signal?: string }
@@ -87,13 +87,13 @@ export async function runCli(cmd: string, args: string[], options: { timeoutMs: 
       if (e.code === 'ENOENT') {
         reject(new LogseqCliError(
           `logseq CLI not found (\`${cmd}\`). Install it from the logseq repository: opam exec -- dune build @bundle, then add to PATH.`,
-          args, stdout ?? '', stderr ?? '', code))
+          args, stdout, stderr, code))
         return
       }
-      const tail = (stderr ?? '').trim().slice(0, 400)
+      const tail = stderr.trim().slice(0, 400)
       reject(new LogseqCliError(
         `logseq CLI exited with ${code === null ? 'unknown error' : `code ${code}`}${tail ? `: ${tail}` : ''}`,
-        args, stdout ?? '', stderr ?? '', code))
+        args, stdout, stderr, code))
     })
   })
 }
@@ -105,13 +105,21 @@ export async function runCli(cmd: string, args: string[], options: { timeoutMs: 
  */
 export function parseOutput(stdout: string): Envelope {
   try {
-    const j = JSON.parse(stdout) as { status?: unknown; data?: unknown; error?: unknown }
-    if (j && j.status === 'ok') return { status: 'ok', data: j.data, error: undefined }
-    if (j && j.status === 'error') return { status: 'error', data: undefined, error: j.error ?? j }
+    const parsed: unknown = JSON.parse(stdout)
+    if (isEnvelope(parsed) && parsed.status === 'ok') return { status: 'ok', data: parsed.data, error: undefined }
+    if (isEnvelope(parsed) && parsed.status === 'error') return { status: 'error', data: undefined, error: parsed.error ?? parsed }
     return { status: 'text', data: stdout }
   } catch {
     return { status: 'text', data: stdout }
   }
+}
+
+/** Narrows parsed CLI stdout to a classified {@link Envelope}. */
+function isEnvelope(value: unknown): value is Envelope {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  if (!('status' in value)) return false
+  const status = value.status
+  return status === 'ok' || status === 'error' || status === 'text'
 }
 
 /* ── small argv helpers ─────────────────────────────────────────────────── */
@@ -188,17 +196,41 @@ export function renderRows(row: unknown): string {
  * @returns the rendered text.
  */
 export function renderValue(value: unknown, max: number, label: string, rows?: boolean): string {
-  const v = value as { items?: unknown[]; result?: unknown[]; count?: number; blocks?: unknown[] }
-  if (v && Array.isArray(v.items)) return renderItems(v.items, max, label)
-  if (v && Array.isArray(v.result)) {
-    const shown = v.result.slice(0, max)
+  if (isRecord(value) && Array.isArray(value.items)) return renderItems(value.items, max, label)
+  if (isRecord(value) && Array.isArray(value.result)) {
+    const shown = value.result.slice(0, max)
     return [
-      `${label}: ${v.result.length} rows${v.result.length > shown.length ? ` (truncated to ${shown.length})` : ''}`,
+      `${label}: ${value.result.length} rows${value.result.length > shown.length ? ` (truncated to ${shown.length})` : ''}`,
       ...shown.map(r => (rows === false ? `- ${typeof r === 'string' ? r : JSON.stringify(r).slice(0, 160)}` : renderRows(r))),
     ].join('\n')
   }
-  if (v && Array.isArray(v.blocks)) return renderItems(v.blocks, max, label)
+  if (isRecord(value) && Array.isArray(value.blocks)) return renderItems(value.blocks, max, label)
   return `${label}: ${JSON.stringify(value).slice(0, 2000)}`
+}
+
+/** Narrows a rendered tool value to a plain JSON object. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * String-coerces an unknown CLI error value exactly the way `String(value)`
+ * would, without relying on `String()` (which the linter rejects for
+ * object-typed values): primitives stringify natively and objects take their
+ * default `Object.prototype.toString` form.
+ */
+function stringifyErrorValue(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value === null || value === undefined) return ''
+  if (
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint' ||
+    typeof value === 'symbol'
+  ) {
+    return String(value)
+  }
+  return Object.prototype.toString.call(value)
 }
 
 /* ── the tools ──────────────────────────────────────────────────────────── */
@@ -336,7 +368,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
       const argv = [...base(), 'search', t, '--content', content, '--output', 'json']
       const { env } = await exec(argv)
       const items = ((env.data ?? {}) as { items?: unknown[] }).items ?? []
-      const cap = args.limit !== undefined ? Number(args.limit) : maxItems
+      const cap = args.limit ?? maxItems
       return { entityType: t, count: items.length, text: renderItems(items, cap, `search ${t}`) }
     },
   }))
@@ -504,10 +536,12 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
       const { env } = await exec(argv)
       const data = env.data as Record<string, unknown> | undefined
       const title = titleOf(data)
+      const dbId = data?.['db/id']
+      const idText = typeof dbId === 'string' || typeof dbId === 'number' ? String(dbId) : ''
       return {
         entityType: t,
         status: 'ok',
-        detail: `${t}${title ? ` \`${title}\`` : ''} upserted${data ? ` (id=${String((data as { 'db/id'?: unknown })['db/id'] ?? '')})` : ''}`,
+        detail: `${t}${title ? ` \`${title}\`` : ''} upserted${data ? ` (id=${idText})` : ''}`,
       }
     },
   }))
@@ -595,7 +629,7 @@ export function applyLogseqTools(ctx: Context, config: LogseqToolConfig = {}): v
       argv.push('--output', 'json')
       const { stdout } = await runCli(cmd, argv, { timeoutMs })
       const env = parseOutput(stdout)
-      if (env.status === 'error') throw new LogseqCliError(String(env.error ?? ''), argv, stdout, '', null)
+      if (env.status === 'error') throw new LogseqCliError(stringifyErrorValue(env.error), argv, stdout, '', null)
       const isTable = tableActs.includes(action) && env.status === 'text'
       return { action, detail: isTable ? `${stdout}\n` : JSON.stringify(env.data).slice(0, 2000) }
     },

@@ -27,7 +27,7 @@ import {
   tokenizeSessionFixtureCwd,
   type HarvestedLog,
   type NormalizeContext,
-} from '@deepseek-ai/dsh-acp-snapshot'
+} from '@deepseek-ai/dsh-session-snapshot'
 import { resolveExampleLaunch } from '@deepseek-ai/dsh-loader-smoke'
 import { DeepSeekHarness, type HarnessNotification, type RunResult } from '@deepseek-ai/dsh-sdk-client'
 

@@ -283,26 +283,24 @@ function remapEditsToCurrent(previousText: string, currentText: string, edits: r
       })
       continue
     }
-    if (edit.kind === 'insert') {
-      let blockStart = edit.blockStart
-      if (blockStart !== undefined) {
-        const mappedBlockStart = mapLine(blockStart)
-        if (mappedBlockStart === null) return null
-        blockStart = mappedBlockStart
-      }
-      const cursor = edit.cursor
-      if (cursor.kind !== 'before_anchor' && cursor.kind !== 'after_anchor') {
-        remapped.push(blockStart === edit.blockStart ? edit : { ...edit, ...(blockStart === undefined ? {} : { blockStart }) })
-        continue
-      }
-      const anchor = mapAnchor(cursor.anchor)
-      if (anchor === null) return null
-      remapped.push({
-        ...edit,
-        cursor: { kind: cursor.kind, anchor },
-        ...(blockStart === undefined ? {} : { blockStart }),
-      })
+    let blockStart = edit.blockStart
+    if (blockStart !== undefined) {
+      const mappedBlockStart = mapLine(blockStart)
+      if (mappedBlockStart === null) return null
+      blockStart = mappedBlockStart
     }
+    const cursor = edit.cursor
+    if (cursor.kind !== 'before_anchor' && cursor.kind !== 'after_anchor') {
+      remapped.push(blockStart === edit.blockStart ? edit : { ...edit, ...(blockStart === undefined ? {} : { blockStart }) })
+      continue
+    }
+    const anchor = mapAnchor(cursor.anchor)
+    if (anchor === null) return null
+    remapped.push({
+      ...edit,
+      cursor: { kind: cursor.kind, anchor },
+      ...(blockStart === undefined ? {} : { blockStart }),
+    })
   }
 
   if (offsets.length === 0) return null

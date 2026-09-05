@@ -21,7 +21,7 @@ export const inject = ['invariants']
  * `@deepseek-ai/dsh-openwiki-core` link fails boot immediately instead of
  * surfacing on the first lifecycle call.
  */
-const install: InvariantInstaller = async (_ctx, fail) => {
+const install: InvariantInstaller = (_ctx, fail) => {
   try {
     HostSessionManager.create({ host: 'invariant-probe', producerActor: 'invariant-probe' })
   } catch (err) {

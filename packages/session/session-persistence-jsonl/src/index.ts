@@ -660,10 +660,14 @@ class JsonlSessionPersistence extends SessionPersistence {
       }
     }
     signal?.throwIfAborted()
-    const resolved: Array<{ header: SessionHeader; path: string } | undefined> = new Array(candidates.length)
+    const resolved: Array<{ header: SessionHeader; path: string } | undefined> =
+      new Array<{ header: SessionHeader; path: string } | undefined>(candidates.length)
     const ids = new Set<SessionId>()
     let failure: unknown
     let next = 0
+    /** First-wins merge for concurrent workers: keep the earliest recorded failure. */
+    const firstFailure = (current: unknown, error: unknown): unknown =>
+      current === undefined ? error : current
     const worker = async (): Promise<void> => {
       for (;;) {
         signal?.throwIfAborted()
@@ -682,7 +686,7 @@ class JsonlSessionPersistence extends SessionPersistence {
           resolved[index] = artifact
         } catch (error) {
           if (signal?.aborted) signal.throwIfAborted()
-          if (failure === undefined) failure = error
+          failure = firstFailure(failure, error)
         }
       }
     }
@@ -691,7 +695,9 @@ class JsonlSessionPersistence extends SessionPersistence {
       () => worker(),
     ))
     signal?.throwIfAborted()
-    if (failure !== undefined) throw failure
+    if (failure !== undefined) {
+      throw failure instanceof Error ? failure : new Error(typeof failure === 'string' ? failure : 'session listing failed')
+    }
     return resolved.filter(
       (artifact): artifact is { header: SessionHeader; path: string } => artifact !== undefined,
     )

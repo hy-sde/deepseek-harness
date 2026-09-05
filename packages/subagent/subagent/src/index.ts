@@ -329,7 +329,7 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
     if (this.config.supervisorTickMs > 0) {
       ctx.effect(() => {
         const timer = setInterval(() => this.runSupervision(Date.now()), this.config.supervisorTickMs)
-        timer.unref?.()
+        timer.unref()
         return () => { clearInterval(timer) }
       }, 'subagents.supervision()')
     }
@@ -757,10 +757,13 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * @returns the exact Cordis effect disposer.
    */
   registerContinuableSetup(contribution: ContinuableSetupContribution): () => void {
-    return this.ctx.effect(
+    // ctx.effect's disposer returns Promise<void>; the public disposer is a
+    // synchronous fire-and-forget handle, so discard the (always-resolved) promise.
+    const remove = this.ctx.effect(
       () => this.setupRegistry.register(contribution),
       'subagents.registerContinuableSetup()',
     )
+    return () => { void remove() }
   }
 
   /**
@@ -962,7 +965,9 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    */
   registerProvider(provider: SubagentProvider): () => void {
     const name = provider.name
-    return this.ctx.effect(function* (this: SubagentRuntime) {
+    // ctx.effect's disposer returns Promise<void>; the public disposer is a
+    // synchronous fire-and-forget handle, so discard the (always-resolved) promise.
+    const remove = this.ctx.effect(function* (this: SubagentRuntime) {
       if (this.providers.has(name)) {
         throw new SubagentError(`a subagent provider named "${name}" is already registered`, 'DUPLICATE_PROVIDER')
       }
@@ -975,6 +980,7 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       // repository's fail-loud registration semantics.
       this.ctx.emit('subagent/provider-added', provider)
     }.bind(this), 'subagents.registerProvider()')
+    return () => { void remove() }
   }
 
   /**

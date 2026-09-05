@@ -11,6 +11,21 @@ import { COMMIT_TYPES_RESOURCE } from './commit-types-data.ts'
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+const isScalar = (value: unknown): value is string | number | boolean | bigint | symbol =>
+  typeof value === 'string' ||
+  typeof value === 'number' ||
+  typeof value === 'boolean' ||
+  typeof value === 'bigint' ||
+  typeof value === 'symbol'
+
+/** Stringify like `String(value)` without object-typed `String(...)` call sites. */
+function toDisplayString(value: unknown): string {
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  if (isScalar(value)) return String(value)
+  return (value as { toString(): string }).toString()
+}
+
 /** Conventional commit types in llm-git's canonical classification order. */
 export const COMMIT_TYPE_ORDER: readonly CommitType[] = [
   'feat', 'fix', 'refactor', 'docs', 'test', 'chore', 'style', 'perf', 'build', 'ci', 'revert',
@@ -75,7 +90,7 @@ export function coerceCommitType(raw: string): CommitType {
  */
 export function coerceOptionalScope(raw: unknown): string | null {
   if (raw === null || raw === undefined) return null
-  const trimmed = String(raw).trim()
+  const trimmed = toDisplayString(raw).trim()
   if (!trimmed || NULL_SCOPE_MARKERS[trimmed.toLowerCase()]) return null
   const segments: string[] = []
   for (const segment of trimmed.replaceAll('\\', '/').toLowerCase().split('/')) {
@@ -182,7 +197,7 @@ function normalizeDetails(value: unknown): ConventionalDetail[] {
       continue
     }
     if (!isRecord(item) || item.text === null || item.text === undefined) continue
-    const text = String(item.text)
+    const text = toDisplayString(item.text)
     if (!text) continue
     const category =
       typeof item.changelog_category === 'string' ? changelogCategory(item.changelog_category) : undefined
@@ -226,5 +241,5 @@ function stringsFrom(value: unknown): string[] {
     }
     return strings
   }
-  return [String(value)]
+  return [toDisplayString(value)]
 }

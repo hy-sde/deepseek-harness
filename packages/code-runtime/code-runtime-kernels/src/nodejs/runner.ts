@@ -47,6 +47,7 @@ interface ReplyMessage {
   name?: string
 }
 import { format } from 'node:util'
+import { compileFunction } from 'node:vm'
 
 /** Global-object accessor for program-scope globals keyed by identifier. */
 const g: Record<string, unknown> = globalThis
@@ -212,7 +213,10 @@ async function runCell(code: string, run: ActiveRun, namespaces: ExecNamespaceDe
   }
   let program: (...args: unknown[]) => unknown
   try {
-    program = new Function('return (async () => {\n' + code + '\n})()') as (...args: unknown[]) => unknown
+    // `compileFunction` is V8's Function-constructor path without the implied-eval
+    // surface: the same function-body semantics (including a `this` bound at
+    // call time), compilable up front so a syntax error settles the run.
+    program = compileFunction('return (async () => {\n' + code + '\n})()') as (...args: unknown[]) => unknown
   } catch (error: unknown) {
     const message = messageOf(error)
     emit({ type: 'error', id: run.id, ename: 'SyntaxError', evalue: message, traceback: [] })

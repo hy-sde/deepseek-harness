@@ -150,7 +150,7 @@ export function createWritethrough(options: { lsp: LspService | undefined; cwd: 
           formattingOptions: { tabSize: 2, insertSpaces: true },
         }, signal)
         // formattedText is null when the server has no formatting edits.
-        if (formatting.formattedText !== null && formatting.formattedText !== undefined) {
+        if (formatting.formattedText !== null) {
           text = formatting.formattedText
         }
       }
@@ -169,7 +169,7 @@ export function createWritethrough(options: { lsp: LspService | undefined; cwd: 
           text,
           version,
         }, signal)
-        if (collected && collected.diagnostics.length > 0) {
+        if (collected.diagnostics.length > 0) {
           diagnostics = toDiagnosticsResult(collected.diagnostics, config.diagnosticsDeduplicate)
         }
       } catch {

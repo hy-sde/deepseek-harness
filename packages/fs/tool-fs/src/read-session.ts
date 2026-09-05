@@ -113,9 +113,10 @@ function renderEvent(event: TranscriptEvent): string[] {
       const message = dataTextLines(data)
       const error = data?.error as { name?: unknown; code?: unknown } | undefined
       if (error !== undefined && (error.name !== undefined || error.code !== undefined) && message.length === 0) {
-        return [`  → error ${String(error.name ?? error.code ?? 'call failed')}`]
+        const label = typeof error.name === 'string' ? error.name : typeof error.code === 'string' ? error.code : 'call failed'
+        return [`  → error ${label}`]
       }
-      const detail = error !== undefined && error.name !== undefined ? ` [${String(error.name)}]` : ''
+      const detail = typeof error?.name === 'string' ? ` [${error.name}]` : ''
       const first = message[0]
       return first === undefined || first.length === 0 ? [] : [`  → ${oneLine(first, MAX_TRANSCRIPT_LINE_CHARS)}${detail}`]
     }
@@ -136,7 +137,7 @@ function renderEvent(event: TranscriptEvent): string[] {
       const message = typeof failure?.message === 'string'
         ? oneLine(failure.message, MAX_TRANSCRIPT_LINE_CHARS)
         : ''
-      return [`  ✗ turn ended: ${String(reason.kind)}${message.length > 0 ? ` — ${message}` : ''}`]
+      return [`  ✗ turn ended: ${reason.kind}${message.length > 0 ? ` — ${message}` : ''}`]
     }
     default:
       return []

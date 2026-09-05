@@ -36,7 +36,7 @@ const WEB_DISABLES = [
 async function main(): Promise<void> {
   const profile = process.argv[2] ?? 'smoke'
   const expectedTool = process.argv[3] ?? 'edit'
-  const env = await loadLayeredEnv('dsh')
+  const env = loadLayeredEnv('dsh')
   const patchDir = mkdtempSync(join(tmpdir(), 'smoke-web-patch-'))
   const patchPath = join(patchDir, 'smoke.yml')
   writeFileSync(patchPath, WEB_DISABLES.map(id => `- id: ${id}\n  disabled: true`).join('\n') + '\n')

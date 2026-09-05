@@ -364,7 +364,9 @@ describe('SubagentRuntime.listChildren', () => {
     const observe = ctx.sessionQuery.observeSession.bind(ctx.sessionQuery)
     vi.spyOn(ctx.sessionQuery, 'observeSession').mockImplementation((id, options) => {
       if (id === childId) {
-        return Promise.reject('backend unavailable')
+        // A non-Error rejection reason keeps this a cold-observation failure
+        // probe: the mapper must survive values that are not `Error` instances.
+        return (async () => { throw 'backend unavailable' })()
       }
       return observe(id, options)
     })
@@ -592,8 +594,7 @@ describe('SubagentRuntime.listChildren', () => {
       const handle = await original(sessionId, access, options)
       if (sessionId !== reborn) return handle
       // The id was re-published as a different lifecycle after enumeration.
-      // oxlint-disable-next-line typescript/no-unsafe-return -- test mock wrapping a live handle with a patched header
-      return Object.assign(Object.create(handle), { header: mutate(handle.header) })
+      return Object.assign(Object.create(handle), { header: mutate(handle.header) }) as typeof handle
     }
     const entries = await ctx.subagents.listChildren(parent.id)
     expect(entries).toContainEqual({ kind: 'diagnostic', id: reborn, reason: 'corrupt' })
@@ -1301,10 +1302,9 @@ describe('SubagentRuntime.listDescendants', () => {
     ctx.sessionPersistence.open = async (sessionId, access, options) => {
       const handle = await realInspect(sessionId, access, options)
       // The exact read reports a different durable parent than enumeration did.
-      // oxlint-disable-next-line typescript/no-unsafe-return -- test mock wrapping a live handle with a patched header
       return Object.assign(Object.create(handle), {
         header: { ...handle.header, parentSession: SessionId('someone-else') },
-      })
+      }) as typeof handle
     }
     await expect(ctx.subagents.listDescendants(parent.id)).resolves.toEqual([
       { kind: 'diagnostic', id: childId, reason: 'corrupt', parentId: parent.id, depth: 1 },
