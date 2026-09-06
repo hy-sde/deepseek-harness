@@ -76,6 +76,7 @@
     "@deepseek-ai/dsh-user-approval": "workspace:^",
     "@deepseek-ai/dsh-tool-fs": "workspace:^",
     "@deepseek-ai/dsh-tool-fs-search": "workspace:^",
+    "@deepseek-ai/dsh-memory": "workspace:^",
     "@deepseek-ai/cordis": "workspace:^"
   }
 }

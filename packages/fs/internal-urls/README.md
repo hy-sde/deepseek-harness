@@ -28,11 +28,15 @@ Load this plugin when the host should accept harness-internal references from mo
 
 ### Registered schemes
 
-| Scheme | Resolves to |
-|---|---|
-| `conflict://<source>/<line>` | A conflict span in the working tree, with source attribution. |
-| `pr://owner/repo/<kind>/<num>` | The GitHub pull request or issue document for the open repo. |
-| `fs://…` | A workspace or host path, normalized against the current working directory. |
+| Scheme | Resolves to | Registered by |
+|---|---|---|
+| `conflict://<source>/<line>` | A conflict span in the working tree, with source attribution. | this package |
+| `issue://owner/repo/<kind>/<num>` / `pr://owner/repo/<kind>/<num>` | The GitHub issue or pull request document for the open repo. | this package |
+| `session://<id>` | A session transcript or one event (see `dsh-session-url`). | `dsh-session-url` |
+| `memory://root` / `memory://<id>` | The calling project's memory overview, or one stored entry by recall id (see `dsh-memory`). | `dsh-memory` |
+| `rule://<name>` | One active stream rule of the calling session (see `dsh-stream-rules`). | `dsh-stream-rules` |
+| `agent://<id>` / `agent://<id>/<child>` | A session-backed subagent's final output (see `dsh-subagent`). | `dsh-subagent` |
+| `fs://…` | A workspace or host path, normalized against the current working directory. | this package |
 
 -----
 

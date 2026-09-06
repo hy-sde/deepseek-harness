@@ -11,14 +11,18 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-internal-urls'
 import { LocalMemoryBackend } from './local.ts'
 import type { LocalMemoryConfig } from './local.ts'
+import { MemoryProtocolHandler } from './memory-protocol.ts'
 import { MemoryService } from './service.ts'
 import type { Config } from './service.ts'
 
 export * from './types.ts'
 export * from './service.ts'
 export * from './local.ts'
+export { MemoryProtocolHandler, MEMORY_ROOT_NAMESPACE } from './memory-protocol.ts'
+export type { MemoryProtocolDeps } from './memory-protocol.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -55,6 +59,11 @@ export interface MemoryConfig extends Config {
  * memory is durable project-scoped data that crosses sessions, so it does not
  * live behind a preset realm. Handler registration is an effect scoped to the
  * mounting fiber, so stop/update removes the backend with it.
+ *
+ * The `memory://` internal-URL scheme registers into the shared
+ * `ctx.internalUrls` registry exactly once per process (this package mounts
+ * as one host-plane row in the base bundle). The registration lives behind
+ * `ctx.inject` so compositions without the registry stay unaffected.
  */
 export function apply(ctx: Context, config: MemoryConfig = {}): void {
   const service = config.backend === undefined
@@ -73,6 +82,11 @@ export function apply(ctx: Context, config: MemoryConfig = {}): void {
     const local = new LocalMemoryBackend(localConfig)
     ctx.effect(() => service.register(local))
   }
+  ctx.inject(['internalUrls'], (iuCtx) => {
+    iuCtx.effect(() => iuCtx.internalUrls.register(new MemoryProtocolHandler({
+      backend: () => service.resolve(),
+    })))
+  })
 }
 
 /** Cordis plugin name for loader diagnostics. */

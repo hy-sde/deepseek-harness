@@ -30,6 +30,8 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-internal-urls'
+import { AgentProtocolHandler } from './agent-protocol.ts'
 import { scopeTarget } from '@deepseek-ai/dsh-scope'
 import type { Scoped } from '@deepseek-ai/dsh-scope'
 import z from '@deepseek-ai/schemastery'
@@ -97,6 +99,8 @@ import type { SupervisionConfig, WedgeProbe } from './supervision.ts'
 
 export * from './out-of-process.ts'
 export { AssistantOutputFold, finalAssistantOutput } from './assistant-output.ts'
+export { AgentProtocolHandler } from './agent-protocol.ts'
+export type { AgentOutputStore, AgentProtocolDeps } from './agent-protocol.ts'
 export { SubagentRunId } from './types.ts'
 export type {
   ContinuableCreateRequest,
@@ -325,6 +329,15 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
     ctx.inject(['sessionProjections'], (projectionCtx) => {
       projectionCtx.sessionProjections.register(subagentTimingProjectionDefinition)
       projectionCtx.sessionProjections.register(subagentIdentityProjectionDefinition)
+    })
+    // The `agent://` internal-URL scheme: registers exactly once per process
+    // (this service is one host-plane row), independent of the session-query
+    // engine — resolution looks the engine up lazily and reports a corrective
+    // error when a deployment does not mount it.
+    ctx.inject(['internalUrls'], (iuCtx) => {
+      iuCtx.effect(() => iuCtx.internalUrls.register(new AgentProtocolHandler({
+        outputStore: () => this.ctx.get('sessionQuery'),
+      })))
     })
     if (this.config.supervisorTickMs > 0) {
       ctx.effect(() => {

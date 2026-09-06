@@ -182,4 +182,22 @@ export interface MemoryBackend {
   summaries(context: MemoryContext): Promise<MemorySummaries>
   /** Wipe all state for one project scope. */
   clear(context: MemoryContext): Promise<void>
+  /**
+   * Read one stored entry by id (the `memory://<id>` internal-URL read).
+   * Optional: only addressable stores implement it (the shipped `local`
+   * backend derives bank ids from `edit`; a server-side engine without
+   * id-addressable entries leaves it undefined and the `memory://` handler
+   * returns the corrective "not addressable" error). Returns `undefined` when
+   * the id does not exist in this project's scope.
+   */
+  readEntry?(context: MemoryContext, id: string): Promise<MemoryEntryView | undefined>
+  /**
+   * Every addressable entry in this project's scope, newest first — the
+   * candidate set for `memory://` completions. Optional for the same reason as
+   * {@link MemoryBackend.readEntry}; absent means `memory://<id>` cannot be
+   * completed from this store.
+   * @param context - session identity (cwd) whose project is listed.
+   * @param limit - maximum number of views to return.
+   */
+  listEntries?(context: MemoryContext, limit: number): Promise<MemoryEntryView[]>
 }

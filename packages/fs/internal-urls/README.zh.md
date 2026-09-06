@@ -28,11 +28,15 @@ kind: "package-reference"
 
 ### 已注册 scheme
 
-| Scheme | 解析为 |
-|---|---|
-| `conflict://<source>/<line>` | 工作树中的冲突跨度，带来源归属。 |
-| `pr://owner/repo/<kind>/<num>` | 当前仓库的 GitHub 拉取请求或 issue 文档。 |
-| `fs://…` | 针对当前工作目录规范化后的工作区或宿主路径。 |
+| Scheme | 解析为 | 注册者 |
+|---|---|---|
+| `conflict://<source>/<line>` | 工作树中的冲突跨度，带来源归属。 | 本包 |
+| `issue://owner/repo/<kind>/<num>` / `pr://owner/repo/<kind>/<num>` | 当前仓库的 GitHub issue 或拉取请求文档。 | 本包 |
+| `session://<id>` | 会话转录或单个事件（见 `dsh-session-url`）。 | `dsh-session-url` |
+| `memory://root` / `memory://<id>` | 调用方项目的记忆总览，或按 recall id 读取单条记忆（见 `dsh-memory`）。 | `dsh-memory` |
+| `rule://<name>` | 调用会话的一条生效流规则（见 `dsh-stream-rules`）。 | `dsh-stream-rules` |
+| `agent://<id>` / `agent://<id>/<child>` | 会话后端子代理的最终输出（见 `dsh-subagent`）。 | `dsh-subagent` |
+| `fs://…` | 针对当前工作目录规范化后的工作区或宿主路径。 | 本包 |
 
 -----
 

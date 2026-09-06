@@ -30,12 +30,15 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-internal-urls'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { AgentCancelCause, Session, SessionEvent, UserMessage } from '@deepseek-ai/dsh-session'
 import type { PostToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
+import { RuleProtocolHandler } from './rule-protocol.ts'
+import { StreamRulesRegistry } from './registry.ts'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import {
@@ -53,6 +56,10 @@ import {
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'stream-rules'
+
+export { RuleProtocolHandler } from './rule-protocol.ts'
+export type { RuleProtocolDeps } from './rule-protocol.ts'
+export { StreamRulesRegistry } from './registry.ts'
 
 /** One inline rule supplied through plugin config instead of a rules file. */
 export interface InlineRuleConfig {
@@ -119,6 +126,14 @@ export const Config: z<Config> = z.object({
 
 /** Prefix of the `hook` cancel reason this guard owns (recognized at turn end to schedule the retry). */
 const ABORT_REASON_PREFIX = 'stream-rules:'
+
+/**
+ * Per-session rules published for the host-plane `rule://` scheme handler.
+ * One instance per process: the plugin mounts as a single host-plane row in
+ * the base bundle, and each session's live getter is published on
+ * `agent/created`, removed on `agent/disposed`.
+ */
+const ruleRegistry = new StreamRulesRegistry()
 
 /** Escape text for the XML-ish reminder envelope. */
 function xmlEscape(value: string): string {
@@ -259,6 +274,16 @@ export function apply(ctx: Context, config: Config): void {
   const repeatMode = config.repeatMode ?? 'once'
   const repeatGap = config.repeatGap ?? 10
   const inlineRules = (config.rules ?? []).map(inlineToRule)
+  // The `rule://` internal-URL scheme registers into the shared registry
+  // exactly once per process: this plugin mounts as one host-plane row, and
+  // `ctx.inject` keeps compositions without the registry unaffected. The
+  // handler answers for ANY session key — subagents included, whose Agents
+  // publish their own state — via the module-level registry above.
+  ctx.inject(['internalUrls'], (iuCtx) => {
+    iuCtx.effect(() => iuCtx.internalUrls.register(new RuleProtocolHandler({
+      rulesFor: sessionKey => ruleRegistry.rulesFor(sessionKey),
+    })))
+  })
 
   const sessions = new WeakMap<Session, SessionState>()
 
@@ -558,6 +583,7 @@ export function apply(ctx: Context, config: Config): void {
         toolCalls: new Map(),
       }
       sessions.set(agent.session, state)
+      ruleRegistry.publish(agent.session.header.id, () => state.manager.getRules())
       void refreshRules(state).catch((error: unknown) => {
         ctx.logger.warn('stream-rules: initial rule load failed', { session: agent.session.id, error: String(error) })
       })
@@ -567,6 +593,7 @@ export function apply(ctx: Context, config: Config): void {
   })
 
   ctx.on('agent/disposed', ({ agent }) => {
+    ruleRegistry.unpublish(agent.session.header.id)
     sessions.delete(agent.session)
   })
 
