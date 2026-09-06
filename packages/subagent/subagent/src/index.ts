@@ -847,7 +847,7 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * member.
    * @param parentSessionId - parent session whose direct children are listed.
    * @param signal - carrier cancellation forwarded to Session queries.
-   * @returns the catalog view for that parent.
+   * @returns the catalog view for that parent, newest delegation first.
    * @throws {RemoteFailure} `bad-request` for an empty parent id,
    *   `cancelled` for an aborted read, `subagent-projections-unavailable` when
    *   the deployment has no projection registry, otherwise `internal`.
@@ -856,7 +856,12 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
   async remoteExportList(parentSessionId: SessionId, signal: AbortSignal): Promise<SubagentCatalog> {
     validateControlRequest('subagent.list', { parentSessionId })
     try {
-      return catalogView(this.ctx, parentSessionId, await this.listChildren(parentSessionId, signal))
+      const entries = await this.listChildren(parentSessionId, signal)
+      // The browser catalog reads latest-wave-first: listChildren is ascending
+      // by durable creation time, so without this flip the freshest delegation
+      // of a live fan-out sits at the bottom of the menu. The model-facing
+      // listChildren contract (stable, oldest-first) is untouched.
+      return catalogView(this.ctx, parentSessionId, [...entries].reverse())
     } catch (error: unknown) {
       return rejectCatalogRead(error, signal)
     }

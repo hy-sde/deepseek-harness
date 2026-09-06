@@ -9,7 +9,7 @@ import {
 import type { SubagentAddress } from '@deepseek-ai/dsh-subagent/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import {
-  IconChevronDownOutline14, IconChevronRightOutline14, IconRefreshOutline14, StateDot,
+  IconChevronDownOutline14, IconChevronRightOutline14, IconRefreshOutline14, POINTER_GRACE_MS, StateDot,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS } from './locales.ts'
@@ -497,6 +497,8 @@ function CatalogDropdown({
   const menuRef = useRef<HTMLDivElement>(null)
   const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /** Last observed pointer position while the catalog is open. */
+  const pointerRef = useRef<{ x: number; y: number; known: boolean }>({ x: 0, y: 0, known: false })
   const observedCatalogs = useRef(new Set<SessionId>())
   const setCatalogOpenRef = useRef(setCatalogOpen)
   setCatalogOpenRef.current = setCatalogOpen
@@ -555,6 +557,30 @@ function CatalogDropdown({
     hoverOpenTimer.current = undefined
   }
 
+  /** Whether the pointer currently sits inside the trigger or the portaled menu. */
+  const pointerOverCatalog = (): boolean => {
+    const { x, y, known } = pointerRef.current
+    if (!known) return false
+    const inside = (element: HTMLElement | null): boolean => {
+      if (element === null) return false
+      const rect = element.getBoundingClientRect()
+      return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+    }
+    return inside(menuRef.current) || inside(rootRef.current)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    // Track the pointer while open so a grace expiry can confirm where it
+    // actually is: enter/leave crossings alone are not enough once scrolling
+    // can reposition the menu under a stationary pointer.
+    const track = (event: PointerEvent): void => {
+      pointerRef.current = { x: event.clientX, y: event.clientY, known: true }
+    }
+    document.addEventListener('pointermove', track, true)
+    return () => { document.removeEventListener('pointermove', track, true) }
+  }, [open])
+
   const changeOpen = (next: boolean, restoreFocus = false): void => {
     cancelHoverOpen()
     cancelHoverClose()
@@ -590,8 +616,12 @@ function CatalogDropdown({
     cancelHoverClose()
     hoverCloseTimer.current = setTimeout(() => {
       hoverCloseTimer.current = undefined
+      // The pointer may have recrossed or the menu may have been repositioned
+      // under a stationary pointer (scroll tracking) — dismiss only once it is
+      // confirmed outside the whole trigger+menu region.
+      if (pointerOverCatalog()) return
       changeOpen(false)
-    }, 120)
+    }, POINTER_GRACE_MS)
   }
 
   const closeBranch = (root: SessionId): void => {

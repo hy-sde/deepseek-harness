@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { POINTER_GRACE_MS } from '@deepseek-ai/dsh-client-ui-primitives'
 import { makeTranslate, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import type {
   SessionListState, SessionSummary, SubagentCatalogSnapshot,
@@ -253,11 +254,11 @@ describe('SubagentHeaderLineage', () => {
     expect(tree.style.left).toBe('70px')
     fireEvent.mouseLeave(trigger.parentElement!)
     fireEvent.mouseEnter(tree)
-    await advance(120)
+    await advance(POINTER_GRACE_MS)
     expect(screen.getByRole('tree')).toBeTruthy()
 
     fireEvent.mouseLeave(tree)
-    await advance(119)
+    await advance(POINTER_GRACE_MS - 1)
     expect(screen.getByRole('tree')).toBeTruthy()
     await advance(1)
     expect(screen.queryByRole('tree')).toBeNull()
@@ -265,7 +266,37 @@ describe('SubagentHeaderLineage', () => {
     hoverCatalog(trigger)
     fireEvent.mouseLeave(trigger.parentElement!)
     view.unmount()
-    await advance(120)
+    await advance(POINTER_GRACE_MS)
+  })
+
+  it('does not dismiss an armed close while the pointer is confirmed over the menu', async () => {
+    vi.useFakeTimers()
+    const advance = async (duration: number): Promise<void> => {
+      await act(async () => { await vi.advanceTimersByTimeAsync(duration) })
+    }
+    const view = render(<SubagentHeaderLineage {...props(catalog())} />)
+    const trigger = screen.getByRole('button', { name: /2 个子代理/ })
+    vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue({ bottom: 40, left: 50 } as DOMRect)
+
+    hoverCatalog(trigger)
+    const tree = screen.getByRole('tree')
+    vi.spyOn(tree, 'getBoundingClientRect').mockReturnValue({
+      top: 45, bottom: 245, left: 50, right: 386,
+    } as DOMRect)
+
+    // Pointer over the menu, then a leave crossing (e.g. a scroll moved the
+    // menu under a stationary pointer): the confirmed position keeps it open.
+    fireEvent.pointerMove(document, { clientX: 100, clientY: 100 })
+    fireEvent.mouseLeave(tree)
+    await advance(POINTER_GRACE_MS + 10)
+    expect(screen.getByRole('tree')).toBeTruthy()
+
+    // A genuine exit still dismisses after the grace.
+    fireEvent.pointerMove(document, { clientX: 10, clientY: 10 })
+    fireEvent.mouseLeave(tree)
+    await advance(POINTER_GRACE_MS + 10)
+    expect(screen.queryByRole('tree')).toBeNull()
+    view.unmount()
   })
 
   it('repositions an open catalog after viewport resize and document scroll', () => {

@@ -60,4 +60,5 @@ export type { MarkdownCodeLabels, MarkdownFileMentions, MarkdownLabels } from '.
 export { MessageText } from './markdown/MessageText.tsx'
 export { extractMarkdownPlainText } from './markdown/plain-text.ts'
 export type { MarkdownPlainTextMode, MarkdownPlainTextOptions } from './markdown/plain-text.ts'
+export { POINTER_GRACE_MS } from './pointer-grace.ts'
 export * from './icons/index.tsx'

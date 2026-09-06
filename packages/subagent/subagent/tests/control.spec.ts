@@ -73,7 +73,7 @@ describe('subagent catalog Remote', () => {
     expect(listChildren).not.toHaveBeenCalled()
   })
 
-  it('samples row activity from the live Agent driver and reports parent availability', async () => {
+  it('samples row activity from the live Agent driver, reports parent availability, and lists newest first', async () => {
     const { subagents } = await bench({ [PARENT]: { status: 'idle' }, [CHILD]: { status: 'running' } })
     vi.spyOn(subagents, 'listChildren').mockResolvedValue([
       // The durable listing reports store presence; the browser row reports the driver.
@@ -83,10 +83,11 @@ describe('subagent catalog Remote', () => {
     ])
 
     await expect(subagents.remoteExportList(PARENT, signal)).resolves.toEqual({
+      // Browser catalog flips the ascending durable listing: newest first.
       entries: [
-        childRow(CHILD, 'running'),
-        childRow(OTHER, 'inactive'),
         { kind: 'diagnostic', id: BROKEN, reason: 'corrupt' },
+        childRow(OTHER, 'inactive'),
+        childRow(CHILD, 'running'),
       ],
       parentAvailable: true,
     })
