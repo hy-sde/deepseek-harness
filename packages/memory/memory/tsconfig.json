@@ -16,6 +16,9 @@
     },
     {
       "path": "../../util/zstd"
+    },
+    {
+      "path": "../../fs/internal-urls"
     }
   ]
 }

@@ -1796,7 +1796,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/memory/memory/src/index.ts:42`](../packages/memory/memory/src/index.ts)
+Source: [`packages/memory/memory/src/index.ts:46`](../packages/memory/memory/src/index.ts)
 
 <a id="deepseek-aidsh-message-feedback"></a>
 
@@ -2694,6 +2694,8 @@ export interface InlineRuleConfig {
   condition?: string | string[]
   /** Optional scope narrowing doctor/module/category matches. */
   scope?: string | string[]
+  /** Optional agent-name globs limiting the rule to matching agents (absent = every agent). */
+  agents?: string | string[]
   /** Optional override of the composed interrupt mode for this rule. */
   interruptMode?: RuleInterruptMode
   /** Optional glob list restricting the rule to matching file paths. */
@@ -2704,7 +2706,7 @@ export interface InlineRuleConfig {
 export type RuleInterruptMode = 'never' | 'prose-only' | 'tool-only' | 'always'
 ```
 
-Source: [`packages/guard/stream-rules/src/index.ts:74`](../packages/guard/stream-rules/src/index.ts)
+Source: [`packages/guard/stream-rules/src/index.ts:87`](../packages/guard/stream-rules/src/index.ts)
 
 <a id="deepseek-aidsh-subagent"></a>
 
@@ -2743,7 +2745,7 @@ export interface SubagentConfig {
 }
 ```
 
-Source: [`packages/subagent/subagent/src/index.ts:216`](../packages/subagent/subagent/src/index.ts)
+Source: [`packages/subagent/subagent/src/index.ts:220`](../packages/subagent/subagent/src/index.ts)
 
 <a id="deepseek-aidsh-subagent-acp"></a>
 

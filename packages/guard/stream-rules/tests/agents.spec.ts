@@ -117,7 +117,7 @@ describe('selectRulesForAgent', () => {
   })
 
   it('keeps every rule when no rule declares agents', () => {
-    expect(selectRulesForAgent([rules[0]], 'scout')).toHaveLength(1)
+    expect(selectRulesForAgent(rules.slice(0, 1), 'scout')).toHaveLength(1)
   })
 })
 

@@ -2863,6 +2863,8 @@ export interface InlineRuleConfig {
   condition?: string | string[]
   /** Optional scope narrowing doctor/module/category matches. */
   scope?: string | string[]
+  /** Optional agent-name globs limiting the rule to matching agents (absent = every agent). */
+  agents?: string | string[]
   /** Optional override of the composed interrupt mode for this rule. */
   interruptMode?: RuleInterruptMode
   /** Optional glob list restricting the rule to matching file paths. */

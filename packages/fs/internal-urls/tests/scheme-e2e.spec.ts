@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import { FileSystem, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
-import type { FsDirEntry, FsInfo, FsPathInfo, FsTarget, FsWriteIntent, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
+import type { FsDirEntry, FsEditOutcome, FsEditRequest, FsInfo, FsPathInfo, FsTarget, FsWriteIntent, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
@@ -74,6 +74,12 @@ class FakeFs extends FileSystem {
     const before = this.files.get(String(target.targetKey)) ?? null
     this.files.set(String(target.targetKey), content)
     return { operation: before !== null ? 'update' : 'create', version: FsVersion('v2'), before, after: content }
+  }
+  override async editText(target: FsTarget, edit: FsEditRequest, _expected?: { version: FsVersion }): Promise<FsEditOutcome> {
+    const content = this.files.get(String(target.targetKey)) ?? ''
+    const after = content.split(edit.oldString).join(edit.newString)
+    this.files.set(String(target.targetKey), after)
+    return { version: FsVersion('v3'), before: content, after }
   }
 }
 

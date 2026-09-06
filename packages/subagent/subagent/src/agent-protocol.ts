@@ -156,9 +156,12 @@ export class AgentProtocolHandler implements ProtocolHandler {
     const byId = new Map<string, SessionHeader>()
     for (const record of records) byId.set(record.header.id, record.header)
 
-    let current = ids[0]
-    for (let index = 1; index < ids.length; index++) {
-      const child = ids[index]
+    const [first, ...rest] = ids
+    if (first === undefined) {
+      throw new Error('agent:// URL: internal error: empty id chain')
+    }
+    let current = first
+    for (const child of rest) {
       const childHeader = byId.get(child)
       if (childHeader === undefined || childHeader.parentSession !== current) {
         const available = [...byId.values()]

@@ -5960,6 +5960,9 @@ importers:
       '@deepseek-ai/dsh-llm':
         specifier: workspace:^
         version: link:../../llm/llm
+      '@deepseek-ai/dsh-memory':
+        specifier: workspace:^
+        version: link:../../memory/memory
       '@deepseek-ai/dsh-sandbox':
         specifier: workspace:^
         version: link:../../sandbox/sandbox
@@ -6352,6 +6355,9 @@ importers:
       '@deepseek-ai/dsh-agent-loop-testkit':
         specifier: workspace:^
         version: link:../../test-support/agent-loop-testkit
+      '@deepseek-ai/dsh-internal-urls':
+        specifier: workspace:^
+        version: link:../../fs/internal-urls
       '@deepseek-ai/dsh-llm':
         specifier: workspace:^
         version: link:../../llm/llm
@@ -7387,6 +7393,10 @@ importers:
       '@deepseek-ai/dsh-zstd-frame':
         specifier: workspace:^
         version: link:../../util/zstd
+    devDependencies:
+      '@deepseek-ai/dsh-internal-urls':
+        specifier: workspace:^
+        version: link:../../fs/internal-urls
 
   packages/memory/tool-memory:
     dependencies:
@@ -9151,6 +9161,9 @@ importers:
       '@deepseek-ai/dsh-attachment':
         specifier: workspace:^
         version: link:../../attachment/attachment
+      '@deepseek-ai/dsh-internal-urls':
+        specifier: workspace:^
+        version: link:../../fs/internal-urls
       '@deepseek-ai/dsh-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
