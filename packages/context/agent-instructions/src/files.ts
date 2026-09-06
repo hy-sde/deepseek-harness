@@ -12,7 +12,7 @@ import { dshHomeDisplay } from '@deepseek-ai/dsh-home-paths'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { resolveConfig, resolveDiscoveryConfig, type ResolvedConfig } from './config.ts'
 import { trimmedInstructionDigest } from './digest.ts'
-import { discoverForeignRuleFiles, normalizeForeignContent } from './importers.ts'
+import { discoverForeignRuleFiles, isForeignRuleDisabled, normalizeForeignContent } from './importers.ts'
 import {
   decodeScopeKey,
   renderWorkspaceInstructionSet,
@@ -422,6 +422,9 @@ export async function loadBaselineInstructionSet(
   for (const file of discovered) {
     const raw = await readBounded(file, config.maxSourceBytes, fileSystem, options.signal)
     if (raw !== undefined) {
+      // Foreign rules their authors disabled (`enabled: false` frontmatter)
+      // stay discovered but are not inherited into the chain.
+      if (isForeignRuleDisabled(file.displayPath, raw)) continue
       loaded.push({
         absolutePath: file.absolutePath,
         displayPath: file.displayPath,
@@ -516,6 +519,9 @@ export async function readScopeInstruction(
 ): Promise<LoadedInstructionFile | undefined> {
   const raw = await readBounded(file, maxSourceBytes, fileSystem, signal)
   if (raw === undefined) return undefined
+  // Foreign rules their authors disabled (`enabled: false` frontmatter) stay
+  // discovered but are not inherited into the chain.
+  if (isForeignRuleDisabled(file.displayPath, raw)) return undefined
   return {
     absolutePath: file.absolutePath,
     displayPath: file.displayPath,

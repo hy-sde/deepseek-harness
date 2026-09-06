@@ -17,7 +17,10 @@
  * Fidelity note: upstream stores each format's frontmatter fields (`globs`,
  * `applyTo`, `alwaysApply`) as structured rule metadata. The fork renders the
  * body plus a single scope annotation line so applicability survives into the
- * model-facing chain without a separate rule schema.
+ * model-facing chain without a separate rule schema. Upstream also lets rule
+ * authors turn a rule off with `enabled: false` frontmatter (oh-my-pi
+ * `f250bbf3e3`); the fork mirrors that: such foreign files are discovered
+ * but omitted from the chain (see {@link isForeignRuleDisabled}).
  *
  * @module @deepseek-ai/dsh-agent-instructions/importers
  */
@@ -181,6 +184,37 @@ export function normalizeForeignContent(displayPath: string, content: string): s
     return annotation.length > 0 ? `${annotation}\n\n${body}` : body
   }
   return content
+}
+
+/**
+ * True when `displayPath` names one of the discovered foreign-format rule
+ * files (Cursor `.mdc`, Cline `.clinerules` file-or-dir, Copilot
+ * `copilot-instructions.md` / `.instructions.md`). Native chain files
+ * (`AGENTS.md`, `CLAUDE.md`, their `.local` overlays) are never foreign, so a
+ * `enabled: false` frontmatter there keeps its current semantics.
+ */
+export function isForeignRuleFile(displayPath: string): boolean {
+  const lower = displayPath.toLowerCase()
+  return lower.endsWith('.mdc')
+    || lower.endsWith('.clinerules')
+    || lower.includes('.clinerules/')
+    || lower.endsWith('copilot-instructions.md')
+    || lower.endsWith('.instructions.md')
+}
+
+/**
+ * True when a foreign rule file's frontmatter explicitly disables it
+ * (`enabled: false`) — oh-my-pi discovery semantics (`f250bbf3e3`): a rule a
+ * team turned off must not be inherited into the instruction chain, while the
+ * file stays on disk for inspection. Only foreign rule files are considered;
+ * every other path returns `false`.
+ * @param displayPath - project-relative path of the candidate file.
+ * @param content - raw file bytes decoded as UTF-8.
+ */
+export function isForeignRuleDisabled(displayPath: string, content: string): boolean {
+  if (!isForeignRuleFile(displayPath)) return false
+  const parsed = parseSimpleFrontmatter(content)
+  return parsed !== undefined && parsed.frontmatter.enabled === false
 }
 
 /**

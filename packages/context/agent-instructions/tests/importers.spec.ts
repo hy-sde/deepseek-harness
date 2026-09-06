@@ -11,7 +11,12 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import { discoverBaselineInstructionFiles, loadBaselineInstructions } from '@deepseek-ai/dsh-agent-instructions'
-import { discoverForeignRuleFiles, normalizeForeignContent, parseSimpleFrontmatter } from '../src/importers.ts'
+import {
+  discoverForeignRuleFiles,
+  isForeignRuleDisabled,
+  normalizeForeignContent,
+  parseSimpleFrontmatter,
+} from '../src/importers.ts'
 
 async function tempRepo(): Promise<string> {
   return mkdtemp(join(tmpdir(), 'dsh-instruction-importers-'))
@@ -63,6 +68,27 @@ describe('normalizeForeignContent', () => {
   it('passes non-foreign files through unchanged', () => {
     expect(normalizeForeignContent('AGENTS.md', 'hello')).toBe('hello')
     expect(normalizeForeignContent('.clinerules', 'plain text')).toBe('plain text')
+  })
+})
+
+describe('isForeignRuleDisabled', () => {
+  const disabled = '---\nenabled: false\n---\nBody\n'
+
+  it('flags every foreign rule kind whose frontmatter sets enabled: false', () => {
+    expect(isForeignRuleDisabled('.cursor/rules/off.mdc', disabled)).toBe(true)
+    expect(isForeignRuleDisabled('.clinerules', disabled)).toBe(true)
+    expect(isForeignRuleDisabled('.clinerules/off.md', disabled)).toBe(true)
+    expect(isForeignRuleDisabled('.github/copilot-instructions.md', disabled)).toBe(true)
+    expect(isForeignRuleDisabled('.github/instructions/off.instructions.md', disabled)).toBe(true)
+  })
+
+  it('does not flag enabled rules, other frontmatter, plain content, or native chain files', () => {
+    expect(isForeignRuleDisabled('.cursor/rules/on.mdc', '---\nenabled: true\n---\nBody\n')).toBe(false)
+    expect(isForeignRuleDisabled('.cursor/rules/desc.mdc', '---\ndescription: x\n---\nBody\n')).toBe(false)
+    expect(isForeignRuleDisabled('.cursor/rules/plain.mdc', 'plain body')).toBe(false)
+    // Native chain files are never foreign: AGENTS.md semantics unchanged.
+    expect(isForeignRuleDisabled('AGENTS.md', disabled)).toBe(false)
+    expect(isForeignRuleDisabled('CLAUDE.md', disabled)).toBe(false)
   })
 })
 
@@ -157,6 +183,32 @@ describe('foreign rules in the instruction chain', () => {
         inheritForeignRules: false,
       })
       expect(files.map(file => file.displayPath)).not.toContain('.cursor/rules/style.mdc')
+    } finally {
+      await rm(root, { recursive: true, force: true })
+      await rm(home, { recursive: true, force: true })
+    }
+  })
+
+  it('omits foreign rule files disabled via enabled: false frontmatter from the chain', async () => {
+    const root = await tempRepo()
+    const home = await tempRepo()
+    try {
+      await mkdir(join(root, '.cursor/rules'), { recursive: true })
+      await write(join(home, 'AGENTS.md'), 'global')
+      await write(join(root, 'AGENTS.md'), 'root agents')
+      await write(join(root, '.cursor/rules/style.mdc'), '---\nenabled: false\nglobs: "**/*.ts"\n---\nUse tabs.\n')
+      await write(join(root, '.github/instructions/naming.instructions.md'), '---\napplyTo: "**/*.ts"\n---\nUse kebab-case.\n')
+
+      // Discovery is content-free: the disabled file stays discoverable for
+      // inspection, while the loaded chain omits it (oh-my-pi f250bbf3e3).
+      const files = await discoverBaselineInstructionFiles({ cwd: root, dshHome: home })
+      expect(files.map(file => file.displayPath)).toContain('.cursor/rules/style.mdc')
+      expect(files.map(file => file.displayPath)).toContain('.github/instructions/naming.instructions.md')
+
+      const loaded = await loadBaselineInstructions({ cwd: root, dshHome: home, maxBytes: 65536 })
+      expect(loaded).toBeDefined()
+      expect(loaded?.text).not.toContain('Use tabs.')
+      expect(loaded?.text).toContain('Use kebab-case.')
     } finally {
       await rm(root, { recursive: true, force: true })
       await rm(home, { recursive: true, force: true })
