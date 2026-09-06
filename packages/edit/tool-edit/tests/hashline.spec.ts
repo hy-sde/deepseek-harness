@@ -57,7 +57,7 @@ function call(ctx: Context, owner: Agent, args: unknown) {
   })
 }
 
-async function setup(config: ToolEdit.Config = {}) {
+async function setup(config: ToolEdit.Config = {}, options: { lsp?: unknown } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-hashline-'))
   roots.push(root)
   const ctx = new Context()
@@ -66,6 +66,7 @@ async function setup(config: ToolEdit.Config = {}) {
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(LocalFileSystem, { cwd: root })
+  if (options.lsp !== undefined) ctx.provide('lsp', options.lsp as never)
   const fiber = await ctx.plugin(ToolEdit, config)
   return { ctx, root, fiber, owner: agent(ctx, root) }
 }
@@ -200,5 +201,36 @@ describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => 
     const result = await run(ctx, owner, 'edit', { input })
     expect(result.isError).toBe(false)
     expect(await readFile(sample, 'utf8')).toBe('ALPHA\nbeta\n')
+  })
+})
+
+describe('tool-edit (hashline mode) × LSP writethrough', () => {
+  it('persists the formatter output and reports the persisted bytes as the snapshot text', async () => {
+    const { ctx, root, owner } = await setup(
+      { formatOnWrite: true },
+      {
+        lsp: {
+          format: async (request: { text: string }) => ({ formattedText: `# formatted\n${request.text}` }),
+          collectDiagnostics: async () => ({ diagnostics: [] }),
+        },
+      },
+    )
+    const sample = join(root, 'list.txt')
+    const before = 'one\ntwo\nthree\n'
+    await writeFile(sample, before)
+
+    const tag = computeFileHash(before)
+    const input = [
+      `[${sample}#${tag}]`,
+      'PUT <2:',
+      '+inserted',
+      '',
+    ].join('\n')
+
+    const result = await call(ctx, owner, { input })
+    expect(result.isError).toBe(false)
+    // `WriteResult.text` is the formatted bytes, so the patcher's recorded
+    // snapshot hashes the same content that now exists on disk.
+    expect(await readFile(sample, 'utf8')).toBe('# formatted\none\ninserted\ntwo\nthree\n')
   })
 })

@@ -61,7 +61,7 @@ function call(ctx: Context, owner: Agent | undefined, args: unknown) {
 
 async function setup(
   config: ToolEdit.Config = {},
-  options: { fsPolicy?: boolean } = {},
+  options: { fsPolicy?: boolean; lsp?: unknown } = {},
 ) {
   const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-'))
   roots.push(root)
@@ -72,6 +72,7 @@ async function setup(
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(LocalFileSystem, { cwd: root })
   if (options.fsPolicy === true) await ctx.plugin(FsPolicy)
+  if (options.lsp !== undefined) ctx.provide('lsp', options.lsp as never)
   const fiber = await ctx.plugin(ToolEdit, config)
   return { ctx, root, fiber, owner: agent(ctx, root) }
 }
@@ -288,5 +289,63 @@ describe('tool-edit (replace mode)', () => {
     const result = await call(ctx, owner, { input })
     expect(result.isError).toBe(false)
     expect(await readFile(sample, 'utf8')).toBe('alpha\nBETA\ngamma\n')
+  })
+})
+
+describe('tool-edit (replace mode) × LSP writethrough', () => {
+  /** Fake LSP seam recording the texts it formatted and diagnosed. */
+  function fakeLsp(history: { formatted: string[]; diagnosed: string[] }): unknown {
+    return {
+      format: async (request: { text: string }) => {
+        history.formatted.push(request.text)
+        return { formattedText: `// formatted\n${request.text}` }
+      },
+      collectDiagnostics: async (request: { text: string }) => {
+        history.diagnosed.push(request.text)
+        return { diagnostics: [] }
+      },
+    }
+  }
+
+  it('persists the formatter output when formatOnWrite is enabled (oh-my-pi 412821e429)', async () => {
+    const history = { formatted: [] as string[], diagnosed: [] as string[] }
+    const { ctx, root, owner } = await setup(
+      { formatOnWrite: true, diagnosticsOnEdit: true },
+      { lsp: fakeLsp(history) },
+    )
+    const sample = join(root, 'greet.py')
+    await writeFile(sample, 'def greet(name):\n    return name\n')
+
+    const result = await call(ctx, owner, {
+      path: sample,
+      old_string: '    return name',
+      new_string: '    return name.upper()',
+    })
+    expect(result.isError).toBe(false)
+
+    // The formatter output — not the authored text — is what landed on disk,
+    // and diagnostics were collected against the same formatted text.
+    const expected = '// formatted\ndef greet(name):\n    return name.upper()\n'
+    expect(await readFile(sample, 'utf8')).toBe(expected)
+    expect(history.diagnosed).toEqual([expected])
+  })
+
+  it('writes authored content untouched when formatOnWrite is off (lsp still mounted)', async () => {
+    const history = { formatted: [] as string[], diagnosed: [] as string[] }
+    const { ctx, root, owner } = await setup(
+      { diagnosticsOnEdit: true },
+      { lsp: fakeLsp(history) },
+    )
+    const sample = join(root, 'greet.py')
+    await writeFile(sample, 'def greet(name):\n    return name\n')
+
+    const result = await call(ctx, owner, {
+      path: sample,
+      old_string: '    return name',
+      new_string: '    return name.upper()',
+    })
+    expect(result.isError).toBe(false)
+    expect(history.formatted).toEqual([])
+    expect(await readFile(sample, 'utf8')).toBe('def greet(name):\n    return name.upper()\n')
   })
 })

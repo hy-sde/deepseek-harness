@@ -1123,10 +1123,14 @@ export async function executeReplace(options: ExecuteReplaceOptions): Promise<Re
 
   const finalContent = bom + restoreLineEndings(result.content, originalEnding)
 
-  // Writethrough (format + optional diagnostics) before the guarded write.
-  const diagnostics = await writethrough(absolutePath.displayPath, finalContent, signal)
+  // Writethrough (format + optional diagnostics) before the guarded write:
+  // `finalContent` is authoritative — when `formatOnWrite` is enabled the
+  // formatter's output is what gets persisted (oh-my-pi 412821e429).
+  const writethroughResult = await writethrough(absolutePath.displayPath, finalContent, signal)
+  const diagnostics = writethroughResult.diagnostics
+  const written = writethroughResult.finalContent
 
-  const outcome = await session.writer.write(absolutePath, finalContent, signal)
+  const outcome = await session.writer.write(absolutePath, written, signal)
   void outcome
 
   const diffResult = generateDiffString(normalizedContent, result.content, undefined, { path })
@@ -1140,7 +1144,7 @@ export async function executeReplace(options: ExecuteReplaceOptions): Promise<Re
     diff: diffResult.diff,
     firstChangedLine: diffResult.firstChangedLine,
     oldText: rawContent,
-    newText: finalContent,
+    newText: written,
     ...(diagnostics ? { diagnostics } : {}),
   }
 }

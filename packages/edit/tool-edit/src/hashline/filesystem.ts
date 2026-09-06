@@ -112,16 +112,20 @@ export class EditFilesystem extends Filesystem {
     let diagnostics: EditDiagnosticsResult | undefined
     try {
       const result = await this.session.writethrough(target.displayPath, content, this.#signal)
-      if (result !== undefined) {
-        diagnostics = result
-        finalContent = content // writethrough reports formatting; keep authored view
-      }
+      // `finalContent` is authoritative: when `formatOnWrite` is enabled it is
+      // the formatter's output, and diagnostics were collected against it.
+      finalContent = result.finalContent
+      diagnostics = result.diagnostics
     } catch {
       // writethrough must never block a write
     }
     await this.session.writer.write(target, finalContent, this.#signal)
     this.#diagnosticsByPath.set(relativePath, diagnostics)
-    return { text: content }
+    // Report what actually landed on disk (formatter output included): the
+    // hashline patcher hashes `WriteResult.text` so the recorded snapshot
+    // matches the file the next read will see (see hashline patcher's
+    // format-on-save note).
+    return { text: finalContent }
   }
 
   override async exists(relativePath: string): Promise<boolean> {

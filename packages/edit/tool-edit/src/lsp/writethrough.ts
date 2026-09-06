@@ -84,17 +84,38 @@ export interface WritethroughBatch {
 }
 
 /**
+ * Result of one writethrough call.
+ *
+ * `finalContent` is the authoritative text to persist: identical to the
+ * authored input when formatting is off/unavailable, otherwise the
+ * formatter's output. This mirrors oh-my-pi's `WritethroughResult.finalContent`
+ * (upstream `412821e429` "preserve formatted writethrough content" +
+ * `3f698cd31a` "keep diagnostics nested with final content"): without it a
+ * `formatOnWrite` format is computed for diagnostics but never lands on disk,
+ * and diagnostics collected against formatted text describe a file that was
+ * never written. Diagnostics — when `diagnosticsOnEdit` — are collected
+ * against `finalContent`, so their positions match the written text.
+ */
+export interface WritethroughResult {
+  /** The content that must be written to disk (formatted when `formatOnWrite` ran). */
+  finalContent: string
+  /** Structured diagnostics from `finalContent` (when `diagnosticsOnEdit`). */
+  diagnostics?: EditDiagnosticsResult
+}
+
+/**
  * The write-through callback used by every edit mode: format-on-write via the
  * LSP seam, then optional diagnostics. `signal` aborts the LSP calls; `batch`
  * merges deferred diagnostics within a tool call. Never throws on LSP
- * failure — formatting/diagnostics degrade to pass-through.
+ * failure — formatting/diagnostics degrade to pass-through with the authored
+ * content reported as `finalContent`.
  */
 export type WritethroughCallback = (
   dst: string,
   content: string,
   signal?: AbortSignal,
   batch?: WritethroughBatch,
-) => Promise<EditDiagnosticsResult | undefined>
+) => Promise<WritethroughResult>
 
 /** Deduplicate diagnostics that differ only by version (same line/col/message). */
 function deduplicateDiagnostics(diagnostics: readonly LspDiagnostic[]): readonly LspDiagnostic[] {
@@ -139,7 +160,7 @@ export function createWritethrough(options: { lsp: LspService | undefined; cwd: 
   const versions = new Map<string, number>()
   const batches = new Map<string, EditDiagnosticsResult>()
 
-  return async (dst, content, signal, batch): Promise<EditDiagnosticsResult | undefined> => {
+  return async (dst, content, signal, batch): Promise<WritethroughResult> => {
     let text = content
     try {
       if (config.formatOnWrite && lsp !== undefined) {
@@ -177,8 +198,13 @@ export function createWritethrough(options: { lsp: LspService | undefined; cwd: 
       }
     }
 
+    // The formatted content is authoritative: callers persist it (and report
+    // it as newText) so what lands on disk matches what diagnostics describe.
+    const result: WritethroughResult = { finalContent: text }
+
     // Batch semantics in essence: a non-flushing batch defers its diagnostics;
-    // a flushing batch merges them and releases the ledger slot.
+    // a flushing batch merges them and releases the ledger slot. `finalContent`
+    // is per-call (each batch entry is one destination).
     if (batch) {
       const prior = batches.get(batch.id)
       const merged =
@@ -190,11 +216,14 @@ export function createWritethrough(options: { lsp: LspService | undefined; cwd: 
           : prior ?? diagnostics
       if (!batch.flush) {
         if (merged !== undefined) batches.set(batch.id, merged)
-        return merged
+        if (merged !== undefined) result.diagnostics = merged
+        return result
       }
       batches.delete(batch.id)
-      return merged
+      if (merged !== undefined) result.diagnostics = merged
+      return result
     }
-    return diagnostics
+    if (diagnostics !== undefined) result.diagnostics = diagnostics
+    return result
   }
 }

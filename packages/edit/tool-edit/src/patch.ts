@@ -1689,10 +1689,13 @@ export class EditSessionFileSystem implements FileSystem {
   async write(path: string, content: string): Promise<void> {
     const target = await this.session.reader.resolve(path, this.signal)
     const result = await this.session.writethrough(path, content, this.signal)
-    if (result !== undefined) {
-      this.#lastDiagnostics = result
+    if (result.diagnostics !== undefined) {
+      this.#lastDiagnostics = result.diagnostics
     }
-    await this.session.writer.write(target, content, this.signal)
+    // The writethrough's `finalContent` is authoritative: with `formatOnWrite`
+    // it is the formatter output, and the diagnostics above were collected
+    // against it.
+    await this.session.writer.write(target, result.finalContent, this.signal)
   }
 
   async delete(path: string): Promise<void> {
