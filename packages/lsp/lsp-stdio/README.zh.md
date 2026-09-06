@@ -59,12 +59,18 @@ kind: "package-reference"
 | `maxDocumentBytes` | `4000000` | 该主机可打开的源文件大小上限 |
 | `shutdownTimeoutMs` | `5000` | 升级前用于优雅 `shutdown`／`exit` 的预算 |
 | `killGraceMs` | `2000` | 请求取消及 SIGTERM→SIGKILL 升级的宽限期 |
+| `typescriptNative` | 缺省 | 设置后该配置项是一个 TypeScript 包装器；每个工作区的 TypeScript 安装会决定服务器（见 [TypeScript 7 原生服务器选择](#typescript-7-native-server-selection)）。`command` 指定原生 `tsc` 启动器，默认为 `tsc` |
 
 `servers` 必须至少包含一个配置项，每个 id 都必须非空；定时器预算必须是 Node 定时器范围内的正整数，字节上限必须为正。生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-lsp-stdio)是每个受支持字段的穷尽式真源。
 
 ### 查询做什么
 
 首次查询某个工作区时，提供方会为该工作区启动一个服务器进程并放入池中。每次查询通过 `ctx.fs` 读取当前源文件，在服务器中打开它（`textDocument/didOpen`），执行所请求的操作，然后关闭——因此服务器始终看到当前文本，调用之间不会残留任何文档状态。同一服务器与工作区的查询一次只执行一个；不同工作区并行运行。如果池化进程在只读查询之前或期间发生故障，提供方会在新进程上重试该查询一次。
+
+<a id="typescript-7-native-server-selection"></a>
+### TypeScript 7 原生服务器选择
+
+TypeScript 7 移除了 `typescript-language-server` 所包装的 JS `lib/tsserver.js`，因此包装器在 TypeScript 7 项目上会在 initialize 阶段失败；这些安装通过 `tsc --lsp --stdio` 原生提供 LSP。为 TypeScript 服务器配置项设置 `typescriptNative` 后，每个工作区只保留一个服务器，选择依据该工作区自身的安装：首次查询时提供方从工作区根目录向上查找 `node_modules/typescript`，没有 `lib/tsserver.js` 的安装会以工作区启动器的 `tsc --lsp --stdio` 启动，经典安装则保留配置的包装器。工作区没有 TypeScript 安装时，由加载时在 PATH 上解析到的原生命令决定；那里若是 TypeScript 7 安装，同样使用 `tsc --lsp --stdio`。无法检测的情况会保留配置的命令，与不设置该选项时完全一致。单一的 `typescript` 提供方按工作区服务两种变体，因此同一会话中两个 TypeScript 版本不同的项目，各自都会得到其安装所需的服务器。
 
 ### 可观察的成功与失败
 
@@ -106,6 +112,7 @@ kind: "package-reference"
 | [`src/protocol.ts`](src/protocol.ts) | 协议类型子集：能力、位置、悬停、文本文档同步 |
 | [`src/translate.ts`](src/translate.ts) | 能力检查、UTF-16 协商、`Location`／`LocationLink`／hover 规范化 |
 | [`src/abort.ts`](src/abort.ts) | 融合调用方与释放信号的取消辅助 |
+| [`src/typescript.ts`](src/typescript.ts) | TypeScript 安装检查与按工作区的原生／包装器服务器选择 |
 | — | 不发布运行时不变式伴生入口；进程池与队列是私有状态。 |
 
 ### 协议行为
@@ -149,6 +156,7 @@ kind: "package-reference"
 - **临时打开兼容性下限**——同步能力省略打开／关闭（或声明 `None`）的服务器不受支持，即使关闭文档查询能够工作；固定的 TypeScript e2e 只建立一项兼容性下限，不代表跨语言承诺。
 - **逐服务器与逐工作区串行化延迟**——共享同一个服务器与工作区的并行 agent 会在一个进程后排队；长生命周期工作区进程会占用内存直到释放。
 - **被强制杀死的 harness 会遗留语言服务器**——`initialize.processId: null` 取消了服务器侧的客户端 PID 监视，因此服务器只能由服务的优雅释放清理；被 SIGKILL 的 harness 会让它们继续运行，直到自行退出。
+- **主机本地的 TypeScript 检测**——`typescriptNative` 检查的是宿主机视角下的工作区路径；文件系统或子进程提供方若使用宿主机不可见的路径，每个工作区都会回退到配置的包装器，这也正是无法检测时的安全默认行为。
 
 <a id="dev-note"></a>
 ### 开发备注

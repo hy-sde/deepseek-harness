@@ -59,12 +59,17 @@ The `servers` record maps each stable provider id to one server command. The pro
 | `maxDocumentBytes` | `4000000` | Largest source file this host opens |
 | `shutdownTimeoutMs` | `5000` | Graceful `shutdown`/`exit` budget before escalation |
 | `killGraceMs` | `2000` | Request-cancel and SIGTERM→SIGKILL escalation grace |
+| `typescriptNative` | absent | When set, this entry is a TypeScript wrapper; each workspace's TypeScript install selects the server (see [TypeScript 7 native server selection](#typescript-7-native-server-selection)). `command` names the native `tsc` launcher and defaults to `tsc` |
 
 `servers` must contain at least one entry with non-empty ids; timer budgets must be positive integers within Node's timer range, and byte caps must be positive. The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-lsp-stdio) is the exhaustive source for every accepted field.
 
 ### What a query does
 
 On the first query for a workspace, the provider launches one server process for that workspace and keeps it pooled. Each query reads the current source through `ctx.fs`, opens it in the server (`textDocument/didOpen`), runs the requested operation, and closes it — so the server always sees current text and no document state persists between calls. Queries to one server and workspace run one at a time; different workspaces run in parallel. If the pooled process fails before or during a read-only query, the provider retries that query once on a fresh process.
+
+### TypeScript 7 native server selection
+
+TypeScript 7 dropped the JS `lib/tsserver.js` that `typescript-language-server` wraps, so the wrapper fails at initialize on TypeScript 7 projects; those installs speak LSP natively via `tsc --lsp --stdio`. Setting `typescriptNative` on a TypeScript server entry keeps exactly one server per workspace, chosen from the workspace's own install: on the first query the provider walks up from the workspace root for `node_modules/typescript`, and an install without `lib/tsserver.js` spawns the workspace launcher's `tsc --lsp --stdio` while a classic install keeps the configured wrapper. When the workspace has no TypeScript install, the native command resolved on PATH at load decides; a TypeScript 7 install there also gets `tsc --lsp --stdio`. Undetectable cases keep the configured command exactly as without the option. The single `typescript` provider serves both variants per workspace, so two projects with different TypeScript versions in one session each get the server their install needs.
 
 ### Observable success and failures
 
@@ -106,6 +111,7 @@ This section explains the design decisions behind the provider and where the cod
 | [`src/protocol.ts`](src/protocol.ts) | Wire-type subset: capabilities, locations, hover, text-document synchronization |
 | [`src/translate.ts`](src/translate.ts) | Capability checks, UTF-16 negotiation, `Location`/`LocationLink`/hover normalization |
 | [`src/abort.ts`](src/abort.ts) | Cancellation helpers fusing caller and disposal signals |
+| [`src/typescript.ts`](src/typescript.ts) | TypeScript install inspection and per-workspace native/wrapper server selection |
 | — | No runtime invariant companion is published; process pools and per-workspace queues are private implementation state, and this provider publishes no independent lifecycle event stream or enumerable snapshot. |
 
 ### Protocol behavior
@@ -149,6 +155,7 @@ These limits define when the provider is a poor fit or needs special operational
 - **Transient-open compatibility floor** — servers whose synchronization omits open/close (or advertises `None`) are unsupported even if closed-document queries would work; the pinned TypeScript e2e establishes one compatibility floor, not a cross-language claim.
 - **Per-server and per-workspace serialization latency** — parallel agents sharing one server and workspace queue behind one process; long-lived workspace processes consume memory until disposal.
 - **A hard-killed harness orphans language servers** — `initialize.processId: null` removes server-side client-PID monitoring, so servers are cleaned only by graceful service disposal; a SIGKILL'd harness leaves them running until they exit on their own.
+- **Host-local TypeScript detection** — `typescriptNative` inspects the workspace path as seen by the host; a filesystem or subprocess provider whose paths are not host-visible makes every workspace fall back to the configured wrapper, which is also the safe default when detection is impossible.
 
 <a id="dev-note"></a>
 ### Dev Note
