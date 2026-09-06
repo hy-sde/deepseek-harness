@@ -39,6 +39,7 @@ import type {
   MemoryEditInput,
   MemoryEditOp,
   MemoryEditResult,
+  MemoryEntryView,
   MemorySaveInput,
   MemorySaveResult,
   MemorySearchItem,
@@ -459,6 +460,48 @@ export class LocalMemoryBackend implements MemoryBackend {
     this.chains.clear()
   }
 
+  async readEntry(context: MemoryContext, id: string): Promise<MemoryEntryView | undefined> {
+    const root = this.projectRoot(context.cwd)
+    const rows = await this.readBank(root).catch((error: unknown) => {
+      if (isEnoent(error)) return []
+      throw error
+    })
+    const row = rows.find(candidate => candidate.id === id && candidate.active)
+    if (row !== undefined) return bankEntryView(row)
+    if (id.startsWith('lesson_')) {
+      const line = parseLessonBullets(await readMaybe(join(root, LEARNED_FILE)))
+        .find(candidate => lessonIdOf(candidate) === id)
+      if (line !== undefined) return { id, content: line, source: 'learn', readonly: true }
+    }
+    if (id === SUMMARY_ID) {
+      const summary = (await readMaybe(join(root, SUMMARY_FILE))).trim()
+      if (summary.length > 0) {
+        return { id: SUMMARY_ID, content: summary, source: 'memory_summary.md', readonly: true }
+      }
+    }
+    return undefined
+  }
+
+  async listEntries(context: MemoryContext, limit: number): Promise<MemoryEntryView[]> {
+    const root = this.projectRoot(context.cwd)
+    const rows = await this.readBank(root).catch((error: unknown) => {
+      if (isEnoent(error)) return []
+      throw error
+    })
+    const views: MemoryEntryView[] = rows
+      .filter(row => row.active)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .map(bankEntryView)
+    for (const line of parseLessonBullets(await readMaybe(join(root, LEARNED_FILE)))) {
+      views.push({ id: lessonIdOf(line), content: line, source: 'learn', readonly: true })
+    }
+    const summary = (await readMaybe(join(root, SUMMARY_FILE))).trim()
+    if (summary.length > 0) {
+      views.push({ id: SUMMARY_ID, content: summary, source: 'memory_summary.md', readonly: true })
+    }
+    return views.slice(0, Math.max(0, limit))
+  }
+
   private bankFile(cwd: string): string {
     return join(this.projectRoot(cwd), BANK_FILE)
   }
@@ -675,6 +718,18 @@ export function formatBankRows(rows: readonly BankRow[], cap: number): string[] 
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, Math.max(0, cap))
   return active.map(row => neutralizeInjection(row.content))
+}
+
+/** Addressable view of one active bank row (full content, no preview truncation). */
+function bankEntryView(row: BankRow): MemoryEntryView {
+  return {
+    id: row.id,
+    content: row.content,
+    ...row.context !== undefined ? { context: row.context } : {},
+    source: row.source,
+    importance: row.importance,
+    timestamp: new Date(row.updatedAt).toISOString(),
+  }
 }
 
 /** Parse `bank.jsonl.zstd` text into rows, skipping malformed lines (self-healing). */

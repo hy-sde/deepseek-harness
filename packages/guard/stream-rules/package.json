@@ -30,20 +30,22 @@
     "@deepseek-ai/schemastery": "workspace:^",
     "yaml": "^2.9.0"
   },
-  "peerDependencies": {
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
-  },
-  "devDependencies": {
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-agent-loop": "workspace:^",
-    "@deepseek-ai/dsh-agent-loop-testkit": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
-  }
+ "peerDependencies": {
+  "@deepseek-ai/dsh-agent": "workspace:^",
+  "@deepseek-ai/dsh-llm": "workspace:^",
+  "@deepseek-ai/dsh-session": "workspace:^",
+  "@deepseek-ai/dsh-tools": "workspace:^",
+  "@deepseek-ai/cordis": "workspace:^",
+  "@deepseek-ai/dsh-internal-urls": "workspace:^"
+ },
+ "devDependencies": {
+  "@deepseek-ai/dsh-agent": "workspace:^",
+  "@deepseek-ai/dsh-agent-loop": "workspace:^",
+  "@deepseek-ai/dsh-agent-loop-testkit": "workspace:^",
+  "@deepseek-ai/dsh-llm": "workspace:^",
+  "@deepseek-ai/dsh-session": "workspace:^",
+  "@deepseek-ai/dsh-tools": "workspace:^",
+  "@deepseek-ai/cordis": "workspace:^",
+  "@deepseek-ai/dsh-internal-urls": "workspace:^"
+ }
 }
