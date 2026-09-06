@@ -6,7 +6,7 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -247,5 +247,89 @@ describe('stream-rules guard: discard mode', () => {
     expect(text).toContain('Never use the word')
     expect(text).not.toContain('forbidden proposal')
     expect(turnEnds(agent).filter(r => (r as { kind: string }).kind === 'aborted')).toHaveLength(1)
+  })
+})
+
+describe('stream-rules guard: agent scoping', () => {
+  it('does not register an inline rule scoped to another agent', async () => {
+    const { ctx } = await harness({
+      rules: [{ ...forbiddenRule[0]!, agents: ['code'] }],
+    })
+    const adapter = new MockAdapter([textResponse('forbidden words are fine in this session')])
+    ctx.llm.registerAdapter(['mock'], adapter)
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write a note' }], source: { kind: 'user' } }))
+    await settle(ctx, agent, adapter, 1)
+
+    // The top-level session resolves to `main`, so the `code`-scoped rule was
+    // never registered: the matching stream completed without any interruption.
+    expect(turnEnds(agent).filter(r => (r as { kind: string }).kind === 'aborted')).toHaveLength(0)
+    expect(plugins(agent)).toHaveLength(0)
+    expect(adapter.requests).toHaveLength(1)
+  })
+
+  it('registers an inline rule scoped to the top-level agent (main)', async () => {
+    const { ctx } = await harness({
+      rules: [{ ...forbiddenRule[0]!, agents: ['main'] }],
+    })
+    const adapter = new MockAdapter([
+      hangAfter(streamingText('forbidden sentence')),
+      textResponse('clean answer'),
+    ])
+    ctx.llm.registerAdapter(['mock'], adapter)
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write a note' }], source: { kind: 'user' } }))
+    await settle(ctx, agent, adapter, 2)
+
+    expect(turnEnds(agent).filter(r => (r as { kind: string }).kind === 'aborted')).toHaveLength(1)
+    const injected = plugins(agent)
+    expect(injected).toHaveLength(1)
+    expect(injected[0]).toContain('Never use the word')
+  })
+
+  it('registers a file rule scoped to the top-level agent (main)', async () => {
+    const { ctx, rulesDir } = await harness()
+    writeFileSync(path.join(rulesDir, 'main-only.md'), [
+      '---',
+      'condition: forbidden',
+      'scope: ["text"]',
+      'agents: main',
+      '---',
+      'File rule scoped to main.',
+    ].join('\n'))
+    const adapter = new MockAdapter([
+      hangAfter(streamingText('forbidden words')),
+      textResponse('clean answer'),
+    ])
+    ctx.llm.registerAdapter(['mock'], adapter)
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write a note' }], source: { kind: 'user' } }))
+    await settle(ctx, agent, adapter, 2)
+
+    expect(turnEnds(agent).filter(r => (r as { kind: string }).kind === 'aborted')).toHaveLength(1)
+    const injected = plugins(agent)
+    expect(injected).toHaveLength(1)
+    expect(injected[0]).toContain('File rule scoped to main')
+  })
+
+  it('does not register a file rule scoped to another agent', async () => {
+    const { ctx, rulesDir } = await harness()
+    writeFileSync(path.join(rulesDir, 'code-only.md'), [
+      '---',
+      'condition: forbidden',
+      'scope: ["text"]',
+      'agents: [code]',
+      '---',
+      'File rule scoped to code.',
+    ].join('\n'))
+    const adapter = new MockAdapter([textResponse('forbidden words pass through here')])
+    ctx.llm.registerAdapter(['mock'], adapter)
+    const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Write a note' }], source: { kind: 'user' } }))
+    await settle(ctx, agent, adapter, 1)
+
+    expect(turnEnds(agent).filter(r => (r as { kind: string }).kind === 'aborted')).toHaveLength(0)
+    expect(plugins(agent)).toHaveLength(0)
+    expect(adapter.requests).toHaveLength(1)
   })
 })

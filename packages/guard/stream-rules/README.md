@@ -77,9 +77,14 @@ Never commit or leave behind `console.log` / `console.debug` calls...
 | `globs` | File globs the rule applies to (matched against candidate file paths in tool-call arguments) |
 | `condition` | Regex pattern(s) that trigger the rule — `condition: "(?i)todo"` inline flags are translated to native `RegExp` flags |
 | `scope` | Streams the rule watches (see below) |
+| `agents` | Agent-name globs this rule applies to; `main` = the top-level session only (see [Agent scoping](#agent-scoping)) |
 | `interruptMode` | `always` · `prose-only` · `tool-only` · `never` (falls back to `config.interruptMode`) |
 | `alwaysApply` | Accepted for compatibility; static per-turn injection is not implemented yet |
 | `astCondition` | Parsed for compatibility; AST-pattern matching is not yet supported — a rule with only AST conditions is skipped with a warning |
+
+### Agent scoping
+
+`agents` limits a rule to matching agents; a rule without it applies to every agent. The top-level session is named `main` (`agents: [main]` means "top-level session only"). Subagent sessions are named by the agent preset they run — the agent definition name (e.g. `agents: [code-edit]`) — and fall back to `sub` when no preset was recorded. Values are case-insensitive agent-name globs using the same syntax as `globs`: `agents: [standard*]` names `standard` and `standard-worker`.
 
 ### Scope tokens
 
@@ -104,6 +109,8 @@ Rules may also be supplied directly in plugin config:
         condition: 'debugger\b'
         scope: [text, tool:edit]
 ```
+
+Inline rules accept the same keys as file frontmatter, including `agents`.
 
 ### Repeat gating
 

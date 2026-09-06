@@ -79,9 +79,15 @@ Never commit or leave behind `console.log` / `console.debug` calls...
 | `globs` | 规则适用的文件 glob（与工具调用参数中的候选文件路径匹配） |
 | `condition` | 触发规则的正则表达式模式——`condition: "(?i)todo"` 行内标志会被转换为原生 `RegExp` 标志 |
 | `scope` | 规则监视的流（见下文） |
+| `agents` | 该规则适用的代理名称 glob；`main` = 仅顶级会话（见 [代理作用域](#agent-scoping)） |
 | `interruptMode` | `always` · `prose-only` · `tool-only` · `never`（回退到 `config.interruptMode`） |
 | `alwaysApply` | 为兼容而接受；静态的每轮注入尚未实现 |
 | `astCondition` | 为兼容而解析；AST 模式匹配尚不受支持——只有 AST 条件的规则会带警告跳过 |
+
+<a id="agent-scoping"></a>
+### 代理作用域
+
+`agents` 把规则限制到匹配的代理；没有该键的规则适用于所有代理。顶级会话名为 `main`（`agents: [main]` 表示“仅顶级会话”）。子代理会话按其所运行的 agent preset（代理定义名，例如 `agents: [code-edit]`）命名，未记录 preset 时回退为 `sub`。值与 `globs` 使用相同的、大小写不敏感的代理名 glob：`agents: [standard*]` 同时命名 `standard` 与 `standard-worker`。
 
 ### Scope 记号
 
@@ -106,6 +112,8 @@ Never commit or leave behind `console.log` / `console.debug` calls...
         condition: 'debugger\b'
         scope: [text, tool:edit]
 ```
+
+行内规则接受与文件 frontmatter 相同的键，包括 `agents`。
 
 ### 重复门控
 
