@@ -268,6 +268,7 @@
     { "path": "./packages/logseq/logseq-graph" },
     { "path": "./packages/logseq/tool-logseq" },
     { "path": "./packages/codebase-memory/tool-codebase-memory" },
+    { "path": "./packages/agentsview/tool-agentsview" },
     { "path": "./packages/openwiki/openwiki-core" },
     { "path": "./packages/openwiki/tool-openwiki" },
     { "path": "./packages/edit/hashline" },

@@ -1,0 +1,60 @@
+{
+  "name": "@deepseek-ai/dsh-tool-agentsview",
+  "description": "Model-facing agentsview CLI access tool (`agentsview list/get/health/stats/usage/search/recall/export`) that runs one-shot queries against the local agentsview archive built from the DeepSeek Harness session store — session intelligence (health grades + outcomes), windowed analytics, token cost reports, semantic search and the recall brief, all from the CLI that already parses DSH session.jsonl.zstd files",
+  "version": "0.1.2-rc.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/agentsview/tool-agentsview"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./agentsview": {
+      "types": "./lib/types/agentsview.d.ts",
+      "default": "./lib/types/agentsview.js"
+    },
+    "./prompt": {
+      "types": "./lib/types/prompt.d.ts",
+      "default": "./lib/types/prompt.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/invariant-*.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/dsh-system-prompt": "workspace:^",
+    "@deepseek-ai/dsh-tools": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/dsh-system-prompt": "workspace:^",
+    "@deepseek-ai/dsh-tools": "workspace:^",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.8"
+  }
+}

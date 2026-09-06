@@ -16,6 +16,9 @@ importers:
 
   .:
     devDependencies:
+      '@deepseek-ai/dsh-tool-agentsview':
+        specifier: workspace:^
+        version: link:packages/agentsview/tool-agentsview
       '@deepseek-ai/dsh-tool-session-query':
         specifier: workspace:^
         version: link:packages/session-query/tool-session-query
@@ -289,6 +292,9 @@ importers:
       '@deepseek-ai/dsh-token-meter':
         specifier: workspace:^
         version: link:../../packages/llm/token-meter
+      '@deepseek-ai/dsh-tool-agentsview':
+        specifier: workspace:^
+        version: link:../../packages/agentsview/tool-agentsview
       '@deepseek-ai/dsh-tool-ask-user':
         specifier: workspace:^
         version: link:../../packages/interaction/tool-ask-user
@@ -391,6 +397,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../vendor/schemastery
         version: link:../../vendor/schemastery
+      '@hy-sde-org/dsh-session-intelligence':
+        specifier: file:/Users/hui/Documents/github/dsh-plugins/dsh-session-intelligence/packages/session-intelligence
+        version: file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -703,6 +712,30 @@ importers:
       '@deepseek-ai/dsh-user-approval':
         specifier: workspace:^
         version: link:../../interaction/user-approval
+
+  packages/agentsview/tool-agentsview:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@deepseek-ai/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.8
+        version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@22.20.0)(@vitest/coverage-v8@4.1.8)(happy-dom@20.11.15)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.0.16(@types/node@22.20.0)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/api/gateway:
     dependencies:
@@ -12398,6 +12431,25 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
+  '@hy-sde-org/dsh-session-intelligence@file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence':
+    resolution: {directory: ../dsh-plugins/dsh-session-intelligence/packages/session-intelligence, type: directory}
+    engines: {node: '>=22.19.0'}
+    hasBin: true
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.2
+      '@deepseek-ai/dsh-llm': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-session-query': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-system-prompt': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-timeout': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-tools': ^0.1.2-rc.1
+
+  '@hy-sde-org/dsh-zstd-frame@0.1.2-rc.1':
+    resolution: {integrity: sha512-6vVIVyHnHce3eDkqoqUfTU+lCacdUn2aoJvS7OujxEuZJ/S/v8ExuBgzGEyL10/19y3nzamP8GxbaGLGjnX42Q==}
+    engines: {node: '>=22.19.0'}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.2
+      '@deepseek-ai/dsh-invariants': ^0.1.2-rc.1
+
   '@iconify-json/simple-icons@1.2.90':
     resolution: {integrity: sha512-zt2o2ZvQpHVvZJARIkZ51RnaHY2oqcPJMvHE+mVnxkSr+c33fnX4gciiXu+wyX5ei+s0qbVX1wD0DWBbaGBYMA==}
 
@@ -18497,6 +18549,24 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@hy-sde-org/dsh-session-intelligence@file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)':
+    dependencies:
+      '@deepseek-ai/cordis': link:vendor/cordis
+      '@deepseek-ai/dsh-llm': link:packages/llm/llm
+      '@deepseek-ai/dsh-session-query': link:packages/session-query/session-query
+      '@deepseek-ai/dsh-system-prompt': link:packages/core/system-prompt
+      '@deepseek-ai/dsh-timeout': link:packages/util/timeout
+      '@deepseek-ai/dsh-tools': link:packages/core/tools
+      '@deepseek-ai/schemastery': link:vendor/schemastery
+      '@hy-sde-org/dsh-zstd-frame': 0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)
+    transitivePeerDependencies:
+      - '@deepseek-ai/dsh-invariants'
+
+  '@hy-sde-org/dsh-zstd-frame@0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)':
+    dependencies:
+      '@deepseek-ai/cordis': link:vendor/cordis
+      '@deepseek-ai/dsh-invariants': link:packages/runtime-diagnostics/invariants
 
   '@iconify-json/simple-icons@1.2.90':
     dependencies:

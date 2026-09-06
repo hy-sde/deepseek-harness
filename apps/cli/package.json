@@ -81,6 +81,7 @@
     "@deepseek-ai/dsh-timeout": "workspace:^",
     "@deepseek-ai/dsh-tmux-context": "workspace:^",
     "@deepseek-ai/dsh-token-meter": "workspace:^",
+    "@deepseek-ai/dsh-tool-agentsview": "workspace:^",
     "@deepseek-ai/dsh-tool-ask-user": "workspace:^",
     "@deepseek-ai/dsh-tool-ast": "workspace:^",
     "@deepseek-ai/dsh-tool-av": "workspace:^",
@@ -115,6 +116,7 @@
     "@deepseek-ai/dsh-webhook-github": "workspace:^",
     "@deepseek-ai/dsh-workflow-worker-thread": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
+    "@hy-sde-org/dsh-session-intelligence": "file:/Users/hui/Documents/github/dsh-plugins/dsh-session-intelligence/packages/session-intelligence",
     "commander": "^15.0.0",
     "js-yaml": "^4.2.0",
     "node-addon-require-builtin": "^0.1.4"
@@ -168,7 +170,5 @@
     "@types/ws": "8.18.1",
     "execa": "^10.0.0",
     "ws": "8.21.0"
-  },
-  "peerDependencies": {},
-  "optionalDependencies": {}
+  }
 }

@@ -50,6 +50,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`, `logseq_list`, `logseq_query`, `logseq_remove`, `logseq_search`, `logseq_server`, `logseq_show`, `logseq_upsert` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle. |
 | `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`, `codebase_detect_changes`, `codebase_get_architecture`, `codebase_get_code_snippet`, `codebase_get_graph_schema`, `codebase_index_repository`, `codebase_index_status`, `codebase_ingest_traces`, `codebase_list_projects`, `codebase_manage_adr`, `codebase_query_graph`, `codebase_search_code`, `codebase_search_graph`, `codebase_trace_path` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor. |
+| `@deepseek-ai/dsh-tool-agentsview` | `agentsview` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/usage/search/recallQuery/recallBrief/exportSessions) that runs one-shot queries against the local agentsview archive — health grades and outcomes, windowed workspace stats, token-cost reports, fts/semantic/hybrid transcript search, the recall brief, and content-free export — built by the agentsview CLI directly from the DeepSeek Harness session store (it parses session.jsonl.zstd itself), the CLI-first pattern that made tool-codebase-memory viable. |
 | `@deepseek-ai/dsh-tool-openwiki` | `openwiki_begin`, `openwiki_finish`, `openwiki_next_page`, `openwiki_submit_page`, `openwiki_submit_plan` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Repository wiki lifecycle tools (openwiki_begin/submit_plan/next_page/submit_page/finish) that run the ported openwiki 0.4 deterministic engine core in-process — resumable .run.json checkpoints, page manifests, Grounded Claims with repository evidence resolution, OKF front matter repair + index sync — with no external openwiki CLI, wired to codebase-memory for structural discovery. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
@@ -4318,6 +4319,135 @@ Trace call/dataflow/cross-service paths through the codebase-memory knowledge gr
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
 Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor.
+
+<a id="deepseek-aidsh-tool-agentsview"></a>
+
+## `@deepseek-ai/dsh-tool-agentsview`
+
+### `agentsview`
+
+Query the local agentsview archive of DeepSeek Harness sessions (the agentsview CLI already parses DSH session.jsonl.zstd logs): session list/get with health grades and outcome signals, windowed workspace analytics (`stats`), daily token/cost reports (`usage`), per-session cost (`sessionUsage`), transcript search including semantic/hybrid modes (`search`), the experimental recall query/brief over distilled session knowledge, and content-free analytics export. Reads the same session store the harness writes; the first call may sync the archive.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "The agentsview CLI surface to query. `list` = session list (health/outcome columns). `get` = one session metadata + signals. `sessionUsage` = token usage and cost for one session. `health` = recent sessions with grade/outcome, or one session detail when `sessionId` is set. `stats` = window-scoped workspace analytics. `usage` = daily token/cost report. `search` = transcript content search (mode: substring|regex|fts|semantic|hybrid). `recallQuery` = query the distilled recall corpus. `recallBrief` = packed trust-brief for a task. `exportSessions` = content-free session summary export (JSON).",
+      "enum": [
+        "list",
+        "get",
+        "sessionUsage",
+        "health",
+        "stats",
+        "usage",
+        "search",
+        "recallQuery",
+        "recallBrief",
+        "exportSessions"
+      ]
+    },
+    "sessionId": {
+      "type": "string",
+      "description": "get/sessionUsage/health-detail: session id (from `list` or export)."
+    },
+    "query": {
+      "type": "string",
+      "description": "search/recallQuery/recallBrief: query text or task brief (required for those actions)."
+    },
+    "mode": {
+      "type": "string",
+      "description": "search: retrieval mode; default substring. `semantic`/`hybrid` require the vector index to be built (agentsview `embeddings build`).",
+      "enum": [
+        "substring",
+        "regex",
+        "fts",
+        "semantic",
+        "hybrid"
+      ]
+    },
+    "limit": {
+      "type": "integer",
+      "description": "list/health/search/exportSessions: result cap."
+    },
+    "project": {
+      "type": "string",
+      "description": "list/exportSessions: project filter (path or name)."
+    },
+    "agent": {
+      "type": "string",
+      "description": "list/stats/usage: agent filter."
+    },
+    "since": {
+      "type": "string",
+      "description": "stats/usage: window start (`28d` or `YYYY-MM-DD`); exportSessions: active-on-or-after date (`--date-from`)."
+    },
+    "until": {
+      "type": "string",
+      "description": "stats/usage/exportSessions: window end (`YYYY-MM-DD`); exportSessions uses `--date-to`."
+    },
+    "includeAutomated": {
+      "type": "boolean",
+      "description": "list: include automated sessions (excluded by default)."
+    },
+    "includeOneShot": {
+      "type": "boolean",
+      "description": "list: include one-shot sessions (excluded by default)."
+    },
+    "includeChildren": {
+      "type": "boolean",
+      "description": "list: include subagent/child sessions (excluded by default)."
+    },
+    "ownOnly": {
+      "type": "boolean",
+      "description": "sessionUsage: exclude subagent transcripts from cost attribution."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "usage: scan full history instead of the default 30-day window."
+    },
+    "breakdown": {
+      "type": "boolean",
+      "description": "usage: per-model rows and JSON breakdown arrays."
+    },
+    "excludeSession": {
+      "type": "string",
+      "description": "search: drop matches from this session before the cap."
+    },
+    "outcome": {
+      "type": "string",
+      "description": "exportSessions: comma-separated outcome filter (completed/abandoned/errored/unknown)."
+    },
+    "healthGrade": {
+      "type": "string",
+      "description": "exportSessions: comma-separated health grade filter (A..F)."
+    },
+    "minToolFailures": {
+      "type": "integer",
+      "description": "exportSessions: minimum tool-failure signal count."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "exportSessions: opaque cursor from a previous response for paging."
+    },
+    "includeProjects": {
+      "type": "array",
+      "description": "stats: project allowlist (repeatable).",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/agentsview/tool-agentsview/src/index.ts`](../packages/agentsview/tool-agentsview/src/index.ts)
+
+Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/usage/search/recallQuery/recallBrief/exportSessions) that runs one-shot queries against the local agentsview archive — health grades and outcomes, windowed workspace stats, token-cost reports, fts/semantic/hybrid transcript search, the recall brief, and content-free export — built by the agentsview CLI directly from the DeepSeek Harness session store (it parses session.jsonl.zstd itself), the CLI-first pattern that made tool-codebase-memory viable.
 
 <a id="deepseek-aidsh-tool-openwiki"></a>
 

@@ -172,6 +172,7 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // Fork tool packages whose invariant companion shares a hashed tsdown chunk
   // with the entry (single bundle, hashed runtime chunk); the chunk must publish
   // beside the invariant bundle for the published package to resolve it.
+  '@deepseek-ai/dsh-tool-agentsview': ['lib/invariant-*.js'],
   '@deepseek-ai/dsh-tool-codebase-memory': ['lib/invariant-*.js'],
   '@deepseek-ai/dsh-tool-logseq': ['lib/invariant-*.js'],
   // Fork openwiki engine: tsdown splits mermaid + runtime into dozens of hashed

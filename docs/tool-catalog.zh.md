@@ -53,6 +53,7 @@
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`、`av_doctor`、`av_list`、`av_scan` | `ctx.tools`、`ctx.av`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 只读 Automic Vault 工具：av_scan 审计 Mac 上暴露的开发工具凭据与风险，av_doctor 校验加固，av_catalog 列出检测器/加固器，av_list 仅返回已保存密钥的名称。输出绝不包含 Secret Value，加固始终由用户在终端人工决定。 |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`、`logseq_list`、`logseq_query`、`logseq_remove`、`logseq_search`、`logseq_server`、`logseq_show`、`logseq_upsert` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。 |
 | `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`、`codebase_detect_changes`、`codebase_get_architecture`、`codebase_get_code_snippet`、`codebase_get_graph_schema`、`codebase_index_repository`、`codebase_index_status`、`codebase_ingest_traces`、`codebase_list_projects`、`codebase_manage_adr`、`codebase_query_graph`、`codebase_search_code`、`codebase_search_graph`、`codebase_trace_path` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 代码智能工具（codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project），通过 `codebase-memory-mcp cli --json` 模式对本地 codebase-memory daemon 发起一次性查询——stdio MCP 客户端行的本地替代方案，共享同一 daemon、索引、变更锁与索引 supervisor。 |
+| `@deepseek-ai/dsh-tool-agentsview` | `agentsview` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 会话分析工具（agentsview action=list/get/sessionUsage/health/stats/usage/search/recallQuery/recallBrief/exportSessions），对本地 agentsview 存档发起一次性查询——健康等级与结局、窗口化工作区统计、token 成本报告、fts/语义/混合转录搜索、recall 简报与无内容导出——由 agentsview CLI 直接从 DeepSeek Harness 会话存储构建（它自己解析 session.jsonl.zstd），是让 tool-codebase-memory 得以成立的 CLI-first 模式。 |
 | `@deepseek-ai/dsh-tool-openwiki` | `openwiki_begin`、`openwiki_finish`、`openwiki_next_page`、`openwiki_submit_page`、`openwiki_submit_plan` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 仓库 wiki 生命周期工具（openwiki_begin/submit_plan/next_page/submit_page/finish）在进程内运行移植的 openwiki 0.4 确定性引擎核心——可恢复的 .run.json 检查点、页面 manifest、带仓库证据解析的 Grounded Claims、OKF 前言修复与索引同步——无需外部 openwiki CLI，并与 codebase-memory 接通以做结构化发现。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
@@ -4303,6 +4304,135 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
 代码智能工具（codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project），通过 `codebase-memory-mcp cli --json` 模式对本地 codebase-memory daemon 发起一次性查询——stdio MCP 客户端行的本地替代方案，共享同一 daemon、索引、变更锁与索引 supervisor。
+
+<a id="deepseek-aidsh-tool-agentsview"></a>
+
+## `@deepseek-ai/dsh-tool-agentsview`
+
+### `agentsview`
+
+查询本地 agentsview 存档（agentsview CLI 本身就解析 DSH session.jsonl.zstd 日志）：带健康等级与结局信号的会话列表/详情、窗口化工作区统计（stats）、每日 token/成本报告（usage）、单会话成本（sessionUsage）、含语义/混合模式的转录搜索（search）、对蒸馏会话知识的实验性 recall 查询/简报，以及无内容分析导出。读取的是 harness 写出的同一会话存储；首次调用可能同步存档。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "The agentsview CLI surface to query. `list` = session list (health/outcome columns). `get` = one session metadata + signals. `sessionUsage` = token usage and cost for one session. `health` = recent sessions with grade/outcome, or one session detail when `sessionId` is set. `stats` = window-scoped workspace analytics. `usage` = daily token/cost report. `search` = transcript content search (mode: substring|regex|fts|semantic|hybrid). `recallQuery` = query the distilled recall corpus. `recallBrief` = packed trust-brief for a task. `exportSessions` = content-free session summary export (JSON).",
+      "enum": [
+        "list",
+        "get",
+        "sessionUsage",
+        "health",
+        "stats",
+        "usage",
+        "search",
+        "recallQuery",
+        "recallBrief",
+        "exportSessions"
+      ]
+    },
+    "sessionId": {
+      "type": "string",
+      "description": "get/sessionUsage/health-detail: session id (from `list` or export)."
+    },
+    "query": {
+      "type": "string",
+      "description": "search/recallQuery/recallBrief: query text or task brief (required for those actions)."
+    },
+    "mode": {
+      "type": "string",
+      "description": "search: retrieval mode; default substring. `semantic`/`hybrid` require the vector index to be built (agentsview `embeddings build`).",
+      "enum": [
+        "substring",
+        "regex",
+        "fts",
+        "semantic",
+        "hybrid"
+      ]
+    },
+    "limit": {
+      "type": "integer",
+      "description": "list/health/search/exportSessions: result cap."
+    },
+    "project": {
+      "type": "string",
+      "description": "list/exportSessions: project filter (path or name)."
+    },
+    "agent": {
+      "type": "string",
+      "description": "list/stats/usage: agent filter."
+    },
+    "since": {
+      "type": "string",
+      "description": "stats/usage: window start (`28d` or `YYYY-MM-DD`); exportSessions: active-on-or-after date (`--date-from`)."
+    },
+    "until": {
+      "type": "string",
+      "description": "stats/usage/exportSessions: window end (`YYYY-MM-DD`); exportSessions uses `--date-to`."
+    },
+    "includeAutomated": {
+      "type": "boolean",
+      "description": "list: include automated sessions (excluded by default)."
+    },
+    "includeOneShot": {
+      "type": "boolean",
+      "description": "list: include one-shot sessions (excluded by default)."
+    },
+    "includeChildren": {
+      "type": "boolean",
+      "description": "list: include subagent/child sessions (excluded by default)."
+    },
+    "ownOnly": {
+      "type": "boolean",
+      "description": "sessionUsage: exclude subagent transcripts from cost attribution."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "usage: scan full history instead of the default 30-day window."
+    },
+    "breakdown": {
+      "type": "boolean",
+      "description": "usage: per-model rows and JSON breakdown arrays."
+    },
+    "excludeSession": {
+      "type": "string",
+      "description": "search: drop matches from this session before the cap."
+    },
+    "outcome": {
+      "type": "string",
+      "description": "exportSessions: comma-separated outcome filter (completed/abandoned/errored/unknown)."
+    },
+    "healthGrade": {
+      "type": "string",
+      "description": "exportSessions: comma-separated health grade filter (A..F)."
+    },
+    "minToolFailures": {
+      "type": "integer",
+      "description": "exportSessions: minimum tool-failure signal count."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "exportSessions: opaque cursor from a previous response for paging."
+    },
+    "includeProjects": {
+      "type": "array",
+      "description": "stats: project allowlist (repeatable).",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/agentsview/tool-agentsview/src/index.ts`](../packages/agentsview/tool-agentsview/src/index.ts)
+
+Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/usage/search/recallQuery/recallBrief/exportSessions) that runs one-shot queries against the local agentsview archive — health grades and outcomes, windowed workspace stats, token-cost reports, fts/semantic/hybrid transcript search, the recall brief, and content-free export — built by the agentsview CLI directly from the DeepSeek Harness session store (it parses session.jsonl.zstd itself), the CLI-first pattern that made tool-codebase-memory viable.
 
 <a id="deepseek-aidsh-tool-openwiki"></a>
 

@@ -159,8 +159,10 @@
     "postinstall": "node scripts/install-lefthook.mjs"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-tool-agentsview": "workspace:^",
     "@deepseek-ai/dsh-tool-session-query": "workspace:^",
     "@deepseek-ai/dsh-web-fetch-http": "workspace:^",
+    "@deepseek-ai/dsh-web-search-public": "workspace:^",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
@@ -194,7 +196,6 @@
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.8",
-    "@deepseek-ai/dsh-web-search-public": "workspace:^"
+    "vitest": "^4.1.8"
   }
 }

@@ -1912,7 +1912,7 @@ export interface OrchestrationPolicyConfig {
   enabled?: boolean
   /** Default posture for work that decomposes (default `parallel`). */
   defaultMode?: 'parallel' | 'serial'
-  /** Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave (default 6). */
+  /** Ceiling on one fan-out wave; beyond it the remainder is a follow-up wave (default 3). */
   maxFanOut?: number
   /** `required` = fail-closed isolation; `suggested` = prompt-only (default `required`). */
   isolation?: 'required' | 'suggested'
@@ -3269,6 +3269,38 @@ export type TokenMeterConfig = Record<string, never>
 
 来源：[`packages/llm/token-meter/src/types.ts:13`](../packages/llm/token-meter/src/types.ts)
 
+<a id="deepseek-aidsh-tool-agentsview"></a>
+
+
+## `@deepseek-ai/dsh-tool-agentsview`
+
+需要：`tools` · `systemPrompt`
+
+```ts config-catalog
+/** Plugin configuration (camera over the CLI invocation). */
+export interface Config extends AgentsviewToolConfig {}
+
+/** Tool-level configuration (all optional; defaults apply). */
+export interface AgentsviewToolConfig {
+  /** CLI executable (default `agentsview` on PATH). */
+  cliPath?: string
+  /**
+   * DeepSeek Harness session roots passed to the CLI through
+   * `DEEPSEEK_HARNESS_SESSIONS_DIR`. When omitted, the CLI's own defaults
+   * apply (it honors `DSH_HOME` -> `<home>/sessions`).
+   */
+  sessionDirs?: string[]
+  /** Per-call process timeout in ms (default 120000; first calls sync the archive). */
+  timeoutMs?: number
+  /** Cap on rendered JSON payload chars before truncation (default 200000). */
+  maxChars?: number
+}
+```
+
+来源：[`packages/agentsview/tool-agentsview/src/index.ts:16`](../packages/agentsview/tool-agentsview/src/index.ts)
+
+
+
 <a id="deepseek-aidsh-tool-bash"></a>
 
 
@@ -3478,7 +3510,7 @@ export interface Config {
 export type EditMode = 'auto' | 'hashline' | 'replace' | 'patch' | 'apply_patch'
 ```
 
-来源：[`packages/edit/tool-edit/src/index.ts:40`](../packages/edit/tool-edit/src/index.ts)
+来源：[`packages/edit/tool-edit/src/index.ts:38`](../packages/edit/tool-edit/src/index.ts)
 
 <a id="deepseek-aidsh-tool-fs"></a>
 

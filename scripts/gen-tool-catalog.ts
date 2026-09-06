@@ -79,6 +79,7 @@ import Av from '@deepseek-ai/dsh-av'
 import * as ToolAv from '@deepseek-ai/dsh-tool-av'
 import * as ToolLogseq from '@deepseek-ai/dsh-tool-logseq'
 import * as ToolCodebaseMemory from '@deepseek-ai/dsh-tool-codebase-memory'
+import * as ToolAgentsview from '@deepseek-ai/dsh-tool-agentsview'
 import * as ToolOpenWiki from '@deepseek-ai/dsh-tool-openwiki'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
@@ -782,6 +783,20 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-agentsview',
+    dir: 'tool-agentsview',
+    source: 'packages/agentsview/tool-agentsview/src/index.ts',
+    requires: ['ctx.tools', 'ctx.systemPrompt'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // Schema harvest only registers tools; the plugin spawns the agentsview
+      // CLI at execute time (CLI resolution errors happen per call, not on mount).
+      await ctx.plugin(ToolAgentsview)
+    },
+    note:
+      'Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/usage/search/recallQuery/recallBrief/exportSessions) that runs one-shot queries against the local agentsview archive — health grades and outcomes, windowed workspace stats, token-cost reports, fts/semantic/hybrid transcript search, the recall brief, and content-free export — built by the agentsview CLI directly from the DeepSeek Harness session store (it parses session.jsonl.zstd itself), the CLI-first pattern that made tool-codebase-memory viable.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-openwiki',
