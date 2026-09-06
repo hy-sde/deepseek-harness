@@ -236,19 +236,36 @@ export class ReactLoopAgent implements Agent {
     if (this.phase.kind !== 'running') throw new Error(`agent "${this.id}": pre-step outside running phase`)
     const signal = this.phase.abort.signal
     const claimed = this.inbox.claim(target, position.turn)
-    const assembly = await this.loopCtx.systemPrompt.assemble(assembleContextFor(this, signal))
-    signal.throwIfAborted()
-    const sections = renderContextSections(assembly)
-    const context = this.runtimeContext.project(joinContextSections(sections), sections)
-    const decision = await this.dispatch.waterfall(
-      'agent/pre-step', { messages: claimed, ...position, signal },
-      (): Promise<PreStepDecision> => Promise.resolve<PreStepDecision>({
-        kind: 'enter',
-        messages: context === undefined ? claimed : [...claimed, context],
-      }),
-    )
-    signal.throwIfAborted()
-    return decision.kind === 'reject' ? decision : { ...decision, assembly }
+    try {
+      const assembly = await this.loopCtx.systemPrompt.assemble(assembleContextFor(this, signal))
+      signal.throwIfAborted()
+      const sections = renderContextSections(assembly)
+      const context = this.runtimeContext.project(joinContextSections(sections), sections)
+      const decision = await this.dispatch.waterfall(
+        'agent/pre-step', { messages: claimed, ...position, signal },
+        (): Promise<PreStepDecision> => Promise.resolve<PreStepDecision>({
+          kind: 'enter',
+          messages: context === undefined ? claimed : [...claimed, context],
+        }),
+      )
+      signal.throwIfAborted()
+      return decision.kind === 'reject' ? decision : { ...decision, assembly }
+    } catch (error: unknown) {
+      // The claim already removed the user's input from the durable inbox, and
+      // a failed or aborted pre-step (context assembly, compaction, transforms)
+      // means step/start never ran, so the step-start append below never
+      // records it. Persist the claimed input now so no prompt is silently
+      // lost from the session — the reader's own words must survive a
+      // cancelled pre-step even when the turn they opened did not.
+      for (const message of claimed) {
+        try {
+          this.session.append('user/message', message, { surfaceOp: 'append' })
+        } catch (appendError: unknown) {
+          this.dispatch.emit('agent/error', { turn: position.turn, step: position.step, error: appendError })
+        }
+      }
+      throw error
+    }
   }
 
   /** Open one turn before claiming its first proposed step. */

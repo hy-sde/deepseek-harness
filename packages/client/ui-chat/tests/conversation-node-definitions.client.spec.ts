@@ -1825,6 +1825,40 @@ describe('built-in conversation node Definitions', () => {
     expect(snapshot(compactions).nodes.values().filter(candidate => candidate.kind === 'compaction')).toHaveLength(1)
   })
 
+  it('renders an in-flight automatic compaction row before any checkpoint lands', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 8 }),
+      at(2, 'compaction/start', { compactionId: 'auto-running', turn: null }),
+    ])
+    const running = node(snapshot(value), 'compaction')
+    expect(running?.data).toMatchObject({
+      kind: 'compaction',
+      seq: 2,
+      status: 'running',
+      summary: null,
+    })
+  })
+
+  it('renders an interrupted automatic compaction row with its error when it ends without a checkpoint', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 9 }),
+      at(2, 'compaction/start', { compactionId: 'auto-aborted', turn: null }),
+      at(3, 'compaction/end', {
+        compactionId: 'auto-aborted',
+        turn: null,
+        error: 'Request was aborted',
+      }),
+      at(4, 'turn/end', { turn: 9, reason: { kind: 'aborted', reason: { kind: 'user' } } }),
+    ])
+    const interrupted = node(snapshot(value), 'compaction')
+    expect(interrupted?.data).toMatchObject({
+      kind: 'compaction',
+      seq: 3,
+      status: 'interrupted',
+      error: 'Request was aborted',
+    })
+  })
+
   it('fills a landed compaction marker when an older page supplies its summary', () => {
     const value = assembler([
       at(13, 'user/message', {

@@ -188,6 +188,12 @@ export interface CompactionSummaryNode {
   /** Summary text from the checkpoint's cited `compaction/summary` event; null when
    *  the window cut left that event outside (the marker is then not expandable). */
   summary: string | null
+  /** 'running' while an automatic compaction is in flight (no checkpoint yet);
+   *  'interrupted' when it ended without landing a checkpoint; absent for a
+   *  settled checkpoint marker. */
+  status?: 'running' | 'interrupted'
+  /** Error text carried by the failed `compaction/end` event, when interrupted. */
+  error?: string
   /** Seq of the loaded `compaction/summary` event, or null when that event is outside the window. */
   summaryEventSeq: number | null
   /** Number of surface items replaced, or null when the summary event is unavailable or malformed. */

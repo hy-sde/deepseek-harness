@@ -678,9 +678,16 @@ export class Session implements SessionFace {
   private observeSubmissionQueue(items: readonly SessionQueuedItem[]): void {
     if (this.submissionSettlements.size === 0) return
     for (const item of items) {
-      if (item.rpcId !== undefined) {
-        this.scheduleObservedRetirement(item.rpcId, imageRefsIn(item.message.content))
-      }
+      if (item.rpcId === undefined) continue
+      // A transcript-placed echo (a prompt sent while the agent was idle) keeps
+      // its seat in the conversation: the durable `user/message` its prompt
+      // eventually produces is what retires it. Until that node lands —
+      // pre-step work such as automatic compaction runs first and can take
+      // minutes — the reader's own words must stay visible instead of blanking
+      // the transcript while the agent appears to do nothing.
+      const echo = this.pendingSubmissions.find(submission => submission.requestId === item.rpcId)
+      if (echo?.placement === 'transcript') continue
+      this.scheduleObservedRetirement(item.rpcId, imageRefsIn(item.message.content))
     }
   }
 

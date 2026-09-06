@@ -15,16 +15,22 @@ declare module '../contract/chat-nodes.ts' {
 }
 
 interface CompactionState {
+  readonly start?: ConversationMatch
   readonly summary?: ConversationMatch
   readonly checkpoint?: ConversationMatch
+  readonly end?: ConversationMatch
 }
 
 function fallbackState(context: ConversationNodeContext<CompactionState>): CompactionState {
+  const start = context.matches.find(match => match.event.type === 'compaction/start')
   const summary = context.matches.find(match => match.event.type === 'compaction/summary')
   const checkpoint = context.matches.find(match => compactSource(match.event) !== undefined)
+  const end = context.matches.find(match => match.event.type === 'compaction/end')
   return {
+    ...start === undefined ? {} : { start },
     ...summary === undefined ? {} : { summary },
     ...checkpoint === undefined ? {} : { checkpoint },
+    ...end === undefined ? {} : { end },
   }
 }
 
@@ -50,10 +56,46 @@ export const compactionDefinition: ConversationNodeDefinition<CompactionState> =
   start: () => ({}),
   update: (context, match) => updateCompactionState(context.state, match),
   buildViewNode: (context) => {
-    const state = context.state ?? fallbackState(context)
-    if (state.checkpoint === undefined) return null
-    const marker = compactSummary(state.summary, state.checkpoint)
-    return chatNode(context, 'compaction', marker.seq, marker)
+    // Merge window-derived evidence under incremental state: the start-role
+    // initialization leaves the state empty until the first update match, so
+    // a window that only holds `compaction/start` must still find it.
+    const state = { ...fallbackState(context), ...context.state }
+    // A landed checkpoint produces the summary marker. Before it — or when the
+    // run ended without one (abort/failure) — the window must still show a
+    // row: automatic compaction is slow (it summarizes the whole transcript)
+    // and an interrupted one is otherwise invisible while the reader sits
+    // waiting on a turn that never steps.
+    if (state.checkpoint !== undefined) {
+      const marker = compactSummary(state.summary, state.checkpoint)
+      return chatNode(context, 'compaction', marker.seq, marker)
+    }
+    const end = state.end
+    if (end !== undefined) {
+      const error = (end.event.data as { error?: unknown }).error
+      return chatNode(context, 'compaction', end.event.seq, {
+        kind: 'compaction',
+        seq: end.event.seq,
+        time: end.event.time,
+        summary: null,
+        summaryEventSeq: null,
+        shadowedItemCount: null,
+        shadowedTokenCount: null,
+        status: 'interrupted',
+        ...typeof error === 'string' && error !== '' ? { error } : {},
+      })
+    }
+    const start = state.start
+    if (start === undefined) return null
+    return chatNode(context, 'compaction', start.event.seq, {
+      kind: 'compaction',
+      seq: start.event.seq,
+      time: start.event.time,
+      summary: null,
+      summaryEventSeq: null,
+      shadowedItemCount: null,
+      shadowedTokenCount: null,
+      status: 'running',
+    })
   },
 }
 

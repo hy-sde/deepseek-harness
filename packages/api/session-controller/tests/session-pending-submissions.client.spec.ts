@@ -188,6 +188,34 @@ describe('observed retirement', () => {
     expect(session.getSnapshot().queue).toMatchObject([{ rpcId: handle.requestId }])
   })
 
+  it('a queue occurrence never retires a transcript-placed echo (idle send); the durable event does', async () => {
+    const { api, session } = makeSession()
+    api.onHistory = () => Promise.resolve(ok(historyValue([])))
+    await session.open()
+    const retirements: PendingSubmissionRetirement[] = []
+    const handle = session.beginSubmission({
+      mode: 'queue',
+      text: '空闲发送',
+      images: [],
+      onRetire: retirement => retirements.push(retirement),
+    })
+    expect(session.getSnapshot().pendingSubmissions).toMatchObject([{ placement: 'transcript' }])
+    // The host inbox mirrors the prompt BEFORE any durable user/message landed
+    // (the agent is busy in pre-step, e.g. automatic compaction): the echo
+    // must survive — the transcript seat belongs to the reader's own words.
+    session.handleControlFrame({
+      type: 'queue', sessionId: SID, items: [queuedItem(handle.requestId, [])],
+    })
+    await settleFrames()
+    expect(session.getSnapshot().pendingSubmissions).toMatchObject([{ requestId: handle.requestId }])
+    expect(retirements).toEqual([])
+    // The durable browser-prompt node is what retires it.
+    await api.pushFollow(SID, { type: 'event', event: promptEvent(SessionSeq(0), handle.requestId) as never })
+    await settleFrames()
+    expect(session.getSnapshot().pendingSubmissions).toEqual([])
+    expect(retirements).toEqual([{ reason: 'observed', attachments: [] }])
+  })
+
   it('a full-window install (reconnect resync) retires echoes observed in the window', async () => {
     const { api, session } = makeSession()
     const handle = session.beginSubmission({ mode: 'queue', text: '重连', images: [] })

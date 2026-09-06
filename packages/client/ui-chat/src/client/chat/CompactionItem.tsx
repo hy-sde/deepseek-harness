@@ -36,15 +36,21 @@ export const CompactionItem = memo(function CompactionItem({
 }: CompactionItemProps) {
   const [expanded, setExpanded] = useState(false)
   const labels = useMemo(() => markdownLabels(t), [t])
-  const expandable = node.summary !== null
+  const expandable = node.status === undefined && node.summary !== null
   const open = expandable && expanded
-  const summary = node.shadowedItemCount !== null && node.shadowedTokenCount !== null
-    ? t('message.compaction.completed', {
-      items: node.shadowedItemCount,
-      tokens: node.shadowedTokenCount,
-    })
-    : fallbackSummary
-      ?? (expandable ? t('message.compaction.expand') : t('message.compaction.unavailable'))
+  const summary = node.status === 'running'
+    ? t('message.compaction.running')
+    : node.status === 'interrupted'
+      ? node.error === undefined || node.error === ''
+        ? t('message.compaction.interrupted')
+        : t('message.compaction.interruptedError', { error: node.error })
+      : node.shadowedItemCount !== null && node.shadowedTokenCount !== null
+        ? t('message.compaction.completed', {
+          items: node.shadowedItemCount,
+          tokens: node.shadowedTokenCount,
+        })
+        : fallbackSummary
+          ?? (expandable ? t('message.compaction.expand') : t('message.compaction.unavailable'))
   return (
     <div className={css.compactionRow}>
       <button
