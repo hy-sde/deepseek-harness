@@ -1673,10 +1673,31 @@ export interface LspLocalServerConfig {
   projectAware?: boolean
   /** Read-path publish-diagnostics wait budget for {@link projectAware} servers (ms). Default 10000. */
   projectDiagnosticsWaitMs?: number
+  /**
+   * When set, this entry is a TypeScript wrapper server and selection inspects
+   * each workspace's TypeScript install, keeping exactly one server per
+   * workspace: a TypeScript 7+ install (no `lib/tsserver.js`) spawns the native
+   * `tsc --lsp --stdio` (the workspace's own launcher, or the resolved native
+   * command on PATH), and every other case keeps the configured command. The
+   * single provider serves both, so two projects with different TypeScript
+   * versions in one session each get the right server. Absent when unused;
+   * selection is a no-op then. Detection reads the host filesystem path, so
+   * this option only applies when the workspace path is host-visible.
+   */
+  typescriptNative?: TypeScriptNativeConfig
+}
+
+/** Opt-in per-server switch: the server config is a TypeScript wrapper. */
+export interface TypeScriptNativeConfig {
+  /**
+   * Native `tsc` launcher — a bare PATH name or an absolute path, resolved by
+   * the subprocess seam at plugin load. Defaults to `'tsc'`.
+   */
+  command?: string
 }
 ```
 
-Source: [`packages/lsp/lsp-stdio/src/index.ts:105`](../packages/lsp/lsp-stdio/src/index.ts)
+Source: [`packages/lsp/lsp-stdio/src/index.ts:119`](../packages/lsp/lsp-stdio/src/index.ts)
 
 <a id="deepseek-aidsh-mcp-client"></a>
 

@@ -86,6 +86,9 @@
           typescript:
             command: npx
             args: [--yes, typescript-language-server@5.0.0, --stdio]
+            # TypeScript 7 workspaces (no lib/tsserver.js) use the project's own tsc --lsp --stdio.
+            typescriptNative:
+              command: tsc
             extensionToLanguage:
               .ts: typescript
               .tsx: typescriptreact

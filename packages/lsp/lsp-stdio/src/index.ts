@@ -30,6 +30,8 @@ import type { HostWorkspace } from './host.ts'
 import { LspInstance } from './instance.ts'
 import type { ConnectionSpawner } from './connection.ts'
 import type { InstanceSpec } from './instance.ts'
+import { selectTypeScriptServer } from './typescript.ts'
+import type { TypeScriptNativeConfig } from './typescript.ts'
 
 export { canonicalizeWorkspace, readHostSource, resolveSourceUrl } from './host.ts'
 export { encodeMessage, MessageDecoder } from './framing.ts'
@@ -99,6 +101,18 @@ export interface LspLocalServerConfig {
   projectAware?: boolean
   /** Read-path publish-diagnostics wait budget for {@link projectAware} servers (ms). Default 10000. */
   projectDiagnosticsWaitMs?: number
+  /**
+   * When set, this entry is a TypeScript wrapper server and selection inspects
+   * each workspace's TypeScript install, keeping exactly one server per
+   * workspace: a TypeScript 7+ install (no `lib/tsserver.js`) spawns the native
+   * `tsc --lsp --stdio` (the workspace's own launcher, or the resolved native
+   * command on PATH), and every other case keeps the configured command. The
+   * single provider serves both, so two projects with different TypeScript
+   * versions in one session each get the right server. Absent when unused;
+   * selection is a no-op then. Detection reads the host filesystem path, so
+   * this option only applies when the workspace path is host-visible.
+   */
+  typescriptNative?: TypeScriptNativeConfig
 }
 
 /** Plugin configuration: provider id → local language-server configuration. */
@@ -108,7 +122,10 @@ export interface Config {
 }
 
 /** One server config after schemastery fills every default. */
-type ResolvedServerConfig = Required<LspLocalServerConfig>
+type ResolvedServerConfig = Required<Omit<LspLocalServerConfig, 'typescriptNative'>> & {
+  /** Present only when the deployment opts into per-workspace native TypeScript selection. */
+  typescriptNative?: Required<TypeScriptNativeConfig>
+}
 type WorkspaceKey = HostWorkspace['target']['targetKey']
 
 const LspLocalServerConfig: z<LspLocalServerConfig> = z.object({
@@ -126,6 +143,9 @@ const LspLocalServerConfig: z<LspLocalServerConfig> = z.object({
   diagnosticsTimeoutMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_DIAGNOSTICS_TIMEOUT_MS),
   projectAware: z.boolean().default(false),
   projectDiagnosticsWaitMs: z.number().max(MAX_TIMER_DELAY_MS).default(DEFAULT_PROJECT_DIAGNOSTICS_WAIT_MS),
+  typescriptNative: z.object({
+    command: z.string().default('tsc'),
+  }),
 })
 
 export const Config: z<Config> = z.object({
@@ -175,11 +195,20 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         setupAbort.signal,
       )
       setupAbort.signal.throwIfAborted()
+      // The native launcher may legitimately be absent (no TypeScript on this host);
+      // selection then keeps the configured wrapper unless a workspace-local install
+      // decides. An abort during this lookup still propagates via the check below.
+      const nativeExecutable = resolved.typescriptNative === undefined
+        ? null
+        : await ctx.subprocess.resolveExecutable(resolved.typescriptNative.command, resolved.env, setupAbort.signal)
+          .catch(() => null)
+      setupAbort.signal.throwIfAborted()
       return new LocalLspProvider(
         providerId,
         ctx.fs,
         resolved,
         executable,
+        nativeExecutable,
         spec => ctx.subprocess.spawn(spec),
       )
     })
@@ -223,6 +252,9 @@ function validateServerConfig(providerId: string, resolved: ResolvedServerConfig
   assertPositiveInteger(providerId, 'maxStderrBytes', resolved.maxStderrBytes)
   assertPositiveInteger(providerId, 'maxMessageBytes', resolved.maxMessageBytes)
   assertPositiveInteger(providerId, 'maxDocumentBytes', resolved.maxDocumentBytes)
+  if (resolved.typescriptNative !== undefined && resolved.typescriptNative.command.trim() === '') {
+    throw new Error(`lsp-stdio: servers.${providerId}.typescriptNative.command must be non-empty`)
+  }
 }
 
 /** Reject a timer value Node would clamp instead of scheduling as configured. */
@@ -257,6 +289,7 @@ class LocalLspProvider implements LspProvider {
     private readonly fs: Context['fs'],
     private readonly config: ResolvedServerConfig,
     private readonly executable: string,
+    private readonly nativeExecutable: string | null,
     private readonly spawner: ConnectionSpawner,
   ) {
     this.id = LspProviderId(providerId)
@@ -468,9 +501,19 @@ class LocalLspProvider implements LspProvider {
   }
 
   private createInstance(workspace: HostWorkspace): LspInstance {
+    // Per-workspace TypeScript server selection: a TS7 workspace spawns the native
+    // `tsc --lsp --stdio` while a classic one keeps the configured wrapper, and the
+    // single provider serves both. Other servers pass through unchanged.
+    const selection = this.config.typescriptNative === undefined
+      ? null
+      : selectTypeScriptServer({
+        command: this.executable,
+        args: this.config.args,
+        typescriptNative: this.config.typescriptNative,
+      }, workspace.canonicalPath, this.nativeExecutable)
     const spec: InstanceSpec = {
-      command: this.executable,
-      args: this.config.args,
+      command: selection?.command ?? this.executable,
+      args: selection?.args ?? this.config.args,
       cwd: workspace.canonicalPath,
       workspaceUri: workspace.fileUrl,
       env: this.config.env,
