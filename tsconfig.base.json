@@ -345,6 +345,8 @@
       "@deepseek-ai/dsh-goal/invariant": ["./packages/goal/goal/src/invariant.ts"],
       "@deepseek-ai/dsh-goal-round-driver": ["./packages/goal/goal-round-driver/src"],
       "@deepseek-ai/dsh-goal-round-driver/invariant": ["./packages/goal/goal-round-driver/src/invariant.ts"],
+      "@deepseek-ai/dsh-graph-control": ["./packages/graph/graph-control/src"],
+      "@deepseek-ai/dsh-graph-stream": ["./packages/graph/graph-stream/src"],
       "@deepseek-ai/dsh-hashline": ["./packages/edit/hashline/src"],
       "@deepseek-ai/dsh-headless": ["./packages/bundle/headless/src"],
       "@deepseek-ai/dsh-home-paths": ["./packages/util/home-paths/src"],
