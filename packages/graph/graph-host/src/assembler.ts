@@ -73,7 +73,7 @@ class OncePerClaimGraphExecutor implements AgentGraphExecutor {
         this.running.delete(claimId)
         return records
       },
-      (error) => {
+      (error: unknown) => {
         this.running.delete(claimId)
         throw error
       },
@@ -142,7 +142,7 @@ export async function createGraphHostServices(
 
   // The P3 record sink carries no operator/session identity; the ledger
   // restores it from the child start the executor itself performed.
-  const recordSink = async (event: AgentGraphRecordSourceEvent): Promise<void> => {
+  const recordSink = (event: AgentGraphRecordSourceEvent): Promise<void> => {
     const identity = ledger.take(event.runId)
     if (identity === undefined) {
       onError(
@@ -150,9 +150,10 @@ export async function createGraphHostServices(
           `agent graph host: no activation identity for run ${event.runId}; terminal event dropped`,
         ),
       )
-      return
+      return Promise.resolve()
     }
     recordSource.submit(identity, event)
+    return Promise.resolve()
   }
 
   const executor = new OncePerClaimGraphExecutor(
@@ -170,9 +171,10 @@ export async function createGraphHostServices(
   // the assembler returns, through the controller or a wake delivery).
   const held: { services?: GraphHostServices } = {}
   const lastChangeFingerprint = new Map<string, string>()
+  const changeQueues = new Map<string, Promise<void>>()
 
-  /** Best-effort fresh `graph/change` emission; deduped by content fingerprint. */
-  const emitChange = async (graphId: string, force = false): Promise<void> => {
+  /** One emission body: best-effort fresh `graph/change`, deduped by fingerprint. */
+  const emitChangeOnce = async (graphId: string, force: boolean): Promise<void> => {
     const services = held.services
     if (services === undefined) return
     const snapshot = await services.snapshotFor(graphId)
@@ -185,6 +187,23 @@ export async function createGraphHostServices(
       snapshot,
       snapshot.revision,
     )
+  }
+
+  /** Best-effort `graph/change` emission, serialized per graph so the fingerprint dedup is race-free. */
+  const emitChange = (graphId: string, force = false): Promise<void> => {
+    const previous = changeQueues.get(graphId) ?? Promise.resolve()
+    const run = previous.then(
+      () => emitChangeOnce(graphId, force),
+      () => emitChangeOnce(graphId, force),
+    )
+    changeQueues.set(
+      graphId,
+      run.then(
+        () => undefined,
+        () => undefined,
+      ),
+    )
+    return run
   }
 
   const observeGraph = async (
@@ -231,11 +250,14 @@ export async function createGraphHostServices(
     if (coordinator.isClosed()) return { kind: 'superseded' }
     try {
       await coordinator.reconcileAndWait()
+      // The post-reconcile projection read is part of the delivery: an
+      // overflow-marked failure there (same storage the reconcile reads) is the
+      // same recoverable overflow, so it stays inside the mapping below.
+      await emitChange(due.graphId, true)
     } catch (error: unknown) {
       return overflowOutcomeOf(due, error, overflowAttempts, () => emitChange(due.graphId, true))
     }
     overflowAttempts.delete(due.wakeId)
-    await emitChange(due.graphId, true)
     return { kind: 'delivered' }
   }
 
@@ -281,12 +303,13 @@ export async function createGraphHostServices(
         revision,
       })
     },
-    async attachGraph(graphId: string): Promise<void> {
+    attachGraph(graphId: string): Promise<void> {
       controller.getOrCreate(graphId)
       if (!wakeStarted) {
         wakeRuntime.start(input.rootSessionId)
         wakeStarted = true
       }
+      return Promise.resolve()
     },
     async dispose(): Promise<void> {
       await wakeRuntime.stop()

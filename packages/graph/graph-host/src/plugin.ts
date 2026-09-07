@@ -196,9 +196,9 @@ function idleFacade(state: PluginState): GraphHostIdle {
 
 function storageFacade(ctx: Context, config: Config): GraphHostStorage {
   const backendName = config.backend ?? 'sqlite'
-  const backend: StorageBackend | undefined = ctx.get(
+  const backend = ctx.get(
     storageBackendServiceKey(backendName),
-  )
+  ) as StorageBackend | undefined
   if (backend === undefined || backend.kv === undefined) {
     throw new Error(
       `graph-host: storage backend '${backendName}' is not registered (or exposes no kv facet) — load its backend plugin (storage.backend.<name>) before graph-host`,
@@ -276,14 +276,14 @@ function compactionFacade(ctx: Context): GraphHostCompaction {
 
 function sessionEventsFacade(ctx: Context): GraphHostSessionEvents {
   return {
-    appendGraphChange: async (
+    appendGraphChange: (
       sessionId: string,
       data: GraphChangeEventData,
     ): Promise<boolean> => {
       const session: Session | undefined = ctx.sessions.get(SessionId(sessionId))
-      if (session === undefined) return false
+      if (session === undefined) return Promise.resolve(false)
       session.append('graph/change', data)
-      return true
+      return Promise.resolve(true)
     },
   }
 }

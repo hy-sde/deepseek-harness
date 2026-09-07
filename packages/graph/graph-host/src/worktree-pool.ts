@@ -58,9 +58,10 @@ export class GraphHostWorktreePool implements GraphOperatorWorktreePool {
     return lease
   }
 
-  async release(lease: GraphOperatorWorktreeLease): Promise<void> {
+  release(lease: GraphOperatorWorktreeLease): Promise<void> {
     // No-op: see the class comment. Keep the bound value referenced so the
     // signature stays honest about the dropped ownership.
     void lease
+    return Promise.resolve()
   }
 }

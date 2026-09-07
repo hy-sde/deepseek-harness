@@ -434,4 +434,30 @@ describe('reopen durability', () => {
     ).rejects.toBeInstanceOf(AgentGraphIntentClaimConflictError)
     await reopened.close()
   })
+
+  it('keeps the by-graph claim index in step with admission transitions', async () => {
+    const path = await freshPath()
+    const backend = backendAt(path)
+    const store = await openStore(path)
+    const add = await store.commitScheduleUpdate(updateRequest({
+      addWork: [
+        { workId: 'graph_work_x', target: { kind: 'operator', id: 'op_a' }, instruction: 'task x', inputIds: [] },
+      ],
+    }))
+    const claim = claimRequest({ targetOperatorId: 'graph_operator_1', targetSessionId: 'child-1' })
+    await store.claimIntentAtScheduleRevision(claim, add.update.revision)
+
+    const transition = await store.beginAgentGraphIntentExecutionAtScheduleRevision(claim.graphId, claim.intentId, add.update.revision)
+    expect(transition.state).toBe('executing')
+    const listed = await store.listAgentGraphIntentClaims(claim.graphId)
+    expect(listed[0]?.admissionStatus).toBe('executing')
+
+    const cancelled = await store.cancelAgentGraphIntentExecution(claim.graphId, claim.intentId, 'user request')
+    expect(cancelled.state).toBe('cancelled')
+    const relisted = await store.listAgentGraphIntentClaims(claim.graphId)
+    expect(relisted[0]?.admissionStatus).toBe('cancelled')
+
+    await store.close()
+    await backend.close()
+  })
 })

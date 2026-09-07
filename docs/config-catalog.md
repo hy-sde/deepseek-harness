@@ -3319,7 +3319,7 @@ export interface Config {
 export type EditMode = 'auto' | 'hashline' | 'replace' | 'patch' | 'apply_patch'
 ```
 
-Source: [`packages/edit/tool-edit/src/index.ts:38`](../packages/edit/tool-edit/src/index.ts)
+Source: [`packages/edit/tool-edit/src/index.ts:39`](../packages/edit/tool-edit/src/index.ts)
 
 <a id="deepseek-aidsh-tool-fs"></a>
 
@@ -3446,6 +3446,28 @@ export interface Config {
 ```
 
 Source: [`packages/goal/tool-goal/src/index.ts:25`](../packages/goal/tool-goal/src/index.ts)
+
+<a id="deepseek-aidsh-tool-graph"></a>
+
+## `@deepseek-ai/dsh-tool-graph`
+
+Requires: `tools` · `systemPrompt` · `sessionProjections`
+
+```ts config-catalog
+/** Plugin configuration. */
+export interface Config extends GraphModePromptConfig {
+  /** Disable the tool registrations and prompt section entirely (default false). */
+  enabled?: boolean
+}
+
+/** Plugin configuration contributed by the prompt section. */
+export interface GraphModePromptConfig {
+  /** Disable the prompt section entirely (default false). */
+  enabled?: boolean
+}
+```
+
+Source: [`packages/graph/tool-graph/src/index.ts:94`](../packages/graph/tool-graph/src/index.ts)
 
 <a id="deepseek-aidsh-tool-jobs"></a>
 
@@ -4194,6 +4216,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@deepseek-ai/dsh-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
 - `@deepseek-ai/dsh-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
+- `@deepseek-ai/dsh-graph-projection` — requires `sessionProjections` ([`packages/graph/graph-projection/src/index.ts`](../packages/graph/graph-projection/src/index.ts))
 - `@deepseek-ai/dsh-host-directory-picker-auto` — requires `webServer` · `loader` ([`packages/host/directory-picker-auto/src/index.ts`](../packages/host/directory-picker-auto/src/index.ts))
 - `@deepseek-ai/dsh-host-directory-picker-native` ([`packages/host/directory-picker-native/src/index.ts`](../packages/host/directory-picker-native/src/index.ts))
 - `@deepseek-ai/dsh-host-plugin-inventory` — requires `loader` ([`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts))
@@ -4263,6 +4286,11 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@deepseek-ai/dsh-experimental-webworker-packer` ([`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts))
 - `@deepseek-ai/dsh-experimental-webworker-runtime` ([`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts))
 - `@deepseek-ai/dsh-fs-archive` ([`packages/fs/fs-archive/src/index.ts`](../packages/fs/fs-archive/src/index.ts))
+- `@deepseek-ai/dsh-graph-control` ([`packages/graph/graph-control/src/index.ts`](../packages/graph/graph-control/src/index.ts))
+- `@deepseek-ai/dsh-graph-executor` ([`packages/graph/graph-executor/src/index.ts`](../packages/graph/graph-executor/src/index.ts))
+- `@deepseek-ai/dsh-graph-host` ([`packages/graph/graph-host/src/index.ts`](../packages/graph/graph-host/src/index.ts))
+- `@deepseek-ai/dsh-graph-stream` ([`packages/graph/graph-stream/src/index.ts`](../packages/graph/graph-stream/src/index.ts))
+- `@deepseek-ai/dsh-graph-wakes` ([`packages/graph/graph-wakes/src/index.ts`](../packages/graph/graph-wakes/src/index.ts))
 - `@deepseek-ai/dsh-hashline` ([`packages/edit/hashline/src/index.ts`](../packages/edit/hashline/src/index.ts))
 - `@deepseek-ai/dsh-home-paths` ([`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts))
 - `@deepseek-ai/dsh-hook-protocol` ([`packages/hooks/hook-protocol/src/index.ts`](../packages/hooks/hook-protocol/src/index.ts))

@@ -63,10 +63,10 @@ export class InProcessGraphRecordSource implements AgentGraphRecordSource {
     this.byKey.set(key, events)
   }
 
-  async listCommittedEvents(
+  listCommittedEvents(
     operatorId: string,
     sessionId: string,
   ): Promise<readonly AgentGraphRecordSourceEvent[]> {
-    return [...(this.byKey.get(`${operatorId}\u0000${sessionId}`) ?? [])]
+    return Promise.resolve([...(this.byKey.get(`${operatorId}\u0000${sessionId}`) ?? [])])
   }
 }

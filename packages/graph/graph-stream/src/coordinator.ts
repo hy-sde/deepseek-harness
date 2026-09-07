@@ -98,12 +98,12 @@ export class AgentGraphCoordinator {
     this.assertOpen()
     this.#requestDrive()
     await this.#driveTask()
-    if (this.lastResult !== undefined) return this.lastResult
     if (this.lastError !== undefined) {
       throw this.lastError instanceof Error
         ? this.lastError
         : new Error(`agent graph ${this.graphId}: reconciliation failed`, { cause: this.lastError })
     }
+    if (this.lastResult !== undefined) return this.lastResult
     throw new Error(
       `agent graph ${this.graphId}: no reconciliation result (drive did not run)`,
     )

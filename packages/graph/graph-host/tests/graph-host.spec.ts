@@ -5,7 +5,6 @@
  * cordis context.
  * @module
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, expect, it } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -16,7 +15,6 @@ import type { Context } from '@deepseek-ai/cordis'
 import {
   AGENT_GRAPH_INTENT_CLAIM_SCHEMA_VERSION,
   AGENT_GRAPH_SCHEDULE_SCHEMA_VERSION,
-  GraphControlStore,
   type AgentGraphIntentClaimRequest,
   type AgentGraphOperatorProvisionRequest,
   type AgentGraphScheduleUpdateRequest,
@@ -41,7 +39,6 @@ import {
   GraphHostWorktreePool,
   SERVICE_AGENT_GRAPH_CONTROLLER,
   SERVICE_GRAPH_HOST,
-  type Config as PluginConfigType,
 } from '../src/index.ts'
 import type {
   GraphChangeEventData,
@@ -258,13 +255,16 @@ describe('buildSessionGraphProjection (via snapshotFor)', () => {
     const harness = await makeHarness({ attach: true })
     const longInstruction = 'x'.repeat(500)
     const manyWork: AgentGraphScheduledWork[] = []
+    // No input ids: uncommitted inputs would defer every work (input_not_committed)
+    // before provisioning, so nothing would start. This case bounds work+records.
     for (let index = 0; index < 140; index += 1) {
-      manyWork.push(work(`w${index}`, { instruction: longInstruction, inputIds: [`in-${index}`] }))
+      manyWork.push(work(`w${index}`, { instruction: longInstruction }))
     }
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ addWork: manyWork }))
-    // Wait for the drive to provision + start one child (maxNewActivations 4, but
-    // the fake harness starts children synchronously per drive).
-    await waitUntil(() => harness.subagents.starts.length >= 4)
+    // The drive awaits each child run to settle, so one drive starts one child
+    // (up to maxNewActivations 4); with the fake harness this means >= 1 per
+    // drive. The bounding assertions below stand independent of how many start.
+    await waitUntil(() => harness.subagents.starts.length >= 1)
 
     const snapshot = await harness.services.snapshotFor(GRAPH)
     expect(snapshot.schemaVersion).toBe(1)
@@ -469,14 +469,17 @@ describe('graph host assembly', () => {
     await harness.services.controller.getOrCreate(GRAPH).reconcileAndWait()
 
     const yielded = await harness.services.controller.yield(GRAPH)
+    const beforeFinish = harness.sessionEvents.events.length
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ finish: { resultIds: [], reason: 'all done' } }))
+    // The finish is a schedule commit whose emission is async (fire-and-forget);
+    // wait for it to land so the wake-attempt accounting below is deterministic.
+    await waitUntil(() => harness.sessionEvents.events.length > beforeFinish)
     const emitsBefore = harness.sessionEvents.events.length
     await harness.services.wakeRuntime.handleIdle(ROOT)
 
     const wake = await harness.services.store.readSupervisorWake(GRAPH, yielded.wakeId)
     expect(wake?.status).toBe('superseded')
-    // A finish is a schedule commit, so one emission happened at the commit;
-    // the wake itself never re-drove.
+    // The finish emission happened at the commit; the wake itself never re-drove.
     expect(harness.sessionEvents.events.length).toBe(emitsBefore)
 
     await harness.services.dispose()
@@ -515,7 +518,13 @@ describe('graph host assembly', () => {
     const harness = await makeHarness({ attach: true })
     await harness.services.dispose()
     await expect(harness.services.wakeRuntime.handleIdle(ROOT)).resolves.toBeUndefined()
-    await expect(harness.services.store.listOperatorProvisions(GRAPH)).rejects.toThrow()
+    // The control store serves reads from its in-memory mirror, so closing the
+    // durable medium rejects the next write rather than the reads.
+    await expect(
+      harness.services.store.commitScheduleUpdate(
+        scheduleRequest({ addWork: [work('w2')] }),
+      ),
+    ).rejects.toThrow()
     await harness.backend.close()
     cleanup(harness.path)
   })
@@ -575,7 +584,10 @@ class StubContext {
     }
   }
 
-  effect(callback: () => void | (() => void | Promise<void>), _name?: string): () => void {
+  effect(
+    callback: () => (() => void | Promise<void>) | undefined,
+    _name?: string,
+  ): () => void {
     const cleanup = callback()
     if (cleanup !== undefined) this.cleanups.push(cleanup)
     return () => undefined
@@ -624,7 +636,7 @@ describe('graph-host plugin', () => {
     apply(ctx as unknown as Context, {
       rootSessionId: ROOT,
       subagentProvider: 'fake',
-    } as PluginConfigType)
+    })
     await waitUntil(() => ctx.provided.get(SERVICE_AGENT_GRAPH_CONTROLLER) !== undefined)
     expect(ctx.provided.get(SERVICE_AGENT_GRAPH_CONTROLLER)).toBeDefined()
     expect(ctx.provided.get(SERVICE_GRAPH_HOST)).toBeDefined()
@@ -645,7 +657,7 @@ describe('graph-host plugin', () => {
     apply(ctx as unknown as Context, {
       rootSessionId: ROOT,
       subagentProvider: 'fake',
-    } as PluginConfigType)
+    })
     await waitUntil(() => ctx.provided.get(SERVICE_GRAPH_HOST) !== undefined)
     expect(ctx.provided.get(SERVICE_GRAPH_HOST)).toBeDefined()
     // A second build attempt is a no-op (already built).

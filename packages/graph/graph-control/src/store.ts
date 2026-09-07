@@ -331,6 +331,14 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
     })
   }
 
+  /** Keep the by-graph claim index in step with a mutated claim row (begin/cancel). */
+  #patchClaimsByGraph(updated: AgentGraphIntentClaimRecord): void {
+    const list = this.claimsByGraph.get(updated.graphId)
+    if (list === undefined) return
+    const index = list.findIndex(claim => claim.claimId === updated.claimId)
+    if (index >= 0) list[index] = updated
+  }
+
   /** Plain claim at the current revision (Maka `claimAgentGraphIntent`). */
   claimIntent(request: AgentGraphIntentClaimRequest): Promise<AgentGraphIntentClaimResult> {
     return this.claimIntentAtScheduleRevision(request, this.currentRevision(request.graphId))
@@ -368,6 +376,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       }
       const updated: AgentGraphIntentClaimRecord = { ...claim, admissionStatus: 'executing' }
       this.claims.set(claimKey(graphId, intentId), updated)
+      this.#patchClaimsByGraph(updated)
       await this.put('claims', claimKey(graphId, intentId), updated)
       return { state: 'executing', previousState: 'claimed', changed: true }
     })
@@ -384,6 +393,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       }
       const updated: AgentGraphIntentClaimRecord = { ...claim, admissionStatus: 'cancelled', cancellationReason: reason }
       this.claims.set(claimKey(graphId, intentId), updated)
+      this.#patchClaimsByGraph(updated)
       await this.put('claims', claimKey(graphId, intentId), updated)
       return { state: 'cancelled', previousState: claim.admissionStatus, changed: true }
     })

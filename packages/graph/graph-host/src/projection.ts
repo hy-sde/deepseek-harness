@@ -100,9 +100,10 @@ function workViewOf(
 }
 
 /**
- * Status precedence: schedule stop/supersede first, then the claim admission
- * state, then the operator's terminal record (P3 summary conventions:
- * `[operator failed] …`, `[operator cancelled]`), then still requested.
+ * Status precedence: schedule stop/supersede first, then the operator's
+ * terminal record (the activation outcome the executor folded — P3 summary
+ * conventions: `[operator failed] …`, `[operator cancelled]`), then the claim
+ * admission state (in-flight only), then still requested.
  */
 function workStatusOf(
   work: AgentGraphScheduleWorkView,
@@ -110,15 +111,15 @@ function workStatusOf(
   terminalRecord: AgentGraphRecord | undefined,
 ): SessionGraphWorkView['status'] {
   if (work.status !== 'requested') return 'stopped'
-  if (claim !== undefined) {
-    if (claim.admissionStatus === 'executing') return 'executing'
-    if (claim.admissionStatus === 'claimed') return 'claimed'
-    if (claim.admissionStatus === 'cancelled') return 'stopped'
-  }
   if (terminalRecord !== undefined) {
     if (terminalRecord.summary.startsWith(OPERATOR_CANCELLED_PREFIX)) return 'stopped'
     if (terminalRecord.summary.startsWith(OPERATOR_FAILED_PREFIX)) return 'failed'
     return 'finished'
+  }
+  if (claim !== undefined) {
+    if (claim.admissionStatus === 'executing') return 'executing'
+    if (claim.admissionStatus === 'claimed') return 'claimed'
+    return 'stopped'
   }
   return 'requested'
 }
