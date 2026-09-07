@@ -208,6 +208,9 @@ importers:
       '@deepseek-ai/dsh-graph-host':
         specifier: workspace:^
         version: link:../../packages/graph/graph-host
+      '@deepseek-ai/dsh-graph-projection':
+        specifier: workspace:^
+        version: link:../../packages/graph/graph-projection
       '@deepseek-ai/dsh-hashline':
         specifier: workspace:^
         version: link:../../packages/edit/hashline
@@ -343,6 +346,9 @@ importers:
       '@deepseek-ai/dsh-tool-goal':
         specifier: workspace:^
         version: link:../../packages/goal/tool-goal
+      '@deepseek-ai/dsh-tool-graph':
+        specifier: workspace:^
+        version: link:../../packages/graph/tool-graph
       '@deepseek-ai/dsh-tool-jobs':
         specifier: workspace:^
         version: link:../../packages/jobs/tool-jobs
