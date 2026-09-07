@@ -21,6 +21,9 @@
       "path": "../graph-executor"
     },
     {
+      "path": "../graph-projection"
+    },
+    {
       "path": "../graph-wakes"
     },
     {
@@ -28,6 +31,9 @@
     },
     {
       "path": "../../storage/storage"
+    },
+    {
+      "path": "../../subprocess/subprocess-local"
     },
     {
       "path": "../../core/session"

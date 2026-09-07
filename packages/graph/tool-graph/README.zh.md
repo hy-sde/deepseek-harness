@@ -75,4 +75,4 @@ await ctx.plugin(toolGraph, {})
 - 无图注册表：存储没有创建/列举图的操作，因此对未知图执行 `view_agent_graph` 返回空快照而非 `unknown_graph`（该错误码为后续注册表切片预留）。
 - 已完成工作保持 `requested`（P2 状态模型没有终止性工作状态），因此 `yield_agent_graph.pendingWorkCount` 统计 requested 调度行——活动（声明/意图）由唤醒门反映，而非计数。
 - 工具为每个 addWork 项接受显式 `workId`（相对 Maka 的扩展），使一次更新可确定性地引用自己的新工作；确定性派生 id 仍是默认。
-- 本插件通过手搭测试组合演练；经 Loader 启动 cordis.yml 的组合测试（packages/AGENTS.md 产品插件策略）推迟到集成切片。
+- 本插件通过手搭测试组合演练；经 Loader 启动 cordis.yml 的组合测试（packages/AGENTS.md 产品插件策略）推迟到集成切片。可选组合补丁 [`apps/cli/config/examples/graph/cordis.yml`](../../../apps/cli/config/examples/graph/cordis.yml) 展示了预期的挂载方式：主机行提供控制器，本包挂载为图根会话的预设行。

@@ -6,10 +6,13 @@ import type {
   ConversationTimelineSnapshot, RenderMessageImages,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { SessionSeq } from '@deepseek-ai/dsh-session/types'
+// Type-only: merges the graph key into SessionProjectionMap for useProjection.
+import type {} from '@deepseek-ai/dsh-graph-projection/types'
 import { Button, IconChevronDownOutline14, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import type { ChatSnapshot } from '../contract/snapshot.ts'
 import { PendingSteeringBubble, PendingSubmissionBubble } from './MessageItem.tsx'
+import { AgentGraphItem } from './AgentGraphItem.tsx'
 import { ChatNodeSeat } from './ChatNodeSeat.tsx'
 import { TurnNavigator } from './TurnNavigator.tsx'
 import { mergeTurnRailItems, type TurnRailItem } from './turn-rail-items.ts'
@@ -228,6 +231,7 @@ export function ChatView({
   // Host-computed whole-log outline; the merge is view-layer only (the
   // conversation snapshot never carries projection values).
   const turnOutline = useProjection('turnOutline')
+  const graph = useProjection('graph')
   const railItems = useMemo(
     () => mergeTurnRailItems(turnNavigationItems, turnOutline),
     [turnNavigationItems, turnOutline],
@@ -767,6 +771,8 @@ export function ChatView({
               {t('chat.loadError', { message: openError.message, code: openError.code })}
             </div>
           )}
+          {/* Projection-driven graph summary row; absent or quiet renders nothing. */}
+          <AgentGraphItem graph={graph} t={t} />
           {hasMore && (
             <div className={css.older}>
               <button type="button" disabled={loadingOlder} onClick={loadOlderAnchored}>

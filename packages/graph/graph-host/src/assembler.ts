@@ -39,8 +39,8 @@ import {
 import type {
   GraphHostAssemblerOptions,
   GraphHostServices,
-  SessionGraphProjection,
 } from './types.ts'
+import type { SessionGraphProjection } from '@deepseek-ai/dsh-graph-projection/types'
 import { GraphHostWorktreePool } from './worktree-pool.ts'
 
 /**
@@ -55,7 +55,7 @@ class OncePerClaimGraphExecutor implements AgentGraphExecutor {
   private readonly finished = new Map<string, readonly AgentGraphRecord[]>()
   private readonly running = new Map<string, Promise<readonly AgentGraphRecord[]>>()
 
-  constructor(private readonly inner: AgentGraphExecutor) {}
+  constructor(private readonly inner: AgentGraphExecutor) { }
 
   provisionOperator(request: Parameters<AgentGraphExecutor['provisionOperator']>[0]) {
     return this.inner.provisionOperator(request)
@@ -401,4 +401,4 @@ function generateId(): string {
   return randomUUID()
 }
 
-function noop(_error: unknown): void {}
+function noop(_error: unknown): void { }

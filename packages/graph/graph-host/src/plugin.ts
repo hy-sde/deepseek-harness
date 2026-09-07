@@ -24,8 +24,8 @@ import { storageBackendServiceKey, type StorageBackend } from '@deepseek-ai/dsh-
 import { AGENT_GRAPH_CONTROLLER_SERVICE } from '@deepseek-ai/dsh-tool-graph'
 import z from '@deepseek-ai/schemastery'
 import { createGraphHostServices } from './assembler.ts'
+import type { SessionEventMap } from '@deepseek-ai/dsh-session/types'
 import type {
-  GraphChangeEventData,
   GraphHostCompaction,
   GraphHostIdle,
   GraphHostServices,
@@ -118,7 +118,7 @@ class PluginState {
   constructor(
     private readonly ctx: Context,
     private readonly config: Config,
-  ) {}
+  ) { }
 
   /** Build the assembly once and publish the services; a failed build fails loud. */
   async build(): Promise<void> {
@@ -278,7 +278,7 @@ function sessionEventsFacade(ctx: Context): GraphHostSessionEvents {
   return {
     appendGraphChange: (
       sessionId: string,
-      data: GraphChangeEventData,
+      data: SessionEventMap['graph/change'],
     ): Promise<boolean> => {
       const session: Session | undefined = ctx.sessions.get(SessionId(sessionId))
       if (session === undefined) return Promise.resolve(false)

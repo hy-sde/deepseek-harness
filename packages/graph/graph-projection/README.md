@@ -51,6 +51,11 @@ Mount the plugin beside the session store and the projection registry when clien
 
 The wire value is a whole post-change snapshot (whole-value rule): consumers replace, never merge. The host appends one `graph/change` event per graph state change with `session.append('graph/change', graphSnapshotToEvent(graphId, snapshot, revision))` — the helper exported here builds the exact payload, keeping publish revision and snapshot revision aligned. Before the first publish the unit serves `null`: the session hosts no graph yet, and consumers treat it as not-yet-available rather than an empty graph.
 
+<a id="graph-chip"></a>
+### Graph chip
+
+The web chat UI reads the value through the session-projection standard seat, `useProjection('graph')`; the typed key comes from a type-only import of `@deepseek-ai/dsh-graph-projection/types`, a client dev-dependency erased at runtime (no client-to-graph runtime edge). The transcript renders the chip while the projection is present and the rail has work (`work.length > 0`) or the graph is still `active`; an absent key, `null` before the first publish, or a closed graph with an empty rail renders nothing. The row reads `Continued by Agent Graph` with the summary `N work item(s) · active|closed` (`由 Agent Graph 继续` / `N 个工作项` in the Chinese UI), styled like the compaction chip. The chip is view-layer state; the chat snapshot never carries projection values.
+
 ### Failures and recovery
 
 The unit is inert without the projection registry: `inject` keeps the fiber pending and nothing registers, so other assemblies lack the `graph` key. Unmounting the plugin removes the key, because registrations are effects on the mounting fiber. Persisted-cache rows are schema-validated on restore — including the version-positive revision and the ≤300-character instruction bound — so a corrupt row is discarded instead of seeding a broken fold.

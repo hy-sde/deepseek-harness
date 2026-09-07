@@ -77,6 +77,16 @@ await services.emitGraphChange(session.id, 'graph_g1', snapshot, snapshot.revisi
 await services.dispose() // stops wake delivery, cancels children, closes the store
 ```
 
+### Wiring
+
+The repository ships the opt-in composition patch [`apps/cli/config/examples/graph/cordis.yml`](../../../apps/cli/config/examples/graph/cordis.yml). Apply it from a development checkout with:
+
+```sh
+dsh web --patch apps/cli/config/examples/graph/cordis.yml
+```
+
+The patch carries the `graph-host` row above with `rootSessionId` left as the `<ROOT_SESSION_ID>` placeholder and `subagentProvider: spawn`; replace the placeholder with the deployment's graph root session id. The preset rows (`@deepseek-ai/dsh-tool-graph`, `@deepseek-ai/dsh-graph-projection`) mount in the graph root session's agent preset, as shown above for `tool-graph`.
+
 ## Understand the implementation
 
 ### Plane split: host row against preset row

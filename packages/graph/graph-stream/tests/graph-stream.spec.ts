@@ -164,7 +164,7 @@ describe('trace topology', () => {
             operatorId: 'op1',
             source: { sessionId: 's', runId: 'r', seq: 1 },
             summary: 'x',
-            facets: ['message'],
+            facets: ['message'] as const,
             emittedAt: 1,
           },
         ],
@@ -195,6 +195,7 @@ describe('record projection', () => {
           runId: 'r1',
           summary: 'first',
           terminal: false,
+          emittedAt: 1,
         },
         {
           runtimeEventId: 'evt-p',
@@ -203,6 +204,7 @@ describe('record projection', () => {
           summary: 'partial',
           terminal: false,
           partial: true,
+          emittedAt: 2,
         },
         {
           runtimeEventId: 'evt-2',
@@ -210,6 +212,7 @@ describe('record projection', () => {
           runId: 'r1',
           summary: 'final',
           terminal: true,
+          emittedAt: 3,
         },
         {
           runtimeEventId: 'evt-3',
@@ -217,11 +220,12 @@ describe('record projection', () => {
           runId: 'r1',
           summary: 'after',
           terminal: false,
+          emittedAt: 4,
         },
       ],
     }
     const sourceImpl: AgentGraphRecordSource = {
-      listCommittedEvents: (operatorId: string, sessionId: string) =>
+      listCommittedEvents: (_operatorId: string, sessionId: string) =>
         Promise.resolve(eventsBySession[sessionId] ?? []),
     }
     const state = await readCommittedAgentGraphProjection(
@@ -257,7 +261,7 @@ describe('readiness snapshot (map policy)', () => {
         operatorId: 'op_up',
         source: { sessionId: 's-up', runId: 'r1', seq: 1 },
         summary: 'x',
-        facets: ['message', 'terminal'],
+        facets: ['message', 'terminal'] as const,
         emittedAt: 1,
       },
     ]

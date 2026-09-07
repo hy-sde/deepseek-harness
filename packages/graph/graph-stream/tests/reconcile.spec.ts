@@ -25,6 +25,7 @@ import { AgentGraphCoordinator } from '../src/coordinator.ts'
 import type {
   AgentGraphExecutor,
   AgentGraphRecord,
+  AgentGraphReconciliationTopology,
   AgentGraphRunClaimedIntentInput,
   AgentGraphSupervisorObservation,
 } from '../src/types.ts'
@@ -41,7 +42,7 @@ class FakeExecutor implements AgentGraphExecutor {
   constructor(
     private readonly store: GraphControlStore,
     private readonly sink: InMemoryRecordSource,
-  ) {}
+  ) { }
 
   async provisionOperator(request: AgentGraphOperatorProvisionRequest) {
     return this.store.provisionOperator(request)
@@ -209,10 +210,7 @@ async function setup(path: string) {
   const store = await GraphControlStore.open(unit)
   const sink = new InMemoryRecordSource()
   const executor = new FakeExecutor(store, sink)
-  const observe = async (topology: {
-    graphId: string
-    operators: { operatorId: string; sessionId: string }[]
-  }): Promise<AgentGraphSupervisorObservation> => {
+  const observe = async (topology: AgentGraphReconciliationTopology): Promise<AgentGraphSupervisorObservation> => {
     const state = await readCommittedAgentGraphProjection(
       topology.graphId,
       topology.operators,

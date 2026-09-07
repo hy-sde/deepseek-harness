@@ -7,11 +7,19 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, realpathSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
+import {
+  GitService,
+  acquireWorktree,
+  listWorktrees,
+} from '@deepseek-ai/dsh-git'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { Context } from '@deepseek-ai/cordis'
 import {
   AGENT_GRAPH_INTENT_CLAIM_SCHEMA_VERSION,
   AGENT_GRAPH_SCHEDULE_SCHEMA_VERSION,
@@ -23,7 +31,6 @@ import {
 import type { AgentGraphRunClaimedIntentInput } from '@deepseek-ai/dsh-graph-stream'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Session } from '@deepseek-ai/dsh-session'
-import type { GitService } from '@deepseek-ai/dsh-git'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type {
   SubagentResult,
@@ -41,7 +48,6 @@ import {
   SERVICE_GRAPH_HOST,
 } from '../src/index.ts'
 import type {
-  GraphChangeEventData,
   GraphHostCompaction,
   GraphHostIdle,
   GraphHostSessionEvents,
@@ -50,6 +56,7 @@ import type {
   GraphHostWorktreeEntry,
   GraphHostWorktrees,
 } from '../src/types.ts'
+import type { SessionEventMap } from '@deepseek-ai/dsh-session/types'
 
 const GRAPH = 'graph_g1'
 const ROOT = 'root-1'
@@ -79,14 +86,18 @@ async function waitUntil(
 
 /* ------------------------------- fakes -------------------------------- */
 
+function must<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a defined value')
+  return value
+}
+
 class FakeRun implements SubagentRun {
+  private static seq = 0
   readonly id = SessionId(`run-${FakeRun.seq++}`)
   readonly localAgent = undefined
   disposed = false
   private readonly resolvers = Promise.withResolvers<SubagentResult>()
   readonly result = this.resolvers.promise
-
-  private static seq = 0
 
   settle(stopReason: SubagentStopReason, output: ContentBlock[] = []): void {
     this.resolvers.resolve({ output, stopReason })
@@ -139,9 +150,9 @@ class FakeCompaction implements GraphHostCompaction {
 }
 
 class FakeSessionEvents implements GraphHostSessionEvents {
-  readonly events: { sessionId: string; data: GraphChangeEventData }[] = []
+  readonly events: { sessionId: string; data: SessionEventMap['graph/change'] }[] = []
 
-  async appendGraphChange(sessionId: string, data: GraphChangeEventData): Promise<boolean> {
+  async appendGraphChange(sessionId: string, data: SessionEventMap['graph/change']): Promise<boolean> {
     this.events.push({ sessionId, data })
     return true
   }
@@ -295,9 +306,9 @@ describe('GraphHostWorktreePool', () => {
 
     const minted = await pool.acquire('graph_operator_lease_def')
     expect(minted.leaseId).toBe('graph_operator_lease_def')
-    expect(worktrees.acquireCalls).toHaveLength(1)
-    expect(worktrees.acquireCalls[0].holder).toBe('graph_operator_lease_def')
-    expect(worktrees.acquireCalls[0].branch).toBe('graph_operator_lease_def')
+    const firstCall = must(worktrees.acquireCalls[0])
+    expect(firstCall.holder).toBe('graph_operator_lease_def')
+    expect(firstCall.branch).toBe('graph_operator_lease_def')
 
     const again = await pool.acquire('graph_operator_lease_def')
     expect(again.leaseId).toBe('graph_operator_lease_def')
@@ -305,6 +316,76 @@ describe('GraphHostWorktreePool', () => {
     await pool.release(again)
   })
 })
+
+describe('GraphHostWorktreePool (real git)', () => {
+  it('mints and re-adopts real worktree slots through the git service', async () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), 'dsh-host-wt-')))
+    const poolRootSetting = { root: join(dir, '.graph-worktrees') }
+    gitRun(dir, ['init', '-q', '-b', 'master'])
+    gitRun(dir, ['config', 'user.email', 'test@example.com'])
+    gitRun(dir, ['config', 'user.name', 'Test User'])
+    gitRun(dir, ['config', 'commit.gpgsign', 'false'])
+    await writeFile(join(dir, 'seed.txt'), 'seed\n')
+    gitRun(dir, ['add', 'seed.txt'])
+    gitRun(dir, ['commit', '-qm', 'init'])
+
+    const ctx = new Context()
+    await ctx.plugin(LocalSubprocessRuntime)
+    const git = new GitService(ctx)
+    const worktrees: GraphHostWorktrees = {
+      repoRoot: dir,
+      async acquire(options) {
+        const lease = await acquireWorktree(git, dir, poolRootSetting, {
+          holder: options.holder,
+          ...(options.branch !== undefined
+            ? { branch: options.branch }
+            : {}),
+        })
+        return { leaseId: lease.leaseId, path: lease.path, repoRoot: dir }
+      },
+      async list() {
+        const entries = await listWorktrees(git, dir, { settings: poolRootSetting })
+        return entries.map(entry => ({
+          name: entry.name,
+          path: entry.path,
+          ...(entry.branch !== undefined
+            ? { branch: entry.branch }
+            : {}),
+          ...(entry.leaseHolder !== undefined
+            ? { leaseHolder: entry.leaseHolder }
+            : {}),
+          leased: entry.leased,
+          exists: entry.exists,
+        }))
+      },
+    }
+    const pool = new GraphHostWorktreePool(worktrees)
+    const lease = await pool.acquire('graph_operator_lease_abc')
+    expect(lease.path).toContain('.graph-worktrees')
+    expect(await readFile(join(lease.path, 'seed.txt'), 'utf8')).toBe('seed\n')
+    expect(gitRun(lease.path, ['rev-parse', '--abbrev-ref', 'HEAD'])).toBe('graph_operator_lease_abc')
+
+    // Same key re-adopts the minted slot; a different key mints a second one.
+    const again = await pool.acquire('graph_operator_lease_abc')
+    expect(again.path).toBe(lease.path)
+    const other = await pool.acquire('graph_operator_lease_def')
+    expect(other.path).not.toBe(lease.path)
+    await pool.release(lease)
+    await pool.release(other)
+    await ctx.fiber.dispose()
+    rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+function gitRun(cwd: string, args: string[]): string {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+  if (result.status !== 0) {
+    throw new Error(
+      `git ${args.join(' ')} failed (exit ${result.status}): ${result.stderr.trim()}`,
+    )
+  }
+  return result.stdout.trim()
+}
 
 /* --------------------------- host assembly ---------------------------- */
 
@@ -314,7 +395,7 @@ describe('graph host assembly', () => {
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ addWork: [work('w1')] }))
 
     await waitUntil(() => harness.subagents.starts.length === 1)
-    const start = harness.subagents.starts[0]
+    const start = must(harness.subagents.starts[0])
     expect(start.request.prompt).toEqual([{ type: 'text', text: 'do w1' }])
     expect(start.request.workspace).toMatch(/^\/worktrees\/graph_operator_lease_/)
     expect(start.request.parent).toBeDefined()
@@ -322,7 +403,7 @@ describe('graph host assembly', () => {
     const producedKey = harness.worktrees.acquireCalls[0]?.holder ?? ''
     expect(producedKey.startsWith('graph_operator_lease_')).toBe(true)
 
-    const run = harness.subagents.runs[0]
+    const run = must(harness.subagents.runs[0])
     run.settle('completed', [{ type: 'text', text: 'finished building views' }])
 
     // The record arrives through the sink; the next drive folds + emits.
@@ -331,15 +412,16 @@ describe('graph host assembly', () => {
 
     const snapshot = await harness.services.snapshotFor(GRAPH)
     expect(snapshot.work).toHaveLength(1)
-    expect(snapshot.work[0].workId).toBe('w1')
-    expect(snapshot.work[0].status).toBe('finished')
-    expect(snapshot.work[0].inputCount).toBe(0)
-    expect(snapshot.work[0].operatorId).toBeDefined()
+    const work0 = must(snapshot.work[0])
+    expect(work0.workId).toBe('w1')
+    expect(work0.status).toBe('finished')
+    expect(work0.inputCount).toBe(0)
+    expect(work0.operatorId).toBeDefined()
 
     const lastEvent = harness.sessionEvents.events.at(-1)
     expect(lastEvent).toBeDefined()
     expect(lastEvent?.data.graphId).toBe(GRAPH)
-    expect(lastEvent?.data.snapshot.work[0].status).toBe('finished')
+    expect(lastEvent?.data.snapshot.work[0]?.status).toBe('finished')
 
     await harness.services.dispose()
     await harness.backend.close()
@@ -350,7 +432,7 @@ describe('graph host assembly', () => {
     const harness = await makeHarness({ attach: true })
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ addWork: [work('w1')] }))
     await waitUntil(() => harness.subagents.runs.length === 1)
-    harness.subagents.runs[0].settle('completed')
+    must(harness.subagents.runs[0]).settle('completed')
 
     const coordinator = harness.services.controller.getOrCreate(GRAPH)
     await coordinator.reconcileAndWait()
@@ -424,10 +506,10 @@ describe('graph host assembly', () => {
     await new Promise(resolve => setTimeout(resolve, 50))
     expect(harness.subagents.runs).toHaveLength(1)
 
-    harness.subagents.runs[0].settle('completed', [{ type: 'text', text: 'first done' }])
+    must(harness.subagents.runs[0]).settle('completed', [{ type: 'text', text: 'first done' }])
     await first
     await waitUntil(() => harness.subagents.runs.length === 2)
-    harness.subagents.runs[1].settle('completed', [{ type: 'text', text: 'second done' }])
+    must(harness.subagents.runs[1]).settle('completed', [{ type: 'text', text: 'second done' }])
     await second
     expect(harness.subagents.starts).toHaveLength(2)
 
@@ -445,7 +527,7 @@ describe('graph host assembly', () => {
     const harness = await makeHarness({ attach: true })
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ addWork: [work('w1')] }))
     await waitUntil(() => harness.subagents.runs.length === 1)
-    harness.subagents.runs[0].settle('completed', [{ type: 'text', text: 'done' }])
+    must(harness.subagents.runs[0]).settle('completed', [{ type: 'text', text: 'done' }])
     await harness.services.controller.getOrCreate(GRAPH).reconcileAndWait()
 
     const yielded = await harness.services.controller.yield(GRAPH)
@@ -465,7 +547,7 @@ describe('graph host assembly', () => {
     const harness = await makeHarness({ attach: true })
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ addWork: [work('w1')] }))
     await waitUntil(() => harness.subagents.runs.length === 1)
-    harness.subagents.runs[0].settle('completed')
+    must(harness.subagents.runs[0]).settle('completed')
     await harness.services.controller.getOrCreate(GRAPH).reconcileAndWait()
 
     const yielded = await harness.services.controller.yield(GRAPH)
@@ -491,21 +573,22 @@ describe('graph host assembly', () => {
     const harness = await makeHarness({ attach: true })
     await harness.services.controller.schedule(GRAPH, scheduleRequest({ addWork: [work('w1')] }))
     await waitUntil(() => harness.subagents.runs.length === 1)
-    harness.subagents.runs[0].settle('completed')
+    must(harness.subagents.runs[0]).settle('completed')
     await harness.services.controller.getOrCreate(GRAPH).reconcileAndWait()
     const yielded = await harness.services.controller.yield(GRAPH)
 
     const store = harness.services.store
     const original = store.listScheduleUpdates.bind(store)
     const overflow = new GraphHostContextOverflowError('agent context overflowed')
-    ;(store as { listScheduleUpdates: typeof store.listScheduleUpdates }).listScheduleUpdates = async () => {
+    const patched = store as { listScheduleUpdates: typeof store.listScheduleUpdates }
+    patched.listScheduleUpdates = async () => {
       throw overflow
     }
 
     await harness.services.wakeRuntime.handleIdle(ROOT)
     expect(harness.compaction.requests).toHaveLength(1)
 
-    ;(store as { listScheduleUpdates: typeof store.listScheduleUpdates }).listScheduleUpdates = original
+    patched.listScheduleUpdates = original
     const wake = await harness.services.store.readSupervisorWake(GRAPH, yielded.wakeId)
     expect(['retryable_failed', 'superseded']).toContain(wake?.status)
 
@@ -677,11 +760,12 @@ describe('host projection bounds', () => {
       scheduleRequest({ addWork: [work('w1', { instruction: 'y'.repeat(400) })] }),
     )
     await waitUntil(() => harness.subagents.runs.length === 1)
-    harness.subagents.runs[0].settle('completed')
+    must(harness.subagents.runs[0]).settle('completed')
     await harness.services.controller.getOrCreate(GRAPH).reconcileAndWait()
     const snapshot = await harness.services.snapshotFor(GRAPH)
-    expect(snapshot.work[0].instruction.length).toBeLessThanOrEqual(300)
-    expect(snapshot.work[0].instruction.endsWith('…')).toBe(true)
+    const boundWork = must(snapshot.work[0])
+    expect(boundWork.instruction.length).toBeLessThanOrEqual(300)
+    expect(boundWork.instruction.endsWith('…')).toBe(true)
     await harness.services.dispose()
     await harness.backend.close()
     cleanup(harness.path)

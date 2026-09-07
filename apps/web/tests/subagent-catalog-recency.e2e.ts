@@ -13,7 +13,7 @@ import {
   SessionLogOffset, SESSION_FORMAT_VERSION, SessionId as sessionId,
   type SessionEvent, type SessionHeader, type SessionId,
 } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-agent'
+import type { } from '@deepseek-ai/dsh-agent'
 import { snapshotSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
 import {
   launchWebScaffold, webSnapshotMode, type WebScaffold,
@@ -206,9 +206,9 @@ describe('web e2e: subagent catalog recency and scroll persistence', () => {
       const log: string[] = []
       const treeNode = document.querySelector('[role="tree"][aria-label="Subagent sessions"]')
       if (treeNode === null) return
-      for (const name of ['mouseleave', 'mouseout']) {
+      for (const name of ['mouseleave', 'mouseout'] as const) {
         treeNode.addEventListener(name, (event) => {
-          const related = event.relatedTarget as Node | null
+          const related = (event as MouseEvent).relatedTarget as Node | null
           log.push(`${name} -> related=${related?.nodeName ?? 'null'} inside=${related !== null && treeNode.contains(related)}`)
         }, true)
       }

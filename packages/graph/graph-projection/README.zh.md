@@ -51,6 +51,11 @@ kind: "package-reference"
 
 wire 值是完整的变更后快照（整值规则）：消费者整体替换，从不合并。宿主每次图状态变化追加一条 `graph/change` 事件：`session.append('graph/change', graphSnapshotToEvent(graphId, snapshot, revision))` ——此处导出的辅助函数构造精确载荷，保证发布版本与快照版本一致。首次发布前单元提供 `null`：会话尚无图，消费者按“尚未可用”而非“空图”处理。
 
+<a id="graph-chip"></a>
+### Graph 标签
+
+Web 聊天 UI 通过投影标准席位 `useProjection('graph')` 读取该值；类型化键来自对 `@deepseek-ai/dsh-graph-projection/types` 的仅类型导入——客户端开发期依赖，运行时被擦除（无客户端到 graph 的运行时边）。当投影存在且导航栏有工作项（`work.length > 0`）或图仍为 `active` 时，对话记录渲染该标签；键缺失、首次发布前的 `null`、或已关闭且导航栏为空的图不渲染任何内容。该行显示「由 Agent Graph 继续」，摘要为 `N 个工作项 · active|closed`，样式与压缩标签一致。该标签仅是视图层状态；会话快照从不携带投影值。
+
 ### 失败与恢复
 
 没有投影注册表时单元是惰性的：`inject` 使 fiber 保持挂起，不注册任何内容，因此其他装配缺少 `graph` 键。卸载插件会移除该键，因为注册是挂载 fiber 上的 effect。持久缓存行在恢复时经受 schema 校验——包括取值为正的版本与 ≤300 字符的指令界限——损坏的行被丢弃而不会喂坏折叠。

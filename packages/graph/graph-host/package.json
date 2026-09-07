@@ -33,6 +33,7 @@
     "@deepseek-ai/dsh-git": "workspace:^",
     "@deepseek-ai/dsh-graph-control": "workspace:^",
     "@deepseek-ai/dsh-graph-executor": "workspace:^",
+    "@deepseek-ai/dsh-graph-projection": "workspace:^",
     "@deepseek-ai/dsh-graph-stream": "workspace:^",
     "@deepseek-ai/dsh-graph-wakes": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
@@ -51,6 +52,7 @@
     "@deepseek-ai/dsh-git": "workspace:^",
     "@deepseek-ai/dsh-graph-control": "workspace:^",
     "@deepseek-ai/dsh-graph-executor": "workspace:^",
+    "@deepseek-ai/dsh-graph-projection": "workspace:^",
     "@deepseek-ai/dsh-graph-stream": "workspace:^",
     "@deepseek-ai/dsh-graph-wakes": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
@@ -58,6 +60,7 @@
     "@deepseek-ai/dsh-storage": "workspace:^",
     "@deepseek-ai/dsh-storage-sqlite": "workspace:^",
     "@deepseek-ai/dsh-subagent": "workspace:^",
+    "@deepseek-ai/dsh-subprocess-local": "workspace:^",
     "@deepseek-ai/dsh-tool-graph": "workspace:^"
   }
 }

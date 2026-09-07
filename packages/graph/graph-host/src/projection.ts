@@ -12,7 +12,11 @@ import { scheduledWorkIntentId } from '@deepseek-ai/dsh-graph-stream'
 import type { AgentGraphIntentClaimRecord } from '@deepseek-ai/dsh-graph-control'
 import type { AgentGraphScheduleWorkView } from '@deepseek-ai/dsh-graph-stream'
 import type { AgentGraphRecord } from '@deepseek-ai/dsh-graph-stream'
-import type { SessionGraphProjection, SessionGraphWorkView } from './types.ts'
+import type {
+  SessionGraphProjection,
+  SessionGraphWorkEntry,
+  SessionGraphWorkStatus,
+} from '@deepseek-ai/dsh-graph-projection/types'
 
 export const SESSION_PROJECTION_SCHEMA_VERSION = 1 as const
 
@@ -54,7 +58,7 @@ export function buildSessionGraphProjection(input: {
 
   const visibleRecords = input.snapshot.records.slice(-SESSION_PROJECTION_MAX_RECORDS)
 
-  const work: SessionGraphWorkView[] = visibleWork.map(workish =>
+  const work: SessionGraphWorkEntry[] = visibleWork.map(workish =>
     workViewOf(
       workish,
       claimsByIntent.get(scheduledWorkIntentId(input.graphId, workish.workId)),
@@ -85,7 +89,7 @@ function workViewOf(
   work: AgentGraphScheduleWorkView,
   claim: AgentGraphIntentClaimRecord | undefined,
   terminalRecordByOperator: ReadonlyMap<string, AgentGraphRecord>,
-): SessionGraphWorkView {
+): SessionGraphWorkEntry {
   const operatorId = claim?.targetOperatorId
     ?? (work.target.kind === 'operator' ? work.target.id : undefined)
   const terminalRecord =
@@ -109,7 +113,7 @@ function workStatusOf(
   work: AgentGraphScheduleWorkView,
   claim: AgentGraphIntentClaimRecord | undefined,
   terminalRecord: AgentGraphRecord | undefined,
-): SessionGraphWorkView['status'] {
+): SessionGraphWorkStatus {
   if (work.status !== 'requested') return 'stopped'
   if (terminalRecord !== undefined) {
     if (terminalRecord.summary.startsWith(OPERATOR_CANCELLED_PREFIX)) return 'stopped'

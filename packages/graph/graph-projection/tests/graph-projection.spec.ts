@@ -10,8 +10,9 @@
 
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import SessionStore, { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
+import SessionStore, { SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
+import type { SessionSeqCursor } from '@deepseek-ai/dsh-session/types'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import type {
   SessionProjectionMap,
@@ -28,6 +29,11 @@ import type {
   SessionGraphProjectionState,
   SessionGraphWorkEntry,
 } from '../src/types.ts'
+
+/** Branded checkpoint cursor: -1 for the empty log, `SessionSeq` otherwise (mirror of the definition's cursor schema). */
+function cursor(value: number): SessionSeqCursor {
+  return value === -1 ? -1 : SessionSeq(value)
+}
 
 async function harness(withGraphPlugin: boolean): Promise<{ ctx: Context; session: Session }> {
   const ctx = new Context()
@@ -165,7 +171,7 @@ describe('graph projection unit', () => {
     const bad = {
       graph: {
         ver: 1,
-        seq: 0,
+        seq: cursor(0),
         val: {
           snapshot: { ...standing, revision: 0 },
           asOfSeq: 0,
@@ -188,7 +194,7 @@ describe('graph projection unit', () => {
     const bad = {
       graph: {
         ver: 1,
-        seq: -1,
+        seq: cursor(-1),
         val: {
           snapshot: null,
           asOfSeq: -1,

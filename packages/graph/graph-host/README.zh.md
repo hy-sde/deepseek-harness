@@ -78,6 +78,16 @@ await services.emitGraphChange(session.id, 'graph_g1', snapshot, snapshot.revisi
 await services.dispose() // stops wake delivery, cancels children, closes the store
 ```
 
+### 接线
+
+仓库随附可选组合补丁 [`apps/cli/config/examples/graph/cordis.yml`](../../../apps/cli/config/examples/graph/cordis.yml)。从开发检出应用：
+
+```sh
+dsh web --patch apps/cli/config/examples/graph/cordis.yml
+```
+
+补丁携带上面给出的 `graph-host` 行，`rootSessionId` 保留为 `<ROOT_SESSION_ID>` 占位符，`subagentProvider: spawn`；请把占位符替换为部署的图根会话 id。预设行（`@deepseek-ai/dsh-tool-graph`、`@deepseek-ai/dsh-graph-projection`）挂载在图根会话的代理预设中，如上面的 `tool-graph` 所示。
+
 <a id="understand-the-implementation"></a>
 ## 理解实现
 

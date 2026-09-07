@@ -15,54 +15,8 @@ import type { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 import type { AgentGraphExecutor } from '@deepseek-ai/dsh-graph-stream'
 import type { SubagentRun, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 import type { KvUnit, KvUnitDescriptor } from '@deepseek-ai/dsh-storage'
-
-/* ---------------------------- session projection ---------------------- */
-
-/** One work item of the session-visible graph projection (P6 `SessionGraphProjection`). */
-export interface SessionGraphWorkView {
-  readonly workId: string
-  readonly status: 'requested' | 'claimed' | 'executing' | 'stopped' | 'finished' | 'failed'
-  /** Truncated instruction, at most 300 characters. */
-  readonly instruction: string
-  readonly operatorId?: string
-  readonly inputCount: number
-}
-
-/** Bounded, session-visible snapshot of one graph (P6 contract, defined locally until the projector merges). */
-export interface SessionGraphProjection {
-  readonly schemaVersion: 1
-  readonly graphId: string
-  readonly status: 'active' | 'closed'
-  readonly revision: number
-  readonly closed: boolean
-  readonly work: readonly SessionGraphWorkView[]
-  readonly omitted: {
-    readonly work: number
-    readonly records: number
-    readonly inputs: number
-  }
-  readonly pendingWake: boolean
-  readonly updatedAt: number
-}
-
-/** Durable `graph/change` event payload (P6 contract; one revision snapshot per emitted change). */
-export interface GraphChangeEventData {
-  readonly graphId: string
-  readonly snapshot: SessionGraphProjection
-  readonly revision: number
-}
-
-declare module '@deepseek-ai/dsh-session/types' {
-  interface SessionEventMap {
-    /**
-     * Versioned graph-change snapshot appended to the owning root session.
-     * Log-only (no surface placement); P6 folds these into the session graph
-     * projection. The projector package owns the canonical declaration once it
-     * merges — until then this host declares the contract locally.
-     */
-    'graph/change': GraphChangeEventData
-  }
-}
+import type { SessionEventMap } from '@deepseek-ai/dsh-session/types'
+import type { SessionGraphProjection } from '@deepseek-ai/dsh-graph-projection/types'
 
 /* ------------------------------- facades ------------------------------ */
 
@@ -106,7 +60,7 @@ export interface GraphHostCompaction {
 
 /** Session-event seam: append one durable `graph/change` event to a session. */
 export interface GraphHostSessionEvents {
-  appendGraphChange(sessionId: string, data: GraphChangeEventData): Promise<boolean>
+  appendGraphChange(sessionId: string, data: SessionEventMap['graph/change']): Promise<boolean>
 }
 
 /** Idle seam: subscribe to one root session's idle boundaries; returns the unsubscriber. */

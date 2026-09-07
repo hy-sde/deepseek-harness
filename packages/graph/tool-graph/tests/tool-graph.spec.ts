@@ -56,7 +56,7 @@ class FakeExecutor implements AgentGraphExecutor {
   constructor(
     private readonly store: GraphControlStore,
     private readonly sink: InMemoryRecordSource,
-  ) {}
+  ) { }
 
   async provisionOperator(request: AgentGraphOperatorProvisionRequest) {
     return this.store.provisionOperator(request)
@@ -82,11 +82,16 @@ class FakeExecutor implements AgentGraphExecutor {
   }
 }
 
+function must<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a defined value')
+  return value
+}
+
 class InMemoryRecordSource implements AgentGraphRecordSource {
   private readonly events = new Map<string, AgentGraphRecordSourceEvent[]>()
   private seq = 0
 
-  constructor(private readonly graphId: string) {}
+  constructor(private readonly graphId: string) { }
 
   async listCommittedEvents(operatorId: string, sessionId: string) {
     return [...(this.events.get(`${operatorId}\u0000${sessionId}`) ?? [])]
@@ -163,7 +168,12 @@ async function makeFixture(options: { drive?: boolean } = {}): Promise<{
     store,
     rootSessionId: ROOT,
     newId: () => `id-${String(callSeq)}`,
-    options: { executor, recordSource, maxNewActivations: 4 },
+    options: {
+      executor,
+      recordSource,
+      maxNewActivations: 4,
+      newId: () => `id-${String(callSeq)}`,
+    },
   })
   // Keep the coordinator's background reconcile drive quiescent so tool
   // assertions are deterministic; the drive is exercised explicitly below.
@@ -214,7 +224,10 @@ describe('view_agent_graph', () => {
     expect(first.work).toHaveLength(64)
     expect(first.omitted.work).toBe(32)
     expect(first.nextCursor).toMatch(/^work:/)
-    const second = await view.execute({ graphId: GRAPH, cursor: first.nextCursor }, makeCall())
+    const second = await view.execute(
+      { graphId: GRAPH, ...(first.nextCursor !== undefined ? { cursor: first.nextCursor } : {}) },
+      makeCall(),
+    )
     expect(second.work).toHaveLength(32)
     expect(second.omitted.work).toBe(64)
     expect(second.nextCursor).toBeUndefined()
@@ -247,7 +260,7 @@ describe('update_agent_graph', () => {
     expect(result.update.created).toBe(true)
     expect(result.update.revision).toBe(1)
     expect(result.graph.work).toHaveLength(1)
-    const work = result.graph.work[0]
+    const work = must(result.graph.work[0])
     expect(work.workId).toMatch(/^graph_work_[0-9a-f]{32}$/)
     expect(work.target).toEqual({ kind: 'preset', id: 'preset-port' })
     expect(work.status).toBe('requested')
@@ -255,7 +268,7 @@ describe('update_agent_graph', () => {
     expect(work.inputIds).toEqual(['r1', 'r2'])
     const seen = await view.execute({ graphId: GRAPH }, makeCall())
     expect(seen.work).toHaveLength(1)
-    expect(seen.work[0].workId).toBe(work.workId)
+    expect(must(seen.work[0]).workId).toBe(work.workId)
     expect(executor.runCount).toBe(0)
   })
 
@@ -363,7 +376,7 @@ describe('update_agent_graph', () => {
       },
       makeCall(),
     )
-    expect(result.graph.work[0].workId).toBe('w-explicit')
+    expect(must(result.graph.work[0]).workId).toBe('w-explicit')
   })
 
   it('rejects finish while non-terminal work is pending', async () => {
@@ -395,12 +408,12 @@ describe('update_agent_graph', () => {
       },
       makeCall(),
     )
-    const work = result.graph.work[0]
+    const work = must(result.graph.work[0])
     expect(work.target).toEqual({ kind: 'preset', id: 'preset-port' })
     expect(work.instruction).toBe('Clean the provider-fill payload " ) }')
     const seen = await view.execute({ graphId: GRAPH }, makeCall())
     expect(seen.work).toHaveLength(1)
-    expect(seen.work[0]).toEqual(work)
+    expect(must(seen.work[0])).toEqual(work)
   })
 
   it('dedupes an identical retried update with the same idempotencyKey', async () => {
@@ -488,7 +501,8 @@ describe('coordinator drive', () => {
     expect(executor.runCount).toBe(1)
     const snapshot = await store.snapshot()
     expect(snapshot.intentClaims).toHaveLength(1)
-    expect(snapshot.intentClaims[0].admissionStatus).toBe('executing')
+    const claim = must((await store.listAgentGraphIntentClaims(GRAPH))[0])
+    expect(claim.admissionStatus).toBe('executing')
   })
 })
 
@@ -499,7 +513,7 @@ describe('controller.stop', () => {
       { graphId: GRAPH, addWork: [{ subagentId: 'preset-a', instruction: 'stop me', inputIds: [] }] },
       makeCall(),
     )
-    const workId = result.graph.work[0].workId
+    const workId = must(result.graph.work[0]).workId
     const stopped = await controller.stop(
       GRAPH,
       { targetId: workId, reason: 'superseded by review' },

@@ -1,0 +1,47 @@
+# Opt-in Agent Graph patch over the shipped Web composition: mounts the graph
+# host assembly so one root session can supervise operator children through
+# the `view_agent_graph` / `update_agent_graph` / `yield_agent_graph` tools
+# (Maka port, slices P6-P7a).
+#
+# Plane split (load-bearing — do not move rows between planes):
+# - `graph-host` is a HOST row: it injects host services (`agents`, `sessions`,
+#   `subagents`, `git`, `compaction`) and publishes `agentGraphController` +
+#   `graphHostServices`. A preset row publishing a service collides across
+#   sessions; the same rule keeps the `subagents` registry host-side.
+# - The model-facing rows below the line belong to the graph root session's
+#   AGENT PRESET, not to this host patch (they publish nothing):
+#
+#       # graph root session's agent preset (agent.cordis.yml)
+#       - id: tool-graph
+#         name: '@deepseek-ai/dsh-tool-graph'
+#       - id: graph-projection
+#         name: '@deepseek-ai/dsh-graph-projection'
+#
+# Requirements:
+# - `rootSessionId` MUST be the deployment's graph root session id: the agent
+#   that is the parent of every operator child and the owner of the
+#   `graph/change` events. The assembly builds when that agent publishes; a
+#   wrong id mounts silently and no graph is ever built, so the placeholder
+#   below is not a valid value.
+# - `subagentProvider` must name a provider the composition registers. The
+#   shipped base bundle already mounts `@deepseek-ai/dsh-subagent-spawn-in-process`
+#   with `providerName: spawn`, so `spawn` resolves without another row.
+# - `backend` defaults to `sqlite`, whose kv facet hosts the graph control
+#   unit. The base bundle mounts only `storage-json`, so the `storage-sqlite`
+#   row below is required for that default.
+
+- insert:
+    - id: storage-sqlite
+      name: '@deepseek-ai/dsh-storage-sqlite'
+      config:
+        # Override with DSH_GRAPH_DB; ':memory:' loses every graph control row
+        # on restart, so it is not the durable choice.
+        path: !!js process.env.DSH_GRAPH_DB ?? '.dsh/graph.sqlite'
+
+    - id: graph-host
+      name: '@deepseek-ai/dsh-graph-host'
+      config:
+        rootSessionId: <ROOT_SESSION_ID>  # TODO: replace with the deployment's graph root session id
+        subagentProvider: spawn           # provider registered by @deepseek-ai/dsh-subagent-spawn-in-process
+        backend: sqlite                   # storage backend hosting the graph control unit (default sqlite)
+        maxNewActivations: 4              # new operator activations per reconcile drive (default 4)

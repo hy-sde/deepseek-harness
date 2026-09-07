@@ -205,6 +205,9 @@ importers:
       '@deepseek-ai/dsh-goal-round-driver':
         specifier: workspace:^
         version: link:../../packages/goal/goal-round-driver
+      '@deepseek-ai/dsh-graph-host':
+        specifier: workspace:^
+        version: link:../../packages/graph/graph-host
       '@deepseek-ai/dsh-hashline':
         specifier: workspace:^
         version: link:../../packages/edit/hashline
@@ -274,6 +277,9 @@ importers:
       '@deepseek-ai/dsh-skill-filesystem':
         specifier: workspace:^
         version: link:../../packages/skill/skill-filesystem
+      '@deepseek-ai/dsh-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../packages/storage/storage-sqlite
       '@deepseek-ai/dsh-terminal':
         specifier: workspace:^
         version: link:../../packages/terminal/terminal
@@ -2405,6 +2411,9 @@ importers:
       '@deepseek-ai/dsh-compaction':
         specifier: workspace:^
         version: link:../../compaction/compaction
+      '@deepseek-ai/dsh-graph-projection':
+        specifier: workspace:^
+        version: link:../../graph/graph-projection
       '@deepseek-ai/dsh-llm':
         specifier: workspace:^
         version: link:../../llm/llm
@@ -6354,6 +6363,9 @@ importers:
       '@deepseek-ai/dsh-graph-executor':
         specifier: workspace:^
         version: link:../graph-executor
+      '@deepseek-ai/dsh-graph-projection':
+        specifier: workspace:^
+        version: link:../graph-projection
       '@deepseek-ai/dsh-graph-stream':
         specifier: workspace:^
         version: link:../graph-stream
@@ -6375,6 +6387,9 @@ importers:
       '@deepseek-ai/dsh-subagent':
         specifier: workspace:^
         version: link:../../subagent/subagent
+      '@deepseek-ai/dsh-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
       '@deepseek-ai/dsh-tool-graph':
         specifier: workspace:^
         version: link:../tool-graph
