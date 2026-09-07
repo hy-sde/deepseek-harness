@@ -73,7 +73,7 @@ class FakeFs extends FileSystem {
   }
   override async streamText(target: FsTarget): Promise<AsyncIterable<string>> {
     const content = this.files.get(target.targetKey) ?? ''
-    return (async function* () { yield content })()
+    return (async function*() { yield content })()
   }
   override async readBytes(target: FsTarget, _signal: AbortSignal | undefined, maxBytes: number): Promise<Uint8Array> {
     const bytes = new TextEncoder().encode(this.files.get(target.targetKey) ?? '')
@@ -449,11 +449,13 @@ describe('edit tool', () => {
     expect(text(result)).toBe('The file /abs/a.txt has been updated. All occurrences were successfully replaced.')
   })
 
-  it('rejects identical old/new strings', async () => {
-    const { ctx } = await setup()
+  it('reports an identical old/new pair as a no-change success (no write)', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:a.txt', 'x')
     const result = await call(ctx, 'edit', { file_path: 'a.txt', old_string: 'x', new_string: 'x' })
-    expect(result.isError).toBe(true)
-    expect(text(result)).toContain('must differ')
+    expect(result.isError).toBe(false)
+    expect(result.value).toEqual({ path: '/abs/a.txt', before: 'x', after: 'x' })
+    expect(text(result)).toContain('has been updated')
   })
 
   it('rejects an empty old_string', async () => {

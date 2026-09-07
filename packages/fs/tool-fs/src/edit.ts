@@ -7,8 +7,9 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { FsError } from '@deepseek-ai/dsh-fs'
 import type { DiffCallView, DiffResultView, ToolResult } from '@deepseek-ai/dsh-tools'
-import type {} from '@deepseek-ai/dsh-fs'
+import type { } from '@deepseek-ai/dsh-fs'
 import { computeHunkDiffs, diffsFromMeta } from './diff.ts'
 import { remediateFsError } from './error.ts'
 import { sessionResolveOptions } from './session-cwd.ts'
@@ -38,15 +39,16 @@ interface EditToolArgs {
 
 /**
  * Validate value constraints the schema DSL can't express: a non-blank
- * `file_path`, a non-empty `old_string`, and `old_string !== new_string`
- * (an equal pair would be a guaranteed no-op edit).
+ * `file_path` and a non-empty `old_string`. An equal `old_string`/`new_string`
+ * pair is NOT rejected — the execute path treats it as the no-op success
+ * "the file already matches" (equal strings used to error; the model then
+ * retried a guaranteed no-op).
  * @param args - the schema-validated raw tool arguments.
  * @returns the camelCased input with `replace_all` defaulted to false.
  */
 export function parseEditArgs(args: { file_path: string; old_string: string; new_string: string; replace_all?: boolean }): EditInput {
   if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
   if (args.old_string.length === 0) throw new Error('old_string must be a non-empty string')
-  if (args.old_string === args.new_string) throw new Error('old_string and new_string must differ')
   return {
     filePath: args.file_path,
     oldString: args.old_string,
@@ -65,6 +67,12 @@ export function formatEditOutput(displayPath: string, replaceAll: boolean): stri
   return replaceAll
     ? `The file ${displayPath} has been updated. All occurrences were successfully replaced.`
     : `The file ${displayPath} has been updated successfully.`
+}
+
+/** Whether an error is the fs layer's concurrent-mutation refusal. */
+function isStaleVersionError(error: unknown): boolean {
+  if (error instanceof FsError) return error.code === 'FS_STALE_VERSION'
+  return error instanceof Error && error.message.includes('FS_STALE_VERSION')
 }
 
 /**
@@ -120,21 +128,45 @@ export function applyEditTool(ctx: Context, sandbox: FsSandboxController): void 
       // slot itself can throw FS_NOT_OBSERVED for an unread target, so it sits
       // inside the try: both that refusal and the provider's guarded-mutation
       // failure get the model-facing remedy below.
-      let outcome
-      try {
+      const applyEdit = async (): Promise<Awaited<ReturnType<typeof ctx.fs.editText>>> => {
         const intent = await ctx.waterfall('fs/edit-intent', target, exec, () => undefined)
-        outcome = await ctx.fs.editText(
+        return ctx.fs.editText(
           target,
           { oldString: input.oldString, newString: input.newString, replaceAll: input.replaceAll },
           intent,
           exec.signal,
           sandboxPolicy,
         )
+      }
+      let outcome: Awaited<ReturnType<typeof applyEdit>>
+      try {
+        // No-op: old == new — the intended state already holds. Report success
+        // instead of an error the model would retry against.
+        if (input.oldString === input.newString) {
+          return { path: target.displayPath, before: input.oldString, after: input.newString }
+        }
+        outcome = await applyEdit()
       } catch (error: unknown) {
-        // A sandbox denial becomes the shared [sandbox: …] marker (the model
-        // recognizes it from bash); stale/not-observed failures gain their
-        // model-facing remedy; anything else passes through.
-        throw remediateFsError(sandbox.mapError(error, sandboxPolicy))
+        const remedied = remediateFsError(sandbox.mapError(error, sandboxPolicy))
+        // Concurrent mutation between the read and this guarded edit: refresh
+        // the observation (the target's CURRENT version) and retry once. The
+        // old_string-anchored edit is atomic per call, so nothing partial can
+        // land; if the anchor no longer matches, the retry surfaces that error.
+        if (isStaleVersionError(remedied)) {
+          const info = await ctx.fs.stat(target, exec.signal)
+          await ctx.fs.readText(target, exec.signal)
+          if (info !== undefined) ctx.emit('fs/observed', target, { kind: 'present', version: info.version }, exec)
+          try {
+            outcome = await applyEdit()
+          } catch (retryError: unknown) {
+            // A sandbox denial becomes the shared [sandbox: …] marker (the model
+            // recognizes it from bash); stale/not-observed failures gain their
+            // model-facing remedy; anything else passes through.
+            throw remediateFsError(sandbox.mapError(retryError, sandboxPolicy))
+          }
+        } else {
+          throw remedied
+        }
       }
       ctx.emit('fs/observed', target, { kind: 'present', version: outcome.version }, exec)
       return {

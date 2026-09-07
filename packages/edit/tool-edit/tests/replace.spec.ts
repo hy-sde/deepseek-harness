@@ -24,20 +24,20 @@ afterEach(async () => {
 
 function agent(ctx: Context, cwd: string): Agent {
   const id = SessionId(`tool-edit-owner-${callNumber}`)
-  const scope = ctx.plugin(() => {})
+  const scope = ctx.plugin(() => { })
   const session = Session.create(id, [], { version: 0, id, createdAt: 0, cwd, isSeeded: false })
   const value: Agent = {
     id,
     options: {},
     session,
-    inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
+    inbox: new Inbox(session, { inserted: () => { }, discarded: () => { }, claimed: () => { } }),
     status: 'idle',
     ctx: scope.ctx,
-    send: () => {},
-    followup: () => {},
+    send: () => { },
+    followup: () => { },
     steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),
-    inject: () => {},
-    cancel() {},
+    inject: () => { },
+    cancel() { },
     runMaintenance: task => task(new AbortController().signal),
     whenIdle: () => Promise.resolve(),
   }
@@ -347,5 +347,48 @@ describe('tool-edit (replace mode) × LSP writethrough', () => {
     expect(result.isError).toBe(false)
     expect(history.formatted).toEqual([])
     expect(await readFile(sample, 'utf8')).toBe('def greet(name):\n    return name.upper()\n')
+  })
+})
+
+describe('path aliases and no-op edits', () => {
+  it('accepts file_path as an alias for path', async () => {
+    const { ctx, root, owner } = await setup()
+    const sample = join(root, 'a.txt')
+    await writeFile(sample, 'hello world\n')
+    const result = await call(ctx, owner, {
+      file_path: sample,
+      old_string: 'hello',
+      new_string: 'goodbye',
+    })
+    expect(result.isError).toBe(false)
+    expect(text(result)).toContain('Successfully replaced text')
+    expect(await readFile(sample, 'utf8')).toBe('goodbye world\n')
+  })
+
+  it('accepts filePath as an alias for path', async () => {
+    const { ctx, root, owner } = await setup()
+    const sample = join(root, 'b.txt')
+    await writeFile(sample, 'alpha\n')
+    const result = await call(ctx, owner, {
+      filePath: sample,
+      old_string: 'alpha',
+      new_string: 'omega',
+    })
+    expect(result.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe('omega\n')
+  })
+
+  it('reports an unchanged edit as a no-change success instead of an error', async () => {
+    const { ctx, root, owner } = await setup()
+    const sample = join(root, 'c.txt')
+    await writeFile(sample, 'same\n')
+    const result = await call(ctx, owner, {
+      path: sample,
+      old_string: 'same',
+      new_string: 'same',
+    })
+    expect(result.isError).toBe(false)
+    expect(text(result)).toContain('No change')
+    expect(await readFile(sample, 'utf8')).toBe('same\n')
   })
 })
