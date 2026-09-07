@@ -42,6 +42,7 @@ export type {
   AgentGraphIntentAdmissionTransition,
   AgentGraphOperatorProvisionRequest,
   AgentGraphOperatorProvision,
+  AgentGraphOperatorBinding,
   AgentGraphProvisionedEdge,
   AgentGraphOperatorProvisionResult,
   AgentGraphSupervisorWakeRecord,

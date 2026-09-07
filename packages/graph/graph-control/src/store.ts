@@ -2,11 +2,12 @@
  * The Agent Graph control store: single-writer, durable, heal-on-open.
  *
  * Persisted (authoritative) tables over one {@link KvUnit}:
- * - `schedule`        key = updateId                    → AgentGraphScheduleUpdate
- * - `claims`          key = `${graphId}:${intentId}`    → claim record (with admission status)
- * - `provisions`      key = provisionId                 → AgentGraphOperatorProvision
- * - `wakes`           key = wakeId                      → AgentGraphSupervisorWakeRecord
- * - `wake_attempts`   key = `${wakeId}:${attemptId}`    → AgentGraphSupervisorWakeAttemptRecord
+ * - `schedule`          key = updateId                  → AgentGraphScheduleUpdate
+ * - `claims`            key = `${graphId}:${intentId}`  → claim record (with admission status)
+ * - `provisions`        key = provisionId               → AgentGraphOperatorProvision
+ * - `operator_bindings` key = provisionId               → AgentGraphOperatorBinding
+ * - `wakes`             key = wakeId                    → AgentGraphSupervisorWakeRecord
+ * - `wake_attempts`     key = `${wakeId}:${attemptId}`  → AgentGraphSupervisorWakeAttemptRecord
  *
  * Derived indexes (schedule-by-revision, schedule-by-source, claim-target
  * uniqueness, provision-by-work, wake-by-root-and-graph) are rebuilt from the
@@ -32,6 +33,7 @@ import type {
   AgentGraphIntentClaim,
   AgentGraphIntentClaimRequest,
   AgentGraphIntentClaimResult,
+  AgentGraphOperatorBinding,
   AgentGraphOperatorProvision,
   AgentGraphOperatorProvisionRequest,
   AgentGraphOperatorProvisionResult,
@@ -50,7 +52,7 @@ import type {
 export const AGENT_GRAPH_CONTROL_UNIT_NAME = 'agent_graph'
 export const AGENT_GRAPH_CONTROL_UNIT_VERSION = 1
 
-const UNIT_TABLES = ['schedule', 'claims', 'provisions', 'wakes', 'wake_attempts'] as const
+const UNIT_TABLES = ['schedule', 'claims', 'provisions', 'operator_bindings', 'wakes', 'wake_attempts'] as const
 
 /** Claim row as stored: the public claim plus its durable admission status. */
 export interface AgentGraphIntentClaimRecord extends AgentGraphIntentClaim {
@@ -111,6 +113,9 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
   private provisions = new Map<string, AgentGraphOperatorProvision>()
   private provisionsByGraph = new Map<string, AgentGraphOperatorProvision[]>()
   private provisionByWork = new Map<string, string>()
+  private bindings = new Map<string, AgentGraphOperatorBinding>()
+  private bindingsByGraph = new Map<string, AgentGraphOperatorBinding[]>()
+  private bindingByWork = new Map<string, string>()
   private wakes = new Map<string, AgentGraphSupervisorWakeRecord>()
   private attempts = new Map<string, AgentGraphSupervisorWakeAttemptRecord>()
   private lockTail: Promise<unknown> = Promise.resolve()
@@ -140,6 +145,10 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       const provision = mustRecord(value, `provision row '${key}'`) as unknown as AgentGraphOperatorProvision
       this.provisions.set(key, provision)
     }
+    for (const [key, value] of Object.entries(tables['operator_bindings'] ?? {})) {
+      const binding = mustRecord(value, `operator binding row '${key}'`) as unknown as AgentGraphOperatorBinding
+      this.bindings.set(key, binding)
+    }
     for (const [key, value] of Object.entries(tables['wakes'] ?? {})) {
       const wake = mustRecord(value, `wake row '${key}'`) as unknown as AgentGraphSupervisorWakeRecord
       this.wakes.set(key, wake)
@@ -160,6 +169,8 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
     this.claimByRun = new Map()
     this.provisionsByGraph = new Map()
     this.provisionByWork = new Map()
+    this.bindingsByGraph = new Map()
+    this.bindingByWork = new Map()
     for (const update of this.scheduleByUpdate.values()) {
       const list = this.scheduleByGraph.get(update.graphId) ?? []
       list.push(update)
@@ -179,6 +190,12 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       list.push(provision)
       this.provisionsByGraph.set(provision.graphId, list)
       this.provisionByWork.set(`${provision.graphId}:${provision.workId}`, provision.provisionId)
+    }
+    for (const binding of this.bindings.values()) {
+      const list = this.bindingsByGraph.get(binding.graphId) ?? []
+      list.push(binding)
+      this.bindingsByGraph.set(binding.graphId, list)
+      this.bindingByWork.set(`${binding.graphId}:${binding.workId}`, binding.provisionId)
     }
   }
 
@@ -430,6 +447,57 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
     return Promise.resolve(this.provisions.get(provisionId))
   }
 
+  /* ----------------------- operator worktree bindings ----------------- */
+  /**
+   * Persist one operator worktree binding, keyed by `provisionId`. Re-binding
+   * the same provision with the SAME lease id adopts the existing row (the
+   * original `boundAt` is kept); re-binding with a DIFFERENT lease id is
+   * rejected — a provision owns exactly one worktree lease.
+   */
+  bindOperatorWorktree(binding: AgentGraphOperatorBinding): Promise<void> {
+    return this.locked(async () => {
+      const existing = this.bindings.get(binding.provisionId)
+      if (existing !== undefined && existing.leaseId !== binding.leaseId) {
+        throw new GraphControlError(
+          'binding-conflict',
+          `agent graph ${binding.graphId}: provision ${binding.provisionId} is bound to lease ${existing.leaseId}, cannot rebind to ${binding.leaseId}`,
+        )
+      }
+      const row: AgentGraphOperatorBinding =
+        existing !== undefined
+          ? { ...binding, boundAt: existing.boundAt }
+          : binding
+      this.bindings.set(row.provisionId, row)
+      const list = this.bindingsByGraph.get(row.graphId) ?? []
+      if (existing === undefined) list.push(row)
+      else {
+        const index = list.findIndex(item => item.provisionId === row.provisionId)
+        if (index >= 0) list[index] = row
+      }
+      this.bindingsByGraph.set(row.graphId, list)
+      this.bindingByWork.set(`${row.graphId}:${row.workId}`, row.provisionId)
+      await this.put('operator_bindings', row.provisionId, row)
+    })
+  }
+
+  readOperatorBinding(provisionId: string): Promise<AgentGraphOperatorBinding | undefined> {
+    return Promise.resolve(this.bindings.get(provisionId))
+  }
+
+  readOperatorBindingByWork(
+    graphId: string,
+    workId: string,
+  ): Promise<AgentGraphOperatorBinding | undefined> {
+    const provisionId = this.bindingByWork.get(`${graphId}:${workId}`)
+    if (provisionId === undefined) return Promise.resolve(undefined)
+    return Promise.resolve(this.bindings.get(provisionId))
+  }
+
+  listOperatorBindings(graphId?: string): Promise<AgentGraphOperatorBinding[]> {
+    if (graphId !== undefined) return Promise.resolve([...(this.bindingsByGraph.get(graphId) ?? [])])
+    return Promise.resolve([...this.bindings.values()])
+  }
+
   /* --------------------------- supervisor wakes ----------------------- */
 
   claimSupervisorWake(request: ClaimAgentGraphSupervisorWakeRequest): Promise<{ wake: AgentGraphSupervisorWakeRecord; created: boolean }> {
@@ -594,6 +662,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       scheduleUpdates: [...this.scheduleByUpdate.values()].sort((a, b) => b.revision - a.revision),
       intentClaims: [...this.claims.values()],
       operatorProvisions: [...this.provisions.values()],
+      operatorBindings: [...this.bindings.values()],
       supervisorWakes: [...this.wakes.values()],
     })
   }

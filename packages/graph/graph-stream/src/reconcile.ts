@@ -705,6 +705,10 @@ export async function reconcileAgentGraphSchedule(
       )
       try {
         const result = await input.executor.provisionOperator(request)
+        if (result === undefined) {
+          deferredWork.push({ workId: work.workId, reason: 'operator_provision_unavailable' })
+          continue
+        }
         provisionsByWork.set(work.workId, result.provision)
         topologyChanged = true
       } catch (error) {

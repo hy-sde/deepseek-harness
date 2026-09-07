@@ -134,6 +134,7 @@ export type AgentGraphDeferredWorkKind =
   | 'input_not_committed'
   | 'graph_closed'
   | 'activation_limit'
+  | 'operator_provision_unavailable'
 export type AgentGraphReconcileStatus =
   'reconciled' | 'waiting' | 'limit_reached' | 'failed' | 'cancelled' | 'stale'
 export interface AgentGraphReconciliationFailure {
@@ -157,10 +158,14 @@ export interface AgentGraphReconciliationResult {
 
 /** The seam every host provides (Maka `AgentGraphCoordinatorRuntime`): the whole runtime surface the driver needs. */
 export interface AgentGraphExecutor {
-  /** Provision one operator child (idempotent; adopts on retry). Returns the durable provision row. */
+  /**
+   * Provision one operator child (idempotent; adopts on retry). Returns the
+   * durable provision row, or undefined when the host cannot provide the
+   * operator yet (work is deferred, not failed).
+   */
   provisionOperator(
     request: AgentGraphOperatorProvisionRequest,
-  ): Promise<AgentGraphOperatorProvisionResult>
+  ): Promise<AgentGraphOperatorProvisionResult | undefined>
   /** Run one CLAIMED intent to completion and return its committed records. */
   runClaimedAgentGraphIntent(
     input: AgentGraphRunClaimedIntentInput,

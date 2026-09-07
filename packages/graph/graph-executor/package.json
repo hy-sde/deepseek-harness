@@ -1,0 +1,39 @@
+{
+  "name": "@deepseek-ai/dsh-graph-executor",
+  "description": "Operator executor adapter for the Agent Graph: deterministic worktree leases, durable operator bindings, and child-run serialization with terminal record emission (Maka port, slice P3)",
+  "version": "0.1.2-rc.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/graph/graph-executor"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-graph-control": "workspace:^",
+    "@deepseek-ai/dsh-graph-stream": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-graph-control": "workspace:^",
+    "@deepseek-ai/dsh-graph-stream": "workspace:^",
+    "@deepseek-ai/dsh-storage": "workspace:^",
+    "@deepseek-ai/dsh-storage-sqlite": "workspace:^"
+  }
+}

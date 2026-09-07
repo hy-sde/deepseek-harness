@@ -15,6 +15,7 @@ export type GraphControlErrorCode =
   | 'intent-not-found'
   | 'provision-conflict'
   | 'provision-not-found'
+  | 'binding-conflict'
   | 'wake-not-found'
   | 'wake-attempt-not-found'
   | 'wake-already-delivered'

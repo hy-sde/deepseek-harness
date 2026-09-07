@@ -161,6 +161,19 @@ export interface AgentGraphOperatorProvisionResult {
   readonly created: boolean
 }
 
+/** One operator worktree binding: the durable lease a provisioned child runs in. */
+export interface AgentGraphOperatorBinding {
+  readonly graphId: string
+  readonly workId: string
+  readonly provisionId: string
+  readonly leaseId: string
+  /** Absolute workspace path of the leased worktree. */
+  readonly path: string
+  /** Absolute root of the repository the worktree belongs to. */
+  readonly repoRoot: string
+  readonly boundAt: number
+}
+
 export type AgentGraphSupervisorWakeStatus =
   | 'pending'
   | 'running'
@@ -228,6 +241,7 @@ export interface AgentGraphControlSnapshot {
   readonly scheduleUpdates: readonly AgentGraphScheduleUpdate[]
   readonly intentClaims: readonly AgentGraphIntentClaim[]
   readonly operatorProvisions: readonly AgentGraphOperatorProvision[]
+  readonly operatorBindings: readonly AgentGraphOperatorBinding[]
   readonly supervisorWakes: readonly AgentGraphSupervisorWakeRecord[]
 }
 
