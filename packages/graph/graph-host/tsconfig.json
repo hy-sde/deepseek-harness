@@ -1,0 +1,51 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../graph-control"
+    },
+    {
+      "path": "../graph-stream"
+    },
+    {
+      "path": "../graph-executor"
+    },
+    {
+      "path": "../graph-wakes"
+    },
+    {
+      "path": "../tool-graph"
+    },
+    {
+      "path": "../../storage/storage"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../subagent/subagent"
+    },
+    {
+      "path": "../../git/git"
+    },
+    {
+      "path": "../../compaction/compaction"
+    },
+    {
+      "path": "../../session/session-persistence"
+    }
+  ]
+}

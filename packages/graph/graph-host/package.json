@@ -1,0 +1,63 @@
+{
+  "name": "@deepseek-ai/dsh-graph-host",
+  "description": "Agent Graph host assembly: wires the P1-P5 slices to real harness services (storage, subagents, worktrees, compaction, idle) and provides the controller service the supervisor tools consume (Maka port, slices P6-P7a)",
+  "version": "0.1.2-rc.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/graph/graph-host"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-agent": "workspace:^",
+    "@deepseek-ai/dsh-compaction": "workspace:^",
+    "@deepseek-ai/dsh-git": "workspace:^",
+    "@deepseek-ai/dsh-graph-control": "workspace:^",
+    "@deepseek-ai/dsh-graph-executor": "workspace:^",
+    "@deepseek-ai/dsh-graph-stream": "workspace:^",
+    "@deepseek-ai/dsh-graph-wakes": "workspace:^",
+    "@deepseek-ai/dsh-session": "workspace:^",
+    "@deepseek-ai/dsh-session-persistence": "workspace:^",
+    "@deepseek-ai/dsh-storage": "workspace:^",
+    "@deepseek-ai/dsh-subagent": "workspace:^",
+    "@deepseek-ai/dsh-tool-graph": "workspace:^"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-agent": "workspace:^",
+    "@deepseek-ai/dsh-compaction": "workspace:^",
+    "@deepseek-ai/dsh-git": "workspace:^",
+    "@deepseek-ai/dsh-graph-control": "workspace:^",
+    "@deepseek-ai/dsh-graph-executor": "workspace:^",
+    "@deepseek-ai/dsh-graph-stream": "workspace:^",
+    "@deepseek-ai/dsh-graph-wakes": "workspace:^",
+    "@deepseek-ai/dsh-session": "workspace:^",
+    "@deepseek-ai/dsh-session-persistence": "workspace:^",
+    "@deepseek-ai/dsh-storage": "workspace:^",
+    "@deepseek-ai/dsh-storage-sqlite": "workspace:^",
+    "@deepseek-ai/dsh-subagent": "workspace:^",
+    "@deepseek-ai/dsh-tool-graph": "workspace:^"
+  }
+}
