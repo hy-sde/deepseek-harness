@@ -34,7 +34,7 @@ dsh --profile web
 dsh --profile web --no-open --port 8080
 ```
 
-After startup you see a `dsh web:` line whose root URL carries a fresh process token. Unless `--no-open` or an SSH session suppresses it, the default browser opens that URL, receives a signed cookie, and redirects to the clean root page. You know it worked when the page loads and you can chat with the agent. Two failures to expect: if the frontend is not built, startup stops with a build hint (`pnpm run build` in a checkout); if the browser cannot be opened, a credential-free diagnostic prints to stderr while the server keeps running — open the printed startup URL yourself.
+After startup you see a `dsh web:` line whose root URL carries a fresh process token. Unless `--no-open` or an SSH session suppresses it, the default browser opens that URL, receives a signed cookie, and redirects to the clean root page. The handoff belongs to the launcher: it happens only for a human-facing invocation (`dsh web` / `dsh --profile web`), never for a programmatic boot through `runProfile` — a mount-validation script or a boot test gets the URL line but never pops a browser tab at a server that is about to stop. You know it worked when the page loads and you can chat with the agent. Two failures to expect: if the frontend is not built, startup stops with a build hint (`pnpm run build` in a checkout); if the browser cannot be opened, a credential-free diagnostic prints to stderr while the server keeps running — open the printed startup URL yourself.
 
 ### Configuration
 
@@ -42,7 +42,7 @@ Most users never set these; the command-line flags feed the four settings below 
 
 | Field | Default | Meaning |
 |---|---|---|
-| `openBrowser` | `true` | Open the default browser after startup; SSH launches suppress it |
+| `openBrowser` | `true` | Open the default browser after startup — launcher invocations (`dsh web`) only; SSH launches and programmatic embeddings suppress it |
 | `printUrl` | `true` | Print the `dsh web:` URL line at startup |
 | `surfaceContext` | `true` | Give the agent GUI-orientation context and expose `DSH_WEB_URL` to its shell commands |
 | `trustedHosts` | `[]` | Extra hosts allowed to reach the GUI from the network |
@@ -144,6 +144,7 @@ These limits tell you what to expect in unusual setups — a source checkout, SS
 - **The frontend must be built** — a source checkout needs `pnpm run build` first; startup stops with a build hint when the dist is missing, and there is no source-serving fallback.
 - **LAN addresses are sampled once at startup** — interface changes after boot are not re-advertised; the printed LAN URL always matches what was sampled.
 - **Only the handoff start is observable** — the GUI reports that the browser was asked to open, not that it actually opened; a later browser exit is never reported, and the printed URL is your manual fallback.
+- **Programmatic boots never open a browser** — a tree booted through `runProfile` (tests, mount-validation scripts) is not a human-facing launch, so it prints the URL line and skips the handoff even without `--no-open`; only the `dsh web` launcher hands off.
 - **SSH sessions keep the URL but skip the browser handoff** — the printed URL names the remote host's loopback endpoint; the SSH client or editor must expose and open the local forwarded address.
 - **`BROWSER` overrides only come from the environment** — a discovered `.env` cannot set `BROWSER`; only an inherited value can choose the executable for the automatic handoff.
 - **Binding all network interfaces is not supported** — `--host 0.0.0.0` is rejected at startup for safety; use the default loopback host.

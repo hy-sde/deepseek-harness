@@ -29,9 +29,10 @@ kind: "package-library"
 
 ### 启动器提供的值
 
-启动器向你的应用提供三样东西：
+启动器向你的应用提供四样东西：
 
 - `ctx.cmdlineArgs`——本次调用的内层参数。读取它返回一份不可变快照，且绝不会消费或修改它们：`dsh --profile tui --resume abc` 给你的应用 `['--resume', 'abc']`。
+- `ctx.cmdlineArgs.interactive`——本次启动是否面向人类。只有启动器调用（`dsh web`）才是 `true`；嵌入宿主（测试、挂载验证脚本、其他工具的子进程）得到 `false`，因此应用可以把仅面向操作者的便利——例如打开默认浏览器——保留给真实用户。
 - `ctx.appExit`——在整棵树关闭后请求进程退出的方式，接到启动器的关停控制器上。
 - `ctx.appReady`——成功启动信号，只在 Loader 树与 launcher 自有设置成功后提交。
 

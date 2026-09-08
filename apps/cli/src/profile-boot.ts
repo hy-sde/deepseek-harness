@@ -46,7 +46,7 @@ function createAppReady(): { service: AppReady; commit(): void } {
       onReady(listener) {
         if (ready) {
           listener()
-          return () => {}
+          return () => { }
         }
         listeners.add(listener)
         return () => { listeners.delete(listener) }
@@ -183,6 +183,14 @@ export interface RunProfileOptions {
   patchFiles: readonly string[]
   /** The invocation's inner arguments, handed to the tree through `ctx.cmdlineArgs`. */
   args: readonly string[]
+  /**
+   * Whether this invocation is human-facing — a user ran the launcher, not an
+   * embedding host (a test, a one-shot validator, another tool's subprocess).
+   * Absent by default; apps use it for operator-only conveniences such as the
+   * web app's default-browser handoff, which a temporary validation boot must
+   * never perform.
+   */
+  interactive?: boolean
 }
 
 /**
@@ -272,6 +280,7 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
       args: options.args,
       exit: code => void shutdown.shutdown(code),
       ready: appReady.service,
+      ...options.interactive !== undefined && { interactive: options.interactive },
     })
   })
   app.current = ctx

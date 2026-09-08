@@ -21,7 +21,13 @@ export const WEB_STARTUP_SERVICE = 'webStartup'
 
 /** What the web rows read from {@link WEB_STARTUP_SERVICE}. */
 export interface WebStartupValues {
-  /** Whether this invocation opens the default browser after startup. */
+  /**
+   * Whether this invocation opens the default browser after startup. True only
+   * when the invocation is human-facing (the `dsh web` launcher) and did not
+   * pass `--no-open`; an embedding host booting the web bundle never gets a
+   * handoff, so a mount-validation script cannot pop a tab at a server that is
+   * about to stop.
+   */
   openBrowser: boolean
   /** `--host`, absent when the invocation did not name one. */
   host?: string
@@ -77,8 +83,14 @@ export function apply(ctx: Context): void {
     if (options.port !== undefined && !/^\d+$/.test(options.port)) {
       program.error(`error: --port must be a number, got ${JSON.stringify(options.port)}`)
     }
+    // The handoff is an operator-only convenience: it belongs to a human-facing
+    // launcher invocation (`dsh web`), never to an embedding host (a mount
+    // validation script, a boot test) that tears the tree down right after its
+    // assertion. Such a boot still prints its URL line; it just does not pop a
+    // browser tab at a server that is about to stop.
+    const interactive = ctx.cmdlineArgs?.interactive ?? false
     ctx.provide(WEB_STARTUP_SERVICE, {
-      openBrowser: options.open,
+      openBrowser: options.open && interactive,
       ...options.host !== undefined && { host: options.host },
       ...options.port !== undefined && { port: Number(options.port) },
       trustedHosts: options.trustedHost ?? [],

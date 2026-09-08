@@ -31,6 +31,10 @@ switch (invocation.mode) {
       profile: invocation.profile,
       patchFiles: invocation.patches,
       args: invocation.args,
+      // The launcher is the human-facing entry point: only it may trigger
+      // operator-only conveniences such as the web app's default-browser
+      // handoff. Embedding hosts that call runProfile directly stay silent.
+      interactive: true,
     })
     break
   }

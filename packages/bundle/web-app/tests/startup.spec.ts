@@ -76,7 +76,7 @@ export const apply = ctx => globalThis.__webStartupApply(ctx)
   const ctx = new Context()
   await ctx.plugin(Loader)
   ctx.loader.builtins.include = Include
-  provideCmdline(ctx, { args, exit: code => void observed.exits.push(code) })
+  provideCmdline(ctx, { args, exit: code => void observed.exits.push(code), interactive: true })
   await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(join(dir, 'cordis.yml')).href } })
   await ctx.loader.await()
   disposers.push(async () => { await ctx.fiber.dispose() })
@@ -114,6 +114,53 @@ describe('web command-line provider', () => {
       port: 3080,
       trustedHosts: [],
     })
+  })
+
+  it('keeps the browser handoff off for embedding hosts, even without --no-open', async () => {
+    // A mount-validation script or boot test calls runProfile/provideCmdline
+    // directly and never declares a human-facing launch: the URL line may be
+    // useful, popping the default browser is not.
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-web-startup-embed-'))
+    const observed: Observed = { exits: [], out: '' }
+    writeFileSync(join(dir, 'reader.mjs'), `
+export function apply(_ctx, config) { globalThis.__webStartupObserved.readerConfig = config }
+`)
+    writeFileSync(join(dir, 'provider.mjs'), `
+export const name = 'web-startup'
+export const inject = ['cmdlineArgs']
+export const apply = ctx => globalThis.__webStartupApply(ctx)
+`)
+    writeFileSync(join(dir, 'cordis.yml'), [
+      '- id: reader',
+      `  name: ${pathToFileURL(join(dir, 'reader.mjs')).href}`,
+      `  inject: [${WEB_STARTUP_SERVICE}]`,
+      '  config:',
+      '    openBrowser: !!js ctx.webStartup.openBrowser',
+      '',
+      '- id: provider',
+      `  name: ${pathToFileURL(join(dir, 'provider.mjs')).href}`,
+      '',
+    ].join('\n'))
+    const observing = { write: (chunk: string) => { observed.out += chunk; return true } }
+    internals.stdout = observing
+    internals.stderr = observing
+    const globals = globalThis as unknown as {
+      __webStartupApply: typeof apply
+      __webStartupObserved: Observed
+    }
+    globals.__webStartupApply = apply
+    globals.__webStartupObserved = observed
+
+    const ctx = new Context()
+    await ctx.plugin(Loader)
+    ctx.loader.builtins.include = Include
+    // No interactive flag: the embedding-host default.
+    provideCmdline(ctx, { args: [], exit: () => { } })
+    await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(join(dir, 'cordis.yml')).href } })
+    await ctx.loader.await()
+    disposers.push(async () => { await ctx.fiber.dispose() })
+    expect(ctx.get(WEB_STARTUP_SERVICE)).toEqual({ openBrowser: false, trustedHosts: [] })
+    expect(observed.readerConfig).toEqual({ openBrowser: false })
   })
 
   it('prints its own help and leaves the consumer pending', async () => {

@@ -30,6 +30,14 @@ export interface CmdlineArgs {
    * @returns the arguments in argv order; empty when the invocation carried none.
    */
   get(): readonly string[]
+  /**
+   * Whether this launcher invocation is human-facing — a user ran the launcher
+   * directly, not an embedding host (a test, a one-shot validator, another
+   * tool's subprocess). Apps use it for convenience side effects tied to a
+   * live operator, such as opening the default browser: an embedding host that
+   * boots the same tree must not pop windows nobody asked for.
+   */
+  readonly interactive: boolean
 }
 
 /** Request bounded process exit; the launcher wires it to its shutdown controller. */
@@ -71,6 +79,12 @@ export interface CmdlineHost {
   exit: AppExit
   /** Successful startup signal for lifecycle work that must not mask boot failure. */
   ready?: AppReady
+  /**
+   * Whether this invocation is human-facing. Defaults to false: an embedding
+   * host (tests, one-shot validators, tool subprocesses) that does not pass it
+   * is telling the tree not to perform operator-only conveniences.
+   */
+  interactive?: boolean
 }
 
 /**
@@ -83,7 +97,7 @@ export interface CmdlineHost {
  */
 export function provideCmdline(ctx: Context, host: CmdlineHost): void {
   const snapshot: readonly string[] = Object.freeze([...host.args])
-  ctx.provide('cmdlineArgs', { get: () => snapshot })
+  ctx.provide('cmdlineArgs', { get: () => snapshot, interactive: host.interactive ?? false })
   ctx.provide('appExit', host.exit)
   if (host.ready !== undefined) ctx.provide('appReady', host.ready)
 }
@@ -129,7 +143,7 @@ export function exitOnStdinEnd(ctx: Context, label: string): void {
   const stdin = internals.stdin
   let active = true
   let ended = false
-  let cancelReady = (): void => {}
+  let cancelReady = (): void => { }
   const onEnd = (): void => {
     if (!active || ended) return
     ended = true

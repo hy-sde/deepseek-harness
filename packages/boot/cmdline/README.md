@@ -29,9 +29,10 @@ Your app reads the invocation's inner arguments at startup, and any number of it
 
 ### The launcher values
 
-The launcher makes three things available to your app:
+The launcher makes four things available to your app:
 
 - `ctx.cmdlineArgs` — the inner arguments of your invocation. Reading them returns an immutable snapshot and never consumes or changes them: `dsh --profile tui --resume abc` gives your app `['--resume', 'abc']`.
+- `ctx.cmdlineArgs.interactive` — whether this launch is human-facing. It is `true` only for a launcher invocation (`dsh web`); an embedding host (a test, a mount-validation script, another tool's subprocess) gets `false`, so apps can reserve operator-only conveniences — opening the default browser, for example — for a live user.
 - `ctx.appExit` — a way to ask the process to exit once the tree has shut down, wired to the launcher's shutdown controller.
 - `ctx.appReady` — the successful-startup signal, committed only after the Loader tree and launcher-owned setup succeed.
 

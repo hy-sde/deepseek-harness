@@ -37,7 +37,7 @@ const disposers: (() => Promise<void>)[] = []
 const readyApp: AppReady = {
   onReady(listener) {
     listener()
-    return () => {}
+    return () => { }
   },
 }
 
@@ -218,9 +218,17 @@ describe('provideCmdline', () => {
   it('hands the app a snapshot the caller cannot mutate afterwards', () => {
     const ctx = new Context()
     const args = ['--resume', 'abc']
-    provideCmdline(ctx, { args, exit: () => {} })
+    provideCmdline(ctx, { args, exit: () => { } })
     args.push('--tampered')
     expect(ctx.cmdlineArgs?.get()).toEqual(['--resume', 'abc'])
+    // An embedding host is not a human-facing launcher unless it says so.
+    expect(ctx.cmdlineArgs?.interactive).toBe(false)
+  })
+
+  it('records a human-facing launcher invocation for operator-only conveniences', () => {
+    const ctx = new Context()
+    provideCmdline(ctx, { args: [], exit: () => { }, interactive: true })
+    expect(ctx.cmdlineArgs?.interactive).toBe(true)
   })
 
   it('refuses at load a program in which no command declares an action', async () => {
@@ -253,7 +261,7 @@ describe('provideCmdline', () => {
 
   it('lets multiple parsers read the same immutable snapshot', () => {
     const ctx = new Context()
-    provideCmdline(ctx, { args: ['--port', '8080'], exit: () => {} })
+    provideCmdline(ctx, { args: ['--port', '8080'], exit: () => { } })
     const parseOnce = (): unknown => {
       let values: unknown
       const program = demoCommand()
@@ -360,7 +368,7 @@ describe('exitOnStdinEnd', () => {
   it('fails loud without launcher startup readiness', () => {
     const ctx = new Context()
     internals.stdin = new TestStdin()
-    provideCmdline(ctx, { args: [], exit: () => {} })
+    provideCmdline(ctx, { args: [], exit: () => { } })
     expect(() => { exitOnStdinEnd(ctx, 'test.stdin') }).toThrow('launcher must provide ctx.appExit and ctx.appReady')
   })
 })
