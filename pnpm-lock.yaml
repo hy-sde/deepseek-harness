@@ -244,6 +244,12 @@ importers:
       '@deepseek-ai/dsh-mcp-client':
         specifier: workspace:^
         version: link:../../packages/mcp/mcp-client
+      '@deepseek-ai/dsh-memory':
+        specifier: workspace:^
+        version: link:../../packages/memory/memory
+      '@deepseek-ai/dsh-memory-extraction':
+        specifier: workspace:^
+        version: link:../../packages/memory/memory-extraction
       '@deepseek-ai/dsh-orchestration-policy':
         specifier: workspace:^
         version: link:../../packages/orchestration/policy
@@ -280,6 +286,9 @@ importers:
       '@deepseek-ai/dsh-skill-filesystem':
         specifier: workspace:^
         version: link:../../packages/skill/skill-filesystem
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:^
+        version: link:../../packages/storage/storage
       '@deepseek-ai/dsh-storage-sqlite':
         specifier: workspace:^
         version: link:../../packages/storage/storage-sqlite
@@ -1990,6 +1999,9 @@ importers:
       '@deepseek-ai/dsh-logseq-graph':
         specifier: workspace:^
         version: link:../../logseq/logseq-graph
+      '@deepseek-ai/dsh-memory-extraction':
+        specifier: workspace:^
+        version: link:../../memory/memory-extraction
       '@deepseek-ai/dsh-message-feedback':
         specifier: workspace:^
         version: link:../../feedback/message-feedback
@@ -2005,6 +2017,9 @@ importers:
       '@deepseek-ai/dsh-session-turn-outline':
         specifier: workspace:^
         version: link:../../session/session-turn-outline
+      '@deepseek-ai/dsh-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
       '@deepseek-ai/dsh-subprocess':
         specifier: workspace:^
         version: link:../../subprocess/subprocess
@@ -7573,6 +7588,34 @@ importers:
       '@deepseek-ai/dsh-internal-urls':
         specifier: workspace:^
         version: link:../../fs/internal-urls
+
+  packages/memory/memory-extraction:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-compaction':
+        specifier: workspace:^
+        version: link:../../compaction/compaction
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@deepseek-ai/dsh-memory':
+        specifier: workspace:^
+        version: link:../memory
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@deepseek-ai/dsh-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
 
   packages/memory/tool-memory:
     dependencies:

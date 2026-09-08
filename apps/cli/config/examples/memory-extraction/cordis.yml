@@ -1,0 +1,49 @@
+# Opt-in automatic memory-extraction patch over the shipped Web composition:
+# after every compaction checkpoint, a bounded, fail-open pipeline projects the
+# user-authored text of the checkpointed range, proposes/canonicalizes durable
+# facts with an auxiliary model call, and commits them into the same project
+# memory bank `retain`/`learn` write (Maka port, slice No. 2).
+#
+# Plane split (load-bearing — do not move rows between planes):
+# - `memory-extraction` is a HOST row: it opens the `memory_extraction` control
+#   unit once per process and observes every session's `compaction/summary`
+#   events through an unscoped `ctx.on('session/event')` listener (the scope
+#   filter admits unscoped listeners globally; an agent-preset row would scope
+#   the listener to one session and collide on the control unit). A preset row
+#   publishing a service collides across sessions — same rule as `graph-host`.
+# - There is NO agent-preset contribution: DSH's explicit
+#   `retain`/`learn`/`memory_edit` surface stays the model-facing path (Maka's
+#   `memory_remember`/`memory_extract` verbs are reserved, not ported).
+#
+# Requirements:
+# - `backend` defaults to `sqlite`, whose kv facet hosts the control unit. The
+#   base bundle mounts only `storage-json`, so the `storage-sqlite` row below is
+#   required for that default.
+# - The `memory` and `llm` host services must be mounted (the base bundle has
+#   them); the run silently stays off when the backend row is missing.
+# - Cost note: each checkpoint with new user text costs up to 3 auxiliary model
+#   calls (proposal, localization, canonicalization), each bounded by
+#   `timeoutMs`. Set `provider`/`model` to a cheap model when the deployment's
+#   routed model is expensive.
+
+- insert:
+    - id: storage-sqlite
+      name: '@deepseek-ai/dsh-storage-sqlite'
+      config:
+        # Override with DSH_MEMORY_EXTRACTION_DB; ':memory:' loses every
+        # control row (cursors, receipts, failure ledger) on restart, so it is
+        # not the durable choice. Sharing the graph control DB is fine; units
+        # are namespaced by descriptor.
+        path: !!js process.env.DSH_MEMORY_EXTRACTION_DB ?? '.dsh/memory-extraction.sqlite'
+
+    - id: memory-extraction
+      name: '@deepseek-ai/dsh-memory-extraction'
+      config:
+        backend: sqlite        # storage backend hosting the control unit (default sqlite)
+        enabled: true          # master switch (default true)
+        excludeSubagents: true # child-agent compactions never extract (default true)
+        # provider: <cheap provider id>  # optional; unset uses the session's routed model config
+        # model: <cheap model id>        # optional; unset uses the session's routed model config
+        importance: 0.5        # bank importance for auto-extracted facts (default 0.5)
+        dedupe: true           # probe the bank before committing duplicates (default true)
+        timeoutMs: 60000       # auxiliary call timeout (default 60000)

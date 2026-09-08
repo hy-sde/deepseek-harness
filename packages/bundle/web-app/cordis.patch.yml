@@ -77,6 +77,27 @@
     - id: session-turn-outline
       name: '@deepseek-ai/dsh-session-turn-outline'
 
+    # Automatic memory extraction at compaction checkpoints (Maka port No. 2):
+    # a host-plane `session/event` listener proposes/canonicalizes durable
+    # facts from each checkpointed range and commits them into the same
+    # project memory bank `retain`/`learn` write. The base bundle mounts only
+    # storage-json, so the sqlite backend row below hosts its control unit
+    # (cursors, receipts, failure ledger) in a per-user file; override with
+    # DSH_MEMORY_EXTRACTION_DB. Cost note: each checkpoint with new user text
+    # costs up to 3 auxiliary model calls (proposal, localization,
+    # canonicalization), each bounded by the row's `timeoutMs`.
+    - id: storage-sqlite
+      name: '@deepseek-ai/dsh-storage-sqlite'
+      config:
+        path: !!js dshHomePath('memory-extraction.sqlite')
+
+    - id: memory-extraction
+      name: '@deepseek-ai/dsh-memory-extraction'
+      config:
+        backend: sqlite
+        enabled: true
+        excludeSubagents: true
+
     # Resolve bind host, SSH launch, and display once at boot, then mount the
     # matching dual-face directory picker. Mount -native or -browse directly in
     # an overlay to pin the interaction.

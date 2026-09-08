@@ -1872,7 +1872,7 @@ export interface ReconnectConfig {
 
 来源：[`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
 
-<a id="deepseek-aidsh-message-feedback"></a>
+<a id="deepseek-aidsh-memory"></a>
 
 
 ## `@deepseek-ai/dsh-memory`
@@ -1899,6 +1899,55 @@ export interface Config {
 ```
 
 来源：[`packages/memory/memory/src/index.ts:42`](../packages/memory/memory/src/index.ts)
+
+<a id="deepseek-aidsh-memory-extraction"></a>
+
+## `@deepseek-ai/dsh-memory-extraction`
+
+需要：`memory` · `llm`
+
+```ts config-catalog
+/** Plugin configuration. */
+export interface Config extends RuntimeConfig {
+  /** Master switch; false makes the plugin inert (default true). */
+  enabled?: boolean
+  /** Storage backend name whose kv facet hosts the control unit (default `sqlite`). */
+  backend?: string
+  /** Cheap-model override; falls back to the session's routed request header. */
+  provider?: string
+  /** Auxiliary model id override; falls back to the session's routed request header. */
+  model?: string
+  /** Importance stamped on auto-extracted bank entries (default 0.5). */
+  importance?: number
+  /** Probe the bank before commit to skip exact duplicates (default true). */
+  dedupe?: boolean
+  /** Skip subagent/child sessions (default true). */
+  excludeSubagents?: boolean
+  /** Auxiliary call timeout in milliseconds (default 60 000). */
+  timeoutMs?: number
+}
+
+export interface RuntimeConfig {
+  /** Master switch; false makes the plugin inert (default true). */
+  readonly enabled?: boolean
+  /** Storage backend name whose kv facet hosts the control unit (default `sqlite`). */
+  readonly backend?: string
+  /** Cheap-model override; falls back to the session's routed request header. */
+  readonly provider?: string
+  /** Auxiliary model id override; falls back to the session's routed request header. */
+  readonly model?: string
+  /** Importance stamped on auto-extracted bank entries (default 0.5). */
+  readonly importance?: number
+  /** Probe the bank before commit to skip exact duplicates (default true). */
+  readonly dedupe?: boolean
+  /** Skip subagent/child sessions (default true). */
+  readonly excludeSubagents?: boolean
+  /** Auxiliary call timeout (default 60 000 ms). */
+  readonly timeoutMs?: number
+}
+```
+
+Source: [`packages/memory/memory-extraction/src/index.ts:35`](../packages/memory/memory-extraction/src/index.ts)
 
 <a id="deepseek-aidsh-message-feedback"></a>
 
@@ -3669,6 +3718,28 @@ export interface Config {
 
 来源：[`packages/goal/tool-goal/src/index.ts:25`](../packages/goal/tool-goal/src/index.ts)
 
+<a id="deepseek-aidsh-tool-graph"></a>
+
+## `@deepseek-ai/dsh-tool-graph`
+
+需要：`tools` · `systemPrompt` · `sessionProjections`
+
+```ts config-catalog
+/** Plugin configuration. */
+export interface Config extends GraphModePromptConfig {
+  /** Disable the tool registrations and prompt section entirely (default false). */
+  enabled?: boolean
+}
+
+/** Plugin configuration contributed by the prompt section. */
+export interface GraphModePromptConfig {
+  /** Disable the prompt section entirely (default false). */
+  enabled?: boolean
+}
+```
+
+Source: [`packages/graph/tool-graph/src/index.ts:94`](../packages/graph/tool-graph/src/index.ts)
+
 <a id="deepseek-aidsh-tool-jobs"></a>
 
 
@@ -4467,6 +4538,7 @@ export interface Config {
 - `@deepseek-ai/dsh-fs-e2b` — 需要 `e2b`（[`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts)）
 - `@deepseek-ai/dsh-fs-observation-policy`（[`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts)）
 - `@deepseek-ai/dsh-goal-round-driver` — 需要 `agents` · `goals` · `sessions`（[`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts)）
+- `@deepseek-ai/dsh-graph-projection` — 需要 `sessionProjections`（[`packages/graph/graph-projection/src/index.ts`](../packages/graph/graph-projection/src/index.ts)）
 - `@deepseek-ai/dsh-host-directory-picker-auto` — 需要 `webServer` · `loader`（[`packages/host/directory-picker-auto/src/index.ts`](../packages/host/directory-picker-auto/src/index.ts)）
 - `@deepseek-ai/dsh-host-directory-picker-native`（[`packages/host/directory-picker-native/src/index.ts`](../packages/host/directory-picker-native/src/index.ts)）
 - `@deepseek-ai/dsh-host-plugin-inventory` — 需要 `loader`（[`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts)）
@@ -4541,6 +4613,11 @@ export interface Config {
 - `@deepseek-ai/dsh-experimental-webworker-packer`（[`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts)）
 - `@deepseek-ai/dsh-experimental-webworker-runtime`（[`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts)）
 - `@deepseek-ai/dsh-fs-archive`（[`packages/fs/fs-archive/src/index.ts`](../packages/fs/fs-archive/src/index.ts)）
+- `@deepseek-ai/dsh-graph-control`（[`packages/graph/graph-control/src/index.ts`](../packages/graph/graph-control/src/index.ts)）
+- `@deepseek-ai/dsh-graph-executor`（[`packages/graph/graph-executor/src/index.ts`](../packages/graph/graph-executor/src/index.ts)）
+- `@deepseek-ai/dsh-graph-host`（[`packages/graph/graph-host/src/index.ts`](../packages/graph/graph-host/src/index.ts)）
+- `@deepseek-ai/dsh-graph-stream`（[`packages/graph/graph-stream/src/index.ts`](../packages/graph/graph-stream/src/index.ts)）
+- `@deepseek-ai/dsh-graph-wakes`（[`packages/graph/graph-wakes/src/index.ts`](../packages/graph/graph-wakes/src/index.ts)）
 - `@deepseek-ai/dsh-hashline`（[`packages/edit/hashline/src/index.ts`](../packages/edit/hashline/src/index.ts)）
 - `@deepseek-ai/dsh-home-paths`（[`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts)）
 - `@deepseek-ai/dsh-hook-protocol`（[`packages/hooks/hook-protocol/src/index.ts`](../packages/hooks/hook-protocol/src/index.ts)）

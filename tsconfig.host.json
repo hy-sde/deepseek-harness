@@ -259,6 +259,7 @@
     { "path": "./packages/ast/tool-ast" },
     { "path": "./packages/memory/memory" },
     { "path": "./packages/memory/tool-memory" },
+    { "path": "./packages/memory/memory-extraction" },
     { "path": "./packages/git/git" },
     { "path": "./packages/git/tool-git" },
     { "path": "./packages/graph/graph-control" },

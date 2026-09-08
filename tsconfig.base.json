@@ -78,6 +78,7 @@
       "@deepseek-ai/dsh-internal-urls/issue-pr": ["./packages/fs/internal-urls/src/issue-pr.ts"],
       "@deepseek-ai/dsh-memory": ["./packages/memory/memory/src/index.ts"],
       "@deepseek-ai/dsh-memory/types": ["./packages/memory/memory/src/types.ts"],
+      "@deepseek-ai/dsh-memory-extraction": ["./packages/memory/memory-extraction/src"],
       "@deepseek-ai/dsh-memory/local": ["./packages/memory/memory/src/local.ts"],
       "@deepseek-ai/dsh-tool-memory": ["./packages/memory/tool-memory/src/index.ts"],
       "@deepseek-ai/dsh-git": ["./packages/git/git/src/index.ts"],

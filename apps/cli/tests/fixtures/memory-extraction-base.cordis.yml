@@ -1,0 +1,14 @@
+# Minimal base for loading the memory-extraction example overlay in
+# memory-extraction-example.spec.ts. The memory service writes to the temp
+# root set by the test; the overlay itself supplies the storage-sqlite row,
+# which the test points at a temp path via DSH_MEMORY_EXTRACTION_DB.
+- id: memory
+  name: '@deepseek-ai/dsh-memory'
+  config:
+    root: !!js process.env.DSH_TEST_MEMORY_ROOT
+
+- id: storage
+  name: '@deepseek-ai/dsh-storage'
+
+- id: llm
+  name: '@deepseek-ai/dsh-llm'

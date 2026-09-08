@@ -1798,6 +1798,55 @@ export interface Config {
 
 Source: [`packages/memory/memory/src/index.ts:46`](../packages/memory/memory/src/index.ts)
 
+<a id="deepseek-aidsh-memory-extraction"></a>
+
+## `@deepseek-ai/dsh-memory-extraction`
+
+Requires: `memory` · `llm`
+
+```ts config-catalog
+/** Plugin configuration. */
+export interface Config extends RuntimeConfig {
+  /** Master switch; false makes the plugin inert (default true). */
+  enabled?: boolean
+  /** Storage backend name whose kv facet hosts the control unit (default `sqlite`). */
+  backend?: string
+  /** Cheap-model override; falls back to the session's routed request header. */
+  provider?: string
+  /** Auxiliary model id override; falls back to the session's routed request header. */
+  model?: string
+  /** Importance stamped on auto-extracted bank entries (default 0.5). */
+  importance?: number
+  /** Probe the bank before commit to skip exact duplicates (default true). */
+  dedupe?: boolean
+  /** Skip subagent/child sessions (default true). */
+  excludeSubagents?: boolean
+  /** Auxiliary call timeout in milliseconds (default 60 000). */
+  timeoutMs?: number
+}
+
+export interface RuntimeConfig {
+  /** Master switch; false makes the plugin inert (default true). */
+  readonly enabled?: boolean
+  /** Storage backend name whose kv facet hosts the control unit (default `sqlite`). */
+  readonly backend?: string
+  /** Cheap-model override; falls back to the session's routed request header. */
+  readonly provider?: string
+  /** Auxiliary model id override; falls back to the session's routed request header. */
+  readonly model?: string
+  /** Importance stamped on auto-extracted bank entries (default 0.5). */
+  readonly importance?: number
+  /** Probe the bank before commit to skip exact duplicates (default true). */
+  readonly dedupe?: boolean
+  /** Skip subagent/child sessions (default true). */
+  readonly excludeSubagents?: boolean
+  /** Auxiliary call timeout (default 60 000 ms). */
+  readonly timeoutMs?: number
+}
+```
+
+Source: [`packages/memory/memory-extraction/src/index.ts:35`](../packages/memory/memory-extraction/src/index.ts)
+
 <a id="deepseek-aidsh-message-feedback"></a>
 
 ## `@deepseek-ai/dsh-message-feedback`
