@@ -3,8 +3,9 @@
 English | [中文](README.zh.md)
 
 Mount the Agent Graph slices on a deployment with this composition patch: it adds
-the host row for the graph assembly plus the sqlite storage backend the graph
-control unit lives in.
+the host row for the graph assembly, re-enables the host compaction row
+`graph-host` requires, and points the web composition's `storage-sqlite` row at
+the graph control unit's database.
 
 ## Applying the patch
 
@@ -17,6 +18,12 @@ The patch must load after the base composition (same convention as
 placeholder `rootSessionId` with the graph root session id of the deployment and
 confirm the `subagentProvider` name (`spawn` is registered by
 `@deepseek-ai/dsh-subagent-spawn-in-process`).
+
+The patch also re-enables the base `compaction-basic` host row: `graph-host`
+injects the host-plane `compaction` service, and the shipped Web composition
+disables that row because compaction ownership moved to agent presets. Presets
+keep their isolated per-agent engines; the re-enabled host row serves
+host-plane consumers such as `graph-host`.
 
 ## Planes
 

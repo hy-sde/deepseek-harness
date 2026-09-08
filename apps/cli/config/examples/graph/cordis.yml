@@ -27,17 +27,30 @@
 #   shipped base bundle already mounts `@deepseek-ai/dsh-subagent-spawn-in-process`
 #   with `providerName: spawn`, so `spawn` resolves without another row.
 # - `backend` defaults to `sqlite`, whose kv facet hosts the graph control
-#   unit. The base bundle mounts only `storage-json`, so the `storage-sqlite`
-#   row below is required for that default.
+#   unit. The dsh-web-app bundle already mounts `storage-sqlite` (for memory
+#   extraction), so this patch overrides that row's `path` instead of inserting
+#   it again — a second insert would fail as a duplicate loader entry id. All
+#   sqlite units share the one medium, each in its own tables.
+# - `graph-host` injects the host-plane `compaction` service, which the shipped
+#   Web composition disables (`compaction-basic` moved behind agent presets).
+#   This patch re-enables that host row: presets keep their isolated per-agent
+#   engines, so the host row serves only host-plane consumers like graph-host.
+
+# The Web composition disables the base compaction row; re-enable it for the
+# graph-host injection below.
+- id: compaction-basic
+  disabled: false
+
+# Override the web-app bundle's storage-sqlite row path (the graph control
+# unit is durable deployment data, not the memory-extraction file).
+- id: storage-sqlite
+  name: '@deepseek-ai/dsh-storage-sqlite'
+  config:
+    # Override with DSH_GRAPH_DB; ':memory:' loses every graph control row
+    # on restart, so it is not the durable choice.
+    path: !!js process.env.DSH_GRAPH_DB ?? '.dsh/graph.sqlite'
 
 - insert:
-    - id: storage-sqlite
-      name: '@deepseek-ai/dsh-storage-sqlite'
-      config:
-        # Override with DSH_GRAPH_DB; ':memory:' loses every graph control row
-        # on restart, so it is not the durable choice.
-        path: !!js process.env.DSH_GRAPH_DB ?? '.dsh/graph.sqlite'
-
     - id: graph-host
       name: '@deepseek-ai/dsh-graph-host'
       config:
