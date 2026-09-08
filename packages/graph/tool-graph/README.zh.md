@@ -11,7 +11,7 @@ kind: "package-reference"
 
 `dsh-tool-graph` 是 Agent Graph 的模型可见移植切片 P4（Maka `stream-graph-supervisor-tools`）。它只贡献三个工具——`view_agent_graph`、`update_agent_graph`、`yield_agent_graph`——外加 `orchestration:graph` 提示词段落，以及它们所运行的主机侧控制器。这些工具仅限根会话且直接调用：只有图的根会话可以调用它们，它们按图 id 寻址，而不是把工作生成委托给模型。
 
-主机组合存储（P1）与派生（P2）包，构造一个 `AgentGraphController`，并在 `agentGraphController` 服务下提供。本插件用 `ctx.get` 解析该服务，缺失时在加载阶段响亮失败。所有持久化决策都流经控制器的协调器，因此一次工具调用只提交一条存储更新，绝不重复运行提供方。
+主机组合存储（P1）与派生（P2）包，构造一个 `AgentGraphController`，并在 `agentGraphController` 服务下提供。本插件用 `ctx.get` 解析该服务；缺失时工具仍会挂载（agent 预设绝不因可选主机装配缺失而阻断会话创建），每次图工具调用都会以 `[agent-graph-unavailable]` 响亮失败，直到主机提供控制器。所有持久化决策都流经控制器的协调器，因此一次工具调用只提交一条存储更新，绝不重复运行提供方。
 
 每个模型可见列表都有显式的 `omitted` 计数上限，每条 `update_agent_graph` 载荷在到达存储前都经 Maka 判别器容忍的预处理器清洗。源三元组幂等使重放或重试调用成为空操作：相同的图/会话/键载荷只提交一次，并返回既有行。
 

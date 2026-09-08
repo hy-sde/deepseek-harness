@@ -563,6 +563,36 @@ describe('plugin composition', () => {
     await ctx.fiber.dispose()
   })
 
+  it('mounts without the host controller and fails every graph tool call loud', async () => {
+    // Regression: an agent preset carrying tool-graph must not break session
+    // creation just because the optional graph host assembly is absent (for
+    // example after a server restart that predates the graph rows, or when
+    // rootSessionId is stale). The tools degrade: each call errors clearly.
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(toolGraphPackage, {})
+    const sessionId = brandString<SessionId>(ROOT)
+    const session = Session.create(sessionId, [], {
+      version: SESSION_FORMAT_VERSION,
+      id: sessionId,
+      createdAt: Date.now(),
+      isSeeded: false,
+    })
+    const agent = { session } as never
+    const result = await ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: ToolCallId('call-no-host'),
+      name: 'view_agent_graph',
+      arguments: { graphId: GRAPH },
+      agent,
+    })
+    expect(result.isError).toBe(true)
+    expect(result.error?.message).toContain('[agent-graph-unavailable]')
+    await ctx.fiber.dispose()
+  })
+
   it('rejects a non-root session through the real tool runtime', async () => {
     const fixture = await makeFixture()
     const ctx = new Context()

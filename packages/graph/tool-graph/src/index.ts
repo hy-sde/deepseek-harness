@@ -8,8 +8,12 @@
  * {@link AGENT_GRAPH_CONTROLLER_SERVICE}; this plugin consumes it.
  *
  * Agent-plane: this package mounts as a preset row and resolves the host
- * `agentGraphController` service with `ctx.get` (optional service, so a host
- * without the controller fails loud at load rather than silently no-oping).
+ * `agentGraphController` service with `ctx.get` (optional service: without the
+ * controller the tools still mount, so a session never fails to create just
+ * because the graph host is absent or its root session is stale — and every
+ * graph tool call fails loud with `[agent-graph-unavailable]` until the host
+ * provides it). The call-time failure keeps the port's "no silent no-op"
+ * intent without letting an optional host assembly block the whole preset.
  * Root-only enforcement: the controller records `rootSessionId`, and every
  * tool derives the calling session from the live execution context and
  * rejects a non-root caller before it touches durable state — DSH has no
@@ -18,8 +22,8 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-agent'
-import type {} from '@deepseek-ai/dsh-session-projection'
+import type { } from '@deepseek-ai/dsh-agent'
+import type { } from '@deepseek-ai/dsh-session-projection'
 import {
   ToolArgsError,
   parameterSchemaSpecToJsonSchema,
@@ -28,6 +32,7 @@ import {
   type ToolRunContext,
 } from '@deepseek-ai/dsh-tools'
 import { AgentGraphToolError } from './errors.ts'
+import type { AgentGraphController } from './controller.ts'
 import { registerAgentGraphTools, type ToolCallIdentity } from './tools.ts'
 import { buildGraphModePromptSection, type GraphModePromptConfig } from './prompt.ts'
 
@@ -104,19 +109,19 @@ export const inject = ['tools', 'systemPrompt', 'sessionProjections']
 
 /**
  * Register the three supervisor tools and the `orchestration:graph` prompt
- * section over the host-provided controller.
+ * section over the host-provided controller. Without the controller the tools
+ * still register but every call fails loud with `[agent-graph-unavailable]` —
+ * mounting a preset must never break session creation over an optional host.
  * @param ctx - the agent-plane plugin context (injects `tools`, `systemPrompt`, `sessionProjections`).
  * @param config - resolved plugin configuration.
  */
 export function apply(ctx: Context, config: Config = {}): void {
   if (config.enabled === false) return
   const controller = ctx.get('agentGraphController')
-  if (controller === undefined) {
-    throw new Error(
-      'tool-graph: the agentGraphController service is not provided — construct one with createAgentGraphController and provide it under AGENT_GRAPH_CONTROLLER_SERVICE',
-    )
-  }
-  for (const def of registerAgentGraphTools({ controller })) {
+  const unavailable = controller === undefined
+    ? 'the agentGraphController service is not provided — mount graph-host with a live rootSessionId, or construct one with createAgentGraphController and provide it under AGENT_GRAPH_CONTROLLER_SERVICE'
+    : undefined
+  for (const def of registerAgentGraphTools({ controller: controller as AgentGraphController })) {
     const parameters = parameterSchemaSpecToJsonSchema(def.parameters)
     const outputSchema = valueSchemaSpecToJsonSchema(def.outputSchema)
     ctx.tools.register({
@@ -128,6 +133,9 @@ export function apply(ctx: Context, config: Config = {}): void {
         render: (_args, value) => [{ type: 'text', text: def.render(_args as never, value as never) }],
       },
       execute: (args, exec) => {
+        if (unavailable !== undefined) {
+          throw new Error(`[agent-graph-unavailable] ${unavailable}`)
+        }
         const violations = validateArgs(def.parameters, args)
         if (violations.length > 0) throw new ToolArgsError(violations)
         return def.execute(args as never, callIdentityOf(exec, ctx)).catch((error: unknown) => {
