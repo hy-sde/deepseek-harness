@@ -419,10 +419,10 @@ importers:
         specifier: link:../../vendor/schemastery
         version: link:../../vendor/schemastery
       '@hy-sde-org/dsh-code-runtime-kernels':
-        specifier: file:/Users/hui/Documents/github/dsh-plugins/dsh-code-runtime-kernels/packages/code-runtime-kernels
-        version: file:../dsh-plugins/dsh-code-runtime-kernels/packages/code-runtime-kernels(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)
+        specifier: ^0.1.2-rc.1
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)
       '@hy-sde-org/dsh-session-intelligence':
-        specifier: file:/Users/hui/Documents/github/dsh-plugins/dsh-session-intelligence/packages/session-intelligence
+        specifier: file:../../../dsh-plugins/dsh-session-intelligence/packages/session-intelligence
         version: file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)
       commander:
         specifier: ^15.0.0
@@ -12663,8 +12663,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@hy-sde-org/dsh-code-runtime-kernels@file:../dsh-plugins/dsh-code-runtime-kernels/packages/code-runtime-kernels':
-    resolution: {directory: ../dsh-plugins/dsh-code-runtime-kernels/packages/code-runtime-kernels, type: directory}
+  '@hy-sde-org/dsh-code-runtime-kernels@0.1.2-rc.1':
+    resolution: {integrity: sha512-01N7SF5IHjcJDI22Y8PLlnargJGEh0VllSBbluHJwXEgM28KVF5P95xol2uFVxaGZFxhjeT688wvz6sc8GQcig==}
     engines: {node: ^22.19.0 || >=24.0.0}
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
@@ -18795,7 +18795,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@hy-sde-org/dsh-code-runtime-kernels@file:../dsh-plugins/dsh-code-runtime-kernels/packages/code-runtime-kernels(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)':
+  '@hy-sde-org/dsh-code-runtime-kernels@0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/dsh-code-runtime': link:packages/code-runtime/code-runtime
