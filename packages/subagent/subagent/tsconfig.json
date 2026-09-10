@@ -69,10 +69,7 @@
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../fs/internal-urls"
+      "path": "../../util/chunked-list"
     }
   ]
 }

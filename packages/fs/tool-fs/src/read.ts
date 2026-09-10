@@ -7,8 +7,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ReadResultView, ToolResult } from '@deepseek-ai/dsh-tools'
-import type {} from '@deepseek-ai/dsh-fs'
-import type {} from '@deepseek-ai/dsh-internal-urls'
+import type { } from '@deepseek-ai/dsh-fs'
+import type { } from '@deepseek-ai/dsh-internal-urls'
 import { buildWindow, formatReadOutput, langFromPath, readMetaFromMeta } from './read-render.ts'
 import { SNAPSHOT_MAX_BYTES, getSessionSnapshotStore, normalizeToLF, stripBom } from '@deepseek-ai/dsh-hashline'
 import { tryReadArchive } from './read-archive.ts'
@@ -79,7 +79,7 @@ export function parseReadArgs(args: { file_path: string; offset?: number; limit?
 }
 
 /**
- * Register the `read` tool and its system-prompt guidance.
+ * Register the `read` tool and its scope-aware system-prompt guidance.
  * @param ctx - the plugin context; registrations are effects scoped to it, and execution uses its `fs` service.
  * @param caps - the deployment's resolved read caps (plugin config after defaulting).
  */
@@ -87,8 +87,9 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
   ctx.systemPrompt.section({
     name: 'tool:read',
     order: ctx.systemPrompt.getSectionOrder('TOOL_READ'),
-    text:
-      'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text.',
+    text: ({ scope }) => ctx.tools.get('read', scope) === undefined
+      ? ''
+      : 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text.',
   })
 
   ctx.tools.register(defineTool({

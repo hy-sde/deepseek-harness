@@ -76,7 +76,7 @@ function isStaleVersionError(error: unknown): boolean {
 }
 
 /**
- * Register the `edit` tool and its system-prompt guidance.
+ * Register the `edit` tool and its scope-aware system-prompt guidance.
  * @param ctx - the plugin context; registrations are effects scoped to it, and execution uses its `fs` service.
  * @param sandbox - the shared sandbox-escalation API (advertisement, mode stamping, denial mapping).
  */
@@ -84,7 +84,9 @@ export function applyEditTool(ctx: Context, sandbox: FsSandboxController): void 
   ctx.systemPrompt.section({
     name: 'tool:edit',
     order: ctx.systemPrompt.getSectionOrder('TOOL_EDIT'),
-    text: 'Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.',
+    text: ({ scope }) => ctx.tools.get('edit', scope) === undefined
+      ? ''
+      : 'Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.',
   })
 
   ctx.tools.register(defineTool({
@@ -147,7 +149,7 @@ export function applyEditTool(ctx: Context, sandbox: FsSandboxController): void 
         }
         outcome = await applyEdit()
       } catch (error: unknown) {
-        const remedied = remediateFsError(sandbox.mapError(error, sandboxPolicy))
+        const remedied = remediateFsError(sandbox.mapError(error, sandboxPolicy), target.displayPath)
         // Concurrent mutation between the read and this guarded edit: refresh
         // the observation (the target's CURRENT version) and retry once. The
         // old_string-anchored edit is atomic per call, so nothing partial can
@@ -162,7 +164,7 @@ export function applyEditTool(ctx: Context, sandbox: FsSandboxController): void 
             // A sandbox denial becomes the shared [sandbox: …] marker (the model
             // recognizes it from bash); stale/not-observed failures gain their
             // model-facing remedy; anything else passes through.
-            throw remediateFsError(sandbox.mapError(retryError, sandboxPolicy))
+            throw remediateFsError(sandbox.mapError(retryError, sandboxPolicy), target.displayPath)
           }
         } else {
           throw remedied

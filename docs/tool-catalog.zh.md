@@ -7,7 +7,7 @@
 
 已发布插件向 `ctx.tools` 提供的所有面向模型的工具：模型通过系统提示词组装获得的 `name`、`description` 和 JSON Schema `parameters`。本目录是[子系统页面](subsystems/core.zh.md)（类型及每页生成的 `cordis-surface` 接线区域）的补充；本页列出的是向 agent（智能体）提供的*工具*。
 
-英文源文件由系统**生成**，并通过 `pnpm run verify-tool-catalog`（`doc-sync`（文档同步门禁）的一部分）验证新鲜度；本中文文件作为经评审对侧通过双语配对维护。与 Cordis 目录（纯源码 AST 处理）不同，英文生成器会在真实上下文中**启动**每个工具插件并读取 `ctx.tools.schemas()`，因为工具 schema 无法通过静态分析完全确定，例如运行时展开的枚举、拼接的描述、由配置决定的名称以及使用原始 JSON Schema 的 MCP 工具。完整性守卫会 glob 匹配 `packages/*/tool-*`；如果生成器的启动 manifest（元数据清单）遗漏任何包，检查就会失败，因此新工具不会在无人察觉的情况下缺少文档。参见[工具 schema 目录 Agent Note](../.agents/notes/implemented/process/2026-07-02-tool-schema-catalog.zh.md)。
+英文源文件由系统**生成**，并通过 `pnpm run verify-tool-catalog`（`doc-sync`（文档同步门禁）的一部分）验证新鲜度；本中文文件作为经评审对侧通过双语配对维护。与 Cordis 目录（纯源码 AST 处理）不同，英文生成器会在真实上下文中**启动**每个工具插件并读取 `ctx.tools.schemas()`，因为工具 schema 无法通过静态分析完全确定，例如运行时展开的枚举、拼接的描述、由配置决定的名称以及使用原始 JSON Schema 的 MCP 工具。完整性守卫会 glob 匹配 `packages/*/tool-*`；如果生成器的启动 manifest（元数据清单）遗漏任何包，检查就会失败，因此新工具不会在无人察觉的情况下缺少文档。。
 
 范围：`packages/*/tool-*` 下已发布的产品工具，每个工具均使用其**默认**配置启动；但如果某个 Config 字段是**必填项**且没有默认值，生成器就必须作出选择，对应包的说明会记录本页展示的是哪个分支。注册的工具**名称**可以是加载时配置，例如 `tool-subagent` 的 `toolName`，因此部署可能以不同名称或额外名称提供某个包；如果存在随产品发布的别名，对应包的说明会予以记录。`examples/` 中的演示工具（例如 `echo`）不在范围内，这与 Cordis 目录仅涵盖包的范围一致。
 
@@ -22,12 +22,15 @@
 | `@deepseek-ai/dsh-tools` | `run_code` | `ctx.tools`、`ctx.codeRuntime (execution time)`、`ctx.systemPrompt` | `tool/call`、`one tool/code-dispatch-start + tool/code-dispatch pair per bridged sub-call`、`tool/result` | - | 在 `mode: ptc`／`mode: both` 下，它由工具注册表所有，作为可过滤能力层之外的保留传输机制（参见 PTC mode Agent Note）。在 `ptc` 下，它是注册表对协议格式（wire format）的唯一贡献；其他可见能力在使用已加载运行时语言生成的 SDK 章节中声明。程序通过 binding 调用这些能力，调用按照原生并发约定调度：启动顺序和策略遵循提交顺序，并发安全的函数体最多重叠执行 `maxParallelSubCalls` 个。调用会重新进入完整且受守卫保护的工具流水线，并将每个嵌套执行关联到此外层结果。 |
 | `@deepseek-ai/dsh-plan-mode` | `exit_plan_mode` | `ctx.tools`、`ctx.systemPrompt`、`ctx.userQuestions (execution time, opportunistic)` | `tool/call`、`plan/mode inactive on an approved review`、`tool/result` | - | 规划未激活时，exit_plan_mode 仍保留在面向模型的 schema 中，这样状态转换不会在规划策略变更之外额外造成工具目录变动。其执行路径会拒绝规划模式之外的调用；在规划模式下，它通过用户交互 seam 提交计划（批准／根据反馈继续规划），批准后会在步骤边界记录规划模式已停用。 |
 | `@deepseek-ai/dsh-tool-bash` | `bash` | `ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；禁用 `enableRunInBackground` 配置（默认为 true）后，该参数会被完全移除。 |
+| `@deepseek-ai/dsh-tool-present` | `present` | `ctx.tools`、`ctx.fs`、`ctx.sessionProjections` | `tool/call`、`deliverables/presented after a successful final result`、`tool/result` | - | 交付物归属于调用它的 Session；Web ui-deliverables 提供源文件打开与卡片展示。 |
 | `@deepseek-ai/dsh-tool-pwsh` | `pwsh` | `ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费方（由 `@deepseek-ai/dsh-pwsh-local` 等 PowerShell 执行器为 `ctx.shell` 提供后端）；除沙箱接口外，它逐项对应 bash 工具调用。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具收集／停止；托管的 `DSH_*` 环境来自 `@deepseek-ai/dsh-shell-env`。每次调用都在新进程中运行，不使用持久 PTY 会话。路径采用原生 `C:\...` 形式，变量采用 `$env:NAME`。 |
 | `@deepseek-ai/dsh-tool-cordis` | `cordis_define`、`cordis_inspect_list`、`cordis_inspect_query`、`cordis_inspect_self`、`cordis_run`、`cordis_stop`、`cordis_undefine` | `ctx.tools`、`ctx.dynamicCordisRunner` | `tool/call`、`tool/result`、`process-local dynamic package lifecycle` | - | 不在任何随产品发布的树中，需要显式选择启用；动态 Package 代码可以访问真实运行时，见 .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md。该工具集注入 `@deepseek-ai/dsh-cordis-host-runner` 提供的 `ctx.dynamicCordisRunner`，后者拥有定义注册表和 vm 沙箱；组合缺少它时这些工具不会激活。运行中的 Package 在停止、undefine 或 DSH 重启前可以注册**额外的**模型可见工具；发生这类工具集变化时，系统会记录完整且有变动的请求头。 |
 | `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 bash 工具；部署组合提供 PTY 后端，并可覆盖面向模型的环境描述。 |
 | `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`tool/result` | - | 四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。 |
 | `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 pwsh 工具，持久 bash 工具的 Windows 对应物；部署组合提供 pwsh 方言的 PTY 后端，并可覆盖面向模型的环境描述。 |
+| `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`、`ctx.fs` | `tool/call`、`fs/observed after view presence/absence, edit absence, or successful mutation`、`tool/result` | - | 独立于文件系统接缝的查看／创建／唯一字面替换／行插入工具；可与任何 Shell 或终端 API 组合使用。 |
 | `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (read_image registration)`、`ctx.llm + an image-capable route (read_image execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时 `read_image` 不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。 |
+| `@deepseek-ai/dsh-tool-graph` | `update_agent_graph`、`view_agent_graph`、`yield_agent_graph` | `ctx.tools`、`执行时归属的 Agent（root／direct-only 强制由宿主侧执行）`、`可选的 `agentGraphController` 服务（通过 ctx.get 读取）` | `tool/call`、`tool/result` | - | 宿主提供控制器上的 Agent Graph 监督工具（Maka 移植，切片 P4）：恰好三个模型可见工具 view_agent_graph / update_agent_graph / yield_agent_graph，外加 orchestration:graph 提示段。控制器服务是可选的（ctx.get），因此没有图宿主时会话也能创建；在提供之前每次调用都会以 [agent-graph-unavailable] 明确失败，宿主强制 root-only、direct-only 寻址。 |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`、`ast_grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt`、`ctx.fs (ast_edit apply)` | `tool/call`、`fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`、`tool/result` | - | ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。 |
 | `@deepseek-ai/dsh-tool-memory` | `learn`、`memory_edit`、`mine_sessions`、`recall`、`reflect`、`retain` | `ctx.tools`、`ctx.memory`、`ctx.systemPrompt` | `tool/call`、`project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`、`tool/result` | - | retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。同时挂载 `sessionQuery` 服务（tool-session-query 行）时，`recall`/`reflect` 合并过往会话命中（source `session`、只读、带 sessionId/seq 溯源），`mine_sessions` 从已完成的会话日志中收割教训；没有该服务时所有会话特性降级为无操作。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。 |
@@ -243,6 +246,50 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
 
 <a id="deepseek-aidsh-tool-pwsh"></a>
 
+
+
+## `@deepseek-ai/dsh-tool-present`
+
+### `present`
+
+将 Session 文件系统中已存在的文件声明为最终交付物。当你创建或更新的文件是用户要求接收的输出时，必须在写入之后、最终回复之前调用 present——包括通过 Bash 或代码执行创建的文件。仅在回复中提及路径不能替代此调用。文件必须已经存在。用户打开的是当前源文件；其内容不会被复制或保留。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path of an existing regular file. Relative paths use the Session working directory."
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description for the user."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  },
+  "required": [
+    "files"
+  ]
+}
+```
+
+Source: [`packages/fs/tool-present/src/index.ts`](../packages/fs/tool-present/src/index.ts)
+
+交付物归属于调用它的 Session；Web ui-deliverables 提供源文件打开与卡片展示。
+
+<a id="deepseek-aidsh-tool-pwsh"></a>
 ## `@deepseek-ai/dsh-tool-pwsh`
 
 ### `pwsh`
@@ -609,6 +656,14 @@ apply_patch / hashline mode: { input: string }
       "type": "string",
       "description": "the file path (relative to the working directory)"
     },
+    "file_path": {
+      "type": "string",
+      "description": "Alias for `path`; prefer `path`."
+    },
+    "filePath": {
+      "type": "string",
+      "description": "Alias for `path`; prefer `path`."
+    },
     "old_string": {
       "type": "string",
       "description": "the exact existing text to replace (fuzzy whitespace matching when fuzzyMatch is enabled)"
@@ -663,6 +718,111 @@ apply_patch / hashline mode: { input: string }
 
 一个按所有者隔离的持久 pwsh 工具，持久 bash 工具的 Windows 对应物；部署组合提供 pwsh 方言的 PTY 后端，并可覆盖面向模型的环境描述。
 
+
+
+## `@deepseek-ai/dsh-tool-str-replace-editor`
+
+### `str_replace_editor`
+
+用于查看、创建与编辑文件的自定义编辑工具。
+* 状态在多次命令调用以及和用户的讨论之间保持不变
+* 如果 `path` 是文件，`view` 显示应用 `cat -n` 后的结果。如果 `path` 是目录，`view` 最多列出两层深的非隐藏文件与目录
+* 如果指定的 `path` 已经作为文件存在，则不能使用 `create` 命令
+* 如果某个 `command` 产生较长的输出，它会被截断并标记 `<response clipped>`
+* 未被所选命令使用的参数的 null 占位符视为省略。必填参数仍需要值；删除匹配项时应省略 `str_replace.new_str` 而不是将其置为 null
+
+使用 `str_replace` 命令的注意事项：
+* `old_str` 参数应精确匹配原文件中一个或多个连续行。注意空白！
+* 如果 `old_str` 参数在文件中不唯一，替换不会执行。请确保 `old_str` 中包含足够的上下文使其唯一
+* `new_str` 参数应包含替换 `old_str` 的编辑后行
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string",
+      "description": "The commands to run. Allowed options are: `view`, `create`, `str_replace`, `insert`.",
+      "enum": [
+        "view",
+        "create",
+        "str_replace",
+        "insert"
+      ]
+    },
+    "path": {
+      "type": "string",
+      "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`."
+    },
+    "file_text": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Required string parameter of `create` command, with the content of the file to be created. A null placeholder is treated as omitted by commands that do not use this parameter."
+    },
+    "insert_line": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Required integer parameter of `insert` command. The `new_str` will be inserted AFTER the line `insert_line` of `path`. A null placeholder is treated as omitted by commands that do not use this parameter."
+    },
+    "new_str": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Optional string parameter of `str_replace` command containing the new string (if omitted, no string will be added). Required string parameter of `insert` command containing the string to insert. A null placeholder is accepted only by commands that do not use this parameter."
+    },
+    "old_str": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Required string parameter of `str_replace` command containing the string in `path` to replace. A null placeholder is treated as omitted by commands that do not use this parameter."
+    },
+    "view_range": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Optional parameter of `view` command when `path` points to a file. If omitted or null, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[start_line, -1]` shows all lines from `start_line` to the end of the file."
+    }
+  },
+  "required": [
+    "command",
+    "path"
+  ]
+}
+```
+
+Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool-str-replace-editor/src/index.ts)
+
+独立于文件系统接缝的查看／创建／唯一字面替换／行插入工具；可与任何 Shell 或终端 API 组合使用。
 ## `@deepseek-ai/dsh-tool-fs`
 
 ### `edit`
@@ -779,6 +939,204 @@ apply_patch / hashline mode: { input: string }
 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时图像工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。
 
 <a id="deepseek-aidsh-tool-fs-search"></a>
+
+
+## `@deepseek-ai/dsh-tool-graph`
+
+### `update_agent_graph`
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "graphId": {
+      "type": "string",
+      "description": "The agent graph id to update."
+    },
+    "operation": {
+      "type": "string",
+      "description": "Explicit operation discriminator; unrelated provider-filled payloads are ignored.",
+      "enum": [
+        "add_work",
+        "stop",
+        "finish"
+      ]
+    },
+    "addWork": {
+      "type": "array",
+      "description": "Schedule work (up to 32 items).",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "targetKind": {
+            "type": "string",
+            "description": "Explicit target discriminator; unrelated identity fields are ignored.",
+            "enum": [
+              "new_agent",
+              "new_preset",
+              "existing_operator"
+            ]
+          },
+          "agentId": {
+            "type": "string",
+            "description": "Legacy built-in agent id for new graph work."
+          },
+          "subagentId": {
+            "type": "string",
+            "description": "User-approved subagent preset id for new graph work."
+          },
+          "operatorId": {
+            "type": "string",
+            "description": "Runtime id of an EXISTING graph operator."
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "inputIds": {
+            "type": "array",
+            "description": "Durable record ids forming this work item input frontier.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "selectedResultInputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceGraphId": {
+                  "type": "string"
+                },
+                "resultId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sourceGraphId",
+                "resultId"
+              ]
+            }
+          },
+          "replaces": {
+            "type": "string",
+            "description": "Existing work superseded by this work item."
+          },
+          "replacementMode": {
+            "type": "string",
+            "description": "none drops a provider-filled replaces.",
+            "enum": [
+              "none",
+              "replace"
+            ]
+          },
+          "workId": {
+            "type": "string",
+            "description": "Optional explicit work id (normally derived deterministically)."
+          }
+        },
+        "required": [
+          "instruction"
+        ]
+      }
+    },
+    "stop": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "targetId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetId",
+          "reason"
+        ]
+      }
+    },
+    "finish": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resultIds": {
+          "type": "array",
+          "description": "Committed graph record ids selected as the final result.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "description": "Stable key folded into the source triple: a retried identical update with the same key is not re-committed."
+    }
+  },
+  "required": [
+    "graphId"
+  ]
+}
+```
+
+Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
+
+### `view_agent_graph`
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "graphId": {
+      "type": "string",
+      "description": "The agent graph id to inspect."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "Opaque page cursor from a previous view (omit for the latest view)."
+    }
+  },
+  "required": [
+    "graphId"
+  ]
+}
+```
+
+Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
+
+### `yield_agent_graph`
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "graphId": {
+      "type": "string",
+      "description": "The agent graph id to yield for."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why the supervisor has no immediate decision until the graph changes."
+    }
+  },
+  "required": [
+    "graphId"
+  ]
+}
+```
+
+Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
 ## `@deepseek-ai/dsh-tool-fs-search`
 
 ### `glob`
@@ -2186,24 +2544,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/subagent/tool-subagent-control/src/list-agents.ts`](../packages/subagent/tool-subagent-control/src/list-agents.ts)
 
-### `pending_decisions`
-
-列出你的后台 subagent 仍在等待你回答的每个带键待决事项。以 needs-decision 或 blocked 状态、并带有 decisionKey 报告的子级会一直处于待答状态，直到你回答；待决事项在子级结算后仍然保留，因此请在子级运行结束后、以及你自己的轮次结束前检查。每个键只回答一次：用 send_message + resolve_decision_key。
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "subagent_id": {
-      "type": "string",
-      "description": "Optional filter: only show decisions from this subagent."
-    }
-  }
-}
-```
-
-来源：[`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)
-
 ### `send_message`
 
 根据 agent id 向直接可继续 child 发送消息。如果你是驻留的可继续 child，也可以把自己的直接 parent 作为目标。如果目标仍在工作，消息会 steer 其最近的 step；如果目标处于 idle，消息会启动一个轮次。此调用不会返回该 agent 的答案，只会确认消息已投递。调用失败表示消息**未**投递。
@@ -2212,21 +2552,17 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 {
   "type": "object",
   "properties": {
-    "subagent_id": {
+    "agent_id": {
       "type": "string",
-      "description": "The subagent id returned when the background subagent was started."
+      "description": "The agent id of your direct continuable child, or your direct parent when you are a resident continuable child."
     },
     "message": {
       "type": "string",
-      "description": "The message to deliver to the subagent."
-    },
-    "resolve_decision_key": {
-      "type": "string",
-      "description": "A decision key this child opened (from pending_decisions) that this message answers; closes the ledger record."
+      "description": "The message to deliver to the agent."
     }
   },
   "required": [
-    "subagent_id",
+    "agent_id",
     "message"
   ]
 }

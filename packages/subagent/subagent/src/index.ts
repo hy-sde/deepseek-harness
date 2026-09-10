@@ -13,8 +13,8 @@
  *
  * Public operations express caller intent: `start` returns one published owned
  * one-shot run, `startContinuable` establishes a durable continuable child, and
- * `followup` delivers later content without exposing whether the child is
- * resident. Continuable children never become a {@link SubagentRun}: the
+ * `sendMessage` steers between adjacent Agents without exposing whether a child
+ * is resident. Continuable children never become a {@link SubagentRun}: the
  * continuation manager holds their `AgentHandle` directly and orders every turn
  * through the child's own inbox, so providers contribute only the detached
  * creation spec and see no handle, turn, or teardown. Child and descendant
@@ -30,20 +30,17 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-internal-urls'
-import { AgentProtocolHandler } from './agent-protocol.ts'
+import type { } from '@deepseek-ai/dsh-attachment'
 import { scopeTarget } from '@deepseek-ai/dsh-scope'
 import type { Scoped } from '@deepseek-ai/dsh-scope'
-import z from '@deepseek-ai/schemastery'
-import { admitPromptContent } from '@deepseek-ai/dsh-attachment'
 import { assertObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import type { ContentBlock, GenerateOptions, MessageId, MessageSource, StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, MessageId, MessageSource } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { canonicalClientTimeZone } from '@deepseek-ai/dsh-util-time'
+import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import {
-  canonicalClientTimeZone, catalogView, rejectCatalogRead, rejectControl, rejectPrompt,
-  validateControlRequest,
+  catalogView, rejectCatalogRead, rejectPrompt, validateControlRequest,
 } from './control.ts'
 import type {
   SubagentCatalog,
@@ -55,69 +52,55 @@ import type {
 import type {
   ContinuableCreateRequest,
   ContinuableCreateSpec,
-  OpenDecision,
+  ContinuableStart,
+  ContinuableStartSpec,
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
+  SubagentInterruptAuthority,
   SubagentProvider,
-  SubagentReportContent,
   SubagentRun,
   SubagentRunEndInfo,
   SubagentRunInfo,
+  SubagentSendMessageOptions,
+  SubagentReportOptions,
   SubagentStartRequest,
 } from './types.ts'
-import { normalizeDecisionKey } from './types.ts'
 import { SubagentError } from './error.ts'
-import { deliverSubagentPrompt, type HostPromptDeliveryMode, type HostPromptDeliverer } from './internal.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
-import { assertUsableCwd } from './out-of-process.ts'
 import { createActivationObserver, createLifecycleEmitter, observeRun } from './lifecycle.ts'
 import type { ActivationObserver, LifecycleEmitter } from './lifecycle.ts'
 import SubagentContinuationManager from './continuation.ts'
-import type {
-  ContinuableStart,
-  ContinuableStartSpec,
-  SubagentFollowupOptions,
-  SubagentInterruptAuthority,
-  SubagentReportOptions,
-} from './continuation.ts'
-import SubagentActivationSetupRegistry from './activation-setup-registry.ts'
-import type { ContinuableSetupContribution } from './activation-setup-registry.ts'
+import type { SubagentDelivery } from './inbox.ts'
 import { listChildren as listSubagentChildren, listDescendants as listSubagentDescendants } from './list-children.ts'
 import type { SubagentDescendantListEntry, SubagentListEntry } from './list-children.ts'
 import { snapshotSubagentDescriptor } from './descriptor.ts'
 import { subagentIdentityProjectionDefinition, subagentTimingProjectionDefinition } from './projection.ts'
-import { foldSubagentDecisions } from './decisions.ts'
-import type { SubagentDecisionEventData } from './decisions.ts'
-import {
-  diagnoseWedge,
-  isWedgeDecisionKey,
-  wedgeDecisionKey,
-  wedgeDecisionSummary,
-  WEDGE_DECISION_STATUS,
-} from './supervision.ts'
-import type { SupervisionConfig, WedgeProbe } from './supervision.ts'
+import { establishCatalogChild, subagentCatalogProjectionDefinition } from './catalog.ts'
+import { deliverSubagentPrompt } from './internal.ts'
 
+export type { } from './catalog.ts'
 export * from './out-of-process.ts'
 export { AssistantOutputFold, finalAssistantOutput } from './assistant-output.ts'
-export { AgentProtocolHandler } from './agent-protocol.ts'
-export type { AgentOutputStore, AgentProtocolDeps } from './agent-protocol.ts'
 export { SubagentRunId } from './types.ts'
 export type {
   ContinuableCreateRequest,
   ContinuableCreateSpec,
-  DecisionStatus,
-  OpenDecision,
+  ContinuableStart,
+  ContinuableStartSpec,
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
-  SubagentProvider,
+  SubagentInterruptAuthority,
   SubagentReportContent,
+  SubagentReportDelivery,
+  SubagentReportOptions,
+  SubagentProvider,
   SubagentResult,
   SubagentRun,
+  SubagentSendMessageOptions,
   SubagentStartRequest,
   SubagentStopReason,
   SubagentStopReasonMap,
 } from './types.ts'
-export { normalizeDecisionKey } from './types.ts'
 export {
   foldSubagentDescriptor,
   snapshotSubagentDescriptor,
@@ -131,7 +114,6 @@ export type {
   SubagentDescriptorData,
   SubagentDescriptorInput,
 } from './descriptor.ts'
-export { seedDescriptorTurn } from './descriptor-seed.ts'
 export { SubagentError } from './error.ts'
 export { settleRun } from './run-settlement.ts'
 export { assertSubagentMaxDepth, delegationDepthOf } from './depth.ts'
@@ -146,34 +128,11 @@ export {
   SubagentDepthError,
 } from './child-agent.ts'
 export type { ChildComposition, DelegatedPolicyOverrides } from './child-agent.ts'
-export type {
-  ContinuableStart,
-  ContinuableStartSpec,
-  ContinuationManagerOptions,
-  CoordinatorMessageSource,
-  SubagentDecisionsMessageSource,
-  SubagentFollowupOptions,
-  SubagentInterruptAuthority,
-  SubagentReportDelivery,
-  SubagentReportMessageSource,
-  SubagentReportOptions,
-  SubagentSettledMessageSource,
-} from './continuation.ts'
-export type { ContinuableSetupContribution } from './activation-setup-registry.ts'
+export type { AgentMessageSource, SubagentSettledMessageSource } from './continuation-messages.ts'
 export type * from './control-types.ts'
 export type { SubagentDescendantListEntry } from './list-children.ts'
 export type { SubagentRunEndInfo, SubagentRunInfo } from './types.ts'
 export type { SubagentIdentityProjection, SubagentTimingProjection } from './projection-types.ts'
-export type { SubagentDecisionEventData } from './decisions.ts'
-export { foldSubagentDecisions, isSubagentDecisionEvent } from './decisions.ts'
-export type { SupervisionConfig, WedgeProbe } from './supervision.ts'
-export {
-  diagnoseWedge,
-  isWedgeDecisionKey,
-  wedgeDecisionKey,
-  wedgeDecisionSummary,
-  WEDGE_DECISION_STATUS,
-} from './supervision.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -216,45 +175,6 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-/** Config for the keyed open-decisions ledger and its counterpart systems. */
-export interface SubagentConfig {
-  /**
-   * Coalescing window for decision-shaped `next-step` reports (ms, default 150).
-   * A burst of reports within the window delivers ONE waking decision notice to
-   * the parent instead of one wake per report; `0` disables coalescing.
-   */
-  readonly wakeCoalesceMs?: number
-  /**
-   * Wedge supervision: no-progress threshold before a resident running child
-   * with no active model call is surfaced to its parent as a keyed decision
-   * (ms, default 15 minutes; `0` disables the interval).
-   */
-  readonly wedgeStaleMs?: number
-  /**
-   * Supervisor polling interval (ms, default 15 seconds). `0` disables the
-   * interval entirely (no wedge raising, no stale-decision re-notification).
-   */
-  readonly supervisorTickMs?: number
-  /**
-   * After a wedge decision is resolved, suppress re-raising the same child
-   * until this long passes with still no progress (ms, default 60 minutes).
-   */
-  readonly wedgeCoolDownMs?: number
-  /**
-   * Re-notify the parent once a decision stays open past this age (ms,
-   * default 30 minutes). `0` disables stale re-notification.
-   */
-  readonly staleDecisionNotifyMs?: number
-}
-
-const SUBAGENT_DEFAULTS = {
-  wakeCoalesceMs: 150,
-  wedgeStaleMs: 15 * 60 * 1000,
-  supervisorTickMs: 15 * 1000,
-  wedgeCoolDownMs: 60 * 60 * 1000,
-  staleDecisionNotifyMs: 30 * 60 * 1000,
-} as const
-
 /**
  * Durable attribution of one browser-authored follow-up. The Session
  * Controller declares this `user-rpc` message source and depends on this
@@ -269,31 +189,9 @@ interface BrowserPromptSource {
 }
 
 /** Named provider registry with one-shot runs, durable discovery, and continuable-child operations. */
-export class SubagentRuntime extends TypertRemoteService implements HostPromptDeliverer {
-  static Config: z<SubagentConfig> = z.object({
-    wakeCoalesceMs: z.natural().default(SUBAGENT_DEFAULTS.wakeCoalesceMs),
-    wedgeStaleMs: z.natural().default(SUBAGENT_DEFAULTS.wedgeStaleMs),
-    supervisorTickMs: z.natural().default(SUBAGENT_DEFAULTS.supervisorTickMs),
-    wedgeCoolDownMs: z.natural().default(SUBAGENT_DEFAULTS.wedgeCoolDownMs),
-    staleDecisionNotifyMs: z.natural().default(SUBAGENT_DEFAULTS.staleDecisionNotifyMs),
-  })
-
-  private readonly config: Required<SubagentConfig>
+export class SubagentRuntime extends TypertRemoteService {
   private providers = new Map<string, SubagentProvider>()
   private continuations: SubagentContinuationManager | undefined
-  /** Deployment contributions composed into unpublished continuable children. */
-  private readonly setupRegistry = new SubagentActivationSetupRegistry()
-  /**
-   * Child-reported decisions still awaiting an answer, keyed by parent session
-   * id → per-child stable key. In-process projection of the DURABLE
-   * `subagent/decision` ledger: every mutation is appended to the parent
-   * session, so a restart rebuilds the same record set through rehydration.
-   */
-  private readonly openDecisions = new Map<string, Map<string, OpenDecision>>()
-  /** Parent session ids whose durable ledger was already folded this process. */
-  private readonly hydratedParents = new Set<string>()
-  /** Parent → decision key → last stale-notification epoch (in-memory only). */
-  private readonly staleNotifiedAt = new Map<string, Map<string, number>>()
   /**
    * The contained lifecycle-edge publisher. Built here because scoped dispatch
    * keys its carrier by this exact service instance, whose own context filter
@@ -301,25 +199,14 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    */
   private readonly emitLifecycle: LifecycleEmitter
 
-  constructor(ctx: Context, config: SubagentConfig = {}) {
+  constructor(ctx: Context) {
     super(ctx, 'subagents')
-    this.config = {
-      wakeCoalesceMs: config.wakeCoalesceMs ?? SUBAGENT_DEFAULTS.wakeCoalesceMs,
-      wedgeStaleMs: config.wedgeStaleMs ?? SUBAGENT_DEFAULTS.wedgeStaleMs,
-      supervisorTickMs: config.supervisorTickMs ?? SUBAGENT_DEFAULTS.supervisorTickMs,
-      wedgeCoolDownMs: config.wedgeCoolDownMs ?? SUBAGENT_DEFAULTS.wedgeCoolDownMs,
-      staleDecisionNotifyMs: config.staleDecisionNotifyMs ?? SUBAGENT_DEFAULTS.staleDecisionNotifyMs,
-    }
     this.emitLifecycle = createLifecycleEmitter(this.ctx, parent => scopeTarget(this, parent))
-    // Observe every model call crossing the gateway so the wedge supervisor knows
-    // which children are inside a live llm/stream (long prefills/thinking) versus
-    // stalled between calls. Same seam llm-slots admission uses; observation only.
-    ctx.on('llm/stream', (options, next) => this.superviseStream(options, next), { global: true })
     ctx.inject(['agents'], (childCtx: Context) => {
       const manager = new SubagentContinuationManager(childCtx, {
         prepareContinuable: (name, request) => this.prepareContinuable(name, request),
         observeActivation: (provider, childId, parent) => this.observeActivation(provider, childId, parent),
-      }, this.setupRegistry, { wakeCoalesceMs: this.config.wakeCoalesceMs })
+      })
       this.continuations = manager
       childCtx.effect(() => () => {
         /* v8 ignore else -- one injected binding owns the slot until its fiber disposes. */
@@ -327,25 +214,10 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       }, 'subagents.continuationBinding()')
     })
     ctx.inject(['sessionProjections'], (projectionCtx) => {
+      projectionCtx.sessionProjections.register(subagentCatalogProjectionDefinition)
       projectionCtx.sessionProjections.register(subagentTimingProjectionDefinition)
       projectionCtx.sessionProjections.register(subagentIdentityProjectionDefinition)
     })
-    // The `agent://` internal-URL scheme: registers exactly once per process
-    // (this service is one host-plane row), independent of the session-query
-    // engine — resolution looks the engine up lazily and reports a corrective
-    // error when a deployment does not mount it.
-    ctx.inject(['internalUrls'], (iuCtx) => {
-      iuCtx.effect(() => iuCtx.internalUrls.register(new AgentProtocolHandler({
-        outputStore: () => this.ctx.get('sessionQuery'),
-      })))
-    })
-    if (this.config.supervisorTickMs > 0) {
-      ctx.effect(() => {
-        const timer = setInterval(() => this.runSupervision(Date.now()), this.config.supervisorTickMs)
-        timer.unref()
-        return () => { clearInterval(timer) }
-      }, 'subagents.supervision()')
-    }
   }
 
   /**
@@ -362,27 +234,78 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
   }
 
   /**
-   * Deliver one later message to a continuable child as its next FIFO turn. A
-   * resident child's Agent inbox accepts it directly (waking a `waiting`
-   * Activation), while an absent one is cold-resumed from its persisted
-   * Session. The Agent inbox is the only queue, so every accepted message has
-   * one observable order.
-   * @param parent - the exact live direct parent authorizing this delivery.
-   * @param childId - durable child session id.
-   * @param content - user-role content to deliver.
-   * @param options - the message source fields and caller cancellation, which stops the
-   *   operation only before inbox acceptance.
+   * Steer one model-authored message to the sender's direct parent or direct
+   * continuable child. A running target admits it at the nearest step boundary;
+   * an idle target starts a turn, and an absent direct child cold-resumes from
+   * persistence. The service derives durable sender attribution from the exact
+   * live sender. Caller cancellation stops only pre-acceptance work.
+   * @param sender - exact live Agent authorizing and originating the message.
+   * @param targetId - durable direct-parent or direct-child session id.
+   * @param content - model-authored content to deliver.
+   * @param options - caller cancellation before inbox acceptance.
    * @returns the accepted message's inbox id.
-   * @throws when continuation services are unavailable, parent authority is
-   *   rejected, or the message was not admitted.
+   * @throws when continuation services are unavailable, adjacency is rejected,
+   *   or the message was not admitted.
    */
-  async followup(
+  async sendMessage(
+    sender: Agent,
+    targetId: SessionId,
+    content: ContentBlock[],
+    options: SubagentSendMessageOptions,
+  ): Promise<MessageId> {
+    return this.requireContinuations().sendMessage(sender, targetId, content, options)
+  }
+
+  /**
+   * Register one deployment capability installed into every continuable
+   * child's unpublished creation context.
+   * @param contribution - synchronous child-scope installer returning its disposer.
+   * @returns an idempotent registration undo.
+   */
+  registerContinuableSetup(
+    contribution: (childCtx: Context) => () => void,
+  ): () => void {
+    return this.requireContinuations().registerContinuableSetup(contribution)
+  }
+
+  /**
+   * Deliver one resident continuable child's report to its live direct parent.
+   * @param child - exact live reporting Agent.
+   * @param content - model-authored report content.
+   * @param options - scheduling policy, caller cancellation, and structured arm.
+   * @returns the accepted durable message id.
+   */
+  async reportFrom(
+    child: Agent,
+    content: ContentBlock[],
+    options: SubagentReportOptions,
+  ): Promise<MessageId> {
+    return this.requireContinuations().reportFrom(child, content, options)
+  }
+
+  /**
+   * Deliver one host-protocol message to a direct continuable child.
+   * Symbol-keyed so host adapters can preserve their own provenance without
+   * widening the public Service Definition or impersonating an Agent sender.
+   * @param parent - exact live direct parent authorizing delivery.
+   * @param childId - durable direct-child session id.
+   * @param content - host-authored content to deliver.
+   * @param source - durable host-protocol provenance.
+   * @param signal - caller cancellation before inbox acceptance.
+   * @param delivery - Queue as a distinct turn or Steer at the nearest step.
+   * @returns the accepted message's inbox id.
+   */
+  private [deliverSubagentPrompt](
     parent: Agent,
     childId: SessionId,
     content: ContentBlock[],
-    options: SubagentFollowupOptions,
+    source: MessageSource,
+    signal: AbortSignal,
+    delivery: SubagentDelivery,
   ): Promise<MessageId> {
-    return this.requireContinuations().followup(parent, childId, content, options)
+    return delivery === 'steer'
+      ? this.requireContinuations().steerPrompt(parent, childId, content, source, signal)
+      : this.requireContinuations().queuePrompt(parent, childId, content, source, signal)
   }
 
   /**
@@ -400,383 +323,8 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * @throws {SubagentError} `UNAUTHORIZED` when the authority does not own the
    *   live target.
    */
-  /**
-   * Deliver one host-protocol message to a direct continuable child.
-   * Symbol-keyed so host adapters can preserve their own provenance without
-   * widening the public Service Definition or impersonating an Agent sender.
-   * @param parent - exact live direct parent authorizing delivery.
-   * @param childId - durable direct-child session id.
-   * @param content - host-authored content to deliver.
-   * @param source - durable host-protocol provenance.
-   * @param signal - caller cancellation before inbox acceptance.
-   * @param delivery - Queue as a distinct turn or Steer at the nearest step.
-   * @returns the accepted message's inbox id.
-   */
-  /** Host-playbook rendezvous: reached by `steerHostSubagentPrompt` under its
-   * shared symbol (agent-team's compiled mailbox casts the service), not by
-   * name, so the interface marks the contract for the type checker. */
-  [deliverSubagentPrompt](
-    parent: Agent,
-    childId: SessionId,
-    content: ContentBlock[],
-    source: MessageSource,
-    signal: AbortSignal,
-    delivery: HostPromptDeliveryMode,
-  ): Promise<MessageId> {
-    return delivery === 'steer'
-      ? this.requireContinuations().steerPrompt(parent, childId, content, source, signal)
-      : this.requireContinuations().queuePrompt(parent, childId, content, source, signal)
-  }
-
-  /**
-   * Interrupt one live continuable child's current turn without disposing its
-   * Activation: the child settles at its next step boundary and the parent
-   * receives the settlement through its own lifecycle notification.
-   * @param targetSessionId - the durable child session to interrupt.
-   * @param authority - the interrupt authority this runtime acts under.
-   */
   interrupt(targetSessionId: SessionId, authority: SubagentInterruptAuthority): void {
     this.continuations?.interrupt(targetSessionId, authority)
-  }
-
-  /**
-   * Deliver selected content from one live continuable child to its durable
-   * direct parent. The child is the authority credential; callers cannot name a
-   * recipient. Reporting does not conclude the child's turn or Activation.
-   * @param child - exact live reporting child.
-   * @param content - selected model-facing content.
-   * @param options - parent scheduling and pre-acceptance cancellation.
-   * @returns the stable identity of the parent-accepted message.
-   * @throws when continuation services are unavailable, sender authorization
-   *   fails, or the direct parent is not live.
-   */
-  async reportFrom(
-    child: Agent,
-    content: ContentBlock[],
-    options: SubagentReportOptions,
-  ): Promise<MessageId> {
-    const messageId = await this.requireContinuations().reportFrom(child, content, options)
-    const structured = options.report
-    if (structured !== undefined) this.recordOpenDecision(child, structured)
-    return messageId
-  }
-
-  /**
-   * Record a decision-shaped structured report as an open decision for the
-   * child's durable direct parent. Only `needs-decision`/`blocked` reports
-   * with a normalized, non-empty `decisionKey` open a record; other statuses
-   * are advisory and change nothing. Re-opening the same key refreshes its
-   * timestamp rather than duplicating it. Every opened record is appended to
-   * the parent's durable log so restarts rehydrate it.
-   */
-  private recordOpenDecision(child: Agent, report: SubagentReportContent): void {
-    if (report.status !== 'needs-decision' && report.status !== 'blocked') return
-    if (typeof report.decisionKey !== 'string') return
-    const key = normalizeDecisionKey(report.decisionKey)
-    if (key.length === 0 || typeof report.summary !== 'string' || report.summary.trim().length === 0) return
-    const parentId = child.session.header.parentSession
-    if (parentId === undefined) return
-    const entry: OpenDecision = {
-      childId: child.id,
-      key,
-      label: child.session.header.agentPreset ?? 'subagent',
-      status: report.status,
-      summary: report.summary.trim(),
-      openedAt: Date.now(),
-    }
-    this.openLedgerRecord(parentId, entry)
-  }
-
-  /**
-   * Enter one open decision into the in-process projection and append its
-   * durable `open` mutation to the parent's session.
-   * @param parentId - the durable direct parent session id.
-   * @param entry - the decision record to open/refresh.
-   */
-  private openLedgerRecord(parentId: SessionId, entry: OpenDecision): void {
-    let bucket = this.openDecisions.get(parentId.toString())
-    if (bucket === undefined) {
-      bucket = new Map()
-      this.openDecisions.set(parentId.toString(), bucket)
-    }
-    bucket.set(`${entry.childId}\u0000${entry.key}`, entry)
-    this.appendDecisionEvent(parentId, {
-      phase: 'open',
-      childId: entry.childId.toString(),
-      key: entry.key,
-      status: entry.status,
-      summary: entry.summary,
-      label: entry.label,
-      ...entry.wedge === true ? { wedge: true as const } : {},
-      openedAt: entry.openedAt,
-    })
-  }
-
-  /**
-   * Best-effort durable append of one ledger mutation to a parent session.
-   * The in-process projection is authoritative for the live host; a failed
-   * append (absent session service, closing session) is logged and never
-   * throws into the report/answer path.
-   */
-  private appendDecisionEvent(parentId: SessionId, data: SubagentDecisionEventData): void {
-    try {
-      const session = this.ctx.get('sessions')?.get(parentId)
-      session?.append('subagent/decision', data)
-    } catch (error: unknown) {
-      this.ctx.logger.warn(`subagent decision ledger append failed for "${parentId}": ${String(error)}`)
-    }
-  }
-
-  /**
-   * Fold the parent's durable `subagent/decision` events into the in-process
-   * projection exactly once per parent per process. A restarted host rebuilds
-   * the ledger here; records already projected in-memory (this process opened
-   * them) win over the folded copy atomically. Absent the sessions service or
-   * the parent session, there is nothing to fold and hydration still settles.
-   * @param parentId - the durable parent session id to hydrate.
-   */
-  private ensureHydrated(parentId: SessionId): void {
-    const key = parentId.toString()
-    if (this.hydratedParents.has(key)) return
-    this.hydratedParents.add(key)
-    let session
-    try {
-      session = this.ctx.get('sessions')?.get(parentId)
-    } catch {
-      session = undefined
-    }
-    if (session === undefined) return
-    const folded = foldSubagentDecisions(session.snapshotEvents())
-    let bucket = this.openDecisions.get(key)
-    for (const [recordKey, entry] of folded) {
-      if (bucket !== undefined && bucket.has(recordKey)) continue // in-process wins
-      if (bucket === undefined) {
-        bucket = new Map()
-        this.openDecisions.set(key, bucket)
-      }
-      bucket.set(recordKey, entry)
-    }
-  }
-
-  /**
-   * List every open decision a continuable child of `parent` has reported,
-   * oldest first. Open decisions survive the child settling: an unanswered
-   * question the child asked remains owed. The durable ledger is folded into
-   * the projection on first list, so a restarted host reports the same
-   * records without a fresh child report.
-   * @param parent - the exact live parent agent owning the children.
-   * @returns chronological open-decision records (detached).
-   */
-  listOpenDecisions(parent: Agent): OpenDecision[] {
-    this.ensureHydrated(parent.id)
-    const bucket = this.openDecisions.get(parent.id.toString())
-    if (bucket === undefined) return []
-    const entries: OpenDecision[] = [...bucket.values()]
-    entries.sort((a, b) => a.openedAt - b.openedAt)
-    return entries
-  }
-
-  /**
-   * Close one open decision after the parent answers it. Idempotent: an
-   * unknown (already-resolved, never-opened, or malformed) key returns `false`
-   * without throwing. Closing appends the durable `resolve` mutation; closing
-   * a supervisor-raised wedge decision also starts that child's re-raise
-   * cool-down.
-   * @param parent - the exact live parent answering the decision.
-   * @param childId - the reporting child's session id.
-   * @param key - the decision key as reported (normalized before lookup).
-   * @returns whether a record was actually closed.
-   */
-  resolveOpenDecision(parent: Agent, childId: SessionId, key: string): boolean {
-    this.ensureHydrated(parent.id)
-    const normalized = normalizeDecisionKey(key)
-    if (normalized.length === 0) return false
-    const bucket = this.openDecisions.get(parent.id.toString())
-    if (bucket === undefined) return false
-    const recordKey = `${childId}\u0000${normalized}`
-    const record = bucket.get(recordKey)
-    if (record === undefined) return false
-    bucket.delete(recordKey)
-    if (bucket.size === 0) this.openDecisions.delete(parent.id.toString())
-    this.appendDecisionEvent(parent.id, {
-      phase: 'resolve',
-      childId: childId.toString(),
-      key: normalized,
-      openedAt: record.openedAt,
-    })
-    if (isWedgeDecisionKey(normalized)) this.continuations?.markWedgeResolved(childId)
-    return true
-  }
-
-  /**
-   * Wrap one `llm/stream` waterfall tail in stream-liveness observation: mark
-   * the owning child inside a live call (long prefills and thinking produce no
-   * interim events, so this is the wedge supervisor's false-positive guard),
-   * then relay the unchanged tail.
-   * @param options - the routed request.
-   * @param next - the remaining waterfall (admission, adapters).
-   * @returns the unchanged stream tail.
-   */
-  private async * superviseStream(
-    options: GenerateOptions,
-    next: () => AsyncIterable<StreamChunk>,
-  ): AsyncIterable<StreamChunk> {
-    const sessionId = options.sessionId
-    if (sessionId !== undefined && this.continuations !== undefined) {
-      this.continuations.noteStream(sessionId, true)
-    }
-    try {
-      yield* next()
-    } finally {
-      if (sessionId !== undefined && this.continuations !== undefined) {
-        this.continuations.noteStream(sessionId, false)
-      }
-    }
-  }
-
-  /**
-   * One supervision pass: raise wedge decisions for stalled children and
-   * re-notify stale unanswered decisions. Runs on the configured interval and
-   * is exposed for tests and operators. Never kills a child — it only opens
-   * (or refreshes) a keyed decision the parent answers exactly once.
-   * @param now - the pass's `Date.now()`; injectable for tests.
-   * @returns what this pass raised or re-notified, for operators and tests.
-   */
-  runSupervision(now: number = Date.now()): { wedges: WedgeProbe[]; staleNotified: number } {
-    const manager = this.continuations
-    const wedges: WedgeProbe[] = []
-    const slots = this.readModelSlots()
-    const config: SupervisionConfig = {
-      wedgeStaleMs: this.config.wedgeStaleMs,
-      wedgeCoolDownMs: this.config.wedgeCoolDownMs,
-      staleDecisionNotifyMs: this.config.staleDecisionNotifyMs,
-      staleDecisionReNotifyMs: this.config.wedgeCoolDownMs,
-    }
-    let staleNotified = 0
-    let wedgedChildren = 0
-    if (manager !== undefined) {
-      for (const probe of manager.probeActivations()) {
-        const verdict = diagnoseWedge(probe, now, config)
-        if (verdict.kind !== 'stale') continue
-        wedgedChildren += 1
-        if (probe.wedgeOutstanding) continue
-        if (probe.wedgeResolvedAt !== undefined && now - probe.wedgeResolvedAt < config.wedgeCoolDownMs) {
-          continue // parent answered recently; cool-down
-        }
-        this.raiseWedgeDecision(probe, verdict.idleForMs, slots)
-        wedges.push(probe)
-      }
-    }
-    if (this.config.staleDecisionNotifyMs > 0) {
-      for (const [parentKey, bucket] of [...this.openDecisions]) {
-        const parentId = parentKey as unknown as SessionId
-        const parent = this.ctx.agents.get(parentId)
-        if (parent === undefined) continue
-        for (const entry of bucket.values()) {
-          if (now - entry.openedAt < this.config.staleDecisionNotifyMs) continue
-          const notified = this.staleNotifiedAt.get(parentKey)?.get(entry.key)
-          if (notified !== undefined && now - notified < this.config.wedgeCoolDownMs) continue
-          this.notifyStaleDecision(parent, entry)
-          let map = this.staleNotifiedAt.get(parentKey)
-          if (map === undefined) {
-            map = new Map()
-            this.staleNotifiedAt.set(parentKey, map)
-          }
-          map.set(entry.key, now)
-          staleNotified += 1
-        }
-      }
-    }
-    if (wedgedChildren > 0) {
-      this.ctx.logger.warn(`subagent supervision: ${wedgedChildren} stalled child(ren); raised ${wedges.length} wedge decision(s)`)
-    }
-    return { wedges, staleNotified }
-  }
-
-  /** Snapshot the host model-slot gate for admission-aware wedge summaries. */
-  private readModelSlots(): { running: number; waiting: number; capacity: number } | undefined {
-    try {
-      const slots = this.ctx.get('modelSlots') as { stats(): { running: number; waiting: number; capacity: number } } | undefined
-      return slots?.stats()
-    } catch {
-      return undefined
-    }
-  }
-
-  /**
-   * Open a wedge decision for one stalled child through the shared keyed
-   * protocol and wake its parent with the raise. The decision's
-   * `wedge:<childId>` key lets the parent close it exactly once.
-   * @param probe - the stalled child's liveness snapshot.
-   * @param idleForMs - measured quiet duration.
-   * @param slots - optional host model-slot snapshot for the summary.
-   */
-  private raiseWedgeDecision(
-    probe: WedgeProbe,
-    idleForMs: number,
-    slots?: { running: number; waiting: number; capacity: number }  ,
-  ): void {
-    const childId = probe.childId as unknown as SessionId
-    const parentId = probe.parentSession as unknown as SessionId
-    const entry: OpenDecision = {
-      childId,
-      key: wedgeDecisionKey(probe.childId),
-      label: probe.label,
-      status: WEDGE_DECISION_STATUS,
-      summary: wedgeDecisionSummary(probe, idleForMs, slots),
-      openedAt: Date.now(),
-      wedge: true,
-    }
-    this.openLedgerRecord(parentId, entry)
-    this.continuations?.markWedgeOutstanding(childId)
-    const parent = this.ctx.agents.get(parentId)
-    if (parent !== undefined) {
-      this.continuations?.notifySupervisorNotice(
-        parent,
-        [{ type: 'text', text: entry.summary }],
-        `subagent ${probe.childId} appears stalled`,
-      )
-    }
-  }
-
-  /** Injective the parent's attention to one stale unanswered decision. */
-  private notifyStaleDecision(parent: Agent, entry: OpenDecision): void {
-    this.continuations?.notifySupervisorNotice(
-      parent,
-      [{
-        type: 'text',
-        text: `Subagent decision "${entry.key}" from ${entry.childId} has been open since `
-          + `${new Date(entry.openedAt).toISOString()} and still awaits an answer: ${entry.summary}`,
-      }],
-      `decision "${entry.key}" still open`,
-    )
-  }
-
-  /**
-   * Flush any pending decision wakes for one parent immediately. Test/ops
-   * hook: normally the coalescing debounce fires on its own timer.
-   * @param parentId - the parent session whose queued wake to flush.
-   */
-  flushDecisionWakes(parentId: SessionId): void {
-    this.continuations?.flushDecisionWake(parentId)
-  }
-
-  /**
-   * Compose one deployment capability into every continuable child's
-   * unpublished creation context on fresh creation and cold resume. Grants wait
-   * for the next Activation; removing the contribution revokes every resident
-   * installation immediately.
-   * @param contribution - synchronous child-scope installer.
-   * @returns the exact Cordis effect disposer.
-   */
-  registerContinuableSetup(contribution: ContinuableSetupContribution): () => void {
-    // ctx.effect's disposer returns Promise<void>; the public disposer is a
-    // synchronous fire-and-forget handle, so discard the (always-resolved) promise.
-    const remove = this.ctx.effect(
-      () => this.setupRegistry.register(contribution),
-      'subagents.registerContinuableSetup()',
-    )
-    return () => { void remove() }
   }
 
   /**
@@ -860,21 +408,16 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * member.
    * @param parentSessionId - parent session whose direct children are listed.
    * @param signal - carrier cancellation forwarded to Session queries.
-   * @returns the catalog view for that parent, newest delegation first.
-   * @throws {RemoteFailure} `bad-request` for an empty parent id,
-   *   `cancelled` for an aborted read, `subagent-projections-unavailable` when
-   *   the deployment has no projection registry, otherwise `internal`.
+   * @returns the catalog view for that parent.
+   * @throws {RemoteError} `gateway/bad-request` for an empty parent id,
+   *   `gateway/cancelled` for an aborted read, `subagent/projections-unavailable` when
+   *   the deployment has no projection registry, otherwise `gateway/internal`.
    */
   @Remote('list')
   async remoteExportList(parentSessionId: SessionId, signal: AbortSignal): Promise<SubagentCatalog> {
     validateControlRequest('subagent.list', { parentSessionId })
     try {
-      const entries = await this.listChildren(parentSessionId, signal)
-      // The browser catalog reads latest-wave-first: listChildren is ascending
-      // by durable creation time, so without this flip the freshest delegation
-      // of a live fan-out sits at the bottom of the menu. The model-facing
-      // listChildren contract (stable, oldest-first) is untouched.
-      return catalogView(this.ctx, parentSessionId, [...entries].reverse())
+      return catalogView(this.ctx, parentSessionId, await this.listChildren(parentSessionId, signal))
     } catch (error: unknown) {
       return rejectCatalogRead(error, signal)
     }
@@ -884,25 +427,28 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * Deliver one browser-authored message to a continuable child through the
    * exact live direct parent, retaining the caller-minted request identity and
    * validated browser zone on the accepted message. Success identifies the
-   * message the child's FIFO inbox accepted; later execution is independent of
-   * this call.
-   * @param request - durable address, minted identity, content, and optional browser zone.
+   * message the child's inbox accepted; later execution is independent of this
+   * call. Queue delivery targets a later turn; steer delivery targets the
+   * nearest step and retains the Agent loop's best-effort fallback semantics.
+   * Image parts are admitted and persisted through the attachment store
+   * before delivery, and the child's model must accept image input.
+   * @param request - durable address, delivery, minted identity, content, and optional browser zone.
    * @param signal - carrier cancellation, owning the call until inbox acceptance.
    * @returns the accepted message's inbox identity.
-   * @throws {RemoteFailure} `bad-request`, `invalid-time-zone`,
-   *   `subagent-parent-unavailable`, `subagent-not-resumable`,
-   *   `subagent-unauthorized`, `subagent-delivery-unavailable`, `cancelled`, or
-   *   `internal`.
+   * @throws {RemoteError} `gateway/bad-request`, `subagent/attachment-invalid`,
+   *   `subagent/invalid-time-zone`, `subagent/parent-unavailable`,
+   *   `subagent/not-resumable`, `subagent/unauthorized`,
+   *   `subagent/delivery-unavailable`, `gateway/cancelled`, or `gateway/internal`.
    */
   @Remote('prompt')
   async prompt(request: SubagentPromptRequest, signal: AbortSignal): Promise<SubagentPromptReceipt> {
-    const { parentSessionId, childSessionId, clientTimeZone } = request
+    const { parentSessionId, childSessionId, clientTimeZone, delivery } = request
     validateControlRequest('subagent.prompt', request)
     const canonicalTimeZone = clientTimeZone === undefined
       ? undefined
       : canonicalClientTimeZone(clientTimeZone)
     if (clientTimeZone !== undefined && canonicalTimeZone === undefined) {
-      return rejectControl(
+      throw new RemoteError(
         'subagent/invalid-time-zone',
         'clientTimeZone must be UTC or a valid IANA Area/Location name',
         { value: clientTimeZone },
@@ -910,7 +456,7 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
     }
     const parent = this.ctx.get('agents')?.get(parentSessionId)
     if (parent === undefined) {
-      return rejectControl(
+      throw new RemoteError(
         'subagent/parent-unavailable',
         `parent session "${parentSessionId}" is not live`,
         { parentSessionId },
@@ -921,18 +467,27 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       rpcId: request.requestId,
       ...(canonicalTimeZone === undefined ? {} : { clientTimeZone: canonicalTimeZone }),
     }
-    // Admission precedes delivery: image parts become durable references
-    // here, so the child inbox only ever accepts Host-persisted attachments.
-    let content: ContentBlock[]
-    if (request.content.every((part): part is { readonly type: 'text'; readonly text: string } => part.type === 'text')) {
-      content = request.content.map(part => ({ type: 'text', text: part.text }))
-    } else {
-      const attachments = this.ctx.get('attachments')
-      if (attachments === undefined) throw new Error('subagent image prompt requires an attachment store')
-      content = await admitPromptContent(attachments, request.content)
-    }
     try {
-      return { messageId: await this.followup(parent, childSessionId, content, { source, signal }) }
+      // Admission precedes delivery: image parts become durable references
+      // here, so the child inbox only ever accepts Host-persisted attachments.
+      let content: ContentBlock[]
+      if (request.content.every((part): part is { readonly type: 'text'; readonly text: string } => part.type === 'text')) {
+        content = request.content.map(part => ({ type: 'text', text: part.text }))
+      } else {
+        const attachments = this.ctx.get('attachments')
+        if (attachments === undefined) throw new Error('subagent image prompt requires an attachment store')
+        content = await attachments.admitPromptContent(request.content)
+      }
+      return {
+        messageId: await this[deliverSubagentPrompt](
+          parent,
+          childSessionId,
+          content,
+          source,
+          signal,
+          delivery,
+        ),
+      }
     } catch (error: unknown) {
       return rejectPrompt(error, childSessionId, signal)
     }
@@ -948,9 +503,9 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * @param parentSessionId - durable direct parent whose authority is claimed.
    * @param mode - required continuable-address discriminator.
    * @returns acknowledgement that the cancel signal was admitted, not that the target is quiescent.
-   * @throws {RemoteFailure} `bad-request` for an empty id,
-   *   `subagent-unauthorized` when the address does not own the live target,
-   *   otherwise `internal`.
+   * @throws {RemoteError} `gateway/bad-request` for an empty id,
+   *   `subagent/unauthorized` when the address does not own the live target,
+   *   otherwise `gateway/internal`.
    */
   @Remote('interruptByParent')
   interruptByParent(
@@ -963,13 +518,14 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       this.interrupt(childSessionId, { kind: 'user', parentSessionId })
     } catch (error: unknown) {
       if (error instanceof SubagentError && error.code === 'UNAUTHORIZED') {
-        return rejectControl(
+        throw new RemoteError(
           'subagent/unauthorized',
           'subagent does not belong to this parent',
           { childSessionId },
+          { cause: error },
         )
       }
-      return rejectControl('internal', 'subagent interrupt failed', {})
+      throw new RemoteError('gateway/internal', 'subagent interrupt failed', {}, { cause: error })
     }
     return { accepted: true }
   }
@@ -983,9 +539,8 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    */
   registerProvider(provider: SubagentProvider): () => void {
     const name = provider.name
-    // ctx.effect's disposer returns Promise<void>; the public disposer is a
-    // synchronous fire-and-forget handle, so discard the (always-resolved) promise.
-    const remove = this.ctx.effect(function* (this: SubagentRuntime) {
+    // oxlint-disable-next-line typescript/no-misused-promises -- synchronous disposer
+    return this.ctx.effect(function*(this: SubagentRuntime) {
       if (this.providers.has(name)) {
         throw new SubagentError(`a subagent provider named "${name}" is already registered`, 'DUPLICATE_PROVIDER')
       }
@@ -998,7 +553,6 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       // repository's fail-loud registration semantics.
       this.ctx.emit('subagent/provider-added', provider)
     }.bind(this), 'subagents.registerProvider()')
-    return () => { void remove() }
   }
 
   /**
@@ -1024,6 +578,8 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
    * fulfills; a rejection therefore has no run for the caller to dispose and
    * emits no run lifecycle events. Post-publication turn and infrastructure
    * failures settle through the returned run.
+   * A catalog append failure disposes the run and handles its result rejection;
+   * the caller receives the catalog error even if disposal also fails.
    * @param name - the provider to use.
    * @param request - child label, prompt, parent, signal, and optional capabilities.
    * @returns the published holder-owned run.
@@ -1032,7 +588,6 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
     const provider = this.expectProvider(name)
     this.assertCapabilities(provider, request)
     assertSubagentMaxDepth(request.maxDepth)
-    if (request.workspace !== undefined) assertUsableCwd('subagent start', 'workspace', request.workspace)
     if (request.outputSchema !== undefined) assertObjectJsonSchema(request.outputSchema)
     const descriptor = snapshotSubagentDescriptor({
       mode: 'one-shot',
@@ -1040,7 +595,25 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       ...request.label !== undefined ? { label: request.label } : {},
     })
     const resolved: ResolvedSubagentStartRequest = { ...request, descriptor }
-    return observeRun(this.emitLifecycle, name, request.parent, await provider.start(resolved))
+    const run = await provider.start(resolved)
+    const child = run.localAgent?.session
+    if (child !== undefined) {
+      try {
+        establishCatalogChild(request.parent.session, child.header, descriptor)
+      } catch (error: unknown) {
+        // No caller receives this run; the catalog error owns the failed start.
+        void run.result.catch(() => undefined)
+        try {
+          await run.dispose()
+        } catch (cleanupError: unknown) {
+          this.ctx.logger.warn(
+            `subagent: disposal after catalog append failure also failed: ${String(cleanupError)}`,
+          )
+        }
+        throw error
+      }
+    }
+    return observeRun(this.emitLifecycle, name, request.parent, run)
   }
 
   /**
@@ -1103,7 +676,6 @@ export class SubagentRuntime extends TypertRemoteService implements HostPromptDe
       { when: request.maxDepth !== undefined, cap: 'depthLimit' },
       { when: request.toolFilter !== undefined, cap: 'toolFilter' },
       { when: request.persona !== undefined, cap: 'persona' },
-      { when: request.workspace !== undefined, cap: 'workspace' },
     ]
     for (const { when, cap } of needs) {
       if (when && !provider.capabilities[cap]) {

@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { type Agent } from '@deepseek-ai/dsh-agent'
 
@@ -18,18 +18,15 @@ import SubagentRuntime, {
   type SubagentRunEndInfo,
   type SubagentStartRequest,
 } from '@deepseek-ai/dsh-subagent'
-import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 
 function fakeParent(id = 'parent-1'): Agent {
   return { id: SessionId(id) } as unknown as Agent
 }
 
-const ALL_CAPS: SubagentCapabilities = {
-  agentOptions: true, outputSchema: true, depthLimit: true, toolFilter: true, persona: true, workspace: true,
-}
-const NO_CAPS: SubagentCapabilities = {
-  agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false, workspace: false,
-}
+const ALL_CAPS: SubagentCapabilities = { agentOptions: true, outputSchema: true, depthLimit: true, toolFilter: true, persona: true }
+const NO_CAPS: SubagentCapabilities = { agentOptions: false, outputSchema: false, depthLimit: false, toolFilter: false, persona: false }
 
 function baseRequest(overrides: Partial<SubagentStartRequest> = {}): SubagentStartRequest {
   return {
@@ -68,11 +65,32 @@ class StubProvider implements SubagentProvider {
 
 async function service(): Promise<{ ctx: Context; subagents: SubagentRuntime }> {
   const ctx = new Context()
+  // The registry is a required injection of SubagentRuntime (its projection
+  // units register in the constructor).
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SubagentRuntime)
   return { ctx, subagents: ctx.subagents }
 }
 
 describe('SubagentRuntime', () => {
+  it('releases its catalog projection binding with the service fiber', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
+    const fiber = await ctx.plugin(SubagentRuntime)
+    const parent = Session.create(SessionId('catalog-parent'))
+    parent.append('subagent/catalog', {
+      version: 0,
+      childId: SessionId('catalog-child'),
+      childCreatedAt: 1,
+      mode: 'one-shot',
+    })
+    expect(ctx.sessionProjections.snapshot(parent).values.subagentCatalog).toHaveLength(1)
+
+    await fiber.dispose()
+
+    expect(ctx.sessionProjections.stateOf(parent, 'subagentCatalog')).toBeUndefined()
+  })
+
   it('registers, lists, looks up, starts, and removes providers', async () => {
     const { ctx, subagents } = await service()
     const added: string[] = []
@@ -157,11 +175,11 @@ describe('SubagentRuntime', () => {
       request: baseRequest(),
       signal: new AbortController().signal,
     })).rejects.toMatchObject({ code: 'CONTINUATION_UNAVAILABLE' })
-    await expect(subagents.followup(
+    await expect(subagents.sendMessage(
       fakeParent(),
       SessionId('child'),
       [{ type: 'text', text: 'hello' }],
-      { source: { kind: 'user' }, signal: new AbortController().signal },
+      { signal: new AbortController().signal },
     )).rejects.toMatchObject({ code: 'CONTINUATION_UNAVAILABLE' })
   })
 
@@ -171,7 +189,6 @@ describe('SubagentRuntime', () => {
     ['depthLimit', { maxDepth: 1 }],
     ['toolFilter', { toolFilter: { deny: ['bash'] } }],
     ['persona', { persona: 'reviewer' }],
-    ['workspace', { workspace: '/tmp/never-created-workspace-dir' }],
   ] as const)('rejects unsupported %s before provider startup', async (_capability, override) => {
     const { subagents } = await service()
     const provider = new StubProvider('weak', NO_CAPS)
@@ -191,17 +208,6 @@ describe('SubagentRuntime', () => {
       .rejects.toThrow()
     expect(provider.startCount).toBe(0)
     expect(() => { assertSubagentMaxDepth(undefined) }).not.toThrow()
-  })
-
-  it('validates a workspace override is an absolute enterable directory before provider startup', async () => {
-    const { subagents } = await service()
-    const provider = new StubProvider('strong')
-    subagents.registerProvider(provider)
-    await expect(subagents.start('strong', baseRequest({ workspace: 'relative/worktree' })))
-      .rejects.toThrow('workspace must be an absolute path')
-    await expect(subagents.start('strong', baseRequest({ workspace: '/tmp/dsh-no-such-workspace-dir-xyz' })))
-      .rejects.toThrow('workspace is not an accessible directory')
-    expect(provider.startCount).toBe(0)
   })
 
   it('publishes lifecycle only after async provider start and keeps parent scope', async () => {
@@ -264,6 +270,45 @@ describe('SubagentRuntime', () => {
     expect(lifecycle).not.toHaveBeenCalled()
   })
 
+  it.each([false, true])('handles a rejected local result after catalog failure (disposal fails: %s)', async (failsDisposal) => {
+    const { ctx, subagents } = await service()
+    onTestFinished(() => ctx.fiber.dispose())
+    const parentSession = Session.create(SessionId('catalog-parent'))
+    const childSession = Session.create(SessionId('catalog-child'))
+    const parent = { id: parentSession.id, session: parentSession } as Agent
+    const localAgent = { id: childSession.id, session: childSession } as Agent
+    const result = Promise.withResolvers<SubagentResult>()
+    const cleanupFailure = new Error('dispose also failed')
+    const warnings = vi.spyOn(ctx.logger, 'warn')
+    const dispose = vi.fn(async () => {
+      result.reject(new Error('run infrastructure failed'))
+      // Cross Node's unhandled-rejection checkpoint while disposal is pending.
+      await new Promise<void>(resolve => setImmediate(resolve))
+      if (failsDisposal) throw cleanupFailure
+    })
+    subagents.registerProvider({
+      name: 'catalog-failure',
+      capabilities: NO_CAPS,
+      inheritsParentContext: false,
+      start: () => Promise.resolve({
+        id: childSession.id,
+        localAgent,
+        result: result.promise,
+        dispose,
+      }),
+    })
+    const catalogFailure = new Error('catalog unavailable')
+    const append = vi.spyOn(parentSession, 'append').mockImplementation(() => {
+      throw catalogFailure
+    })
+
+    await expect(subagents.start('catalog-failure', baseRequest({ parent })))
+      .rejects.toBe(catalogFailure)
+    expect(append).toHaveBeenCalledOnce()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(warnings).toHaveBeenCalledTimes(failsDisposal ? 1 : 0)
+  })
+
   it('emits an enriched end event and maps result rejection to error telemetry', async () => {
     const { ctx, subagents } = await service()
     const completed = new StubProvider('completed', NO_CAPS, {
@@ -315,11 +360,9 @@ describe('SubagentRuntime', () => {
     ctx.logger.warn = ((message: unknown) => void warnings.push(String(message))) as typeof ctx.logger.warn
     const heard: string[] = []
     ctx.on('subagent/provider-removed', () => { throw new Error('sync boom') })
-    // Deliberately async despite the void listener contract: the contained
-    // emitter must log a rejected returned promise without starving peers, so
-    // the listener returns it (typed unknown, as the event contract cannot
-    // express the returned promise).
-    ctx.on('subagent/provider-removed', (): unknown => (async () => { throw new Error('async boom') })())
+    // Runtime listeners may return thenables even though the declaration's observable result is void.
+    // oxlint-disable-next-line typescript/no-misused-promises -- exercises rejected-listener containment
+    ctx.on('subagent/provider-removed', async () => { throw new Error('async boom') })
     ctx.on('subagent/provider-removed', () => { throw { toString: () => { throw new Error('coercion') } } })
     ctx.on('subagent/provider-removed', name => void heard.push(name))
     const dispose = subagents.registerProvider(new StubProvider('contained'))

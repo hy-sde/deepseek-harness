@@ -51,6 +51,11 @@ class ByteFs extends FileSystem {
     }
     return bytes
   }
+  override async readByteRange(target: FsTarget, range: { offset: number; length: number }, _signal?: AbortSignal): Promise<Uint8Array> {
+    const bytes = this.files.get(String(target.targetKey))
+    if (bytes === undefined) return new Uint8Array()
+    return bytes.subarray(range.offset, range.offset + range.length)
+  }
   override async listDir(_target: FsTarget): Promise<FsDirEntry[]> { return [] }
   override async writeText(target: FsTarget, content: string): Promise<FsWriteOutcome> {
     const before = this.files.get(String(target.targetKey)) ?? null

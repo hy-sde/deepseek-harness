@@ -29,6 +29,9 @@
       "path": "../../interaction/commands"
     },
     {
+      "path": "../../session/session-format"
+    },
+    {
       "path": "../../session/session-persistence"
     },
     {

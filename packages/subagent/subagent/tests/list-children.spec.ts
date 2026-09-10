@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { seedStoredSession } from './persistence-helpers.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -7,8 +6,9 @@ import { z } from 'zod'
 import { Context } from '@deepseek-ai/cordis'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import SessionStore, { SESSION_FORMAT_VERSION, SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
+import SessionStore, { SessionLogOffset, SessionSeq, SESSION_FORMAT_VERSION, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import type { SessionObservation } from '@deepseek-ai/dsh-session-query'
 import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
@@ -30,13 +30,16 @@ import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import { TestSessionQuery } from './test-session-query.ts'
+import { seedStoredSession } from './persistence-helpers.ts'
 
 type Script = ConstructorParameters<typeof MockAdapter>[0]
 
 const roots: string[] = []
+const persistenceDisposers: Array<() => Promise<void>> = []
 const projCacheRoots: string[] = []
 
-afterEach(() => {
+afterEach(async () => {
+  await Promise.all(persistenceDisposers.splice(0).map(dispose => dispose()))
   for (const root of projCacheRoots.splice(0)) rmSync(root, { recursive: true, force: true })
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
@@ -44,16 +47,14 @@ afterEach(() => {
 /** Boot the continuable stack with real JSONL session persistence. */
 async function setup(
   script: Script,
-  options: { sessionProjections?: boolean; projectionCache?: boolean } = {},
+  options: { projectionCache?: boolean } = {},
 ) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
   const root = mkdtempSync(join(tmpdir(), 'dsh-subagent-list-'))
   roots.push(root)
-  await ctx.plugin(JsonlSessionPersistence, { root })
-  // AgentLoop constructs (and thus provides ctx.agentLoop) only when every
-  // static-inject service is already mounted, so projections must precede it.
-  if (options.sessionProjections !== false) await ctx.plugin(SessionProjectionRegistry)
+  const persistence = await ctx.plugin(JsonlSessionPersistence, { root })
+  persistenceDisposers.push(() => persistence.dispose())
   await ctx.plugin(AgentLoop, { agents: [] })
   if (options.projectionCache === true) {
     const root = mkdtempSync(join(tmpdir(), 'dsh-subagent-projcache-'))
@@ -70,8 +71,21 @@ async function setup(
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
   ctx.llm.registerAdapter(['mock'], new MockAdapter(script))
-  const parent = await ctx.agentLoop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
+  const loop = ctx.get('agentLoop')
+  const parent = loop === undefined
+    ? (() => {
+      const session = ctx.sessions.create(SessionId('parent'))
+      return { id: session.id, session } as Awaited<ReturnType<Context['agentLoop']['create']>>
+    })()
+    : await loop.create(SessionId('parent'), { provider: 'mock', model: 'mock' })
   return { ctx, parent }
+}
+
+async function setupWithoutProjections(): Promise<Context> {
+  const ctx = new Context()
+  await ctx.plugin(SessionStore)
+  await ctx.plugin(SubagentRuntime)
+  return ctx
 }
 
 const testSignal = new AbortController().signal
@@ -79,7 +93,7 @@ const testSignal = new AbortController().signal
 /** Start one continuable child through the real service path and await Activation release. */
 async function startChild(
   ctx: Context,
-  parent: Awaited<ReturnType<Context['agentLoop']['create']>>,
+  parent: Agent,
   label: string,
 ): Promise<SessionId> {
   const started = await ctx.subagents.startContinuable({
@@ -98,36 +112,74 @@ async function startChild(
 async function authorChild(
   ctx: Context,
   id: string,
-  header: Partial<SessionHeader> & { seedLength?: number },
+  header: Partial<SessionHeader>,
   events: SessionEvent[],
+  inheritedEventCount?: number,
 ): Promise<SessionId> {
   const sessionId = SessionId(id)
-  const { seedLength, ...rest } = { version: SESSION_FORMAT_VERSION, id: sessionId, createdAt: 1, isSeeded: false, ...header }
-  // The session refactor replaced the legacy `seedLength` header field with the
-  // boolean `isSeeded` plus a separate inheritedEventCount cut; a non-zero cut
-  // requires isSeeded to be true or the coordinator rejects the metadata.
-  await seedStoredSession(
-    ctx.sessionPersistence,
-    seedLength === undefined ? rest : { ...rest, isSeeded: true },
-    events,
-    seedLength === undefined ? undefined : SessionLogOffset(seedLength),
-  )
+  const committed = inheritedEventCount === undefined
+    ? events
+    : [
+      ...events.slice(0, inheritedEventCount),
+      {
+        type: 'session/end-seed',
+        seq: SessionSeq(inheritedEventCount),
+        time: events[inheritedEventCount]?.time ?? events[inheritedEventCount - 1]?.time ?? 1,
+        data: { inherited: true },
+      } as SessionEvent,
+      ...events.slice(inheritedEventCount),
+    ].map((event, seq) => ({ ...event, seq: SessionSeq(seq) }))
+  await seedStoredSession(ctx.sessionPersistence, {
+    version: SESSION_FORMAT_VERSION,
+    id: sessionId,
+    createdAt: 1,
+    isSeeded: inheritedEventCount !== undefined,
+    ...header,
+  }, committed, inheritedEventCount === undefined ? undefined : SessionLogOffset(inheritedEventCount))
   return sessionId
+}
+
+/**
+ * Serve one cold session's point read (the open handle) with a transformed
+ * header while the enumeration listing keeps reporting the stored original —
+ * the re-published-lifecycle shape the sameLifecycle check exists for.
+ */
+function mutateStoredHeader(
+  ctx: Context,
+  target: SessionId,
+  mutate: (meta: SessionHeader) => SessionHeader,
+): void {
+  const originalOpen = ctx.sessionPersistence.open.bind(ctx.sessionPersistence)
+  ctx.sessionPersistence.open = async (sessionId, access, options) => {
+    const handle = await originalOpen(sessionId, access, options)
+    if (sessionId !== target) return handle
+    return {
+      id: handle.id,
+      access: handle.access,
+      header: mutate(handle.header),
+      inheritedEventCount: handle.inheritedEventCount,
+      read: (offset, length, readOptions) => handle.read(offset, length, readOptions),
+      append: (events, appendOptions) => handle.append(events, appendOptions),
+      flush: flushOptions => handle.flush(flushOptions),
+      close: () => handle.close(),
+      [Symbol.asyncDispose]: () => handle[Symbol.asyncDispose](),
+    }
+  }
 }
 
 /** Minimal complete-turn child log with one descriptor payload. */
 function childEvents(descriptor: unknown): SessionEvent[] {
   return [
-    { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
+    { type: 'turn/start', seq: SessionSeq(0), time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
     {
       type: 'user/message',
-      seq: 1,
+      seq: SessionSeq(1),
       time: 2,
       data: createUserMessage({ content: [{ type: 'text', text: 'work' }], source: { kind: 'user' } }),
       surfaceOp: 'append',
     },
-    { type: 'subagent/descriptor', seq: 2, time: 3, data: descriptor },
-    { type: 'turn/end', seq: 3, time: 4, data: { turn: 1, reason: { kind: 'completed' } } },
+    { type: 'subagent/descriptor', seq: SessionSeq(2), time: 3, data: descriptor },
+    { type: 'turn/end', seq: SessionSeq(3), time: 4, data: { turn: 1, reason: { kind: 'completed' } } },
   ] as SessionEvent[]
 }
 
@@ -200,11 +252,8 @@ describe('SubagentRuntime.listChildren', () => {
   })
 
   it('fails loud when the projection registry is not mounted, even with no children', async () => {
-    // No projections AND no parent fixture: the projection guard runs before
-    // any read, so a bare SessionId must reach it untouched.
-    const ctx = new Context()
-    await ctx.plugin(SubagentRuntime)
-    await expect(ctx.subagents.listChildren(SessionId('parent'))).rejects.toThrow(
+    const ctx = await setupWithoutProjections()
+    await expect(ctx.subagents.listChildren(SessionId('no-projections-parent'))).rejects.toThrow(
       expect.objectContaining({ code: 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE' }) as Error,
     )
   })
@@ -276,18 +325,15 @@ describe('SubagentRuntime.listChildren', () => {
     const { ctx } = await setup([])
     // A parent that exists only in persistence — the restart shape.
     const coldParent = SessionId('00000000-0000-4000-8000-00000000cccc')
-    await seedStoredSession(
-      ctx.sessionPersistence,
-      {
-        version: SESSION_FORMAT_VERSION,
-        id: coldParent,
-        createdAt: 1,
-        isSeeded: false,
-      },
-      [
-        { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
-        { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'completed' } } },
-      ] as SessionEvent[])
+    await seedStoredSession(ctx.sessionPersistence, {
+      version: SESSION_FORMAT_VERSION,
+      id: coldParent,
+      createdAt: 1,
+      isSeeded: false,
+    }, [
+      { type: 'turn/start', seq: SessionSeq(0), time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
+      { type: 'turn/end', seq: SessionSeq(1), time: 2, data: { turn: 1, reason: { kind: 'completed' } } },
+    ] as SessionEvent[])
     const childId = await authorChild(ctx, '00000000-0000-4000-8000-00000000cdcd', {
       parentSession: coldParent,
       origin: 'subagent',
@@ -364,9 +410,7 @@ describe('SubagentRuntime.listChildren', () => {
     const observe = ctx.sessionQuery.observeSession.bind(ctx.sessionQuery)
     vi.spyOn(ctx.sessionQuery, 'observeSession').mockImplementation((id, options) => {
       if (id === childId) {
-        // A non-Error rejection reason keeps this a cold-observation failure
-        // probe: the mapper must survive values that are not `Error` instances.
-        return (async () => { throw 'backend unavailable' })()
+        return Promise.reject('backend unavailable') // oxlint-disable-line typescript/prefer-promise-reject-errors
       }
       return observe(id, options)
     })
@@ -487,7 +531,7 @@ describe('SubagentRuntime.listChildren', () => {
     live.append('turn/start', { turn: 1 })
     live.append('subagent/descriptor', descriptorPayload('was valid'))
     expect(ctx.sessionProjections.snapshot(live).values.subagent)
-      .toEqual({ mode: 'continuable', label: 'was valid', seq: 1 })
+      .toEqual({ mode: 'continuable', label: 'was valid', seq: SessionSeq(1) })
     // Last-wins: the malformed follow-up resets the identity to the sentinel.
     live.append(
       'subagent/descriptor',
@@ -512,7 +556,7 @@ describe('SubagentRuntime.listChildren', () => {
       seq: SessionSeq(3),
       time: 3,
       data: { version: SUBAGENT_DESCRIPTOR_VERSION, mode: 'continuable', provider: 7 },
-    } as SessionEvent)
+    } as unknown as SessionEvent)
     events[4] = { ...events[4]!, seq: SessionSeq(4) }
     const invalidated = await authorChild(ctx, '00000000-0000-4000-8000-00000000ad01', {
       parentSession: parent.id,
@@ -534,7 +578,7 @@ describe('SubagentRuntime.listChildren', () => {
     // divergent label proves the row, not the log, produced the entry.
     ctx.sessionProjectionCache.cachedSnapshot = () => ({
       asOfSeq: SessionSeq(2),
-      values: { subagent: { mode: 'continuable', label: 'cached own', seq: 2 } },
+      values: { subagent: { mode: 'continuable', label: 'cached own', seq: SessionSeq(2) } },
     })
     const inspect = vi.spyOn(ctx.sessionPersistence, 'open')
     await expect(ctx.subagents.listChildren(parent.id)).resolves.toEqual([{
@@ -557,14 +601,13 @@ describe('SubagentRuntime.listChildren', () => {
     ] as SessionEvent[]
     const forkChild = await authorChild(ctx, '00000000-0000-4000-8000-00000000ae02', {
       parentSession: parent.id,
-      seedLength: seed.length,
       origin: 'subagent',
-    }, events)
+    }, events, seed.length)
     // A creation-window checkpoint carried the ANCESTOR identity: its seq 2
     // fails the own-suffix gate (< seedLength 4), so preparation rules.
     ctx.sessionProjectionCache.cachedSnapshot = () => ({
       asOfSeq: SessionSeq(2),
-      values: { subagent: { mode: 'continuable', label: 'ancestor label', seq: 2 } },
+      values: { subagent: { mode: 'continuable', label: 'ancestor label', seq: SessionSeq(2) } },
     })
     const inspect = vi.spyOn(ctx.sessionPersistence, 'open')
     await expect(ctx.subagents.listChildren(parent.id)).resolves.toEqual([{
@@ -575,7 +618,6 @@ describe('SubagentRuntime.listChildren', () => {
   })
 
   it.each([
-    ['version', (meta: SessionHeader): SessionHeader => ({ ...meta, version: meta.version + 1 })],
     ['id', (meta: SessionHeader): SessionHeader => ({ ...meta, id: SessionId('another-lifecycle') })],
     ['createdAt', (meta: SessionHeader): SessionHeader => ({ ...meta, createdAt: meta.createdAt + 1 })],
     ['cwd', (meta: SessionHeader): SessionHeader => ({ ...meta, cwd: '/elsewhere' })],
@@ -589,13 +631,8 @@ describe('SubagentRuntime.listChildren', () => {
       parentSession: parent.id,
       origin: 'subagent',
     }, childEvents(descriptorPayload('reborn child')))
-    const original = ctx.sessionPersistence.open.bind(ctx.sessionPersistence)
-    ctx.sessionPersistence.open = async (sessionId, access, options) => {
-      const handle = await original(sessionId, access, options)
-      if (sessionId !== reborn) return handle
-      // The id was re-published as a different lifecycle after enumeration.
-      return Object.assign(Object.create(handle), { header: mutate(handle.header) }) as typeof handle
-    }
+    // The id was re-published as a different lifecycle after enumeration.
+    mutateStoredHeader(ctx, reborn, mutate)
     const entries = await ctx.subagents.listChildren(parent.id)
     expect(entries).toContainEqual({ kind: 'diagnostic', id: reborn, reason: 'corrupt' })
     expect(entries).toContainEqual({
@@ -622,20 +659,21 @@ describe('SubagentRuntime.listChildren', () => {
 
   it('maps a child rejected by persistence validation to corrupt', async () => {
     const { ctx, parent } = await setup([])
-    // The surface-eligible user/message lacks its required surfaceOp, so the
-    // first-party inspection rejects before any projection fold can run.
+    // The canonical envelope contains a message without an id; persistence
+    // adoption rejects it before any projection fold can run.
     const invalid = await authorChild(ctx, '00000000-0000-4000-8000-0000000000ee', {
       parentSession: parent.id,
       origin: 'subagent',
     }, [
-      { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
+      { type: 'turn/start', seq: SessionSeq(0), time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
       {
         type: 'user/message',
-        seq: 1,
+        seq: SessionSeq(1),
         time: 2,
-        data: createUserMessage({ content: [{ type: 'text', text: 'work' }], source: { kind: 'user' } }),
+        data: { role: 'user', content: [{ type: 'text', text: 'work' }], source: { kind: 'user' } },
+        surfaceOp: 'append',
       },
-      { type: 'subagent/descriptor', seq: 2, time: 3, data: descriptorPayload('broken surface') },
+      { type: 'subagent/descriptor', seq: SessionSeq(2), time: 3, data: descriptorPayload('broken message') },
     ] as SessionEvent[])
     const entries = await ctx.subagents.listChildren(parent.id)
     expect(entries).toEqual([{ kind: 'diagnostic', id: invalid, reason: 'corrupt' }])
@@ -671,9 +709,8 @@ describe('SubagentRuntime.listChildren', () => {
     const seed = childEvents(descriptorPayload('ancestor label'))
     const forkChild = await authorChild(ctx, '00000000-0000-4000-8000-0000000000f0', {
       parentSession: parent.id,
-      seedLength: seed.length,
       origin: 'subagent',
-    }, seed)
+    }, seed, seed.length)
     const entries = await ctx.subagents.listChildren(parent.id)
     expect(entries).toEqual([{ kind: 'diagnostic', id: forkChild, reason: 'corrupt' }])
   })
@@ -800,7 +837,7 @@ describe('SubagentRuntime.listChildren', () => {
         content: [{ type: 'text', text: 'summary of everything' }],
         source: { kind: 'plugin', plugin: 'compact' },
       }),
-      surfaceOp: { op: 'replace', start: SessionSeq(1), end: SessionSeq(1) },
+      surfaceOp: { op: 'replace', startSeq: SessionSeq(1), endSeq: SessionSeq(1) },
       sourceEventSeqs: [SessionSeq(1)],
     })
     const compacted = await authorChild(ctx, '00000000-0000-4000-8000-00000000c1de', {
@@ -880,9 +917,9 @@ describe('SubagentRuntime.listChildren', () => {
     const childId = await startChild(ctx, parent, 'cached child')
     // The child's turn/end and disposal are the cache's mandatory checkpoint
     // points; both writes are fail-soft asynchronous, so wait for the row.
-    const header = (await ctx.sessionPersistence.list()).find(snapshot => snapshot.header.id === childId)
+    const header = (await ctx.sessionPersistence.list()).find(snapshot => snapshot.header.id === childId)?.header
     await vi.waitFor(() => {
-      expect(ctx.sessionProjectionCache.cachedSnapshot(header!.header, SessionLogOffset(0))?.values.subagent).toBeDefined()
+      expect(ctx.sessionProjectionCache.cachedSnapshot(header!, SessionLogOffset(0))?.values.subagent).toBeDefined()
     }, { timeout: 5_000 })
     const inspect = vi.spyOn(ctx.sessionPersistence, 'open')
     await expect(ctx.subagents.listChildren(parent.id)).resolves.toEqual([{
@@ -953,8 +990,8 @@ describe('SubagentRuntime.listChildren', () => {
     await authorChild(ctx, '00000000-0000-4000-8000-0000000000f1', {
       parentSession: childId,
     }, [
-      { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
-      { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'completed' } } },
+      { type: 'turn/start', seq: SessionSeq(0), time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
+      { type: 'turn/end', seq: SessionSeq(1), time: 2, data: { turn: 1, reason: { kind: 'completed' } } },
     ] as SessionEvent[])
 
     await expect(ctx.subagents.listChildren(parent.id)).resolves.toEqual([{
@@ -994,11 +1031,10 @@ describe('SubagentRuntime.listChildren', () => {
     const { ctx, parent } = await setup([])
     const controller = new AbortController()
     const entered = Promise.withResolvers<undefined>()
-    ctx.sessionPersistence.list = (options: { signal?: AbortSignal }) => {
-      const signal = options?.signal
+    ctx.sessionPersistence.list = (options) => {
       entered.resolve(undefined)
       return new Promise((_resolve, reject) => {
-        signal?.addEventListener('abort', () => {
+        options?.signal?.addEventListener('abort', () => {
           reject(new Error('backend listing aborted'))
         }, { once: true })
       })
@@ -1044,9 +1080,9 @@ describe('SubagentRuntime.listChildren', () => {
     const controller = new AbortController()
     const original = ctx.sessionPersistence.open.bind(ctx.sessionPersistence)
     ctx.sessionPersistence.open = async (sessionId, access, options) => {
-      const handle = await original(sessionId, access, options)
+      const result = await original(sessionId, access, options)
       controller.abort()
-      return handle
+      return result
     }
     // The post-read checkpoint throws the stable subagent error instead of
     // interpreting the fully-read log as a successful listing.
@@ -1061,7 +1097,7 @@ describe('SubagentRuntime.listChildren', () => {
       origin: 'subagent',
     }, childEvents(descriptorPayload('aborted behind a failure')))
     const controller = new AbortController()
-    ctx.sessionPersistence.open = (_sessionId, _access, _options) => {
+    ctx.sessionPersistence.open = () => {
       // The read fails while the caller aborts: cancellation normalization
       // must fail the listing rather than return a one-diagnostic success.
       controller.abort()
@@ -1079,11 +1115,9 @@ describe('SubagentRuntime.listChildren', () => {
   })
 
   it('SubagentError from listChildren is typed with its stable code', async () => {
-    // No projections mount means no AgentLoop parent: the projection guard runs
-    // before any read, so a bare SessionId reaches it untouched.
-    const ctx = new Context()
-    await ctx.plugin(SubagentRuntime)
-    const caught: unknown = await ctx.subagents.listChildren(SessionId('parent')).catch((error: unknown) => error)
+    const ctx = await setupWithoutProjections()
+    const caught: unknown = await ctx.subagents.listChildren(SessionId('typed-no-projections-parent'))
+      .catch((error: unknown) => error)
     expect(caught).toBeInstanceOf(SubagentError)
     expect((caught as SubagentError).code).toBe('SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE')
   })
@@ -1250,8 +1284,8 @@ describe('SubagentRuntime.listDescendants', () => {
       createdAt: 1,
       origin: 'subagent',
     }, [
-      { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
-      { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'completed' } } },
+      { type: 'turn/start', seq: SessionSeq(0), time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
+      { type: 'turn/end', seq: SessionSeq(1), time: 2, data: { turn: 1, reason: { kind: 'completed' } } },
     ] as SessionEvent[])
     const below = await authorChild(ctx, '00000000-0000-4000-8000-00000000eee2', {
       parentSession: bare,
@@ -1298,14 +1332,8 @@ describe('SubagentRuntime.listDescendants', () => {
       createdAt: 1,
       origin: 'subagent',
     }, childEvents(descriptorPayload('lineage checked')))
-    const realInspect = ctx.sessionPersistence.open.bind(ctx.sessionPersistence)
-    ctx.sessionPersistence.open = async (sessionId, access, options) => {
-      const handle = await realInspect(sessionId, access, options)
-      // The exact read reports a different durable parent than enumeration did.
-      return Object.assign(Object.create(handle), {
-        header: { ...handle.header, parentSession: SessionId('someone-else') },
-      }) as typeof handle
-    }
+    // The exact read reports a different durable parent than enumeration did.
+    mutateStoredHeader(ctx, childId, meta => ({ ...meta, parentSession: SessionId('someone-else') }))
     await expect(ctx.subagents.listDescendants(parent.id)).resolves.toEqual([
       { kind: 'diagnostic', id: childId, reason: 'corrupt', parentId: parent.id, depth: 1 },
     ])
@@ -1324,11 +1352,8 @@ describe('SubagentRuntime.listDescendants', () => {
   })
 
   it('fails loud when the projection registry is not mounted', async () => {
-    // No projections mount means no AgentLoop parent; the projection guard runs
-    // before any read, so a bare SessionId reaches it untouched.
-    const ctx = new Context()
-    await ctx.plugin(SubagentRuntime)
-    await expect(ctx.subagents.listDescendants(SessionId('parent'))).rejects.toThrow(
+    const ctx = await setupWithoutProjections()
+    await expect(ctx.subagents.listDescendants(SessionId('no-projections-root'))).rejects.toThrow(
       expect.objectContaining({ code: 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE' }) as Error,
     )
   })

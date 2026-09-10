@@ -191,8 +191,8 @@ function trackDapStartRequest<T>(promise: Promise<T>, failure: DapStartRequestFa
     throw error
   })
   failure.settled = tracked.then(
-    () => {},
-    () => {},
+    () => { },
+    () => { },
   )
   return tracked
 }
@@ -366,7 +366,7 @@ export class DapSessionManager {
     this.#sessions.clear()
     this.#activeSessionId = null
     for (const session of sessions) {
-      void session.client.dispose().catch(() => {})
+      void session.client.dispose().catch(() => { })
     }
   }
 
@@ -446,7 +446,7 @@ export class DapSessionManager {
       // Mark handled so a fast error response doesn't become an unhandled
       // rejection while we await the config handshake. The actual error still
       // propagates when we await launchPromise below.
-      launchPromise.catch(() => {})
+      launchPromise.catch(() => { })
       try {
         await this.#completeConfigurationHandshake(session, signal, timeoutMs)
       } catch (error) {
@@ -522,7 +522,7 @@ export class DapSessionManager {
         client.sendRequest('attach', attachArguments, signal, timeoutMs),
         attachFailure,
       )
-      attachPromise.catch(() => {})
+      attachPromise.catch(() => { })
       try {
         await this.#completeConfigurationHandshake(session, signal, timeoutMs)
       } catch (error) {
@@ -1241,7 +1241,7 @@ export class DapSessionManager {
     // same chunk as the response and would otherwise be dispatched before the
     // waiter subscribes, burning the whole timeout.
     const stoppedPromise = session.client.waitForEvent<DapStoppedEventBody>('stopped', undefined, signal, timeoutMs)
-    stoppedPromise.catch(() => {})
+    stoppedPromise.catch(() => { })
     await this.#sendRequestWithConfig(session, 'pause', { threadId } satisfies DapPauseArguments, signal, timeoutMs)
     if (!isStopped()) {
       try {
@@ -1570,7 +1570,7 @@ export class DapSessionManager {
         client.sendRequest(request, { ...configuration, cwd }, undefined, timeoutMs),
         startFailure,
       )
-      startPromise.catch(() => {})
+      startPromise.catch(() => { })
       try {
         await this.#completeConfigurationHandshake(child, undefined, timeoutMs)
       } catch (error) {
@@ -1747,7 +1747,10 @@ export class DapSessionManager {
       if (proc.stdin) {
         proc.stdin.end()
       }
-      return { processId: proc.pid, shellProcessId: proc.pid } satisfies DapRunInTerminalResponse
+      // The post-0.1.5 SubprocessHandle deliberately does not publish a pid
+      // (process identity belongs to the spawn provider); both response fields
+      // are optional, so the client falls back to port-based attach.
+      return {} satisfies DapRunInTerminalResponse
     })
     client.onReverseRequest('startDebugging', async (rawArgs) => {
       const startArgs = (rawArgs ?? {}) as Partial<DapStartDebuggingArguments>
@@ -1944,7 +1947,8 @@ export class DapSessionManager {
     const { promise, resolve, reject } = Promise.withResolvers<unknown>()
     const rootSessionId = this.#getRootSession(session).id
     const abortHandler = () => {
-      waiter.reject(signal?.reason instanceof Error ? signal.reason : new Error('Debug operation aborted')) }
+      waiter.reject(signal?.reason instanceof Error ? signal.reason : new Error('Debug operation aborted'))
+    }
     const timeout = setTimeout(
       () => { waiter.reject(new Error(`DAP session tree outcome timed out after ${timeoutMs}ms`)) },
       timeoutMs,
@@ -1970,7 +1974,7 @@ export class DapSessionManager {
       if (signal.aborted) abortHandler()
       else signal.addEventListener('abort', abortHandler, { once: true })
     }
-    promise.catch(() => {})
+    promise.catch(() => { })
     return promise
   }
 
@@ -2238,7 +2242,7 @@ export class DapSessionManager {
       clearInterval(session.heartbeat)
       session.heartbeat = undefined
     }
-    void session.client.dispose().catch(() => {})
+    void session.client.dispose().catch(() => { })
   }
 }
 

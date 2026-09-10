@@ -148,7 +148,7 @@ class OutputLedger {
   private bytes = 2 // JSON serialization of the empty logs array: []
   private entries = 0
 
-  constructor(private readonly maxBytes: number) {}
+  constructor(private readonly maxBytes: number) { }
 
   private textBytes(text: string): number {
     return Buffer.byteLength(text, 'utf8')
@@ -387,7 +387,7 @@ export class KernelManager {
     } catch (error: unknown) {
       return { status: 'error', logs: [], cancelled: false, invalidOutput: false, message: String(error), killed: false }
     } finally {
-      await kernel.shutdown().catch(() => {})
+      await kernel.shutdown().catch(() => { })
     }
   }
 
@@ -593,7 +593,7 @@ export function apply(ctx: Context, config: Config): void {
     throw new Error(`dsh-code-runtime-kernels: config.toolTimeoutMs must be no greater than ${MAX_TIMER_DELAY_MS}`)
   }
   const manager = new KernelManager(config)
-  ctx.effect(() => () => { void manager.teardown().catch(() => {}) })
+  ctx.effect(() => () => { void manager.teardown().catch(() => { }) })
 
   ctx.systemPrompt.section({
     name: 'tool:code-runtime-kernels',
@@ -652,7 +652,7 @@ export function apply(ctx: Context, config: Config): void {
         if (sessionId === undefined || spillStore === undefined) return undefined
         const save: SaveTextSpill = {
           owner: { sessionId },
-          source: { toolName: 'run_kernel_code', callId: exec.callId, label: 'kernel-output' },
+          source: { kind: 'tool', toolName: 'run_kernel_code', callId: exec.callId, label: 'kernel-output' },
           suggestedName: 'kernel-output.txt',
           content,
         }

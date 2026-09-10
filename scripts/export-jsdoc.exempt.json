@@ -10,7 +10,6 @@
     "packages/fs/tool-fs",
     "packages/git/git",
     "packages/git/tool-git",
-    "packages/guard/stream-rules",
     "packages/memory/memory",
     "packages/memory/tool-memory",
     "packages/openwiki/openwiki-core",

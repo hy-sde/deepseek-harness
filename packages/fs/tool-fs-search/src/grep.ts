@@ -18,7 +18,7 @@ import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, SearchResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type { SpillRef } from '@deepseek-ai/dsh-spill'
-import type {} from '@deepseek-ai/dsh-internal-urls'
+import type { } from '@deepseek-ai/dsh-internal-urls'
 import type { InternalResource } from '@deepseek-ai/dsh-internal-urls'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { GrepMatch } from './search-core.ts'
@@ -395,6 +395,12 @@ export function presentGrepResult(
 }
 
 /**
+ *
+ * @param ctx - the plugin context; registrations are effects scoped to it, and
+ *   execution uses its `subprocess` service.
+ * @param caps - the deployment's resolved grep caps (plugin config after defaulting).
+ */
+/**
  * Search one internal-URL resource (`conflict://`, `pr://`, …) with the same
  * ripgrep semantics as a filesystem grep. A `sourcePath`-backed resource is
  * searched on disk; a purely virtual resource is materialized to a per-call
@@ -431,18 +437,13 @@ async function grepInternalUrl(
   }
 }
 
-/**
- * Register the `grep` tool and its system-prompt guidance.
- *
- * @param ctx - the plugin context; registrations are effects scoped to it, and
- *   execution uses its `subprocess` service.
- * @param caps - the deployment's resolved grep caps (plugin config after defaulting).
- */
 export function applyGrepTool(ctx: Context, caps: GrepToolCaps): void {
   ctx.systemPrompt.section({
     name: 'tool:grep',
     order: ctx.systemPrompt.getSectionOrder('TOOL_GREP'),
-    text: 'Use the grep tool — not shell grep or rg — to search file contents. Results are ranked so git-modified files come first (marked [M in git]). '
+    text: ({ scope }) => ctx.tools.get('grep', scope) === undefined
+      ? ''
+      : 'Use the grep tool — not shell grep or rg — to search file contents. Results are ranked so git-modified files come first (marked [M in git]). '
       + `A capped grep returns the first ${caps.maxMatches} matches plus a continuation cursor — pass the cursor back unchanged with the same pattern/path/include to fetch the next page; read the top match instead of paging deep. Use read on a matched file for surrounding context.`,
   })
 

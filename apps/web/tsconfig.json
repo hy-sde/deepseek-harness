@@ -17,17 +17,14 @@
     "src",
     "tests"
   ],
-  // The web e2e lane (scaffold + replay specs) boots the host spine and reads
-  // its Context merges — host-plane programs, checked in tsconfig.host.json;
-  // this client-registered project must not also hold them (one program
-  // cannot see both sides of the cordis Context merges).
   "exclude": [
     "tests/scaffold.ts",
-    "tests/conversation-column-overflow.e2e.ts",
+    "tests/scaffold-generation.spec.ts",
     "tests/scaffold-hermetic.e2e.ts",
     "tests/startup-rpc-budget.e2e.ts",
     "tests/minimal-preset.snapshot.ts",
     "tests/message-feedback-protocol.snapshot.ts",
+    "tests/preset-migration.snapshot.ts",
     "tests/live-interactions.e2e.ts",
     "tests/question-composer.e2e.ts",
     "tests/approval-composer.e2e.ts",
@@ -36,13 +33,14 @@
     "tests/steering.e2e.ts",
     "tests/navigation-panes.e2e.ts",
     "tests/chat-scroll-fixture.ts",
-    "tests/subagent-catalog-recency.e2e.ts",
     "tests/trajectory-virtualization.e2e.ts",
     "tests/lifecycle-chrome.e2e.ts",
     "tests/details-session-lifecycle.e2e.ts",
+    "tests/document-preview.e2e.ts",
     "tests/plugin-config.e2e.ts",
     "tests/settings-chrome.e2e.ts",
     "tests/models-settings.e2e.ts",
+    "tests/models-settings-recovery.e2e.ts",
     "tests/default-model.e2e.ts",
     "tests/github-ready-review.e2e.ts",
     "tests/streaming-fence-highlight.e2e.ts",
@@ -59,19 +57,25 @@
     "tests/stats-paged-history.e2e.ts",
     "tests/sidebar-scrollbar.e2e.ts",
     "tests/rail-search-expand.e2e.ts",
+    "tests/conversation-column-overflow.e2e.ts",
     "tests/ptc-round.e2e.ts",
+    "tests/present.e2e.ts",
+    "tests/present-svg.e2e.ts",
     "tests/composer-draft-scroll.e2e.ts",
+    "tests/composer-placeholder.e2e.ts",
     "tests/cordis-tool-round.e2e.ts",
     "tests/web-search-round.e2e.ts",
+    "tests/file-upload-round.e2e.ts",
     "tests/message-actions.e2e.ts",
+    "tests/open-in-app-ssh.e2e.ts",
     "tests/message-feedback.e2e.ts",
-    "tests/message-feedback-layout.e2e.ts",
     "tests/markdown-images.e2e.ts",
     "tests/reference-composer.e2e.ts",
     "tests/markdown-wide-table.e2e.ts",
     "tests/math-rendering.e2e.ts",
     "tests/markdown-cjk-strong.e2e.ts",
     "tests/markdown-inline-code-links.e2e.ts",
+    "tests/clickable-links-gallery.e2e.ts",
     "tests/queue-actions.e2e.ts",
     "tests/queue-image.e2e.ts",
     "tests/skill-invocation-policy.e2e.ts",
@@ -85,6 +89,7 @@
     "tests/feedback-command.e2e.ts",
     "tests/feedback-release.e2e.ts",
     "tests/agent-team-panel.e2e.ts",
+    "tests/sidebar-right.e2e.ts",
     "tests/startup-auto-selection.e2e.ts",
     "tests/produced-files.e2e.ts",
     "tests/produced-file-mentions.e2e.ts",
@@ -117,6 +122,162 @@
     },
     {
       "path": "../../packages/client/modules"
+    },
+    {
+      "path": "./../../native/system/packages/entry"
+    },
+    {
+      "path": "./../../packages/attachment/attachment"
+    },
+    {
+      "path": "./../../packages/boot/app-boot"
+    },
+    {
+      "path": "./../../packages/boot/cmdline"
+    },
+    {
+      "path": "./../../packages/code-runtime/code-runtime"
+    },
+    {
+      "path": "./../../packages/compaction/compaction"
+    },
+    {
+      "path": "./../../packages/core/agent"
+    },
+    {
+      "path": "./../../packages/core/scope"
+    },
+    {
+      "path": "./../../packages/core/session"
+    },
+    {
+      "path": "./../../packages/core/system-prompt"
+    },
+    {
+      "path": "./../../packages/core/tools"
+    },
+    {
+      "path": "./../../packages/interaction/commands"
+    },
+    {
+      "path": "./../../packages/interaction/user-approval"
+    },
+    {
+      "path": "./../../packages/jobs/jobs"
+    },
+    {
+      "path": "./../../packages/llm/deepseek-llm-api-extensions"
+    },
+    {
+      "path": "./../../packages/llm/llm"
+    },
+    {
+      "path": "./../../packages/preset/agent-presets"
+    },
+    {
+      "path": "./../../packages/sandbox/sandbox-policy"
+    },
+    {
+      "path": "./../../packages/sandbox/sandbox"
+    },
+    {
+      "path": "./../../packages/session-query/session-query"
+    },
+    {
+      "path": "./../../packages/session/session-format-catalog"
+    },
+    {
+      "path": "./../../packages/session/session-format-v0-to-v1"
+    },
+    {
+      "path": "./../../packages/session/session-format-v1-to-v2"
+    },
+    {
+      "path": "./../../packages/session/session-format-v2-to-v3"
+    },
+    {
+      "path": "./../../packages/session/session-format"
+    },
+    {
+      "path": "./../../packages/session/session-persistence-jsonl"
+    },
+    {
+      "path": "./../../packages/session/session-persistence"
+    },
+    {
+      "path": "./../../packages/session/session-projection-cache"
+    },
+    {
+      "path": "./../../packages/session/session-projection"
+    },
+    {
+      "path": "./../../packages/session/session-title"
+    },
+    {
+      "path": "./../../packages/settings/settings"
+    },
+    {
+      "path": "./../../packages/storage/storage-domain"
+    },
+    {
+      "path": "./../../packages/storage/storage"
+    },
+    {
+      "path": "./../../packages/subagent/subagent"
+    },
+    {
+      "path": "./../../packages/test-support/llm-replay"
+    },
+    {
+      "path": "./../../packages/test-support/loader-smoke"
+    },
+    {
+      "path": "./../../packages/test-support/session-snapshot"
+    },
+    {
+      "path": "./../../packages/todo/tool-todo"
+    },
+    {
+      "path": "./../../packages/typert/protocol"
+    },
+    {
+      "path": "./../../packages/util/atomic-write"
+    },
+    {
+      "path": "./../../packages/util/chunked-list"
+    },
+    {
+      "path": "./../../packages/util/crypto"
+    },
+    {
+      "path": "./../../packages/util/home-paths"
+    },
+    {
+      "path": "./../../packages/util/http-proxy"
+    },
+    {
+      "path": "./../../packages/util/launch-environment"
+    },
+    {
+      "path": "./../../packages/util/time"
+    },
+    {
+      "path": "./../../packages/util/timeout"
+    },
+    {
+      "path": "./../../packages/util/values"
+    },
+    {
+      "path": "./../../vendor/group"
+    },
+    {
+      "path": "./../../vendor/hmr"
+    },
+    {
+      "path": "./../../vendor/include"
+    },
+    {
+      "path": "./../../vendor/timer"
     }
   ]
 }

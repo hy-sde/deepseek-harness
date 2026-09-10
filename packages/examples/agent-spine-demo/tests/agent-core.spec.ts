@@ -279,7 +279,7 @@ describe('dsh-agent-spine-demo bundle', () => {
   it('forwards a pre-created agent to the loop and the persona to system-prompt', async () => {
     const ctx = await mount({
       agents: [{ id: SessionId('main'), provider: 'mock', model: 'mock' }],
-      persona: 'You are main.',
+      personaPrefix: 'You are main.',
       workspaceContext: false,
     })
     const agent = ctx.get('agents')?.list()[0]
@@ -713,7 +713,7 @@ describe('dsh-agent-spine-demo bundle', () => {
     const ctx = await mount({
       includeHarnessIdentity: false,
       includeRuntimeContext: false,
-      persona: 'You are a helpful software engineer assistant.',
+      personaPrefix: 'You are a helpful software engineer assistant.',
       workspaceContext: false,
       skills: { enabled: false },
       toolBash: false,
@@ -735,7 +735,7 @@ describe('dsh-agent-spine-demo bundle', () => {
       maxParallelToolCalls: 3,
       includeHarnessIdentity: false,
       includeRuntimeContext: false,
-      persona: 'You are merged.',
+      personaPrefix: 'You are merged.',
       toolOrder: ['zulu'],
       tools: { mode: 'native' as const },
       dshHome: '/tmp/dsh-home',
@@ -753,7 +753,7 @@ describe('dsh-agent-spine-demo bundle', () => {
       maxParallelToolCalls: appConfig.maxParallelToolCalls,
       includeHarnessIdentity: appConfig.includeHarnessIdentity,
       includeRuntimeContext: appConfig.includeRuntimeContext,
-      persona: appConfig.persona,
+      personaPrefix: appConfig.personaPrefix,
       toolOrder: appConfig.toolOrder,
       tools: appConfig.tools,
       dshHome: appConfig.dshHome,

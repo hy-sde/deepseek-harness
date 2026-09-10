@@ -14,7 +14,7 @@
  * @module @deepseek-ai/dsh-tool-fs/src/read-session
  */
 
-import { decodeStorageRecord, foldSurface, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { foldSurface, type SessionEvent } from '@deepseek-ai/dsh-session'
 
 /**
  * Structural event view: read-session consumes parsed JSON log rows, not the
@@ -94,6 +94,20 @@ function parseValues(text: string): ParsedValue[] {
     values.push({ value: parsed, type })
   }
   return values
+}
+
+/**
+ * Tolerantly expand one stored log row into candidate events. The merged
+ * persistence writes format-v3 rows (`{type, seq, time, data}`), which are
+ * passed through verbatim; legacy fork chunk rows (`text-chunks` …) render as
+ * their raw row rather than being expanded, so an old log still shows every
+ * numbered event it carries natively.
+ */
+function decodeStorageRecord(value: unknown): unknown[] {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return []
+  const record = value as Record<string, unknown>
+  if (record.type === 'event' && Array.isArray(record.events)) return record.events
+  return [record]
 }
 
 /** Render one surface-current event into bounded transcript lines. */
@@ -224,7 +238,7 @@ export function tryRenderSessionTranscript(decodedText: string): string | undefi
   const events: TranscriptEvent[] = []
   for (const line of values) {
     if (line === header) continue
-    for (const event of decodeStorageRecord(line.value)) {
+    for (const event of decodeStorageRecord(line.value) as Array<Record<string, unknown>>) {
       if (typeof event.seq !== 'number' || !Number.isSafeInteger(event.seq) || event.seq < 0) continue
       events.push({
         type: typeof event.type === 'string' ? event.type : '',
