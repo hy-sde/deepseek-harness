@@ -57,6 +57,9 @@
       "path": "../../packages/mcp/mcp-client"
     },
     {
+      "path": "../../packages/util/zstd"
+    },
+    {
       "path": "../../packages/test-support/loader-smoke"
     },
     {

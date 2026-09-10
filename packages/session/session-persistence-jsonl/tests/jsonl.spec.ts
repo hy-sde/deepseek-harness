@@ -1717,3 +1717,90 @@ describe('JsonlSessionPersistence: edge cases', () => {
     expect((await readAll(ctx.sessionPersistence, m.id)).events).toEqual(events)
   })
 })
+
+describe('JsonlSessionPersistence: live batching policy', () => {
+  async function mountWith(config: Record<string, unknown>): Promise<{ ctx: Context; root: string }> {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-jsonl-batch-'))
+    dirs.push(dir)
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(JsonlSessionPersistence, { root: dir, compression: 'none', ...config })
+    return { ctx, root: dir }
+  }
+
+  it('drains early when the byte threshold is crossed', async () => {
+    // A huge delay window with a 1-byte threshold: the byte threshold must
+    // force a next-tick drain instead of waiting out the delay window.
+    const { ctx } = await mountWith({ liveFlushMaxDelayMs: 60_000, liveFlushMaxBytes: 1 })
+    const session = ctx.sessions.create(SessionId('byte-threshold'))
+    const handle = await ctx.sessionPersistence.create(session.header)
+    vi.useFakeTimers()
+    try {
+      session.append('turn/start', { turn: 1 })
+      session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      await vi.advanceTimersByTimeAsync(50)
+    } finally {
+      vi.useRealTimers()
+    }
+    await vi.waitFor(async () => {
+      const reader = await ctx.sessionPersistence.open(session.id, 'read')
+      try {
+        expect((await reader.read()).map(event => event.type)).toEqual(['turn/start', 'turn/end'])
+      } finally {
+        await reader.close()
+      }
+    })
+    await handle.close()
+    await ctx.fiber.dispose()
+  })
+
+  it('waits out the delay window when under the byte threshold', async () => {
+    const { ctx } = await mountWith({ liveFlushMaxDelayMs: 500, liveFlushMaxBytes: 1 << 20 })
+    const session = ctx.sessions.create(SessionId('delay-window'))
+    const handle = await ctx.sessionPersistence.create(session.header)
+    vi.useFakeTimers()
+    try {
+      session.append('turn/start', { turn: 1 })
+      session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      await vi.advanceTimersByTimeAsync(499)
+      const reader = await ctx.sessionPersistence.open(session.id, 'read')
+      try {
+        expect(await reader.read()).toEqual([])
+      } finally {
+        await reader.close()
+      }
+      await vi.advanceTimersByTimeAsync(1)
+    } finally {
+      vi.useRealTimers()
+    }
+    await vi.waitFor(async () => {
+      const reader = await ctx.sessionPersistence.open(session.id, 'read')
+      try {
+        expect((await reader.read()).map(event => event.type)).toEqual(['turn/start', 'turn/end'])
+      } finally {
+        await reader.close()
+      }
+    })
+    await handle.close()
+    await ctx.fiber.dispose()
+  })
+
+  it('rejects invalid compressionLevel and batching values at load', async () => {
+    for (const bad of [{ compressionLevel: 0 }, { compressionLevel: 23 }, { compressionLevel: 1.5 }]) {
+      const dir = await mkdtemp(join(tmpdir(), 'dsh-jsonl-bad-'))
+      dirs.push(dir)
+      const ctx = new Context()
+      await expect(ctx.plugin(JsonlSessionPersistence, { root: dir, compression: 'none', ...bad }))
+        .rejects.toThrow(/compressionLevel must be an integer in 1\.\.22/)
+      await ctx.fiber.dispose()
+    }
+    for (const bad of [{ liveFlushMaxDelayMs: 0 }, { liveFlushMaxBytes: -1 }]) {
+      const dir = await mkdtemp(join(tmpdir(), 'dsh-jsonl-bad-'))
+      dirs.push(dir)
+      const ctx = new Context()
+      await expect(ctx.plugin(JsonlSessionPersistence, { root: dir, compression: 'none', ...bad }))
+        .rejects.toThrow(/must be a positive safe integer/)
+      await ctx.fiber.dispose()
+    }
+  })
+})

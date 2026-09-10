@@ -566,6 +566,9 @@ importers:
       '@deepseek-ai/dsh-user-approval':
         specifier: workspace:^
         version: link:../../packages/interaction/user-approval
+      '@deepseek-ai/dsh-zstd-frame':
+        specifier: workspace:^
+        version: link:../../packages/util/zstd
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9

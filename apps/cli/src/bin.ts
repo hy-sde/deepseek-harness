@@ -48,6 +48,10 @@ switch (invocation.mode) {
     runDumpConfig(invocation.profile, invocation.defaultOnly, invocation.patches)
     break
   }
+  case 'sessions': {
+    const { runSessions } = await import('./sessions.ts')
+    process.exit(await runSessions(invocation))
+  }
   default:
     invocation satisfies never
     throw new Error(`dsh: unhandled invocation mode ${JSON.stringify(invocation)}`)

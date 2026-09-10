@@ -44,8 +44,28 @@ interface PluginInvocation {
   args: string[]
 }
 
+/** Inspect and maintain the session log store. */
+export interface SessionsInvocation {
+  mode: 'sessions'
+  action: 'ls' | 'prune' | 'recompress'
+  /** Session store root override (`$DSH_HOME/sessions` by default). */
+  root?: string
+  /** `ls`: emit machine-readable JSON instead of the table. */
+  json?: boolean
+  /** `prune`: session age threshold in days. */
+  olderThanDays?: number
+  /** `prune`: move matched sessions to `<root>/.trash/<project>/<id>` instead of deleting. */
+  archive?: boolean
+  /** `prune`: delete matched session directories. */
+  delete?: boolean
+  /** `recompress`: zstd level 1..22 to rewrite at (default 19). */
+  level?: number
+  /** `recompress`: apply the rewrite (without it the command only previews). */
+  exec?: boolean
+}
+
 /** The resolved `dsh` invocation. Help, version, and errors exit inside {@link parseDshArgs}. */
-export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation
+export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation | SessionsInvocation
 
 /** Launcher flags shared by the default command and the `web` alias. */
 interface BootOptions {
@@ -69,6 +89,9 @@ Examples:
   dsh --profile tui --resume <session>       arguments after the launcher flags reach the app
   dsh --profile web --help                   the web app's own flags and help
   dsh plugin --profile tui add <package>     install a plugin into the tui profile
+  dsh sessions ls                            list stored sessions and their on-disk sizes
+  dsh sessions prune --older-than 30 --archive  archive sessions older than 30 days
+  dsh sessions recompress --level 19 --exec  losslessly pack old session logs into few frames
 `
 
 /**
@@ -178,6 +201,49 @@ export function parseDshArgs(argv: readonly string[], version: string): DshInvoc
       if (options.profile === '') program.error('error: --profile needs a name')
       if (args.length === 0) program.error('error: plugin needs pnpm arguments to forward (e.g. add <package>)')
       resolved = { mode: 'plugin', profile: options.profile, args }
+    })
+
+  const sessions = program.command('sessions').description('inspect and maintain the session log store (ls, prune, recompress)')
+
+  sessions.command('ls').description('list stored sessions with on-disk sizes')
+    .option('--root <dir>', 'session store root (default: $DSH_HOME/sessions or ~/.dsh/sessions)')
+    .option('--json', 'emit a JSON array instead of the table')
+    .action((options: { root?: string; json?: boolean }) => {
+      rejectParentOptions('sessions')
+      resolved = { mode: 'sessions', action: 'ls', ...(options.root !== undefined ? { root: options.root } : {}), json: options.json === true }
+    })
+
+  sessions.command('prune').description('age-based archive or delete of old sessions (preview only without --archive/--delete)')
+    .option('--root <dir>', 'session store root (default: $DSH_HOME/sessions or ~/.dsh/sessions)')
+    .requiredOption('--older-than <days>', 'session age threshold in days', (value: string) => parseFloat(value))
+    .option('--archive', 'move matched sessions to <root>/.trash/<project>/<id> (reversible)')
+    .option('--delete', 'delete matched session directories')
+    .action((options: { root?: string; olderThan: number; archive?: boolean; delete?: boolean }) => {
+      rejectParentOptions('sessions')
+      if (!Number.isFinite(options.olderThan) || options.olderThan <= 0) {
+        program.error('error: --older-than needs a positive number of days')
+      }
+      if (options.archive === true && options.delete === true) {
+        program.error('error: --archive and --delete are mutually exclusive')
+      }
+      resolved = {
+        mode: 'sessions', action: 'prune',
+        ...(options.root !== undefined ? { root: options.root } : {}),
+        olderThanDays: options.olderThan, archive: options.archive === true, delete: options.delete === true,
+      }
+    })
+
+  sessions.command('recompress').description('rewrite session logs into few large zstd frames (preview only without --exec; lossless, level-adjustable)')
+    .option('--root <dir>', 'session store root (default: $DSH_HOME/sessions or ~/.dsh/sessions)')
+    .option('--level <n>', 'zstd level 1..22 (default 19)', (value: string) => parseInt(value, 10))
+    .option('--exec', 'apply the rewrite to the candidate logs')
+    .action((options: { root?: string; level?: number; exec?: boolean }) => {
+      rejectParentOptions('sessions')
+      const level = options.level ?? 19
+      if (!Number.isInteger(level) || level < 1 || level > 22) {
+        program.error('error: --level needs an integer in 1..22')
+      }
+      resolved = { mode: 'sessions', action: 'recompress', ...(options.root !== undefined ? { root: options.root } : {}), level, exec: options.exec === true }
     })
 
   try {
