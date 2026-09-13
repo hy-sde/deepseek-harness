@@ -485,8 +485,12 @@ export type EveryProfileFieldMatchesUpstream = AssertTrue<
  */
 function configuredCompatEntries(compat: PiAiCompatProfile | undefined): readonly (readonly [string, unknown])[] {
   return Object.entries(compat ?? {}).flatMap(([field, value]) => {
-    const empty = typeof value === 'object' && value !== null && !Array.isArray(value)
-      && Object.keys(value as object).length === 0
+    // A schema-materialized empty default (schemastery turns an absent array
+    // into `[]` and an absent dict into `{}`) is never a configured switch:
+    // the field falls through to the next layer — the installed catalog
+    // entry, then the provider's own detection — exactly like an absent key.
+    const empty = typeof value === 'object' && value !== null
+      && (Array.isArray(value) ? (value as unknown[]).length === 0 : Object.keys(value as object).length === 0)
     return empty ? [] : [[field, value] as const]
   })
 }

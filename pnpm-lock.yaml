@@ -13985,11 +13985,11 @@ packages:
     hasBin: true
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
-      '@deepseek-ai/dsh-llm': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-session-query': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-system-prompt': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-timeout': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-tools': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-llm': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-session-query': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-system-prompt': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-timeout': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-tools': ^0.1.5-rc.1
 
   '@hy-sde-org/dsh-zstd-frame@0.1.2-rc.1':
     resolution: {integrity: sha512-6vVIVyHnHce3eDkqoqUfTU+lCacdUn2aoJvS7OujxEuZJ/S/v8ExuBgzGEyL10/19y3nzamP8GxbaGLGjnX42Q==}

@@ -50,9 +50,20 @@ describe('pi-ai gateway compatibility declarations', () => {
     expect(() => resolved(compat, 'anthropic-messages')).toThrow(/compat/)
   })
 
-  it.each(['supportsMidConvoEffort', 'allowedFallbackModels'])('withholds catalog-owned %s', (field) => {
-    expect(() => resolved({ [field]: true }, 'anthropic-messages'))
+  it('withholds catalog-owned supportsMidConvoEffort', () => {
+    expect(() => resolved({ supportsMidConvoEffort: true }, 'anthropic-messages'))
       .toThrow(/which is not configurable here/)
+  })
+
+  it('offers allowedFallbackModels to anthropic-messages and refuses it on openai-completions', () => {
+    const fallbacks = [{
+      provider: 'anthropic', model: 'claude-sonnet-4-5',
+      cost: { input: 1, output: 2, cacheRead: 0.5, cacheWrite: 1.5, total: 3 },
+    }]
+    expect(resolved({ allowedFallbackModels: fallbacks }, 'anthropic-messages'))
+      .toMatchObject({ allowedFallbackModels: fallbacks })
+    expect(() => resolved({ allowedFallbackModels: fallbacks }, 'openai-completions'))
+      .toThrow(/no model on the route speaks a protocol that takes it/)
   })
 
   it('keeps generic additions absent unless configured', () => {
