@@ -1601,6 +1601,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      cloakbrowser:
+        specifier: ^0.5.10
+        version: 0.5.10(playwright-core@1.61.1)
       playwright-core:
         specifier: ^1.61.1
         version: 1.61.1
@@ -16389,6 +16392,25 @@ packages:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
 
+  cloakbrowser@0.5.10:
+    resolution: {integrity: sha512-Pzfi8WRAuXCk2GUKIpRZrLtQ/EaXfQ2t+N39fVGxxQfowRpyZB7qbsv0dYtmd+wuV/GK2aO1EBCcCV35TFVo2A==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+    peerDependencies:
+      mmdb-lib: '>=2.0.0'
+      playwright-core: '>=1.53.0'
+      puppeteer-core: '>=21.0.0'
+      socks-proxy-agent: '>=10.0.0'
+    peerDependenciesMeta:
+      mmdb-lib:
+        optional: true
+      playwright-core:
+        optional: true
+      puppeteer-core:
+        optional: true
+      socks-proxy-agent:
+        optional: true
+
   clone-response@1.0.3:
     resolution: {integrity: sha512-ROoL94jJH2dUVML2Y/5PEDNaSHgeOdSDicUyS7izcF63G6sTc/FTjLub4b8Il9S8S0beOfYt0TaA5qvFK+w0wA==}
 
@@ -23261,6 +23283,12 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
+
+  cloakbrowser@0.5.10(playwright-core@1.61.1):
+    dependencies:
+      tar: 7.5.22
+    optionalDependencies:
+      playwright-core: 1.61.1
 
   clone-response@1.0.3:
     dependencies:

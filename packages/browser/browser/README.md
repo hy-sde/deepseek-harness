@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The host `ctx.browser` service owns real browser connections over Chrome DevTools Protocol through three backends: `launch` spawns a stealth-patched browser, `attach` joins an existing CDP endpoint, and `relay` drives the user's own Chrome tabs through an in-process relay server plus an MV3 extension. On those connections it opens and navigates named tabs, evaluates JS, returns ARIA snapshots with stable `[ref=eN]` ids, clicks and types by ref or CSS selector, writes screenshots, and closes tabs. Choose it when agentic browser control is needed — `@deepseek-ai/dsh-tool-browser` is its intended consumer and the model never calls it directly. The cost is one browser process or connection per cwd+kind with no launch/teardown policy of its own, and stealth features are not a security boundary.
+The host `ctx.browser` service owns real browser connections over Chrome DevTools Protocol through four backends: `launch` spawns a stealth-patched browser, `patch` uses the CloakBrowser Chromium (source-level C++ fingerprint patches; the preferred default), `attach` joins an existing CDP endpoint, and `relay` drives the user's own Chrome tabs through an in-process relay server plus an MV3 extension. On those connections it opens and navigates named tabs, evaluates JS, returns ARIA snapshots with stable `[ref=eN]` ids, clicks and types by ref or CSS selector, writes screenshots, and closes tabs. Choose it when agentic browser control is needed — `@deepseek-ai/dsh-tool-browser` is its intended consumer and the model never calls it directly. The cost is one browser process or connection per cwd+kind with no launch/teardown policy of its own, and stealth features are not a security boundary.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ The host `ctx.browser` service owns real browser connections over Chrome DevTool
 
 -----
 
-The host `ctx.browser` service for the agentic browser tool (ported from omp / oh-my-pi): it owns real browser connections over Chrome DevTools Protocol through [playwright-core CDP](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp), with three backends — **launch** (stealth-patched browser binary), **attach** (existing CDP endpoint via `cdp_url`), and **relay** (the user's own Chrome tabs through an in-process relay server + companion MV3 extension). Intended to be consumed by [`@deepseek-ai/dsh-tool-browser`](../tool-browser/README.md), never by the model directly.
+The host `ctx.browser` service for the agentic browser tool (ported from omp / oh-my-pi): it owns real browser connections over Chrome DevTools Protocol through [playwright-core CDP](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp), with four backends — **launch** (stealth-patched browser binary), **patch** (the CloakBrowser Chromium via the `cloakbrowser` npm dependency: source-level C++ fingerprint patches and per-session randomization), **attach** (existing CDP endpoint via `cdp_url`), and **relay** (the user's own Chrome tabs through an in-process relay server + companion MV3 extension). Intended to be consumed by [`@deepseek-ai/dsh-tool-browser`](../tool-browser/README.md), never by the model directly.
 
 <a id="what-it-does"></a>
 ## What it does
@@ -40,8 +40,11 @@ The ARIA snapshot is produced by the bundled Playwright ARIA-snapshot sources (A
 | kind | resolution | browser |
 | --- | --- | --- |
 | `launch` | `app.path` (or `browserPath` config) | `chromium.launch({ executablePath, headless, args: STEALTH_LAUNCH_ARGS, ignoreDefaultArgs })` |
+| `patch` | `app.patch` / `usePatch` config (default here) | `cloakbrowser.launch(...)` — the CloakBrowser Chromium (71 source-level C++ fingerprint patches, per-session randomization) |
 | `attach` | `app.cdp_url` | `chromium.connectOverCDP(cdpUrl)` — any real Chrome family endpoint |
 | `relay` | `app.relay` / `DSH_BROWSER_RELAY=1` | `chromium.connectOverCDP(relay)` — the relay impersonates Chrome's CDP discovery |
+
+The `patch` backend launches the CloakBrowser Chromium through the `cloakbrowser` npm dependency — a drop-in Playwright wrapper that returns a regular `playwright-core` `Browser` (same instance the service drives). Its fingerprint randomization happens at the C++ layer per session, so the JS-level stealth scripts and UA override are deliberately NOT applied on this backend. The first launch auto-downloads the patched Chromium (~200 MB, cached under `~/.cloakbrowser/`); `patchOptions` can pass `proxy`, `geoip` (match timezone+locale to the proxy IP), and `humanize` (human-like input). Anti-detection raises the bar, it does not make a site accessible.
 
 The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, serves `GET /json/version` (503 until the extension connects), `GET /json`, `WS /cdp` (downstream CDP clients), `WS /ext` (the extension, token-gated when configured), and `GET /ext-assets/*` so the extension can be sideloaded from `chrome://extensions` → Load unpacked. The bridge multiplexes every downstream CDP connection over the extension's one `chrome.debugger` attachment per tab with minted session ids — the same design as `omp browser-relay` (MIT).
 
@@ -49,6 +52,8 @@ The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, 
 ## Configuration
 
 - `browserPath` — default executable for `launch` (optional; Playwright resolves one).
+- `usePatch` — default to the CloakBrowser backend (true in the base bundle row).
+- `patchOptions` — CloakBrowser launch flags: `proxy` (URL), `geoip` (bool), `humanize` (bool).
 - `headless` — default headless (true).
 - `viewport` — launch viewport (default 1365×768 @ 1.25).
 - `relayUrl` / `relayToken` — relay endpoint and optional extension token.

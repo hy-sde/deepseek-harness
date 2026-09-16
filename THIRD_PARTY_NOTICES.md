@@ -65,6 +65,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`anser`](https://github.com/IonicaBizau/anser) | MIT |
 | [`buffer`](https://github.com/feross/buffer) | MIT |
 | [`chokidar`](https://github.com/paulmillr/chokidar) | MIT |
+| [`cloakbrowser`](https://github.com/CloakHQ/cloakbrowser) | MIT |
 | [`clsx`](https://github.com/lukeed/clsx) | MIT |
 | [`commander`](https://github.com/tj/commander.js) | MIT |
 | [`compression`](https://github.com/expressjs/compression) | MIT |

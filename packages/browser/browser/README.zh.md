@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-宿主 `ctx.browser` 服务经 Chrome DevTools Protocol 持有真实浏览器连接，提供三种后端：`launch` 派生带 stealth 补丁的浏览器，`attach` 接入既有 CDP 端点，`relay` 通过进程内 relay 服务器＋MV3 扩展驱动用户自己的 Chrome 标签页。在这些连接之上，它打开并导航命名标签页、求值 JS、返回带稳定 `[ref=eN]` id 的 ARIA 快照、按 ref 或 CSS 选择器点击与输入、写出截图并关闭标签页。当需要 agent 化浏览器控制时选择它——`@deepseek-ai/dsh-tool-browser` 是其预期消费方，模型从不直接调用。代价是每个 cwd+kind 一个浏览器进程或连接，服务自身没有启停策略；隐身特性并非安全边界。
+宿主 `ctx.browser` 服务经 Chrome DevTools Protocol 持有真实浏览器连接，提供四种后端：`launch` 派生带 stealth 补丁的浏览器，`patch` 使用 CloakBrowser Chromium（源码级 C++ 指纹补丁；默认首选后端），`attach` 接入既有 CDP 端点，`relay` 通过进程内 relay 服务器＋MV3 扩展驱动用户自己的 Chrome 标签页。在这些连接之上，它打开并导航命名标签页、求值 JS、返回带稳定 `[ref=eN]` id 的 ARIA 快照、按 ref 或 CSS 选择器点击与输入、写出截图并关闭标签页。当需要 agent 化浏览器控制时选择它——`@deepseek-ai/dsh-tool-browser` 是其预期消费方，模型从不直接调用。代价是每个 cwd+kind 一个浏览器进程或连接，服务自身没有启停策略；隐身特性并非安全边界。
 
 ## 目录
 
@@ -40,8 +40,11 @@ ARIA 快照由打包进来的 Playwright ARIA-snapshot 源码（Apache-2.0，微
 | kind | 解析 | 浏览器 |
 | --- | --- | --- |
 | `launch` | `app.path`（或 `browserPath` 配置） | `chromium.launch({ executablePath, headless, args: STEALTH_LAUNCH_ARGS, ignoreDefaultArgs })` |
+| `patch` | `app.patch`／`usePatch` 配置（此处为默认） | `cloakbrowser.launch(...)` — CloakBrowser Chromium（71 项源码级 C++ 指纹补丁，逐会话随机化） |
 | `attach` | `app.cdp_url` | `chromium.connectOverCDP(cdpUrl)` — 任意真实的 Chrome 系端点 |
 | `relay` | `app.relay`／`DSH_BROWSER_RELAY=1` | `chromium.connectOverCDP(relay)` — relay 冒充 Chrome 的 CDP discovery |
+
+`patch` 后端通过 `cloakbrowser` npm 依赖启动 CloakBrowser Chromium — 一个可直接替换 Playwright 的封装，返回常规 `playwright-core` `Browser`（与服务驱动的是同一实例）。指纹随机化在 C++ 层逐会话进行，因此本后端刻意不应用 JS 级 stealth 脚本与 UA 覆盖。首次启动会自动下载打过补丁的 Chromium（约 200 MB，缓存于 `~/.cloakbrowser/`）；`patchOptions` 可传入 `proxy`、`geoip`（按代理 IP 匹配时区与 locale）、`humanize`（拟人化输入）。反检测只是抬高门槛，并不保证站点可访问。
 
 relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，提供 `GET /json/version`（扩展接入前返回 503）、`GET /json`、`WS /cdp`（下游 CDP 客户端）、`WS /ext`（扩展，可配置 token 门禁），以及 `GET /ext-assets/*`（便于用户在 `chrome://extensions` → Load unpacked 侧载扩展）。bridge 在扩展对每个标签页唯一的 `chrome.debugger` 附着之上，以铸造 session id 的方式复用每条下游 CDP 连接 — 与 `omp browser-relay`（MIT）同一设计。
 
@@ -49,6 +52,8 @@ relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，
 ## 配置
 
 - `browserPath` — `launch` 的默认可执行文件（可选；否则由 Playwright 解析）。
+- `usePatch` — 默认使用 CloakBrowser 后端（base bundle 行中为 true）。
+- `patchOptions` — CloakBrowser 启动参数：`proxy`（URL）、`geoip`（bool）、`humanize`（bool）。
 - `headless` — 默认 headless（true）。
 - `viewport` — 启动视口（默认 1365×768 @ 1.25）。
 - `relayUrl`／`relayToken` — relay 端点与可选的扩展 token。

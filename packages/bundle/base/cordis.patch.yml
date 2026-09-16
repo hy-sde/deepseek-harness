@@ -309,12 +309,18 @@
       name: '@deepseek-ai/dsh-git'
 
     # Agentic browser plumbing (ctx.browser): launch a stealth-patched browser,
-    # attach to an existing CDP endpoint, or relay into the user's own tabs via
-    # an in-process relay server + companion Chrome extension (port_omp.md item:
-    # browser tool with stealth + relay/CDP-attach). Host-plane — one browser
+    # attach to an existing CDP endpoint, relay into the user's own tabs via
+    # an in-process relay server + companion Chrome extension, or use the
+    # CloakBrowser source-patched Chromium (app.patch — strongest
+    # anti-detection; the default below). Host-plane — one browser
     # process group serves every session; the tool row namespaces its tabs.
     - id: browser
       name: '@deepseek-ai/dsh-browser'
+      config:
+        # CloakBrowser is the PREFERRED backend: its Chromium carries 71
+        # source-level C++ fingerprint patches + per-session randomization.
+        # A per-call app.patch=false falls back to launch/attach/relay.
+        usePatch: true
 
     # Read-only Automic Vault plumbing (ctx.av): audit the Mac for exposed
     # dev-tool credentials (`av scan --json`), verify hardening (`av doctor`),
