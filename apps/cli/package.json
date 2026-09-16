@@ -127,7 +127,7 @@
     "@deepseek-ai/dsh-tool-memory": "workspace:^",
     "@deepseek-ai/dsh-tool-openwiki": "workspace:^",
     "@deepseek-ai/dsh-tool-session-query": "workspace:^",
-    "@hy-sde-org/dsh-code-runtime-kernels": "^0.1.2-rc.1",
+    "@hy-sde-org/dsh-code-runtime-kernels": "^0.1.5-rc.1",
     "@hy-sde-org/dsh-session-intelligence": "^0.1.5-rc.1"
   },
   "devDependencies": {

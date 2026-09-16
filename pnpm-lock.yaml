@@ -7,6 +7,7 @@ settings:
 overrides:
   '@deepseek-ai/cosmokit': link:vendor/cosmokit
   '@deepseek-ai/schemastery': link:vendor/schemastery
+  '@hy-sde-org/dsh-zstd-frame': 0.1.5-rc.1
 
 patchedDependencies:
   '@yao-pkg/pkg@6.21.0': 28edd2180c36691c481522ef81f6f6614505f45e491aad542ac4663d4e6b3ff8
@@ -428,8 +429,8 @@ importers:
         specifier: link:../../vendor/schemastery
         version: link:../../vendor/schemastery
       '@hy-sde-org/dsh-code-runtime-kernels':
-        specifier: ^0.1.2-rc.1
-        version: 0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)
+        specifier: ^0.1.5-rc.1
+        version: 0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)
       '@hy-sde-org/dsh-session-intelligence':
         specifier: ^0.1.5-rc.1
         version: 0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)
@@ -13966,18 +13967,18 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@hy-sde-org/dsh-code-runtime-kernels@0.1.2-rc.1':
-    resolution: {integrity: sha512-01N7SF5IHjcJDI22Y8PLlnargJGEh0VllSBbluHJwXEgM28KVF5P95xol2uFVxaGZFxhjeT688wvz6sc8GQcig==}
+  '@hy-sde-org/dsh-code-runtime-kernels@0.1.5-rc.1':
+    resolution: {integrity: sha512-ezRODrm6+u/G5AoyZH7l1ZOEyjHlmccoj9V4WMfHc9c8ajYjhT+22vEhnLSPq2Z3dJCHijejaXYP2Xe1b79g3A==}
     engines: {node: ^22.19.0 || >=24.0.0}
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
-      '@deepseek-ai/dsh-code-runtime': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-invariants': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-session': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-spill': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-timeout': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-tools': ^0.1.2-rc.1
-      '@deepseek-ai/dsh-util-values': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-code-runtime': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-invariants': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-session': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-spill': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-timeout': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-tools': ^0.1.5-rc.1
+      '@deepseek-ai/dsh-util-values': ^0.1.5-rc.1
 
   '@hy-sde-org/dsh-session-intelligence@0.1.5-rc.1':
     resolution: {integrity: sha512-qMt3qvFg5cC6cWdcALQ69ZhzYwV+pEOSn19nfxLfTgOGui/J6ayZxhk9BpPx28xogPq3RIIa2Cd0EyBoER46fw==}
@@ -13991,12 +13992,12 @@ packages:
       '@deepseek-ai/dsh-timeout': ^0.1.5-rc.1
       '@deepseek-ai/dsh-tools': ^0.1.5-rc.1
 
-  '@hy-sde-org/dsh-zstd-frame@0.1.2-rc.1':
-    resolution: {integrity: sha512-6vVIVyHnHce3eDkqoqUfTU+lCacdUn2aoJvS7OujxEuZJ/S/v8ExuBgzGEyL10/19y3nzamP8GxbaGLGjnX42Q==}
+  '@hy-sde-org/dsh-zstd-frame@0.1.5-rc.1':
+    resolution: {integrity: sha512-JidP2V6ZgUkaQs0sBVBRnBGsmHtg3TN/1GZG+MC8WChXmR01W6MLwKki/tPa8UMjtdt9D94/Da1xsrOm81mxBg==}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.2
-      '@deepseek-ai/dsh-invariants': ^0.1.2-rc.1
+      '@deepseek-ai/dsh-invariants': ^0.1.5-rc.1
 
   '@iconify-json/simple-icons@1.2.90':
     resolution: {integrity: sha512-zt2o2ZvQpHVvZJARIkZ51RnaHY2oqcPJMvHE+mVnxkSr+c33fnX4gciiXu+wyX5ei+s0qbVX1wD0DWBbaGBYMA==}
@@ -21005,7 +21006,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@hy-sde-org/dsh-code-runtime-kernels@0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)':
+  '@hy-sde-org/dsh-code-runtime-kernels@0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/dsh-code-runtime': link:packages/code-runtime/code-runtime
@@ -21026,11 +21027,11 @@ snapshots:
       '@deepseek-ai/dsh-timeout': link:packages/util/timeout
       '@deepseek-ai/dsh-tools': link:packages/core/tools
       '@deepseek-ai/schemastery': link:vendor/schemastery
-      '@hy-sde-org/dsh-zstd-frame': 0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)
+      '@hy-sde-org/dsh-zstd-frame': 0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)
     transitivePeerDependencies:
       - '@deepseek-ai/dsh-invariants'
 
-  '@hy-sde-org/dsh-zstd-frame@0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)':
+  '@hy-sde-org/dsh-zstd-frame@0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/dsh-invariants': link:packages/runtime-diagnostics/invariants

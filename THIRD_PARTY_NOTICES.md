@@ -37,7 +37,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`@ast-grep/cli`](https://github.com/ast-grep/ast-grep) | MIT |
 | [`@babel/code-frame`](https://github.com/babel/babel) | MIT |
 | [`@earendil-works/pi-ai`](https://github.com/earendil-works/pi) | MIT |
-| [`@hy-sde-org/dsh-code-runtime-kernels`](https://github.com/hy-sde/dsh-code-runtime-kernels) | MIT |
+| [`@hy-sde-org/dsh-code-runtime-kernels`](https://github.com/hy-sde/dsh-plugins) | MIT |
 | [`@hy-sde-org/dsh-session-intelligence`](https://github.com/hy-sde/dsh-plugins) | MIT |
 | [`@joplin/turndown-plugin-gfm`](https://github.com/laurent22/joplin-turndown-plugin-gfm) | MIT |
 | [`@jridgewell/gen-mapping`](https://github.com/jridgewell/sourcemaps) | MIT |
