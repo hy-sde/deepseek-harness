@@ -128,7 +128,7 @@
     "@deepseek-ai/dsh-tool-openwiki": "workspace:^",
     "@deepseek-ai/dsh-tool-session-query": "workspace:^",
     "@hy-sde-org/dsh-code-runtime-kernels": "^0.1.2-rc.1",
-    "@hy-sde-org/dsh-session-intelligence": "file:../../../dsh-plugins/dsh-session-intelligence/packages/session-intelligence"
+    "@hy-sde-org/dsh-session-intelligence": "^0.1.5-rc.1"
   },
   "devDependencies": {
     "@agentclientprotocol/sdk": "1.4.0",

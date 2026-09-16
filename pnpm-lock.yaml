@@ -431,8 +431,8 @@ importers:
         specifier: ^0.1.2-rc.1
         version: 0.1.2-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-code-runtime@packages+code-runtime+code-runtime)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@packages+spill+spill)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@packages+util+values)
       '@hy-sde-org/dsh-session-intelligence':
-        specifier: file:../../../dsh-plugins/dsh-session-intelligence/packages/session-intelligence
-        version: file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)
+        specifier: ^0.1.5-rc.1
+        version: 0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -13979,8 +13979,8 @@ packages:
       '@deepseek-ai/dsh-tools': ^0.1.2-rc.1
       '@deepseek-ai/dsh-util-values': ^0.1.2-rc.1
 
-  '@hy-sde-org/dsh-session-intelligence@file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence':
-    resolution: {directory: ../dsh-plugins/dsh-session-intelligence/packages/session-intelligence, type: directory}
+  '@hy-sde-org/dsh-session-intelligence@0.1.5-rc.1':
+    resolution: {integrity: sha512-qMt3qvFg5cC6cWdcALQ69ZhzYwV+pEOSn19nfxLfTgOGui/J6ayZxhk9BpPx28xogPq3RIIa2Cd0EyBoER46fw==}
     engines: {node: '>=22.19.0'}
     hasBin: true
     peerDependencies:
@@ -21017,7 +21017,7 @@ snapshots:
       '@deepseek-ai/dsh-util-values': link:packages/util/values
       '@deepseek-ai/schemastery': link:vendor/schemastery
 
-  '@hy-sde-org/dsh-session-intelligence@file:../dsh-plugins/dsh-session-intelligence/packages/session-intelligence(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)':
+  '@hy-sde-org/dsh-session-intelligence@0.1.5-rc.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@packages+runtime-diagnostics+invariants)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/dsh-llm': link:packages/llm/llm
