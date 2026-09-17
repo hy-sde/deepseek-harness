@@ -23,6 +23,8 @@ kind: "package-reference"
 
 一个无需凭据的 `WebSearchProvider`，用于 harness [web 能力 seam](../web/README.zh.md)（`ctx.web`）。无需 API 密钥或环境变量，它将一个查询并发散开到五个公共搜索引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。这是对 oh-my-pi `searchPublicWeb` 聚合的忠实移植。
 
+浏览器后端的引擎（Google、Ecosia、Mojeek）在廉价的普通 fetch 遇到机器人墙时会升级到宿主的真实浏览器（`ctx.browser.fetchPageHtml`——隐身 `launch` 或 CloakBrowser `patch`）：enable-JS 重试页、Cloudflare 托管挑战（"Ecosia Firewall"）、Mojeek 的 ALTCHA 工作量证明（在浏览器中点击其复选框自动求解），以及 Google 的 "unusual traffic" `/sorry` 闸门（硬墙——Google 仍会让出链路）。升级属于传输层细节，而非新引擎：未挂载浏览器服务时，这些引擎只是保持仅 fetch；只有当每种传输（fetch 与浏览器）都被封锁时，每引擎断路器才会打开。
+
 这是一个**实现**包：它向 `ctx.web` 注册提供方，不拥有 `ctx.web` 键，也不注册面向模型的工具（后者属于 `@deepseek-ai/dsh-tool-web`）。它是函数／命名空间插件（`inject: ['web']`），负责注册后端，而非默认导出服务。
 
 <a id="config"></a>
@@ -30,7 +32,7 @@ kind: "package-reference"
 
 | 配置键 | 默认值 | 含义 |
 |---|---|---|
-| `timeoutMs` | `10000` | 每引擎传输超时（毫秒），以竞速方式生效，挂起的引擎不会卡住调用。至少为 1000。即便某引擎无视聚合取消，也由它兜底；调用本身由下述截止期约束。 |
+| `timeoutMs` | `30000` | 每引擎传输超时（毫秒），以竞速方式生效，挂起的引擎不会卡住调用。至少为 1000。即便某引擎无视聚合取消，也由它兜底；浏览器后端引擎可能把它花在 fetch → 隐身浏览器升级上，因此默认值为 30 秒（仍低于 60 秒工具预算）。调用本身由下述截止期约束。 |
 | `engines` | `startpage, duckduckgo, ecosia, google, mojeek` | 并发散开的引擎 id；此顺序用于共识平票时的决胜。未列出的引擎保持禁用；重复 id 会被丢弃。 |
 | `userAgent` | 浏览器形态常量 | 发送给引擎的 User-Agent。这些公共端点期望浏览器形态 UA；如需更严格策略可自行覆盖。 |
 | `softDeadlineMs` | `5000` | 软聚合截止期（毫秒）：所有引擎都落定即返回，或此值到点且手中至少有一次成功即返回。若到点仍无成功，则继续等待（至硬截止期）第一次成功。 |
@@ -45,7 +47,7 @@ kind: "package-reference"
 - id: web-search-public
   name: '@deepseek-ai/dsh-web-search-public'
   config:
-    timeoutMs: 10000
+    timeoutMs: 30000
     softDeadlineMs: 5000
     hardDeadlineMs: 30000
     maxRetries: 1

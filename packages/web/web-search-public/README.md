@@ -23,13 +23,15 @@ English | [中文](README.zh.md)
 
 A credential-free `WebSearchProvider` for the harness [web capability seam](../web/README.md) (`ctx.web`). With no API key or environment variable, it fans one query out to five public search engines in parallel — Startpage, DuckDuckGo, Ecosia, Google and Mojeek — and consolidates the answers by cross-engine consensus, so no single engine's challenge, timeout, or slow response can block or degrade the search. This is a faithful port of oh-my-pi's `searchPublicWeb` aggregate.
 
+Browser-backed engines (Google, Ecosia, Mojeek) escalate a challenged plain fetch to the host's real browser (`ctx.browser.fetchPageHtml` — stealth `launch` or CloakBrowser `patch`) when the cheap fetch is answered with a bot wall: an enable-JS retry page, a Cloudflare managed challenge ("Ecosia Firewall"), Mojeek's ALTCHA proof-of-work (auto-solved in the browser via its checkbox), or Google's "unusual traffic" `/sorry` gate (a hard wall — Google still advances the chain). Escalation is a transport detail, not a new engine: no browser service mounted means those engines simply stay fetch-only, and the per-engine circuit breaker only opens when every transport — fetch and browser — is blocked.
+
 This is an **implementation** package: it registers a provider into `ctx.web`, it does not own the `ctx.web` key and it does not register a model-facing tool (that is `@deepseek-ai/dsh-tool-web`). It is a function/namespace plugin (`inject: ['web']`) that registers its backend, not a default-export service.
 
 ## Config
 
 | Key | Default | Meaning |
 |---|---|---|
-| `timeoutMs` | `10000` | Per-engine transport timeout (ms), applied as a race so a hung engine cannot pin the call. Must be at least 1000. Bounds one engine even if it ignores aggregate cancellation; the call itself is bounded by the deadlines below. |
+| `timeoutMs` | `30000` | Per-engine transport timeout (ms), applied as a race so a hung engine cannot pin the call. Must be at least 1000. Bounds one engine even if it ignores aggregate cancellation; browser-backed engines may spend it on fetch → stealth-browser escalation, so the default is 30 s (still under the 60 s tool budget). The call itself is bounded by the deadlines below. |
 | `engines` | `startpage, duckduckgo, ecosia, google, mojeek` | Engine ids the fan-out races concurrently; this order is the tiebreak for consensus ties. Unlisted engines stay disabled; duplicate ids are dropped. |
 | `userAgent` | browser-shaped constant | User-Agent sent to the engines. These public endpoints expect a browser-shaped UA; override it if a stricter policy applies. |
 | `softDeadlineMs` | `5000` | Soft aggregate deadline (ms): return as soon as every engine settled, or when this passes with at least one success in hand. If it passes with no success yet, the call keeps waiting (up to the hard deadline) for the first success. |
@@ -44,7 +46,7 @@ This is an **implementation** package: it registers a provider into `ctx.web`, i
 - id: web-search-public
   name: '@deepseek-ai/dsh-web-search-public'
   config:
-    timeoutMs: 10000
+    timeoutMs: 30000
     softDeadlineMs: 5000
     hardDeadlineMs: 30000
     maxRetries: 1
