@@ -180,6 +180,7 @@ function spawnHandle(spec: SubprocessSpawnSpec, scriptPath: string): SubprocessH
     stdin: child.stdin ?? undefined,
     stdout: child.stdout ?? undefined,
     stderr: child.stderr ?? undefined,
+    control: undefined,
     collected: {
       stderr: {
         readFrom(fromByte: number) {
@@ -194,7 +195,7 @@ function spawnHandle(spec: SubprocessSpawnSpec, scriptPath: string): SubprocessH
     },
     waitForExit(signal?: AbortSignal) {
       return new Promise((resolve) => {
-        if (signal?.aborted) {  resolve(false); return }
+        if (signal?.aborted) { resolve(false); return }
         child.once('close', () => { resolve(true) })
         signal?.addEventListener('abort', () => { resolve(false) }, { once: true })
       })

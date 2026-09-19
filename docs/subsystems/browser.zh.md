@@ -48,7 +48,7 @@ relayEndpoint(): string
  * @param input - optional app-path, cdp URL, or explicit relay opt-in.
  * @returns the resolved {@link BrowserKind} to drive.
  */
-resolveKind(input: { path?: string; cdpUrl?: string; relay?: boolean }): BrowserKind
+resolveKind(input: { path?: string; cdpUrl?: string; relay?: boolean; patch?: boolean }): BrowserKind
 
 /**
  * Ensure the relay server is running for this instance (idempotent).
@@ -73,6 +73,18 @@ async open( name: string, url: string, opts: { kind: BrowserKind cwd: string wai
  * @returns the evaluated value (JSON-serializable).
  */
 async run( name: string, code: string, opts: { kind: BrowserKind; cwd: string; timeoutMs?: number }, ): Promise<unknown>
+
+/**
+ * Scrape one URL in a dedicated browser (launch or CloakBrowser patch — never
+ * relay/attach, which belong to other owners). Used by credential-free web
+ * search engines as the challenge-fallthrough transport: optional home-page
+ * seeding for cookies, then navigate, optionally wait for a ready selector,
+ * and return the rendered HTML plus response status and final URL.
+ * @param url - target URL.
+ * @param options - home-page seed, ready selector, per-navigation timeout.
+ * @returns rendered HTML, HTTP status of the last navigation, final page URL.
+ */
+async fetchPageHtml( url: string, options?: { homeUrl?: string ready?: { selector: string; timeoutMs: number } timeoutMs?: number signal?: AbortSignal /** Mojeek-style ALTCHA interstitial: click its checkbox, wait for the PoW redirect to show results. */ altcha?: { resultsSelector: string; waitMs: number } }, ): Promise<{ html: string; status: number; url: string }>
 
 /**
  * Click an ARIA-ref (`aria-ref=e5`) or CSS selector in the named tab.

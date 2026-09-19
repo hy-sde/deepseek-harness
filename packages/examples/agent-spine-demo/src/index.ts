@@ -99,6 +99,8 @@ export interface Config {
   includeRuntimeContext?: SystemPromptConfig['includeRuntimeContext']
   /** The deployment persona prefix (see dsh-system-prompt's `Config`). */
   personaPrefix?: SystemPromptConfig['personaPrefix']
+  /** The deployment persona suffix (see dsh-system-prompt's `Config`). */
+  personaSuffix?: SystemPromptConfig['personaSuffix']
   /** The explicit model-facing tool order (see dsh-system-prompt's `Config`). */
   toolOrder?: SystemPromptConfig['toolOrder']
   /** The tool registry's config — its presentation `mode` (see dsh-tools' `Config`). */
@@ -184,6 +186,7 @@ export function pickSpineConfig(config: Omit<Config, 'agents'>): Omit<Config, 'a
     ...config.includeHarnessIdentity !== undefined ? { includeHarnessIdentity: config.includeHarnessIdentity } : {},
     ...config.includeRuntimeContext !== undefined ? { includeRuntimeContext: config.includeRuntimeContext } : {},
     ...config.personaPrefix !== undefined ? { personaPrefix: config.personaPrefix } : {},
+    ...config.personaSuffix !== undefined ? { personaSuffix: config.personaSuffix } : {},
     ...config.toolOrder !== undefined ? { toolOrder: config.toolOrder } : {},
     ...config.tools !== undefined ? { tools: config.tools } : {},
     ...config.dshHome !== undefined ? { dshHome: config.dshHome } : {},
@@ -225,6 +228,7 @@ export function apply(ctx: Context, config: Config): void {
     includeHarnessIdentity: config.includeHarnessIdentity ?? true,
     includeRuntimeContext: config.includeRuntimeContext ?? true,
     personaPrefix: config.personaPrefix ?? '',
+    personaSuffix: config.personaSuffix ?? '',
     ...config.toolOrder !== undefined ? { toolOrder: config.toolOrder } : {},
   })
   ctx.plugin(ToolRuntime, config.tools ?? {})

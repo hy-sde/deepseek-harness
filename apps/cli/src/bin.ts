@@ -8,8 +8,10 @@
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { loadLayeredEnv } from '@deepseek-ai/dsh-app-boot'
+import { loadLayeredEnv, StartupError } from '@deepseek-ai/dsh-app-boot'
+import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { parseDshArgs } from './args.ts'
+import { reportStartupFailure } from './startup-diagnostics.ts'
 
 // Both the source tree (apps/cli/src) and the bundled bin (apps/cli/lib) sit
 // one directory under apps/cli, so the checked-in manifest resolves with the
@@ -26,27 +28,34 @@ function readVersion(): string {
  * @returns a promise that settles when the selected command mode finishes.
  */
 export async function runCli(): Promise<void> {
-  const invocation = parseDshArgs(process.argv.slice(2), readVersion())
+  const version = readVersion()
+  const invocation = parseDshArgs(process.argv.slice(2), version)
 
   switch (invocation.mode) {
     case 'profile': {
       const { runProfile } = await import('./profile-boot.ts')
-      await runProfile({
-        environment: loadLayeredEnv('dsh'),
-        profile: invocation.profile,
-        fromDefaultProfile: invocation.fromDefaultProfile,
-        patchFiles: invocation.patches,
-        args: invocation.args,
-        // The launcher is the human-facing entry point: only it may trigger
-        // operator-only conveniences such as the web app's default-browser
-        // handoff. Embedding hosts that call runProfile directly stay silent.
-        interactive: true,
-      })
+      try {
+        await runProfile({
+          environment: loadLayeredEnv('dsh'),
+          profile: invocation.profile,
+          fromDefaultProfile: invocation.fromDefaultProfile,
+          patchFiles: invocation.patches,
+          args: invocation.args,
+          // The launcher is the human-facing entry point: only it may trigger
+          // operator-only conveniences such as the web app's default-browser
+          // handoff. Embedding hosts that call runProfile directly stay silent.
+          interactive: true,
+        })
+      } catch (error) {
+        if (!(error instanceof StartupError)) throw error
+        await reportStartupFailure(error, { home: resolveDshHome(), version, profile: invocation.profile })
+        process.exit(1)
+      }
       break
     }
     case 'plugin': {
       const { runPlugin } = await import('./plugin.ts')
-      process.exit(runPlugin(invocation.profile, invocation.args))
+      process.exit(await runPlugin(invocation.profile, invocation.args))
       break
     }
     case 'dump-config': {

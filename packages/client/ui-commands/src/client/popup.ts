@@ -63,17 +63,26 @@ export interface PopupState {
   readonly options: readonly SelectOption[]
   /** Local filter text over the loaded options. */
   readonly search: string
-  /** Highlight index into the filtered row list (0 when empty/pending). */
+  /**
+   * Highlight index into the filtered row list: 0 until options land; afterwards
+   * the row the loaded list marks as the current value
+   * ({@link SelectOption.active}), else 0. A search rebases it to the top of the
+   * filtered rows.
+   */
   readonly active: number
   /** A select() settlement is in flight: further select/search/highlight no-op until it settles. */
   readonly submitting: boolean
+  /** Option waiting for explicit risk acknowledgement; null during normal selection. */
+  readonly confirming: SelectOption | null
+  /** Caller-controlled checkbox state for the pending confirmation. */
+  readonly acknowledged: boolean
   /** Surfaced settlement failure (options load or onSelect); null when none. */
   readonly error: string | null
 }
 
 const CLOSED: PopupState = {
   open: false, command: null, status: 'pending', options: [], search: '', active: 0,
-  submitting: false, error: null,
+  submitting: false, confirming: null, acknowledged: false, error: null,
 }
 
 /**
@@ -87,6 +96,20 @@ export function filterOptions(options: readonly SelectOption[], search: string):
   const query = search.trim().toLowerCase()
   if (query === '') return options
   return options.filter(o => o.label.toLowerCase().includes(query) || (o.detail?.toLowerCase().includes(query) ?? false))
+}
+
+/**
+ * Highlight index for a freshly loaded row list: the row marked as the current
+ * value when the live search still shows it, else the top row. Opening parks
+ * the highlight on the value the session already uses, so an accept gesture
+ * made without looking confirms that value instead of the topmost row.
+ * @param options - the loaded rows.
+ * @param search - the shell's live filter text (non-empty after a retry).
+ * @returns index into the filtered rows.
+ */
+function currentIndex(options: readonly SelectOption[], search: string): number {
+  const at = filterOptions(options, search).findIndex(option => option.active === true)
+  return at === -1 ? 0 : at
 }
 
 /** One open shell's bindings (spec + open-time context + segment snapshot + options-fetch abort). */
@@ -141,7 +164,8 @@ export class PopupSelectController<TCtx = unknown> {
     binding.spec.options(binding.context, binding.abort.signal).then(
       (options) => {
         if (this.binding !== binding) return
-        this.state.set({ ...this.state.getSnapshot(), status: 'ready', options, active: 0, error: null })
+        const current = this.state.getSnapshot()
+        this.state.set({ ...current, status: 'ready', options, active: currentIndex(options, current.search), error: null })
       },
       (error: unknown) => {
         if (this.binding !== binding) return
@@ -162,12 +186,13 @@ export class PopupSelectController<TCtx = unknown> {
 
   /**
    * Replace the local search text (pure local filter — the provider is never
-   * re-queried) and rebase the highlight onto the new filtered list.
+   * re-queried) and rebase the highlight to the top of the new filtered list:
+   * typing searches for something other than the current value.
    * @param search - the shell search input's text.
    */
   setSearch(search: string): void {
     const s = this.state.getSnapshot()
-    if (!s.open || s.submitting || search === s.search) return
+    if (!s.open || s.submitting || s.confirming !== null || search === s.search) return
     this.state.set({ ...s, search, active: 0 })
   }
 
@@ -178,7 +203,7 @@ export class PopupSelectController<TCtx = unknown> {
    */
   move(dir: 1 | -1): void {
     const s = this.state.getSnapshot()
-    if (!s.open || s.status !== 'ready' || s.submitting) return
+    if (!s.open || s.status !== 'ready' || s.submitting || s.confirming !== null) return
     const rows = filterOptions(s.options, s.search)
     if (rows.length === 0) return
     const active = (s.active + dir + rows.length) % rows.length
@@ -192,7 +217,7 @@ export class PopupSelectController<TCtx = unknown> {
    */
   highlight(index: number): void {
     const s = this.state.getSnapshot()
-    if (!s.open || s.status !== 'ready' || s.submitting) return
+    if (!s.open || s.status !== 'ready' || s.submitting || s.confirming !== null) return
     if (index < 0 || index >= filterOptions(s.options, s.search).length || index === s.active) return
     this.state.set({ ...s, active: index })
   }
@@ -210,17 +235,46 @@ export class PopupSelectController<TCtx = unknown> {
   async select(index: number): Promise<void> {
     const binding = this.binding
     const s = this.state.getSnapshot()
-    if (binding === null || !s.open || s.status !== 'ready' || s.submitting) return
+    if (binding === null || !s.open || s.status !== 'ready' || s.submitting || s.confirming !== null) return
     const option = filterOptions(s.options, s.search)[index]
     if (option === undefined) return
+    if (option.confirmation !== undefined) {
+      this.state.set({ ...s, confirming: option, acknowledged: false, error: null })
+      return
+    }
     await this.settle(binding, option)
+  }
+
+  /**
+   * Update the explicit checkbox for the currently pending risk gate.
+   * @param acknowledged - whether the user has acknowledged the displayed risk.
+   */
+  acknowledge(acknowledged: boolean): void {
+    const s = this.state.getSnapshot()
+    if (!s.open || s.submitting || s.confirming === null || s.acknowledged === acknowledged) return
+    this.state.set({ ...s, acknowledged })
+  }
+
+  /** Cancel only the risk gate and return to the still-open option picker. */
+  cancelConfirmation(): void {
+    const s = this.state.getSnapshot()
+    if (!s.open || s.submitting || s.confirming === null) return
+    this.state.set({ ...s, confirming: null, acknowledged: false })
+  }
+
+  /** Settle the gated option only after the checkbox is acknowledged. */
+  async confirm(): Promise<void> {
+    const binding = this.binding
+    const s = this.state.getSnapshot()
+    if (binding === null || !s.open || s.submitting || s.confirming === null || !s.acknowledged) return
+    await this.settle(binding, s.confirming)
   }
 
   /** Run the business settlement for an already admitted option. */
   private async settle(binding: OpenBinding<TCtx>, option: SelectOption): Promise<void> {
     const s = this.state.getSnapshot()
     if (this.binding !== binding || !s.open || s.submitting) return
-    this.state.set({ ...s, submitting: true, error: null })
+    this.state.set({ ...s, submitting: true, confirming: null, acknowledged: false, error: null })
     try {
       await binding.spec.onSelect(option, binding.context)
     } catch (error) {

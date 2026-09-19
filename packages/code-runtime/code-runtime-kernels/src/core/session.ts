@@ -9,7 +9,7 @@
  * @module @deepseek-ai/dsh-code-runtime-kernels/src/core/session
  */
 
-import type { CodeBindingNamespace } from '@deepseek-ai/dsh-code-runtime'
+import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import type { KernelExecResult, KernelHost } from './kernel.ts'
 
 /** One live session: its kernel (spawned lazily) and the serialized run tail. */
@@ -62,7 +62,7 @@ export class SessionRegistry {
   async executeOnSession(
     sessionId: string,
     code: string,
-    bindings: CodeBindingNamespace[],
+    bindings: PtcBindingNamespace[],
     options: SessionRunOptions = {},
   ): Promise<KernelExecResult> {
     if (this.#disposed) {
@@ -162,7 +162,7 @@ export class SessionRegistry {
     session: KernelSession,
     sessionId: string,
     code: string,
-    bindings: CodeBindingNamespace[],
+    bindings: PtcBindingNamespace[],
     options: SessionRunOptions,
   ): Promise<KernelExecResult> {
     if (options.reset === true) {
@@ -203,7 +203,7 @@ export class SessionRegistry {
     kernel: KernelHost,
     sessionId: string,
     code: string,
-    bindings: CodeBindingNamespace[],
+    bindings: PtcBindingNamespace[],
     options: SessionRunOptions,
   ): Promise<KernelExecResult> {
     return kernel.execute(sessionId, code, bindings, {

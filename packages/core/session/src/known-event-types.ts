@@ -38,8 +38,10 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'feedback/message-put',
   'feedback/record',
   'goal/change',
+  'graph/change',
   'hook/invoked',
   'hook/result',
+  'image/offload',
   'llm/retry',
   'llm/retry-started',
   'model/selection',
@@ -56,7 +58,6 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'step/end',
   'step/start',
   'subagent/catalog',
-  'subagent/decision',
   'subagent/descriptor',
   'subagent/model-selection-policy',
   'system/message',
@@ -76,4 +77,11 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'turn/end',
   'turn/start',
   'user/message',
+  'web/deepseek-search-llm-request',
+  'workspace/changes',
+])
+
+/** Event types whose model-visible effects require an explicit pure interpreter. */
+export const MESSAGE_PROJECTION_EVENT_TYPES: ReadonlySet<string> = new Set([
+  'image/offload',
 ])

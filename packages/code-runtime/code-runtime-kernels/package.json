@@ -32,7 +32,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-code-runtime": "workspace:^",
+    "@deepseek-ai/dsh-ptc-runtime": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
     "@deepseek-ai/dsh-spill": "workspace:^",
     "@deepseek-ai/dsh-timeout": "workspace:^",
@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-code-runtime": "workspace:^",
+    "@deepseek-ai/dsh-ptc-runtime": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
     "@deepseek-ai/dsh-spill": "workspace:^",
     "@deepseek-ai/dsh-system-prompt": "workspace:^",

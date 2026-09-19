@@ -1,9 +1,9 @@
 {
-  "extends": "../../../tsconfig.base.client.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib/types"
+    "outDir": "lib/types",
+    "rootDir": "src"
   },
+  "extends": "../../../tsconfig.base.client.json",
   "include": [
     "src"
   ],
@@ -43,6 +43,9 @@
     },
     {
       "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../client/ui-workspace"
     }
   ]
 }

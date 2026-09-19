@@ -18,7 +18,7 @@
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
-    text: >-
+    prefix: >-
       You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
       Edit files with the `edit` tool, which supports four editing modes:
       `replace` (literal old_string -> new_string with fuzzy fallback), `patch`

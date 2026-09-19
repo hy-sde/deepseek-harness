@@ -15,13 +15,16 @@ This table connects model-visible tool names to the plugin package and service s
 
 | Tool package | Model-visible names | Requires | Writes / affects | Shipped aliases | Deployment note |
 | --- | --- | --- | --- | --- | --- |
+| `@deepseek-ai/dsh-plugin-manager` | `plugin_manager` | `ctx.tools`, `ctx.pluginManager`, `ctx.sandboxPolicy` | `tool/call`, `tool/result`, `user/message` | - | - |
+| `@deepseek-ai/dsh-mcp-resources` | `list_mcp_resource_templates`, `list_mcp_resources`, `read_mcp_resource` | `ctx.tools`, `ctx.mcpResources` | `tool/call`, `tool/result` | - | - |
+| `@deepseek-ai/dsh-experimental-browser-use-stagehand-native` | `stagehand_act`, `stagehand_extract`, `stagehand_navigate`, `stagehand_observe`, `stagehand_screenshot`, `stagehand_tabs` | `ctx.browserUse`, `ctx.agents`, `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-ask-user` | `ask_user_question` | `ctx.tools`, `ctx.userQuestions` | `tool/call`, `tool/result after a UI/provider answers the question` | - | ask_user_question pauses the tool call until the active UI provider returns a human answer. |
-| `@deepseek-ai/dsh-tools` | `run_code` | `ctx.tools`, `ctx.codeRuntime (execution time)`, `ctx.systemPrompt` | `tool/call`, `one tool/ptc-dispatch-start + tool/ptc-dispatch pair per bridged sub-call`, `tool/result` | - | Owned by the tool registry as a reserved transport outside filterable capability layers under `mode: ptc` / `mode: both` (see the PTC mode Agent Note). Under `ptc` it is the registry's only wire contribution; the other visible capabilities are declared in a generated SDK section in the loaded runtime's language, and a program calls them through bindings scheduled under the native concurrency contract (submission-ordered starts and policy; concurrency-safe bodies overlap up to `maxParallelSubCalls`) that re-enter the complete guarded tool pipeline and link each nested execution to this outer result. |
+| `@deepseek-ai/dsh-tools` | `run_code` | `ctx.tools`, `ctx.ptcRuntime (execution time)`, `ctx.systemPrompt` | `tool/call`, `one tool/ptc-dispatch-start + tool/ptc-dispatch pair per bridged sub-call`, `tool/result` | - | Owned by the tool registry as a reserved transport outside filterable capability layers under `mode: ptc` / `mode: both` (see the PTC mode Agent Note). Under `ptc` it is the registry's only wire contribution; the other visible capabilities are declared in a generated SDK section in the loaded runtime's language, and a program calls them through bindings scheduled under the native concurrency contract (submission-ordered starts and policy; concurrency-safe bodies overlap up to `maxParallelSubCalls`) that re-enter the complete guarded tool pipeline and link each nested execution to this outer result. |
 | `@deepseek-ai/dsh-plan-mode` | `exit_plan_mode` | `ctx.tools`, `ctx.systemPrompt`, `ctx.userQuestions (execution time, opportunistic)` | `tool/call`, `plan/mode inactive on an approved review`, `tool/result` | - | exit_plan_mode stays in the model-facing schema while planning is inactive so transitions add no tool-catalog churn on top of the plan-policy change. Its execute path rejects calls outside plan mode; in plan mode it presents the plan over the user-questions seam (approve / keep planning with feedback), and approval logs plan mode inactive at the step boundary. |
 | `@deepseek-ai/dsh-tool-bash` | `bash` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The bash tool is the model-facing consumer of the bash executor seam. A `run_in_background` run registers with the generic `ctx.jobs` runtime and is collected/stopped through the `job_*` tools from `@deepseek-ai/dsh-tool-jobs`; the `enableRunInBackground` config (default true) removes the parameter entirely when disabled. |
 | `@deepseek-ai/dsh-tool-present` | `present` | `ctx.tools`, `ctx.fs`, `ctx.sessionProjections` | `tool/call`, `deliverables/presented after a successful final result`, `tool/result` | - | Deliveries belong to the calling Session; Web ui-deliverables supplies source-file opening and cards. |
 | `@deepseek-ai/dsh-tool-pwsh` | `pwsh` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for Windows compositions (a PowerShell executor such as `@deepseek-ai/dsh-pwsh-local` backs `ctx.shell`); it mirrors the bash tool call-for-call minus sandbox controls — `run_in_background` runs register with the generic `ctx.jobs` runtime and are collected/stopped through the `job_*` tools, and the managed `DSH_*` environment comes from `@deepseek-ai/dsh-shell-env`. Each call runs in a fresh process (no persistent PTY session), with native `C:\...` paths and `$env:NAME` variables. |
-| `@deepseek-ai/dsh-tool-cordis` | `cordis_define`, `cordis_inspect_list`, `cordis_inspect_query`, `cordis_inspect_self`, `cordis_run`, `cordis_stop`, `cordis_undefine` | `ctx.tools`, `ctx.dynamicCordisRunner` | `tool/call`, `tool/result`, `process-local dynamic package lifecycle` | - | Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@deepseek-ai/dsh-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or DSH restarts; a full changed request header logs those tool-set changes. |
+| `@deepseek-ai/dsh-tool-cordis` | `cordis_inspect_list`, `cordis_inspect_query` | `ctx.tools`, `ctx.cordisInspect` | `tool/call`, `tool/result` | - | Creator mode provides two read-only runtime inspection tools. The Cordis host runner supplies the inspection registry; Client queries require a connected page. Author persistent changes as bundles and install them with plugin_manager. |
 | `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description. |
 | `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `tool/result` | - | Four-mode `edit` (replace / patch / apply_patch / hashline) ported from @oh-my-pi. Mount alongside tool-fs with `enableEdit: false` so the rich editor owns the `edit` name. |
 | `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent pwsh tool, the Windows counterpart of the persistent bash tool; deployment composition supplies a pwsh-dialect PTY backend and may override the model-facing environment description. |
@@ -49,12 +52,395 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
 | `@deepseek-ai/dsh-tool-git` | `commit`, `commit_apply`, `review`, `worktree` | `ctx.tools`, `ctx.git`, `ctx.systemPrompt`, `ctx.subagents at call time for review` | `tool/call`, `tool/result` | - | Model-driven git commit + review: `commit` analyzes the staged diff and returns a plan skeleton plus lock-file autoplacement hints; `commit_apply` validates and executes (hunk-aware splits, dependency order, dry-run), and `review` fans the staged diff out to subagent reviewers and aggregates a ship/reject verdict. |
-| `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CloakBrowser patch (source-level C++ fingerprints, default), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
+| `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`, `ctx.browser`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths. |
 | `@deepseek-ai/dsh-tool-av` | `av_catalog`, `av_doctor`, `av_list`, `av_scan` | `ctx.tools`, `ctx.av`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Read-only Automic Vault tools: av_scan audits the Mac for exposed dev-tool credentials and hazards, av_doctor verifies hardening, av_catalog lists detectors/hardeners, and av_list returns saved secret names only. Outputs never contain Secret Values and hardening stays a human terminal decision. |
 | `@deepseek-ai/dsh-tool-logseq` | `logseq_graph`, `logseq_list`, `logseq_query`, `logseq_remove`, `logseq_search`, `logseq_server`, `logseq_show`, `logseq_upsert` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Graph-native Logseq CLI tools (logseq_list/show/search/query/upsert/remove/graph/server) that drive a Logseq database graph headlessly from the terminal — the local alternative to the desktop MCP bridge, adding Datalog query, removal, first-class tasks, and graph lifecycle. |
 | `@deepseek-ai/dsh-tool-codebase-memory` | `codebase_delete_project`, `codebase_detect_changes`, `codebase_get_architecture`, `codebase_get_code_snippet`, `codebase_get_graph_schema`, `codebase_index_repository`, `codebase_index_status`, `codebase_ingest_traces`, `codebase_list_projects`, `codebase_manage_adr`, `codebase_query_graph`, `codebase_search_code`, `codebase_search_graph`, `codebase_trace_path` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Codebase-intelligence tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the local codebase-memory daemon via the `codebase-memory-mcp cli --json` mode — the local alternative to the stdio MCP client row, sharing the same daemon, indexes, mutation locks and index supervisor. |
 | `@deepseek-ai/dsh-tool-agentsview` | `agentsview` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/usage/search/recallQuery/recallBrief/exportSessions) that runs one-shot queries against the local agentsview archive — health grades and outcomes, windowed workspace stats, token-cost reports, fts/semantic/hybrid transcript search, the recall brief, and content-free export — built by the agentsview CLI directly from the DeepSeek Harness session store (it parses session.jsonl.zstd itself), the CLI-first pattern that made tool-codebase-memory viable. |
 | `@deepseek-ai/dsh-tool-openwiki` | `openwiki_begin`, `openwiki_finish`, `openwiki_next_page`, `openwiki_submit_page`, `openwiki_submit_plan` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | Repository wiki lifecycle tools (openwiki_begin/submit_plan/next_page/submit_page/finish) that run the ported openwiki 0.4 deterministic engine core in-process — resumable .run.json checkpoints, page manifests, Grounded Claims with repository evidence resolution, OKF front matter repair + index sync — with no external openwiki CLI, wired to codebase-memory for structural discovery. |
+
+<a id="deepseek-aidsh-plugin-manager"></a>
+
+## `@deepseek-ai/dsh-plugin-manager`
+
+### `plugin_manager`
+
+List plugins or bundles in the current profile, enable or disable them, install a bundle, or remove an installed bundle. Every action requires danger-full-access permission or approval for this call. Approval does not change the session permission mode. Changes affect every session in this profile. List first to obtain exact identifiers. Package installation can execute allowed build scripts. Live profiles apply changes immediately; startup profiles require restart.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Management operation.",
+      "enum": [
+        "list_plugins",
+        "list_bundles",
+        "set_plugin",
+        "set_bundle",
+        "install_bundle",
+        "remove_bundle"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "description": "Plugin entry id, bundle package name, or installation spec, according to action."
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Required for set operations; defaults to true for installation."
+    },
+    "approvedBuilds": {
+      "type": "array",
+      "description": "For install_bundle: pass names from pendingBuilds only after the user explicitly approves running their install scripts in the conversation. This grants persistent permission for this profile.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "offset": {
+      "type": "number",
+      "description": "Zero-based list offset; defaults to 0."
+    },
+    "limit": {
+      "type": "number",
+      "description": "List page size, from 1 to 100; defaults to 25."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/boot/plugin-manager/src/tools.ts`](../packages/boot/plugin-manager/src/tools.ts)
+
+<a id="deepseek-aidsh-mcp-resources"></a>
+
+## `@deepseek-ai/dsh-mcp-resources`
+
+### `list_mcp_resource_templates`
+
+List parameterized resource URI templates from an MCP server.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "server": {
+      "type": "string",
+      "description": "Configured MCP server name."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "Continuation cursor returned by this server."
+    }
+  },
+  "required": [
+    "server"
+  ]
+}
+```
+
+Source: [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
+
+### `list_mcp_resources`
+
+List resources available from an MCP server.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "server": {
+      "type": "string",
+      "description": "Configured MCP server name."
+    },
+    "cursor": {
+      "type": "string",
+      "description": "Continuation cursor returned by this server."
+    }
+  },
+  "required": [
+    "server"
+  ]
+}
+```
+
+Source: [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
+
+### `read_mcp_resource`
+
+Read an MCP resource by URI from the named server. Use a listed URI or an expanded resource template.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "server": {
+      "type": "string",
+      "description": "Configured MCP server name."
+    },
+    "uri": {
+      "type": "string",
+      "description": "Resource URI to read."
+    }
+  },
+  "required": [
+    "server",
+    "uri"
+  ]
+}
+```
+
+Source: [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
+
+<a id="deepseek-aidsh-experimental-browser-use-stagehand-native"></a>
+
+## `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`
+
+### `stagehand_act`
+
+Perform one natural-language browser action using the configured Stagehand model.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "instruction": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "instruction"
+  ],
+  "additionalProperties": false
+}
+```
+
+Source: [`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
+### `stagehand_extract`
+
+Extract page data using the configured Stagehand model and an optional JSON Schema.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "instruction": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schema": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/__schema0"
+      }
+    }
+  },
+  "required": [
+    "instruction"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Source: [`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
+### `stagehand_navigate`
+
+Navigate a Stagehand browser tab to a URL.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    }
+  },
+  "required": [
+    "url"
+  ],
+  "additionalProperties": false
+}
+```
+
+Source: [`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
+### `stagehand_observe`
+
+Find browser actions matching an instruction using the configured Stagehand model.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "instruction": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "instruction"
+  ],
+  "additionalProperties": false
+}
+```
+
+Source: [`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
+### `stagehand_screenshot`
+
+Capture a Stagehand tab screenshot for visual inspection.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fullPage": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "fullPage"
+  ],
+  "additionalProperties": false
+}
+```
+
+Source: [`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
+### `stagehand_tabs`
+
+List, create, select, or close a Stagehand browser tab.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "list"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "const": "new"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "select",
+            "close"
+          ]
+        },
+        "pageId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "action",
+        "pageId"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "type": "object"
+}
+```
+
+Source: [`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -149,6 +535,22 @@ Execute a TypeScript program against the available tools. Takes two required arg
     "description": {
       "type": "string",
       "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
+    },
+    "timeoutMs": {
+      "type": "number",
+      "description": "Positive elapsed-time budget in milliseconds, capped by the deployment maximum."
+    },
+    "sandbox_permissions": {
+      "type": "string",
+      "description": "Wider sandbox mode for this complete program execution; requires justification and approval.",
+      "enum": [
+        "workspace-write",
+        "danger-full-access"
+      ]
+    },
+    "justification": {
+      "type": "string",
+      "description": "Reason this complete program needs wider access, shown to the user for approval."
     },
     "session": {
       "type": "string",
@@ -280,7 +682,7 @@ Declare existing files accessible through the Session filesystem as final delive
 }
 ```
 
-Source: [`packages/fs/tool-present/src/index.ts`](../packages/fs/tool-present/src/index.ts)
+Source: [`packages/deliverables/tool-present/src/index.ts`](../packages/deliverables/tool-present/src/index.ts)
 
 Deliveries belong to the calling Session; Web ui-deliverables supplies source-file opening and cards.
 
@@ -332,91 +734,9 @@ The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for W
 
 ## `@deepseek-ai/dsh-tool-cordis`
 
-### `cordis_define`
-
-Define an immutable Cordis Package. For a new Plugin, use kind:"new" and provide only a semantic prefix of 3–6 lowercase English letters; the Host returns the final pluginId and packageId. To modify an existing Plugin, use kind:"existing" with its exact pluginId to append a Package without overwriting older versions. Provide at least one of code.host and code.client. Each value is a plain JavaScript function body that returns a Cordis Plugin; no TypeScript, JSX, or import transformation occurs. Query Inspect before depending on a Service, Event, Builtin, Slot, or token. Define only validates parameters and syntax and records source: it does not request approval, execute apply, or change currentPackageId. On success, call cordis_run with the returned IDs.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "plugin": {
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "kind": {
-              "type": "string",
-              "const": "new"
-            },
-            "idPrefix": {
-              "type": "string",
-              "description": "Suggested semantic prefix of 3–6 lowercase English letters; the Host adds a unique numeric suffix."
-            }
-          },
-          "required": [
-            "kind",
-            "idPrefix"
-          ]
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "kind": {
-              "type": "string",
-              "const": "existing"
-            },
-            "pluginId": {
-              "type": "string",
-              "description": "Exact ID of an existing Plugin; the new Package is appended to that instance."
-            }
-          },
-          "required": [
-            "kind",
-            "pluginId"
-          ]
-        }
-      ]
-    },
-    "name": {
-      "type": "string",
-      "description": "Short, readable Package name."
-    },
-    "purpose": {
-      "type": "string",
-      "description": "One-sentence, user-facing description of the Package purpose."
-    },
-    "code": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "host": {
-          "type": "string",
-          "description": "Plain JavaScript function body that returns the Host-half Cordis Plugin."
-        },
-        "client": {
-          "type": "string",
-          "description": "Plain JavaScript function body that returns the browser Client-half Cordis Plugin."
-        }
-      }
-    }
-  },
-  "required": [
-    "plugin",
-    "name",
-    "purpose",
-    "code"
-  ]
-}
-```
-
-Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
-
 ### `cordis_inspect_list`
 
-List every Cordis Inspect Provider currently known to the Host, including local Host Providers and the latest manifests synchronized from the Client. Each entry includes its platform, purpose, read-only methods, and input/output schemas. Call this Tool before creating or modifying a Package, then select the provider and method for cordis_inspect_query from its result. Do not guess names or treat an Inspect method as a business Service that Plugin code can call.
+List every Cordis Inspect Provider currently known to the Host, including local Host Providers and the latest manifests synchronized from the Client. Each entry includes its platform, purpose, read-only methods, and input/output schemas. Call this Tool before writing or configuring a plugin, then select the provider and method for cordis_inspect_query from its result. Do not guess names or treat an Inspect method as a business Service that Plugin code can call.
 
 ```json
 {
@@ -429,7 +749,7 @@ Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/
 
 ### `cordis_inspect_query`
 
-Run a read-only query explicitly declared by an Inspect Provider. platform, provider, and method must come from cordis_inspect_list, and input must satisfy that method's schema. Use this Tool before cordis_define to read exact Service methods, Event modes, Builtin signatures, Tool schemas, theme tokens, or live Slot trees and props. Host queries run locally. A Client query waits for the first valid page response and remains pending until a page answers or the Tool is cancelled. This Tool cannot invoke business Service methods or modify the runtime. For Service.listService and Event.listEvents, query without input to navigate the compact signature directory, then query the exact service or event for its structured contract and referenced types. For Slots.listSubTree, query without root to navigate the compact tree, then query the exact root for its complete registration contract and props.
+Run a read-only query explicitly declared by an Inspect Provider. platform, provider, and method must come from cordis_inspect_list, and input must satisfy that method's schema. Use this Tool before writing plugin code to read exact Service methods, Event modes, Builtin signatures, Tool schemas, theme tokens, or live Slot trees and props. Host queries run locally. A Client query waits for the first valid page response and remains pending until a page answers or the Tool is cancelled. This Tool cannot invoke business Service methods or modify the runtime. For Service.listService and Event.listEvents, query without input to navigate the compact signature directory, then query the exact service or event for its structured contract and referenced types. For Slots.listSubTree, query without root to navigate the compact tree, then query an exact Slot root for its complete registration contract and props; an exact Factory root returns its identity, scope, and registrant.
 
 ```json
 {
@@ -465,106 +785,7 @@ Run a read-only query explicitly declared by an Inspect Provider. platform, prov
 
 Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
 
-### `cordis_inspect_self`
-
-Inspect dynamic Cordis objects owned by the current Session at increasing levels of detail. With no IDs, list only Plugin summaries. With pluginId alone, return version pointers, the latest Run, and every Package summary. Only pluginId plus packageId returns that immutable Package's Host/Client source and runtime diagnostics. packageId cannot be supplied alone. Query an exact Package before handling @pluginId, repairing an asynchronous failure, or defining an updated version. This Tool is read-only: it neither executes code nor changes version pointers.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "pluginId": {
-      "type": "string",
-      "description": "Stable Plugin ID returned by cordis_define or injected by @pluginId; omit it to list every current Plugin."
-    },
-    "packageId": {
-      "type": "string",
-      "description": "Exact immutable Package ID owned by pluginId; when specified, source and diagnostics are returned."
-    }
-  }
-}
-```
-
-Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
-
-### `cordis_run`
-
-Activate one exact Package of a dynamic Plugin. Use mode:"run" for the first activation, restarting currentPackageId, or rollback. When current exists, use mode:"update" to switch to a different Package, even if the Plugin is currently stopped. An unauthorized Client Package creates an approval request and returns awaiting-approval; an authorized Package returns starting and continues asynchronously in the browser. Neither result waits for the final outcome inside the Tool. currentPackageId changes only after complete success; on failure, the old current and target next remain. Asynchronous success, rejection, or technical failure is reported through state and steering. After a technical failure, read diagnostics with cordis_inspect_self, correct the same Plugin, and retry autonomously. Do not request approval again after the user rejects it.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "pluginId": {
-      "type": "string",
-      "description": "Stable Plugin ID returned by cordis_define."
-    },
-    "packageId": {
-      "type": "string",
-      "description": "Exact immutable Package ID to activate under that Plugin."
-    },
-    "mode": {
-      "type": "string",
-      "description": "Use run for the first activation, restarting current, or rollback; use update to switch from current to a different Package.",
-      "enum": [
-        "run",
-        "update"
-      ]
-    }
-  },
-  "required": [
-    "pluginId",
-    "packageId",
-    "mode"
-  ]
-}
-```
-
-Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
-
-### `cordis_stop`
-
-Stop the current Run of a dynamic Plugin and cancel unfinished approval or activation requests. Retain the Plugin, every immutable Package, grants, currentPackageId, and nextPackageId so it can later run or update directly. Stopping an already stopped Plugin succeeds idempotently. Use this Tool to disable effects temporarily; use cordis_undefine for permanent removal.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "pluginId": {
-      "type": "string",
-      "description": "Stable dynamic Plugin ID to stop."
-    }
-  },
-  "required": [
-    "pluginId"
-  ]
-}
-```
-
-Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
-
-### `cordis_undefine`
-
-Permanently remove a dynamic Plugin owned by the current Session. If it is running or awaiting approval, first stop it and cancel the request, then delete every Package, grant, and version pointer. After this returns, its pluginId, packageIds, @ reference, and Package business views are invalid; historical cards retain only a "Plugin removed" record. Do not call this Tool when versions must remain available for restart or rollback; use cordis_stop instead.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "pluginId": {
-      "type": "string",
-      "description": "Stable dynamic Plugin ID to remove permanently."
-    }
-  },
-  "required": [
-    "pluginId"
-  ]
-}
-```
-
-Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
-
-Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@deepseek-ai/dsh-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or DSH restarts; a full changed request header logs those tool-set changes.
+Creator mode provides two read-only runtime inspection tools. The Cordis host runner supplies the inspection registry; Client queries require a connected page. Author persistent changes as bundles and install them with plugin_manager.
 
 <a id="deepseek-aidsh-tool-bash-persistent"></a>
 
@@ -3529,7 +3750,7 @@ Model-driven git commit + review: `commit` analyzes the staged diff and returns 
 
 ### `browser`
 
-Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a tab, snapshot the page as an ARIA ref tree, and close tabs. Three backends: launch a stealth-patched browser binary (app.path), attach to an existing CDP endpoint (app.cdp_url), or relay into the user's own Chrome tabs via the local dsh browser relay + companion extension (app.relay). ARIA snapshots carry [ref=eN] ids that stay valid until the next snapshot; click/type via CSS selectors keep working. Screenshots are written to disk as PNG paths the model can re-read. Returned observation is the current title, url and ref tree, so prefer it over re-reading when no screenshot is needed.
+Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a tab, snapshot the page as an ARIA ref tree, and close tabs. Four backends: launch a stealth-patched browser binary (app.path), use the CloakBrowser source-patched Chromium with C++-level fingerprint randomization (app.patch; needs the optional `cloakbrowser` peer), attach to an existing CDP endpoint (app.cdp_url), or relay into the user's own Chrome tabs via the local dsh browser relay + companion extension (app.relay). ARIA snapshots carry [ref=eN] ids that stay valid until the next snapshot; click/type via CSS selectors keep working. Screenshots are written to disk as PNG paths the model can re-read. Returned observation is the current title, url and ref tree, so prefer it over re-reading when no screenshot is needed.
 
 ```json
 {
@@ -3569,6 +3790,10 @@ Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a 
         "relay": {
           "type": "boolean",
           "description": "drive the user's own tabs via the local relay + extension"
+        },
+        "patch": {
+          "type": "boolean",
+          "description": "use the CloakBrowser patched Chromium (source-level C++ fingerprint patches; requires the optional `cloakbrowser` peer)"
         }
       }
     },
@@ -3615,7 +3840,7 @@ Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a 
 
 Source: [`packages/browser/tool-browser/src/index.ts`](../packages/browser/tool-browser/src/index.ts)
 
-Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CloakBrowser patch (source-level C++ fingerprints, default), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.
+Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.
 
 <a id="deepseek-aidsh-tool-av"></a>
 

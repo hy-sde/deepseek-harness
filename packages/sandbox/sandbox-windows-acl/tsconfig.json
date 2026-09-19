@@ -19,6 +19,12 @@
     },
     {
       "path": "../../subprocess/win32-process"
+    },
+    {
+      "path": "../../subprocess/subprocess"
+    },
+    {
+      "path": "../../util/lazy-require"
     }
   ]
 }

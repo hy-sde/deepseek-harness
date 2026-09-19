@@ -10,7 +10,7 @@
 
 import type { SessionSeqCursor } from '@deepseek-ai/dsh-session/types'
 
-export {}
+export { }
 
 /** Execution-lifetime status of one graph work item as the host reports it. */
 export type SessionGraphWorkStatus =
@@ -93,8 +93,7 @@ declare module '@deepseek-ai/dsh-session/types' {
     /**
      * Complete post-publish agent-graph snapshot. Log-only (not a
      * {@link SurfaceEventType}); the host appends one per graph state change
-     * so the projection stays a normal event fold with no store coupling.
-     * @mode emit
+     * the projection stays a normal event fold with no store coupling.
      * @param graphId - the graph the snapshot belongs to.
      * @param snapshot - the whole current client view at the publish.
      * @param revision - the host raise counter for this publish; strictly

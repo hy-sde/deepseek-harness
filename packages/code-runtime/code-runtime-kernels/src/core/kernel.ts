@@ -16,7 +16,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { CodeBindingNamespace, CodeJsonValue } from '@deepseek-ai/dsh-code-runtime'
+import type { PtcBindingNamespace, PtcJsonValue } from '@deepseek-ai/dsh-ptc-runtime'
 import { snapshotJsonValue } from '@deepseek-ai/dsh-util-values'
 import type { DoneFrame, KernelFrame, KernelHostMessage } from './protocol.ts'
 export type { DoneFrame, KernelFrame, KernelHostMessage }
@@ -62,10 +62,10 @@ export interface KernelStartConfig {
 /** One in-flight run's host-side state. */
 interface PendingRun {
   id: string
-  namespaces: Map<string, CodeBindingNamespace>
+  namespaces: Map<string, PtcBindingNamespace>
   logs: Array<{ text: string; stream: string }>
   status: 'ok' | 'error'
-  value?: CodeJsonValue
+  value?: PtcJsonValue
   executionCount?: number
   cancelled: boolean
   invalidOutput: boolean
@@ -81,7 +81,7 @@ export interface KernelExecResult {
   /** Captured program output, in order. */
   logs: Array<{ text: string; stream: string }>
   /** The completion value on a clean run with one. */
-  value?: CodeJsonValue
+  value?: PtcJsonValue
   /** The session's execution count after this run. */
   executionCount?: number
   /** True when the run was interrupted or cancelled. */
@@ -215,7 +215,7 @@ export function parseKernelFrame(raw: unknown): KernelFrame | undefined {
         || typeof message.global !== 'string' || typeof message.name !== 'string') return undefined
       return {
         type: 'call', id: message.id, seq: message.seq, global: message.global, name: message.name,
-        args: message.args as CodeJsonValue,
+        args: message.args as PtcJsonValue,
       }
     }
     case 'error': {
@@ -228,7 +228,7 @@ export function parseKernelFrame(raw: unknown): KernelFrame | undefined {
     case 'done': {
       if (typeof message.id !== 'string') return undefined
       const frame: DoneFrame = { type: 'done', id: message.id, status: message.status === 'ok' ? 'ok' : 'error' }
-      if (message.status === 'ok' && message.value !== undefined) frame.value = message.value as CodeJsonValue
+      if (message.status === 'ok' && message.value !== undefined) frame.value = message.value as PtcJsonValue
       if (typeof message.executionCount === 'number') frame.executionCount = message.executionCount
       if (message.cancelled === true) frame.cancelled = true
       if (message.invalidOutput === true) frame.invalidOutput = true
@@ -360,7 +360,7 @@ export class KernelHost {
   async execute(
     id: string,
     code: string,
-    namespaces: CodeBindingNamespace[],
+    namespaces: PtcBindingNamespace[],
     options: { signal?: AbortSignal; cwd?: string; env?: Record<string, string> } = {},
   ): Promise<KernelExecResult> {
     if (!this.isAlive()) {
@@ -369,7 +369,7 @@ export class KernelHost {
         message: `${this.profile.label} is not running`, killed: true,
       }
     }
-    const namespacesById = new Map<string, CodeBindingNamespace>()
+    const namespacesById = new Map<string, PtcBindingNamespace>()
     for (const namespace of namespaces) namespacesById.set(namespace.global, namespace)
     const run: PendingRun = {
       id,
@@ -627,7 +627,7 @@ export class KernelHost {
     void (async () => {
       try {
         const resolved = await fn(frame.args)
-        let value: CodeJsonValue | undefined
+        let value: PtcJsonValue | undefined
         try {
           value = snapshotJsonValue(resolved)
         } catch {
@@ -655,7 +655,7 @@ export class KernelHost {
   #writeReply(
     id: string,
     seq: number,
-    payload: { ok: true; value: CodeJsonValue; name: string } | { ok: false; message: string; name: string },
+    payload: { ok: true; value: PtcJsonValue; name: string } | { ok: false; message: string; name: string },
   ): Promise<void> {
     const message: KernelHostMessage = payload.ok
       ? { type: 'reply', id, seq, ok: true, value: payload.value, name: payload.name }

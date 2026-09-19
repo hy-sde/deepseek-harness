@@ -1,45 +1,70 @@
 {
-  "name": "@deepseek-ai/dsh-subagent",
+  "dependencies": {
+    "@deepseek-ai/dsh-brand": "workspace:^",
+    "@deepseek-ai/dsh-chunked-list": "workspace:^",
+    "@deepseek-ai/dsh-util-values": "workspace:^",
+    "@deepseek-ai/schemastery": "workspace:^",
+    "zod": "^4.4.3"
+  },
   "description": "Abstract subagent seam (ctx.subagents): named-provider registry for delegating to child agents",
-  "version": "0.1.5-rc.1",
-  "publishConfig": {
-    "access": "public"
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-agent": "workspace:^",
+    "@deepseek-ai/dsh-agent-presets": "workspace:^",
+    "@deepseek-ai/dsh-attachment": "workspace:^",
+    "@deepseek-ai/dsh-brand": "workspace:^",
+    "@deepseek-ai/dsh-internal-urls": "workspace:^",
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/dsh-jobs": "workspace:^",
+    "@deepseek-ai/dsh-llm": "workspace:^",
+    "@deepseek-ai/dsh-permission-presets": "workspace:^",
+    "@deepseek-ai/dsh-sandbox": "workspace:^",
+    "@deepseek-ai/dsh-sandbox-policy": "workspace:^",
+    "@deepseek-ai/dsh-schedule": "workspace:^",
+    "@deepseek-ai/dsh-scope": "workspace:^",
+    "@deepseek-ai/dsh-session": "workspace:^",
+    "@deepseek-ai/dsh-session-persistence": "workspace:^",
+    "@deepseek-ai/dsh-session-projection": "workspace:^",
+    "@deepseek-ai/dsh-session-projection-cache": "workspace:^",
+    "@deepseek-ai/dsh-session-query": "workspace:^",
+    "@deepseek-ai/dsh-settings": "workspace:^",
+    "@deepseek-ai/dsh-storage": "workspace:^",
+    "@deepseek-ai/dsh-storage-domain": "workspace:^",
+    "@deepseek-ai/dsh-storage-json": "workspace:^",
+    "@deepseek-ai/dsh-system-prompt": "workspace:^",
+    "@deepseek-ai/dsh-tools": "workspace:^",
+    "@deepseek-ai/dsh-typert-protocol": "workspace:^",
+    "@deepseek-ai/dsh-user-approval": "workspace:^",
+    "@deepseek-ai/dsh-util-time": "workspace:^",
+    "@deepseek-ai/schemastery": "workspace:^"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
-    "directory": "packages/subagent/subagent"
-  },
-  "type": "module",
-  "main": "lib/index.js",
-  "types": "lib/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./lib/types/index.d.ts",
-      "default": "./lib/index.js"
-    },
-    "./internal": {
-      "types": "./lib/types/internal.d.ts",
-      "default": "./lib/types/internal.js"
-    },
-    "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
-      "default": "./lib/invariant.js"
+      "default": "./lib/index.js",
+      "types": "./lib/types/index.d.ts"
     },
     "./client": {
-      "types": "./lib/types/client.d.ts",
-      "default": "./lib/types/client.js"
+      "default": "./lib/types/client.js",
+      "types": "./lib/types/client.d.ts"
     },
-    "./typert": {
-      "types": "./lib/typert.host.d.ts",
-      "default": "./lib/typert.host.js"
+    "./internal": {
+      "default": "./lib/types/internal.js",
+      "types": "./lib/types/internal.d.ts"
     },
+    "./invariant": {
+      "default": "./lib/invariant.js",
+      "types": "./lib/types/invariant.d.ts"
+    },
+    "./package.json": "./package.json",
     "./remote": {
-      "types": "./lib/typert.remote-client.d.ts",
-      "default": "./lib/typert.remote-client.js"
+      "default": "./lib/typert.remote-client.js",
+      "types": "./lib/typert.remote-client.d.ts"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./typert": {
+      "default": "./lib/typert.host.js",
+      "types": "./lib/typert.host.d.ts"
+    }
   },
   "files": [
     "lib/index.js",
@@ -52,23 +77,19 @@
     "lib/typert.remote-client.d.ts"
   ],
   "license": "MIT",
-  "dependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-chunked-list": "workspace:^",
-    "@deepseek-ai/dsh-util-values": "workspace:^",
-    "zod": "^4.4.3",
-    "@deepseek-ai/schemastery": "workspace:^"
-  },
+  "main": "lib/index.js",
+  "name": "@deepseek-ai/dsh-subagent",
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
     "@deepseek-ai/dsh-agent": "workspace:^",
     "@deepseek-ai/dsh-agent-presets": "workspace:^",
-    "@deepseek-ai/schemastery": "workspace:^",
-    "@deepseek-ai/dsh-brand": "workspace:^",
     "@deepseek-ai/dsh-attachment": "workspace:^",
+    "@deepseek-ai/dsh-brand": "workspace:^",
+    "@deepseek-ai/dsh-internal-urls": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-jobs": "workspace:^",
     "@deepseek-ai/dsh-llm": "workspace:^",
+    "@deepseek-ai/dsh-permission-presets": "workspace:^",
     "@deepseek-ai/dsh-sandbox": "workspace:^",
     "@deepseek-ai/dsh-sandbox-policy": "workspace:^",
     "@deepseek-ai/dsh-scope": "workspace:^",
@@ -77,15 +98,22 @@
     "@deepseek-ai/dsh-session-projection": "workspace:^",
     "@deepseek-ai/dsh-session-projection-cache": "workspace:^",
     "@deepseek-ai/dsh-session-query": "workspace:^",
+    "@deepseek-ai/dsh-settings": "workspace:^",
     "@deepseek-ai/dsh-system-prompt": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^",
     "@deepseek-ai/dsh-typert-protocol": "workspace:^",
     "@deepseek-ai/dsh-user-approval": "workspace:^",
     "@deepseek-ai/dsh-util-time": "workspace:^",
-    "@deepseek-ai/dsh-internal-urls": "workspace:^"
+    "@deepseek-ai/schemastery": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-agent-presets": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-jobs": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-permission-presets": {
       "optional": true
     },
     "@deepseek-ai/dsh-sandbox": {
@@ -106,40 +134,22 @@
     "@deepseek-ai/dsh-session-query": {
       "optional": true
     },
-    "@deepseek-ai/dsh-jobs": {
+    "@deepseek-ai/dsh-settings": {
       "optional": true
     },
     "@deepseek-ai/dsh-user-approval": {
       "optional": true
     }
   },
-  "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-agent-presets": "workspace:^",
-    "@deepseek-ai/dsh-attachment": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-jobs": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-sandbox": "workspace:^",
-    "@deepseek-ai/dsh-sandbox-policy": "workspace:^",
-    "@deepseek-ai/dsh-schedule": "workspace:^",
-    "@deepseek-ai/dsh-scope": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-session-persistence": "workspace:^",
-    "@deepseek-ai/dsh-session-projection": "workspace:^",
-    "@deepseek-ai/dsh-session-projection-cache": "workspace:^",
-    "@deepseek-ai/dsh-session-query": "workspace:^",
-    "@deepseek-ai/dsh-storage": "workspace:^",
-    "@deepseek-ai/dsh-storage-domain": "workspace:^",
-    "@deepseek-ai/dsh-storage-json": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:^",
-    "@deepseek-ai/dsh-user-approval": "workspace:^",
-    "@deepseek-ai/dsh-util-time": "workspace:^",
-    "@deepseek-ai/schemastery": "workspace:^",
-    "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-internal-urls": "workspace:^"
-  }
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "directory": "packages/subagent/subagent",
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+  },
+  "type": "module",
+  "types": "lib/types/index.d.ts",
+  "version": "0.1.6-alpha.2"
 }
