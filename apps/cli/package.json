@@ -104,8 +104,8 @@
     "@deepseek-ai/dsh-webhook-github": "workspace:^",
     "@deepseek-ai/dsh-workflow-ptc": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
-    "@hy-sde-org/dsh-code-runtime-kernels": "^0.1.5-rc.1",
-    "@hy-sde-org/dsh-session-intelligence": "^0.1.5-rc.1",
+    "@hy-sde-org/dsh-code-runtime-kernels": "^0.1.6-alpha.2",
+    "@hy-sde-org/dsh-session-intelligence": "^0.1.6-alpha.2",
     "commander": "^15.0.0",
     "js-yaml": "^4.2.0",
     "node-addon-require-builtin": "^0.1.6"
