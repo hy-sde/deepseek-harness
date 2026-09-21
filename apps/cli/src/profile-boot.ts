@@ -183,6 +183,47 @@ interface ComposedProfile {
 }
 
 /**
+ * Whether this launch runs a dev checkout through tsx, whose tsconfig `paths`
+ * map every workspace package to `src`.
+ *
+ * The module fallback is the resolution gateway for every bare plugin name in
+ * the loader tree, and it normally mirrors package exports (`lib`). Settling
+ * it on the source plane keeps one module instance per package: the CLI
+ * bootstrap already loads workspace `src` under tsx, and a loader tree
+ * resolving `lib` instead splits module-scoped identities (unique symbols)
+ * across the two — which turns into crashes like a missing
+ * `TOOL_RUNTIME_SCHEDULER` between `dsh-agent-loop` and the `tools` service.
+ * Detection needs both signals: the tsx hook on argv (plain node on the same
+ * checkout uses `lib`) and the checkout's `tsconfig.base.json` above the install
+ * anchor (an installed package has neither).
+ */
+function sourceLaunchInstallation(installAnchor: string): boolean {
+  if (!process.execArgv.some(flag => flag.includes('tsx'))) return false
+  return existsSync(join(dirname(installAnchor), '..', '..', 'tsconfig.base.json'))
+}
+
+/**
+ * Settle the shared module fallback for this launch.
+ *
+ * Dev checkouts heal it on every launch so the fallback matches the plane the
+ * launch runs: tsx loads workspace `src` (paths), a plain-node built bin loads
+ * `lib` — the shared fallback must not keep the other mode's generation.
+ * Installed and packaged runtimes keep their no-write runtime lookup; the
+ * explicit `link`/`dual` resolution modes materialize as before.
+ */
+async function fallbackResolution(
+  resolutionOptions: { installAnchor: string; profile: Profile },
+  resolutionMode: ProfileResolutionMode,
+  resolvedProfile: ResolvedProfileRuntime | undefined,
+): Promise<ProfileResolutionGeneration> {
+  const sourcePlane = sourceLaunchInstallation(resolutionOptions.installAnchor)
+  const devCheckout = existsSync(join(dirname(resolutionOptions.installAnchor), '..', '..', 'tsconfig.base.json'))
+  return devCheckout || (resolutionMode !== 'runtime' && resolvedProfile === undefined)
+    ? await healProfilesModuleFallback({ ...resolutionOptions, sourcePlane })
+    : await createProfileResolutionGeneration(resolutionOptions)
+}
+
+/**
  * Load `name` and compose its effective patch stack: bundle layers in
  * `dsh.profile.bundles` order (a base-backed profile gets the base bundle's
  * platform-gated shell rows), the profile's user layer, the home-level user
@@ -207,9 +248,7 @@ async function composeProfile(
   if (resolvedProfile !== undefined) writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)
   const resolutionOptions = { installAnchor: resolvedProfile?.installAnchor ?? INSTALL_ANCHOR, profile }
   if (resolvedProfile !== undefined && resolutionMode !== 'runtime') healIsolatedProfileModuleFallback(resolvedProfile)
-  const resolution = resolutionMode === 'runtime' || resolvedProfile !== undefined
-    ? await createProfileResolutionGeneration(resolutionOptions)
-    : await healProfilesModuleFallback(resolutionOptions)
+  const resolution = await fallbackResolution(resolutionOptions, resolutionMode, resolvedProfile)
   const overlays = patchFiles.flatMap(file => loadOverlayPatches(NAME, resolve(file)))
   return { profile, resolution, overlays }
 }

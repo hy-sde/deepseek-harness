@@ -29,7 +29,7 @@ import {
   symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
 import { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
@@ -348,6 +348,36 @@ function packageEntryFromPackage(
   return undefined
 }
 
+/**
+ * Prefer each proxy target's workspace `src` twin for a source-plane launch.
+ *
+ * A dev checkout serves both planes: package exports resolve `lib/` (built),
+ * while tsx's tsconfig `paths` serve `src/` (editable). Crossing them splits
+ * module identity for module-scoped symbols, so a source launch must settle
+ * on one plane. Only `lib/…` runtime entries with an existing `src/…` twin are
+ * redirected; entry points without one (generated artifacts, invariants,
+ * third-party packages) keep their `lib` target, so the proxy still resolves.
+ * @param packageDir - package root whose targets were resolved.
+ * @param targets - subpath-to-file-URL targets from {@link packageProxySource}.
+ * @returns targets with source twins substituted where present.
+ */
+function preferSourceTargets(
+  packageDir: string,
+  targets: Record<string, string>,
+): Record<string, string> {
+  const preferred: Record<string, string> = {}
+  for (const [subpath, target] of Object.entries(targets)) {
+    const relativeEntry = relative(packageDir, fileURLToPath(target))
+    const sourceTwin = relativeEntry.startsWith('lib/') || relativeEntry.startsWith('lib\\')
+      ? join(packageDir, 'src', relativeEntry.slice(4)).replace(/\.(?:js|mjs|cjs|jsx|tsx)$/u, '.ts')
+      : undefined
+    preferred[subpath] = sourceTwin !== undefined && existsSync(sourceTwin) && statSync(sourceTwin).isFile()
+      ? pathToFileURL(sourceTwin).href
+      : target
+  }
+  return preferred
+}
+
 /** Resolve every explicit ESM runtime export that an out-of-tree plugin can import. */
 function packageProxySource(
   packageName: string,
@@ -379,10 +409,18 @@ function packageProxySource(
       throw new Error(`dsh: installed package ${packageName} main entry is missing at ${entry}`, { cause: error })
     }
   }
-  const subpaths = declared !== null && typeof declared === 'object' && !Array.isArray(declared)
-    && Object.keys(declared).some(key => key.startsWith('.'))
-    ? Object.keys(declared).filter(key => key === '.' || (
-      key.startsWith('./') && !key.includes('*') && !key.endsWith('/') && key !== './package.json'
+  // Only declared, non-null subpaths are attempted: a map without "."
+  // (subpath-only exports) or with null-valued subpaths (the standard
+  // "not exported" marker, e.g. `effect`'s "./index": null) must not make
+  // resolution throw, while a malformed DECLARED root target (a null ".")
+  // still fails loudly below.
+  const exportKeys = declared !== null && typeof declared === 'object' && !Array.isArray(declared)
+    ? Object.keys(declared)
+    : []
+  const subpaths = exportKeys.some(key => key.startsWith('.'))
+    ? exportKeys.filter(key => key === '.' || (
+      key.startsWith('./') && !key.includes('*') && !key.endsWith('/')
+      && key !== './package.json' && (declared as Record<string, unknown>)[key] !== null
     ))
     : ['.']
   const targets: Record<string, string> = {}
@@ -468,7 +506,7 @@ function profileDependencyNames(manifest: ProfileManifest): string[] {
 
 /** Resolve the installation generation that every profile must find through the fallback directory. */
 function resolveModuleFallbackEntries(
-  installAnchor: string, materialize = true,
+  installAnchor: string, materialize = true, sourcePlane = false,
 ): {
   entries: ModuleFallbackEntry[]
   packageNames: ReadonlySet<string>
@@ -510,14 +548,24 @@ function resolveModuleFallbackEntries(
   }
   const entries = !materialize
     ? []
-    : !isPackagedExecutable()
-      ? [...links].map(([packageName, packageDir]) => ({ kind: 'symlink' as const, packageName, packageDir }))
-      : [...links].flatMap(([packageName, packageDir]) => {
+    : sourcePlane
+      ? [...links].flatMap(([packageName, packageDir]) => {
         const source = packageProxySource(packageName, packageDir)
         return Object.keys(source.targets).length === 0
           ? []
-          : [{ kind: 'proxy' as const, packageName, version: source.version, targets: source.targets }]
+          : [{
+            kind: 'proxy' as const, packageName, version: source.version,
+            targets: preferSourceTargets(packageDir, source.targets),
+          }]
       })
+      : !isPackagedExecutable()
+        ? [...links].map(([packageName, packageDir]) => ({ kind: 'symlink' as const, packageName, packageDir }))
+        : [...links].flatMap(([packageName, packageDir]) => {
+          const source = packageProxySource(packageName, packageDir)
+          return Object.keys(source.targets).length === 0
+            ? []
+            : [{ kind: 'proxy' as const, packageName, version: source.version, targets: source.targets }]
+        })
   return { entries, packageNames: new Set(links.keys()), packageDirs: links, declarers, versions }
 }
 
@@ -554,6 +602,16 @@ export interface ProfileModuleFallbackOptions {
   home?: string
   /** Whether to materialize the computed generation; defaults to true. */
   materialize?: boolean
+  /**
+   * Materialize source-plane entry proxies instead of lib-facing symlinks.
+   *
+   * A dev checkout running through tsx serves workspace packages from `src`
+   * (tsconfig `paths`) while package exports resolve `lib`; settling on the
+   * source plane for every fallback entry keeps one module instance per
+   * package across the CLI bootstrap and the loader tree. Entries without an
+   * existing `src` twin keep their `lib` target.
+   */
+  sourcePlane?: boolean
 }
 
 /**
@@ -571,11 +629,11 @@ export interface ProfileModuleFallbackOptions {
 export async function healProfilesModuleFallback(
   options: ProfileModuleFallbackOptions,
 ): Promise<ProfileResolutionGeneration> {
-  const { installAnchor, profile, home = resolveDshHome(), materialize = true } = options
+  const { installAnchor, profile, home = resolveDshHome(), materialize = true, sourcePlane = false } = options
   const profilesDir = join(home, PROFILES_DIR)
   const modulesDir = join(profilesDir, 'node_modules')
   if (materialize) mkdirSync(modulesDir, { recursive: true })
-  const { entries, packageNames, packageDirs, declarers, versions } = resolveModuleFallbackEntries(installAnchor, materialize)
+  const { entries, packageNames, packageDirs, declarers, versions } = resolveModuleFallbackEntries(installAnchor, materialize, sourcePlane)
   if (materialize && !moduleFallbackCurrent(modulesDir, entries)) {
     await withFileLock(modulesDir, () => {
       if (!moduleFallbackCurrent(modulesDir, entries)) healProfilesModuleFallbackLocked(entries, modulesDir)

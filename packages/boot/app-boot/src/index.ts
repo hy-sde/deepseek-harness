@@ -7,9 +7,9 @@
  */
 
 import { pathToFileURL } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
-import { basename, dirname, isAbsolute, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import * as yaml from 'js-yaml'
 import { Context, type FiberState } from '@deepseek-ai/cordis'
 import Loader, { type Entry, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
@@ -514,7 +514,57 @@ export async function mountRootInclude(
   bareModuleBaseUrl?: string,
 ): Promise<Entry | undefined> {
   ctx.loader.builtins.include = bareModuleBaseUrl === undefined
-    ? Include
+    ? class AmbientResolvedRootInclude extends Include {
+      /**
+       * Route bare rows through the ambient module pipeline first, then fall
+       * back to the Loader's internal module loader for out-of-tree plugins.
+       *
+       * The ambient pipeline applies the host's path mapping, so a tsx source
+       * launch resolves every workspace package — and every import inside
+       * them — from `src` as one module instance per package; the internal
+       * loader resolves package exports (`lib`) and would split module-scoped
+       * identities (e.g. the `TOOL_RUNTIME_SCHEDULER` unique symbol) across
+       * the loader tree and the CLI bootstrap. The internal fallback keeps
+       * config-shadowed packages winning: a name installed beside the
+       * composition file resolves from there, exactly as a plain Node walk
+       * would, and a packaged executable's bare imports still resolve
+       * through it. Non-resolution failures stay loud.
+       */
+      override import(name: string, getOuterStack?: () => string[]): unknown {
+        // Relative, absolute, and file-URL names have no plane choice (they
+        // name one file) and keep the original config-dir/internal resolution.
+        const specifier = isAbsolute(name) ? pathToFileURL(name).href : name
+        if (name.startsWith('.') || name.startsWith('cordis:') || isAbsolute(name) || name.startsWith('file:')) {
+          return super.import(specifier, getOuterStack)
+        }
+        // Only a tsx launch splits planes (its paths map feeds the bootstrap
+        // `src` while the internal loader resolves `lib`); every other host —
+        // vitest, an installed bin, a packaged executable — resolves one
+        // consistent plane through the internal loader and stays fast.
+        if (process.execArgv.some(flag => flag.includes('tsx'))) {
+          const configOwns = (() => {
+            const local = /^(@[^/]+\/[^/]+|[^/]+)(?:\/.*)?$/u.exec(name)?.[1]
+            return local !== undefined
+              && existsSync(join(dirname(absoluteConfigPath), 'node_modules', ...local.split('/')))
+          })()
+          if (!configOwns) {
+            try {
+              return import(/* @vite-ignore */specifier)
+            } catch (error) {
+              const code = (error as NodeJS.ErrnoException | undefined)?.code
+              if (code !== 'ERR_MODULE_NOT_FOUND' && code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw error
+              // Fall through to the internal loader below.
+            }
+          }
+        }
+        const internal = this.ctx.loader.internal
+        /* v8 ignore next -- Node supplies the internal loader; this preserves the
+           original diagnostic for hypothetical embedders without it. */
+        const baseUrl = this.ctx.baseUrl
+        if (internal === undefined || baseUrl === undefined) return super.import(specifier, getOuterStack)
+        return internal.import(specifier, baseUrl, {})
+      }
+    }
     : class HostResolvedRootInclude extends Include {
       override import(name: string, getOuterStack?: () => string[]): unknown {
         const specifier = isAbsolute(name) ? pathToFileURL(name).href : name

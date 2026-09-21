@@ -90,12 +90,30 @@ class PresetTree extends Include {
    * @param getOuterStack - the loader's stack composer for import diagnostics.
    * @returns the imported module, or the `cordis:` builtin.
    */
-  override import(name: string, getOuterStack?: () => string[]): unknown {
+  override async import(name: string, getOuterStack?: () => string[]): Promise<unknown> {
     const row = classifyRowSpecifier(name)
     const base = harnessBase.get(this.config)
     /* v8 ignore next -- every PresetTree is constructed by `mountPreset`, which records the base first */
     if (base === undefined) return super.import(row.specifier, getOuterStack)
     if (row.kind === 'builtin' || row.kind === 'preset') return super.import(row.specifier, getOuterStack)
+    // Ambient pipeline first under a tsx launch, matching the host plane: tsx
+    // resolves every workspace import — and the imports inside those modules —
+    // from `src` as one instance per package, while the internal loader would
+    // split module-scoped identities across the CLI bootstrap and the preset
+    // rows. Presets resolve bare names from the harness base by contract (that
+    // base records where the installed harness lives), so no config-owned
+    // shadow can exist here and the internal path is only the out-of-tree
+    // fallback. Non-resolution failures stay loud. Every other host resolves
+    // one consistent plane through the internal loader and skips this step.
+    if (process.execArgv.some(flag => flag.includes('tsx'))) {
+      try {
+        return await import(/* @vite-ignore */row.specifier)
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException | undefined)?.code
+        if (code !== 'ERR_MODULE_NOT_FOUND' && code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw error
+        // Fall through to the internal loader below.
+      }
+    }
     const internal = this.ctx.loader.internal
     /* v8 ignore next -- Node always supplies the internal module loader; the branch keeps a
        hypothetical embedder from losing the row's name in a resolution error. */

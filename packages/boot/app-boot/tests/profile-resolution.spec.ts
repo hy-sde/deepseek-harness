@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -223,6 +224,36 @@ describe('profile resolution generation', { concurrent: false }, () => {
         : join(f.profile.dir, '.dsh-module-fallback', 'node_modules', entry.name)
       expect(realpathSync(projected)).toBe(realpathSync(entry.packageDir))
     }
+  })
+
+  it('materializes source-plane proxies preferring the workspace src twin', async () => {
+    const f = fixture()
+    const pkgDir = f.installed
+    file(join(pkgDir, 'package.json'), JSON.stringify({
+      name: 'resolution-lib',
+      version: '1.0.0',
+      type: 'module',
+      exports: { '.': './lib/index.js', './tools': './lib/tools.js' },
+    }))
+    file(join(pkgDir, 'lib', 'index.js'), 'export const marker = "lib-index"\n')
+    file(join(pkgDir, 'lib', 'tools.js'), 'export const marker = "lib-tools"\n')
+    file(join(pkgDir, 'src', 'index.ts'), 'export const marker = "src-index"\n')
+
+    const generation = await healProfilesModuleFallback({
+      installAnchor: f.installAnchor,
+      profile: f.profile,
+      home: f.root,
+      sourcePlane: true,
+    })
+    const proxyDir = join(generation.profilesDir, 'node_modules', 'resolution-lib')
+    const manifest = JSON.parse(readFileSync(join(proxyDir, 'package.json'), 'utf8')) as {
+      dsh: { moduleFallback: { targets: Record<string, string> } }
+    }
+    expect(manifest.dsh.moduleFallback.targets['.'])
+      .toBe(pathToFileURL(join(pkgDir, 'src', 'index.ts')).href)
+    // No src twin for the tools entry: its lib target is retained so the proxy still resolves.
+    expect(manifest.dsh.moduleFallback.targets['./tools'])
+      .toBe(pathToFileURL(join(pkgDir, 'lib', 'tools.js')).href)
   })
 
   it('keeps each earlier root complete before considering a later root', async () => {

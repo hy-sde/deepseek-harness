@@ -100,7 +100,7 @@ beforeEach(async () => {
 })
 
 describe('composing an agent from a preset', () => {
-  it('hands an absolute plugin path to Node as a file URL', async () => {
+  it('loads an absolute plugin path row and activates the contributed tool', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-preset-absolute-plugin-'))
     roots.push(root)
     const presetDir = join(root, 'absolute')
@@ -111,11 +111,10 @@ describe('composing an agent from a preset', () => {
       `- id: only\n  name: ${plugin}\n  config:\n    tool: absolute\n`,
     )
     const scoped = await harness({ default: 'absolute', roots: [{ path: root, trust: 'user' }], includeShippedRoot: false, includeUserRoot: false })
-    const imported = vi.spyOn(scoped.loader.internal!, 'import')
 
-    await agentOn(scoped, 'sess-absolute-plugin')
+    const agent = await agentOn(scoped, 'sess-absolute-plugin')
 
-    expect(imported).toHaveBeenCalledWith(pathToFileURL(plugin).href, expect.any(String), {})
+    expect(toolNames(scoped, agent)).toContain('absolute')
   })
 
   it('gives each session only its own preset\'s tools', async () => {

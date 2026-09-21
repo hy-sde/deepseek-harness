@@ -943,12 +943,15 @@ describe('healProfilesModuleFallback', () => {
       Object.defineProperty(process, 'pkg', { configurable: true, value: {} })
       try {
         const home = tmp()
-        if (mode === 'missing' || mode === 'directory' || mode === 'absent-map') {
+        // `null` per-subpath is the standard ESM "not exported" marker and
+        // must be omitted like a missing file; a null ROOT export stays a
+        // loud malformed-configuration failure.
+        if (mode === 'missing' || mode === 'directory' || mode === 'absent-map' || mode === 'null-subpath') {
           await healProfilesModuleFallback({ installAnchor: anchor, home })
           expect(existsSync(join(home, 'profiles', 'node_modules', 'bundle-a'))).toBe(false)
         } else {
           await expect(healProfilesModuleFallback({ installAnchor: anchor, home })).rejects.toThrow(
-            mode === 'null' || mode === 'null-subpath'
+            mode === 'null'
               ? 'cannot resolve ESM export bundle-a'
               : 'resolves outside its package',
           )
