@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/memory-extraction.md
-memory-extraction.md: 962551b884ac2151bb65fb1b738b4abc3ee18c7e
-memory-extraction.zh.md: 0871cbb5dd8ed5a1a33c9a16d018ed576b01bb7c
+memory-extraction.md: f838c54c3142ca0dfa49000bf54245ca1aadf869
+memory-extraction.zh.md: aa196034e17b989f6d4ff27b92c0a74eb06599b4

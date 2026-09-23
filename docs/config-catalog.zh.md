@@ -169,6 +169,8 @@ export type PresetTrust = 'system' | 'user'
 
 来源：[`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
 
+<a id="deepseek-aidsh-agent-spine-demo"></a>
+
 <a id="deepseek-aidsh-agent-tool-presentation"></a>
 
 ## `@deepseek-ai/dsh-agent-tool-presentation`
