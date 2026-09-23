@@ -9,13 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-stream` is the derivation layer of the Agent Graph (Maka port, slice P2). It layers on top of `@deepseek-ai/dsh-graph-control` (the durable decision store, P1) and owns **everything that can be recomputed from committed rows**: work-status projection, record folding, trace/route derivation, readiness intents, input handoffs, and the single-flight reconciliation driver (`AgentGraphCoordinator`) that walks Maka's authored drive loop (provision → supervise → select → render → execute) against that store.
-
-The split follows Maka's one hard rule: the store is the authority, the stream layer never writes anything except through the store's own commit/claim/provision methods. Every projection here is deterministic and pure — recomputing it never starts work; admission and execution are store-sealed (claim with preallocated turn/run identity at the schedule revision it observed).
-
-Ids are deterministic sha256 cut to 32 hex chars (`graph_intent_…`, `graph_operator_…`, `graph_edge_…`, `graph_route_…`, `graph_record_…`, `graph_claim_…`), so replays are idempotent by construction. Identity comparison uses UTF-16 code-unit order (`compareAgentGraphIdentity`), not locale comparison.
-
-This package contributes no tool, prompt, or plugin row — the executor adapter (P3) and supervisor tools (P4) consume it.
+`dsh-graph-stream` is the derivation layer of the Agent Graph. It recomputes everything derivable from the control store's committed rows — work-status projection, record folding, trace and route derivation, readiness intents, bounded input handoffs — and drives the single-flight reconciliation loop (`AgentGraphCoordinator`) that walks provision, supervise, select, render, and execute against that store. All ids are deterministic sha256 cut to 32 hex chars, so replays are idempotent and every projection is pure. It adds no tool, prompt, or plugin row; the executor adapter and supervisor tools consume it.
 
 ## Table of Contents
 
@@ -24,6 +18,7 @@ This package contributes no tool, prompt, or plugin row — the executor adapter
 - [Further Exploration](#further-exploration)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 ## Use this package
 
@@ -88,12 +83,28 @@ The coordinator never calls a provider directly — P3 supplies the subagent/wor
 
 ## Model Experience
 
-The package is pure TypeScript with narrow, single-responsibility modules and no ambient state. Types are explicit; results are plain data (no class instances crossing module boundaries except the coordinator). Errors carry `reason` codes for validation failures and the store's conflict errors propagate unchanged.
+### Scheduled work handoff prompt
+
+#### What the model sees
+
+The package renders the operator handoff prompt an operator child run receives: the work instruction, `GRAPH_OPERATOR_HANDOFF_PROTOCOL`, and an `<agent_graph_input_handoffs>` block with `<` escaped as `\u003c`. Bounded conclusion text is resolved only at render time. Projections themselves stay reference-only; the model sees the rendered prompt text and the folded records the supervisor tools of P4 present, never raw record or route rows.
+
+#### Token effect
+
+The handoff prompt is assembled here, so its size is part of the operator's context budget: 16 KiB per record and 48 KiB total, with an `…` ellipsis when the binary search over code points hits the cap.
+
+#### KV Cache effect
+
+None — the package never invokes a provider itself; cached context is whatever the child run's own session builds.
 
 ## Known Limitations and Deferred Work
 
 - Readiness policy kinds: `map` only — `all_settled` and supervisor-readiness kinds are deferred to P4.
 - No client projection/checkpointing (`onCheckpoint`) yet; no tool-view pagination; residency is a no-op.
 - Map-policy intents are derived but not auto-dispatched by reconcile — they surface for supervisor tools in P4.
-- Record shape is copy-with-provenance (slim), a deliberate deviation from Maka's 18-facet full record; the stream layer never mutates stored records.
+- Record shape is copy-with-origin (slim), a deliberate deviation from Maka's 18-facet full record; the stream layer never mutates stored records.
 - The coordinator is process-local: another process holding the same graph store will not wake this driver automatically (wake delivery is P5).
+
+### Dev Note
+
+<details><summary>Working context for maintainers — click to expand</summary>None.</details>

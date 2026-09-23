@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-projection` serves the session's standing agent-graph snapshot — the whole bounded `SessionGraphProjection` (graph identity, closed/active status, revision, bounded work list, omitted counts, pending wake) — as the `graph` projection unit. The host (P7) owns graph state and publishes a complete post-change snapshot per graph movement as a `graph/change` session event; this unit folds those publishes into the session-projection seam (registry snapshot, change feed, every projection carrier) with no store coupling. Choose it in compositions that already mount the projection registry, such as the web app bundle whose graph rail is the reference consumer; assemblies without the registry are unaffected and their consumers read no graph key. Setup and publish semantics come first; the fold internals live in a collapsible developer section below.
+`dsh-graph-projection` serves the session's standing agent-graph snapshot as the `graph` projection unit: the bounded `SessionGraphProjection` (graph identity, status, revision, bounded work list, omitted counts, pending wake) folded from the host's `graph/change` publishes, with zero store coupling. Mount it beside the session store and projection registry when clients should render the session's graph from whole published values; assemblies without the registry are unaffected and their consumers read no graph key.
 
 ## Table of Contents
 
@@ -109,11 +109,19 @@ Read these pages when the unit's contract is not enough. They move from the regi
 <a id="model-experience"></a>
 ## Model Experience
 
-None, as the `graph` unit folds already-published host snapshots into a client-facing read model and registers nothing model-facing.
+### Client-facing graph snapshots
+
+#### What the model sees
+
+Nothing from this package itself. The model never reads the `graph` projection value directly; the snapshot is served through the registry to client-side consumers (`useProjection('graph')`), and the chat snapshot never carries projection values.
+
+#### Token effect
+
+None — the package registers no tool schema, prompt section, or session event; the chip's `N work item(s) · active|closed` summary is rendered client-side and never joins model context.
 
 #### KV Cache effect
 
-None; the package never assembles or sends provider requests.
+None — the package never assembles or sends provider requests.
 
 ## Known Limitations and Deferred Work
 

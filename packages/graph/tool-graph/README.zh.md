@@ -7,13 +7,9 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
-`dsh-tool-graph` 是 Agent Graph 的模型可见移植切片 P4（Maka `stream-graph-supervisor-tools`）。它只贡献三个工具——`view_agent_graph`、`update_agent_graph`、`yield_agent_graph`——外加 `orchestration:graph` 提示词段落，以及它们所运行的主机侧控制器。这些工具仅限根会话且直接调用：只有图的根会话可以调用它们，它们按图 id 寻址，而不是把工作生成委托给模型。
-
-主机组合存储（P1）与派生（P2）包，构造一个 `AgentGraphController`，并在 `agentGraphController` 服务下提供。本插件用 `ctx.get` 解析该服务；缺失时工具仍会挂载（agent 预设绝不因可选主机装配缺失而阻断会话创建），每次图工具调用都会以 `[agent-graph-unavailable]` 响亮失败，直到主机提供控制器。所有持久化决策都流经控制器的协调器，因此一次工具调用只提交一条存储更新，绝不重复运行提供方。
-
-每个模型可见列表都有显式的 `omitted` 计数上限，每条 `update_agent_graph` 载荷在到达存储前都经 Maka 判别器容忍的预处理器清洗。源三元组幂等使重放或重试调用成为空操作：相同的图/会话/键载荷只提交一次，并返回既有行。
+`dsh-tool-graph` 是 Agent Graph 的模型可见面：三个仅根会话工具（`view_agent_graph`、`update_agent_graph`、`yield_agent_graph`）、`orchestration:graph` 提示词段落，以及它们所运行的主机侧 `AgentGraphController`。只有图的根会话可以调用它们；每次调用只提交一条持久化决策，重试调用是幂等空操作。把它挂载为图根会话的预设行，由主机行提供控制器服务。它把图查看、更新与让出动词交给模型，而不编写或委托工作生成。
 
 ## 目录
 
@@ -22,6 +18,7 @@ kind: "package-reference"
 - [进一步探索](#further-exploration)
 - [模型体验](#model-experience)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
 
 <a id="use-this-package"></a>
 ## 使用本包
@@ -56,18 +53,25 @@ await ctx.plugin(toolGraph, {})
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [`port_maka.md`](../../../../workspace/port_maka.md) — 移植设计说明与阶段清单。
+- Maka 设计说明：`~/Documents/workspace/port_maka.md` —— 移植设计说明与阶段清单。
 - Maka 参考：Maka 检出中的 `packages/runtime/src/stream-graph-supervisor-tools.ts`。
 
 <a id="model-experience"></a>
 ## 模型体验
 
-模型看到三个工具和一个提示词段落（本包其余部分对模型不可见）：
+### 主管工具与提示词段落
 
-- `view_agent_graph` — 一个图的限界快照：工作状态、截断的记录摘要、就绪意图、`omitted` 计数，以及用于分页活动状态的不透明 `nextCursor`。
-- `update_agent_graph` — 每次调用一个持久化决策：添加工作（每项经 `targetKind` 选一个身份字段，`replaces` 指向既有工作 id）、停止目标，或用已提交结果 id 完成图。`idempotencyKey` 使重试安全。
-- `yield_agent_graph` — 在图工作继续时协作式结束主管回合；主机会在下一次持久化检查点唤醒根会话。
-- `orchestration:graph` 提示词段落 — 指示主管让出而非轮询、按波次报告结果、绝不臆造工作 id。
+#### 模型看到什么
+
+三个仅根会话工具和一个提示词段落——本包其余部分对模型不可见：`view_agent_graph`（一个图的限界快照：工作状态、截断的记录摘要、就绪意图、`omitted` 计数、不透明 `nextCursor`）、`update_agent_graph`（每次调用一个持久化决策：经 `targetKind` 添加工作、停止目标，或用已提交结果 id 完成图；`idempotencyKey` 使重试安全）、`yield_agent_graph`（协作式结束主管回合），以及 `orchestration:graph` 提示词段落，指示主管让出而非轮询、按波次报告、绝不臆造工作 id。
+
+#### Token 影响
+
+每个工具结果都是有界的——64 项分页、逐项截断摘要、显式 `omitted` 计数——因此一次图查看消耗有界的 token。提示词段落是固定的贡献块，每个会话恒定。
+
+#### KV Cache 影响
+
+无——除会话记录中的普通工具调用/结果对之外，本包不添加任何按调用缓存条目。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
@@ -76,3 +80,8 @@ await ctx.plugin(toolGraph, {})
 - 已完成工作保持 `requested`（P2 状态模型没有终止性工作状态），因此 `yield_agent_graph.pendingWorkCount` 统计 requested 调度行——活动（声明/意图）由唤醒门反映，而非计数。
 - 工具为每个 addWork 项接受显式 `workId`（相对 Maka 的扩展），使一次更新可确定性地引用自己的新工作；确定性派生 id 仍是默认。
 - 本插件通过手搭测试组合演练；经 Loader 启动 cordis.yml 的组合测试（packages/AGENTS.md 产品插件策略）推迟到集成切片。可选组合补丁 [`apps/cli/config/examples/graph/cordis.yml`](../../../apps/cli/config/examples/graph/cordis.yml) 展示了预期的挂载方式：主机行提供控制器，本包挂载为图根会话的预设行。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details><summary>维护者的工作上下文——点击展开</summary>无。</details>

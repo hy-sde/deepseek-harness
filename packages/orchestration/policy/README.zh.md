@@ -9,13 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-orchestration-policy` 是「默认并行」工作方式的 P1 策略层：当请求可以分解为相互独立的任务块时，代理将它们扇出为隔离的任务子代理（`worktree acquire --branch` → `subagent { workspace }`），上限为已配置的并发数，并且只在存在真实依赖时才串行化。该策略由三部分组成，其中只有两部分是强制执行：
-
-1. **策略文案** —— `orchestration:policy` [系统提示段](#model-experience)，由**启用守卫的同一份配置**渲染，因此文案与强制执行不会漂移。
-2. **配置旋钮** —— `cordis.yml` 配置行（每个旋钮均可选，默认值见下）。整个策略在 `enabled: true` 之前**完全不生效**：默认关闭可保持当前「由模型自由裁量」的行为字节级稳定，直到某个部署显式开启。
-3. **接口守卫** —— 可选的 `ctx.orchestrationPolicy` 服务。`tool-subagent` 通过 `ctx.get`（而非 `inject`）读取它，因此**挂载本插件是启用强制执行的唯一途径**；服务不存在即保持当前行为。在 `isolation: required` 下，未携带隔离 `workspace` 启动的任务子代理会被**拒绝**并返回可操作的修复提示（fail-closed）；无法支持 `workspace` 的提供方（进程外后端）则**降级为可见警告，绝不静默忽略**。
-4. **同质量门（P2）** —— 策略启用时审查门同样生效（可用 `reviewGate.enabled: false` 退出）。在默认的 `review-gated` 姿态下，`commit_apply --push` 会被**拒绝，直到 `review --target staged` 对**完全相同的当前暂存范围**返回 `ship`**（身份 = 提交前 HEAD + 索引树，任何重新暂存或 amend 都会使其过期）；`reject` 结论始终阻止推送。只有显式的 `fast` 姿态条目才能跳过门——绝不推断信任。
-5. **「结果而非机制」报告（P3）** —— 船长看到的最终消息遵循结果契约（每波一个块；每个「需要你」要么是决策、阻塞、凭据需求，要么是待评审结果；机制词汇被翻译或省略；细节按需提供）。`reporting.mode: verbose` 恢复今日的逐条转录式报告，用于调试。这是策略文本而非渲染接缝——工具输出对代理自身保持原样。
+`dsh-orchestration-policy` 让「默认并行」的工作方式变得可预测：当请求可分解为相互独立的任务块时，代理将它们扇出为隔离的任务子代理（每个 `worktree acquire` 租约一个），上限为已配置的并发数，并只在存在真实依赖时串行化。它从启用可选 `orchestrationPolicy` 接口守卫的同一份配置渲染 `orchestration:policy` 系统提示段，因此提示文案与强制执行不会漂移。在 subagent 与 worktree 工具旁挂载它；每个旋钮均可选，且在 `enabled: true` 之前策略保持惰性。它还接入暂存审查推送门与「结果而非机制」报告契约。
 
 ## 目录
 
@@ -171,6 +165,7 @@ Announce the plan once before dispatch: N isolated tasks, what each owns, expect
 
 配置（模式、上限、原因、隔离）不变时前缀稳定；更改任一旋钮会改变渲染文本并使对应前缀失效。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与待办
 
 - **只有隔离守卫是 fail-closed 的。** 分类、扇出上限、计划公告与操控步骤属于提示层引导——模型仍是执行者；不存在调度守护进程。
@@ -181,6 +176,7 @@ Announce the plan once before dispatch: N isolated tasks, what each owns, expect
 
 **运行时不变式：** 不发布伴生进程。本包除工具接口处的可选服务查找外，不持有同进程不变式可观察的持续运行时关系；其行为由包内测试套件保证（守卫矩阵、配置校验、提示渲染以及真实 git 波次 E2E）。
 
+<a id="dev-note"></a>
 ### 开发备注
 
 <details>

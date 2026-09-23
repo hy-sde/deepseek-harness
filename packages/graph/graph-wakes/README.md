@@ -9,11 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-wakes` is the delivery half of the Agent Graph supervisor wake path (Maka port, slice P5). `dsh-graph-control` (P1) already owns the durable wake rows (`pending | running | waiting_permission | delivered | superseded | retryable_failed`); this package supplies the process-local runtime that carries a due wake into its owning root session **at the next idle boundary** — never while a turn is running — and settles every attempt durably through the store's own begin/complete CAS.
-
-The runtime is deliberately decoupled. `GraphWakeRuntime` takes a store seam (`GraphControlStore` satisfies it structurally), a `deliver` hook that receives `{ graphId, wakeId, rootSessionId, snapshotVersion }` (P6 wiring re-drives the `AgentGraphCoordinator` and enqueues the supervisor checkpoint — the runtime never imports the coordinator), an optional `onCompact(sessionId)` compaction hook, and an injectable idle observer. Delivery is idle-gated by construction: the only delivery entry point is `handleIdle()`, and the injected observer forwards `agent/status === 'idle'` boundaries to it — the same status-observation seam the Schedule package uses — so the runtime starts no delivery on its own.
-
-This package contributes no tool, prompt, or plugin row — the host wiring of P6 mounts the runtime and supplies the observer and deliver hook.
+`dsh-graph-wakes` delivers the Agent Graph's supervisor wakes at the root session's next idle boundary — never mid-turn — and settles every attempt durably through the control store's own begin/complete CAS. It supplies the process-local `GraphWakeRuntime` over a structural store seam plus a deliver hook and an injectable idle observer; delivery is idle-gated by construction, so the runtime starts nothing on its own. Mount it in host wiring, and let the P6 deliver hook re-drive the graph coordinator. It adds no tool, prompt, or plugin row.
 
 ## Table of Contents
 
@@ -22,6 +18,7 @@ This package contributes no tool, prompt, or plugin row — the host wiring of P
 - [Further Exploration](#further-exploration)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 ## Use this package
 
@@ -100,7 +97,19 @@ All state the runtime needs is in the store: a fresh `GraphWakeRuntime` over the
 
 ## Model Experience
 
-No model-facing surface. This package is host-side machinery; the supervisor tools of slice P4 are what the model sees, and P6 wiring turns `deliver` into the model-visible checkpoint turn.
+### Idle-gated wake checkpoint
+
+#### What the model sees
+
+Nothing directly from this package. It is host-side machinery: the supervisor tools of slice P4 are what the model sees, and P6 wiring turns the `deliver` hook into the model-visible checkpoint turn that reaches the root session at the next idle boundary.
+
+#### Token effect
+
+None — the runtime assembles no prompt; the tokens for a delivered wake belong to the checkpoint turn the root session performs after `deliver` returns.
+
+#### KV Cache effect
+
+None — the package never invokes a provider itself; the wake checkpoint turn's cache belongs to that turn's own session.
 
 ## Known Limitations and Deferred Work
 
@@ -110,3 +119,7 @@ No model-facing surface. This package is host-side machinery; the supervisor too
 - `waiting_permission` wakes are parked and never re-attempted; permission-response resumption (Maka `notifyPermissionResponse`) is deferred to P6.
 - Cross-process coordination is out of scope: like the coordinator, the runtime is process-local, so another process holding the same store does not wake this runtime.
 - The graph-level stop convention (log stop with `targetId` equal to the root/graph id) is defined here; a work-item stop never suppresses wakes. P4 must commit graph stops with the root identity for suppression to engage.
+
+### Dev Note
+
+<details><summary>Working context for maintainers — click to expand</summary>None.</details>

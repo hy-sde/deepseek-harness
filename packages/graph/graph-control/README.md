@@ -9,13 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-control` is the durable decision store for the Agent Graph (Maka port, slice P1). It owns exactly the stateful rows a graph needs — the schedule-update log, exactly-once intent claims, operator provisions, and supervisor wakes — and nothing else: records, routes, readiness intents, work status, and client snapshots stay derived (session-projection folds) in later slices.
-
-The store is designed around Maka's one hard rule: **the durable claim (with preallocated turn/run identity) is written before the runtime is ever asked to run**, and every claim/provision transition is conditional on the schedule revision it observed. A retry therefore reuses the same activation identity instead of invoking the provider twice. All ids are deterministic sha256 (`graph_update_…`, `graph_claim_…`, `graph_operator_…`, `graph_wake_…`), so replays are idempotent by construction.
-
-Persistence: one `KvUnit` (`name: agent_graph`) with five authoritative tables; derived uniqueness indexes are rebuilt from those rows at open, so a torn write heals instead of corrupting. The storage contract forbids concurrent writers on one unit, so the store serializes mutations on one write chain and each per-record write is durable.
-
-This package contributes no tool, prompt, or plugin row — the coordinator (P2), executor adapter (P3), and supervisor tools (P4) consume it.
+`dsh-graph-control` is the durable decision store behind the Agent Graph. It records schedule updates, exactly-once intent claims, operator provisions, and supervisor wakes in one `KvUnit`, so replays are idempotent and retries reuse their activation identity. Mount it once per process: open the `agent_graph` unit after acquiring the storage backend, then commit schedule updates and claim intents at the observed revision. All mutations serialize on one write chain, and derived uniqueness indexes rebuild on open so torn writes heal instead of corrupting. It contributes no tool, prompt, or plugin row; the graph coordinator, executor adapter, and supervisor tools consume it.
 
 ## Table of Contents
 
@@ -24,6 +18,7 @@ This package contributes no tool, prompt, or plugin row — the coordinator (P2)
 - [Further Exploration](#further-exploration)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 ## Use this package
 
@@ -50,15 +45,31 @@ Open the unit exactly once per process: the storage layer rejects double-open, a
 
 ## Further Exploration
 
-- [`port_maka.md`](../../../../workspace/port_maka.md) — the port's design note and phase checklist.
+- Maka design note: `~/Documents/workspace/port_maka.md` — the port's design note and phase checklist.
 - Maka reference: `docs/architecture/agent-graph-stream-scheduling-draft.md` (Chapter 7) in the Maka checkout.
 
 ## Model Experience
 
-No model-facing surface. This package is host-side machinery; the supervisor tools of slice P4 are what the model sees.
+### Graph schedule records
+
+#### What the model sees
+
+Nothing. This package is host-side machinery; the model never receives its rows directly. The supervisor tools of slice P4 are what expose graph facts (`schedule updates`, `intent claims`, `operator provisions`, `supervisor wakes`) to the model.
+
+#### Token effect
+
+None — host-side rows never enter model context, so this package adds or consumes no tokens.
+
+#### KV Cache effect
+
+No KV cache effect: the store writes durable host rows and contributes nothing to model context.
 
 ## Known Limitations and Deferred Work
 
 - No epoch table: one DSH session owns one graph per the design decision (multi-graph-per-root is deferred).
 - Multi-row CAS is process-atomic (one write chain), not transaction-atomic; a crash mid-sequence heals on open because indexes are derived. Claims with a torn write are recovered by the coordinator inspecting run facts, as in Maka.
 - Derived work status (`requested/stopped/superseded`), records, routes, readiness, and client snapshots belong to later slices and are not stored here.
+
+### Dev Note
+
+<details><summary>Working context for maintainers — click to expand</summary>None.</details>
