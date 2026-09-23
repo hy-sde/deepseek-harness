@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-logseq` 让 agent 直接从终端驱动 Logseq 数据库图：列出、展示、搜索、Datalog 查询、upsert 与删除块、页、标签、属性、任务与资产，以及图与服务生命周期操作。当需要确定性 JSON 输出、Datalog 查询、结构化任务 upsert 或完全无头运行——而桌面 App MCP 桥接要求 App 打开、且没有删除、Datalog 与任务命令——时，选它而不是 MCP 桥接。工具在每次调用时运行已安装的 `logseq` CLI，因此必须安装 CLI，且每次调用付一次进程启动成本；最省的方式是把写入合并进单个 `logseq_upsert` 调用，并用 `logseq_server start` 启动无头服务。
+`dsh-tool-logseq` 让 agent 直接从终端驱动 Logseq 数据库图：列出、展示、搜索、Datalog 查询、upsert 与删除块、页、标签、属性、任务与资产，以及图与服务生命周期操作。当需要确定性 JSON 输出、Datalog 查询、结构化任务 upsert 或完全无头运行时，选它而不是要求 App 打开且缺少删除、Datalog 与任务命令的桌面 App MCP 桥接。每次调用都运行已安装的 `logseq` CLI，因此必须安装 CLI，且每次调用付一次进程启动成本；把写入合并进单个 `logseq_upsert` 调用。
 
 ## 目录
 

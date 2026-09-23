@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-web-search-public` is a credential-free `WebSearchProvider` for the harness web seam (`ctx.web`): with no API key or environment variable it fans one query out to five public engines in parallel — Startpage, DuckDuckGo, Ecosia, Google, and Mojeek — and consolidates the answers by cross-engine consensus, so no single engine's challenge, timeout, or slow response blocks or degrades the search. Choose it when a deployment wants public web search with zero setup and tolerance for engine failures; it registers the provider only and owns no model-facing tool — that is `dsh-tool-web`'s job. Its costs are a latency floor for consensus and multiplied anonymous requests that raise bot-challenge exposure, and its best-effort parsers can see engines change markup or challenge without notice.
+`dsh-web-search-public` is a credential-free `WebSearchProvider` for the harness web seam (`ctx.web`): with no API key or environment variable it fans one query to five public engines in parallel (Startpage, DuckDuckGo, Ecosia, Google, Mojeek) and consolidates answers by cross-engine consensus, so no single engine failure blocks or degrades the search. Choose it when a deployment wants public web search with zero setup and engine-failure tolerance; it registers the provider only, and `dsh-tool-web` owns the model-facing tool. Its costs are a consensus latency floor, multiplied anonymous requests, and best-effort parsers that can break on engine changes.
 
 ## Table of Contents
 

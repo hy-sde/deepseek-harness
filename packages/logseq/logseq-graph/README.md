@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`ctx.wikiGraph` exposes the Logseq CLI's `db-worker-node` graph operations as structured JSON calls, independent of any agent tools: page and block trees, tags, properties, Datalog queries, upserts and removals, and the `logseq_server` lifecycle. The web GUI's wiki drawer serves its reads and writes through this service, while the model-facing `logseq_*` tools call the same CLI directly. Choose it when a composition needs wiki-graph storage behind a host service with one logical change per call. The cost is one fresh CLI process per method call, and graph writes require a running db-worker-node server; the invariant companion fails fast at boot when the CLI binary is unreachable.
+`ctx.wikiGraph` exposes the Logseq CLI's `db-worker-node` graph operations as structured JSON calls, independent of any agent tools: page/block trees, tags, properties, Datalog queries, upserts/removals, and the `logseq_server` lifecycle. The web GUI's wiki drawer serves reads/writes through this service; model-facing `logseq_*` tools call the same CLI directly. Choose it when a composition needs wiki-graph storage behind a host service with one logical change per call. Its cost is one fresh CLI process per method call; graph writes need a running db-worker-node server, and the invariant fails fast at boot when the CLI binary is unreachable.
 
 ## Table of Contents
 

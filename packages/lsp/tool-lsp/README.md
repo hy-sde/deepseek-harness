@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-lsp` gives the model a single read-only `lsp` tool for precise code navigation over the LSP seam: go to a symbol's definition, find its references, jump to its implementations, or read hover documentation. The tool owns everything the model sees — name, schema, prompt guidance, result formatting, and UI presentation — and never depends on which language server backs a query. Positions are one-based UTF-16 cursor coordinates, which the tool converts to the seam's zero-based convention. Results are bounded location lists or normalized hover text with explicit no-result and truncation markers. Compose it with a provider such as `dsh-lsp-stdio` and the `dsh-lsp` seam to activate navigation.
+`dsh-tool-lsp` gives the model a single read-only `lsp` tool for precise code navigation over the LSP seam: go to a definition, find references, jump to implementations, or read hover documentation. The tool owns everything the model sees (name, schema, prompt guidance, formatting, UI presentation) and never depends on which language server backs a query. Positions are one-based UTF-16 cursor coordinates, which it converts to the seam's zero-based convention. Results are bounded location lists or normalized hover text with explicit no-result and truncation markers. Compose it with a provider such as `dsh-lsp-stdio` and the `dsh-lsp` seam.
 
 ## Table of Contents
 

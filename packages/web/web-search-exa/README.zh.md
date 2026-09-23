@@ -111,11 +111,19 @@ kind: "package-reference"
 <a id="model-experience"></a>
 ## 模型体验
 
-通过 `dsh-tool-web` 间接影响模型体验。该工具保留本提供方经 `maxResults` 限制的 URL、标题、首条高亮与发布日期；如果发生失败，则会在消费方的错误包装层内保留原样错误消息 `Exa search aborted`、`Exa search request failed: <error>` 和 `Exa returned an unprocessable response body: <error>`。
+### 搜索查询与结果
+
+#### 模型看到什么
+
+模型调用 `web_search`（由 `dsh-tool-web` 拥有）并传入它自己编写的查询；`dsh-web` 将该查询路由到此提供方，`dsh-tool-web` 把该提供方经 `maxResults` 限制的结果渲染为来源行：标题或 URL 的来源链接、首个非空白高亮作为 snippet，以及发布年代（如存在）。
+
+#### Token 影响
+
+每次搜索调用都会把查询以及返回的来源行（标题、snippet、发布日期）加入对话；依赖数据的结果会被反复发送直到压缩。该提供方的错误消息（`Exa search aborted`、`Exa search request failed: <error>`、`Exa returned an unprocessable response body: <error>`）只在调用失败时出现，因此只在失败时消耗 token。
 
 #### KV Cache 影响
 
-不会直接导致 KV Cache 失效；请求前缀变更由上述消费方负责。
+不会直接导致 KV Cache 失效：搜索查询与渲染后的来源追加在请求前缀上，请求前缀变更由命名消费者（`dsh-tool-web`）负责。
 
 ## 已知限制与延期工作
 

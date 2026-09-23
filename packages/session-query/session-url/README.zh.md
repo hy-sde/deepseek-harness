@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-session-url` 注册 `session://` 内部 URL scheme，把 harness 自身的会话历史以文件形态暴露给移植的 `read` 与 `grep` 工具——目录列表、渲染后的对话记录、精确的单事件 JSON，以及基于 FTS 的跨会话搜索。当代理需要用它已熟悉的文件形态工具检查或检索过往会话时选择它。它不新增工具代码：`read` 与 `grep` 经 `ctx.internalUrls` 路由任何已注册 scheme，handler 读取的语料与 session-query 工具相同、live 优先。其边界是只读历史：资源不可变，内容搜索被禁用时 `session://search` 降级，缺少 `ctx.internalUrls` 与 `ctx.sessionQuery` 时 apply 响亮报错。
+`dsh-session-url` 注册 `session://` 内部 URL scheme，把 harness 自身的会话历史以文件形态暴露给移植的 `read` 与 `grep` 工具：目录列表、渲染后的对话记录、精确的单事件 JSON，以及基于 FTS 的跨会话搜索。当代理需要用它已熟悉的文件形态工具检查或检索过往会话时选择它。它不新增工具代码：`read` 与 `grep` 经 `ctx.internalUrls` 路由任何已注册 scheme，handler 读取的语料与 session-query 工具相同、live 优先。其边界是只读历史：资源不可变，内容搜索被禁用时 `session://search` 降级。
 
 ## 目录
 

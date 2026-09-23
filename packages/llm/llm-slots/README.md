@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`ctx.modelSlots` gives a deployment a host-global slot budget over every model call, deciding FIFO at the `llm/stream` waterfall that every model-backed call crosses — main agent loops, in-process subagents, worker-thread children, workflows, and title/compaction side-requests. Choose it when several concurrent providers share one local inference endpoint and callers would otherwise stack dozens of simultaneous bursts; capacity defaults to 3 and is adjustable at runtime. Each logical call holds one slot for its full lifetime, cancellable waits never receive a freed slot, and a failing endpoint cannot fan out an unbounded retry storm. The gate never reads LLM service state and ships no model-facing tools, which keeps it trivially testable and safe to mount in any context.
+`ctx.modelSlots` gives a deployment a host-global slot budget over every model call, deciding FIFO at the `llm/stream` waterfall every model-backed call crosses: main agent loops, subagents, worker children, workflows, and title/compaction side-requests. Choose it when several concurrent providers share one local inference endpoint and callers would otherwise stack simultaneous bursts; capacity defaults to 3, adjustable at runtime. Each logical call holds one slot for its full lifetime; cancellable waits never receive a freed slot. The gate reads no LLM service state and ships no model-facing tools, so it stays trivially testable and safe anywhere.
 
 ## Table of Contents
 

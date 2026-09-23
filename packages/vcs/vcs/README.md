@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-vcs` exposes `ctx.vcs`, a host-plane service over the user-installed `pi-vcs` CLI that gives the harness narrow read-only VCS surfaces — rev, staged, and worktree diffs with `--name-only`/`--numstat` modes, status counts, branch name, repository discovery, and a HEAD-change watch — every text surface byte-compatible with the corresponding `git diff` output. Choose it when a caller wants the native gitoxide slice without changing the default TS/git-CLI path: the service is purely additive and degrades to the git service when `pi-vcs` is unreachable. Its costs are feature detection and a per-call shell-out — each verb spawns `pi-vcs` with bounded output, and binary patches render as markers only.
+`dsh-vcs` exposes `ctx.vcs`, a host-plane service over the user-installed `pi-vcs` CLI giving the harness narrow read-only VCS surfaces (rev, staged, and worktree diffs with `--name-only`/`--numstat` modes, status counts, branch name, repository discovery, a HEAD-change watch), every text surface byte-compatible with `git diff`. Choose it when a caller wants the native gitoxide slice without changing the default TS/git-CLI path: the service is purely additive and degrades to the git service when `pi-vcs` is unreachable. Its costs are feature detection and a per-call shell-out, with bounded output and binary patches rendered as markers only.
 
 ## Table of Contents
 
