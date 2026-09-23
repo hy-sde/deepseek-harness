@@ -64,7 +64,7 @@
     },
     {
       "id": "claim_549f5dfde8a34aa7b5664338bfcce72a",
-      "statement": "When the harness sessionQuery service is mounted alongside, recall/reflect merge past-session hits (source session, read-only, sessionId/seq provenance), and mine_sessions harvests lessons from completed session logs (digests from compaction summaries, failures from turn/end error reasons, all-completed todos) stored as learn entries with the session as provenance and deduped per run; without the service every session feature degrades to a no-op.",
+      "statement": "When the harness sessionQuery service is mounted alongside, recall/reflect merge past-session hits (source session, read-only, sessionId/seq origin), and mine_sessions harvests lessons from completed session logs (digests from compaction summaries, failures from turn/end error reasons, all-completed todos) stored as learn entries attributed to the session and deduped per run; without the service every session feature degrades to a no-op.",
       "evidence": [
         {
           "resource": "repo://docs/tool-catalog.md#L30-L30",

@@ -19,7 +19,7 @@ const TEXT = [
   'A page is complete only when its front matter validates, its claims resolve to repository evidence resources (`repo://path#L20-L48` URIs or file paths), and every Claim agrees with the final page bytes.',
   'Every material Claim needs at least one grounding evidence resource. Preserve the id, exact statement, and evidence resource values of each unchanged existing Claim; reuse its id for a necessary revision; omit it to retract it; omit id for a genuinely new Claim.',
   '`openwiki_submit_plan` is final: the ordered queue is persisted and cannot be silently replaced. Plan once, then execute page by page.',
-  'Finish only after every PageJob is complete. The finish pass runs deterministic deletion, Mermaid validation, wiki index synchronization, link validation, generated provenance, Claims finalization, and run metadata persistence; partial runs are resumable via `openwiki_begin` until `.run.json` is removed.',
+  'Finish only after every PageJob is complete. The finish pass runs deterministic deletion, Mermaid validation, wiki index synchronization, link validation, generated-event origin, Claims finalization, and run metadata persistence; partial runs are resumable via `openwiki_begin` until `.run.json` is removed.',
 ].join('\n')
 
 /**

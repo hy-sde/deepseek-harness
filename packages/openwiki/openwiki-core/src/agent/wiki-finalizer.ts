@@ -1,13 +1,13 @@
 import type { BackendProtocolV2 } from '../fs/wiki-fs.ts'
 import { validateWikiMermaid } from '../mermaid/wiki.ts'
 import {
-  deserializeGeneratedProvenance,
-  finalizeGeneratedProvenance,
-  serializeGeneratedProvenance,
-  snapshotGeneratedProvenance,
-  type GeneratedProvenanceSnapshot,
-  type PersistedGeneratedProvenanceSnapshot,
-} from '../okf/generated-provenance.ts'
+  deserializeGeneratedOrigin,
+  finalizeGeneratedOrigin,
+  serializeGeneratedOrigin,
+  snapshotGeneratedOrigin,
+  type GeneratedOriginSnapshot,
+  type PersistedGeneratedOriginSnapshot,
+} from '../okf/generated-origin.ts'
 import {
   synchronizeClaimSources,
   type ClaimEvidenceResources,
@@ -25,7 +25,7 @@ import { validateWikiInternalLinks } from './wiki-link-validator.ts'
 /**
  * Stable identifiers for deterministic wiki preparation operations.
  */
-export type WikiPreparationOperation = 'migrate' | 'provenance_snapshot'
+export type WikiPreparationOperation = 'migrate' | 'origin_snapshot'
 
 /**
  * Stable identifiers for deterministic wiki finalization operations.
@@ -35,7 +35,7 @@ export type WikiFinalizerOperation =
   | 'index_sync'
   | 'link_validation'
   | 'claims_sources'
-  | 'generated_provenance'
+  | 'generated_origin'
 
 /**
  * Deferred work for one deterministic wiki lifecycle operation.
@@ -126,7 +126,7 @@ export interface PreparedWikiState {
   /**
    * Exact pre-authoring body hashes and prior generated events.
    */
-  generatedProvenance: GeneratedProvenanceSnapshot
+  generatedOrigin: GeneratedOriginSnapshot
 }
 
 /**
@@ -134,9 +134,9 @@ export interface PreparedWikiState {
  */
 export interface PersistedPreparedWikiState {
   /**
-   * Exact pre-authoring provenance baseline used during finalization.
+   * Exact pre-authoring generated-origin baseline used during finalization.
    */
-  generatedProvenance: PersistedGeneratedProvenanceSnapshot
+  generatedOrigin: PersistedGeneratedOriginSnapshot
 }
 
 /**
@@ -146,8 +146,8 @@ export function serializePreparedWikiState(
   prepared: PreparedWikiState,
 ): PersistedPreparedWikiState {
   return {
-    generatedProvenance: serializeGeneratedProvenance(
-      prepared.generatedProvenance,
+    generatedOrigin: serializeGeneratedOrigin(
+      prepared.generatedOrigin,
     ),
   }
 }
@@ -159,8 +159,8 @@ export function deserializePreparedWikiState(
   persisted: PersistedPreparedWikiState,
 ): PreparedWikiState {
   return {
-    generatedProvenance: deserializeGeneratedProvenance(
-      persisted.generatedProvenance,
+    generatedOrigin: deserializeGeneratedOrigin(
+      persisted.generatedOrigin,
     ),
   }
 }
@@ -182,7 +182,7 @@ export interface WikiFinalizerOptions extends WikiLifecycleOptions {
   prepared: PreparedWikiState
 
   /**
-   * ISO 8601 timestamp shared by generated provenance events for this run.
+   * ISO 8601 timestamp shared by generated-event origin records for this run.
    */
   at: string
 
@@ -203,7 +203,7 @@ export interface WikiFinalizerOptions extends WikiLifecycleOptions {
 
   /**
    * Current page-owned Claims evidence projected into OKF sources before
-   * generated provenance is reconciled.
+   * generated-event origin is reconciled.
    *
    * @default undefined - no Claims source projection is required.
    */
@@ -218,7 +218,7 @@ export interface WikiFinalizerOptions extends WikiLifecycleOptions {
 }
 
 /**
- * Migrates existing concepts and captures their pre-authoring provenance.
+ * Migrates existing concepts and captures their pre-authoring generated-event origin.
  *
  * @param options - Preparation inputs for the active wiki.
  * @returns Run-scoped state required by finalization.
@@ -234,15 +234,15 @@ export async function prepareWikiForAuthoring(options: WikiPreparationOptions): 
     migrateWikiToOkf(backend, outputMode, conceptType),
   )
   return {
-    generatedProvenance: await runOperation('provenance_snapshot', () =>
-      snapshotGeneratedProvenance(backend, outputMode),
+    generatedOrigin: await runOperation('origin_snapshot', () =>
+      snapshotGeneratedOrigin(backend, outputMode),
     ),
   }
 }
 
 /**
  * Runs deterministic post-authoring validation, index synchronization, and
- * generated-provenance reconciliation in internal-agent order.
+ * generated-event origin reconciliation in internal-agent order.
  *
  * @param options - Finalization inputs and matching preparation state.
  */
@@ -274,11 +274,11 @@ export async function finalizeWikiArtifacts(options: WikiFinalizerOptions): Prom
       synchronizeClaimSources(backend, outputMode, claimSources),
     )
   }
-  await runOperation('generated_provenance', () =>
-    finalizeGeneratedProvenance(
+  await runOperation('generated_origin', () =>
+    finalizeGeneratedOrigin(
       backend,
       outputMode,
-      prepared.generatedProvenance,
+      prepared.generatedOrigin,
       at,
       producerActor,
       producerActorsByPage,

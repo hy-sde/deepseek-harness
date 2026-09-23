@@ -236,9 +236,10 @@ export class ClaimSession {
    * Returns the complete current evidence-resource projection for every page
    * represented in this Claims session.
    *
-   * Resources are deduplicated and sorted per page so OKF provenance output is
-   * deterministic. Deleted pages are omitted; an empty Claims set remains in
-   * the map so a prior code-owned `sources` projection can be removed.
+   * Resources are deduplicated and sorted per page so the OKF generated-event
+   * origin output is deterministic. Deleted pages are omitted; an empty Claims
+   * set remains in the map so a prior code-owned `sources` projection can be
+   * removed.
    *
    * @returns Detached page-to-resource state for deterministic finalizers.
    */

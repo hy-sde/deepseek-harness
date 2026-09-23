@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-openwiki-core` provides the ported openwiki 0.4.3 deterministic engine core in-process: resumable repository-page-job lifecycle, Grounded Claims, OKF front matter, Mermaid and wiki-link validation, and the transport-neutral `HostSessionManager` protocol. Choose it when a pipeline needs to generate or maintain a repository wiki without a model in the loop and without an external `openwiki` CLI; `@deepseek-ai/dsh-tool-openwiki` consumes the same core for the five lifecycle tools. It is a pure TypeScript library with only `zod` + `yaml` dependencies, and repositories written by either engine stay interoperable; the main boundaries are that it shells out to `git`, authoritatively validates Mermaid only with the optional `mermaid` + `jsdom` peers, and omits upstream's connectors and CI workflow.
+`dsh-openwiki-core` provides the ported openwiki 0.4.3 deterministic engine core in-process: resumable repository-page-job lifecycle, Grounded Claims, OKF front matter, Mermaid and wiki-link validation, and the transport-neutral `HostSessionManager` protocol. Choose it when a pipeline needs to generate or maintain a repository wiki without a model in the loop and without an external `openwiki` CLI; `@deepseek-ai/dsh-tool-openwiki` consumes the same core for the five lifecycle tools. It is a pure TypeScript library (only `zod` + `yaml`), and either engine writes interoperable repositories. Notable boundaries: it shells out to `git`, validates Mermaid only with optional `mermaid` + `jsdom` peers, and omits connectors and CI workflow.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ Pure TypeScript library (only `zod` + `yaml` deps), organized as `src/*`:
 
 - **Lifecycle** — resumable repository-page-job orchestration (`begin` / `submit_plan` / `next_page` / `submit_page` / `finish`) with a durable `.run.json` checkpoint, git source fingerprinting, update no-op detection, and a `.page-manifest.json` correctness ledger (`generation/*`, `agent/utils.ts`).
 - **Claims** — Grounded Claims core (add/confirm/update/retract mutations), the code-brain store/session/runtime with `.claims/` sidecar persistence and verification, and the repository evidence resolver that maps `repo://path#L20-L48` resources to opaque `repo-lines-v1:sha256:` versions with relocation anchors (`claims/*`).
-- **OKF** — OKF v0.2 front matter validation/repair, generated provenance, index-labels, recursive concept-index synchronization, claim-sources, and claims-verification projection (`okf/*`).
+- **OKF** — OKF v0.2 front matter validation/repair, generated-event origin, index-labels, recursive concept-index synchronization, claim-sources, and claims-verification projection (`okf/*`).
 - **Validation** — Mermaid fence validation (jsdom/mermaid optional, graceful heuristic fallback) and wiki-internal-link validation with broken-link stamping (`mermaid/*`, `agent/wiki-link-validator.ts`).
 - **Setup + fs** — `.openwikiignore` load, managed AGENTS.md/CLAUDE.md snippets + `INSTRUCTIONS.md` wiki goal, recoverable init wiki replacement, and the in-fork `WikiFs`/`createNodeWikiFs` seam (`agent/*`, `fs/*`).
 - **Integration** — the transport-neutral `HostSessionManager` + zod protocol (`openwiki_begin` … `openwiki_finish`) and Git repository-root resolution (`integrations/core/*`).

@@ -4,8 +4,8 @@
  * In-fork port of the openwiki 0.4.3 deterministic engine core (MIT):
  * resumable repository-page-job lifecycle, durable page manifest, Grounded
  * Claims store/session/runtime with repository evidence resolution, OKF v0.2
- * front matter validation/repair and index synchronization, generated
- * provenance, Mermaid validation, wiki-link validation, and the fork-native
+ * front matter validation/repair and index synchronization, generated-event
+ * origin, Mermaid validation, wiki-link validation, and the fork-native
  * `WikiFs` filesystem seam that replaces openwiki's DeepAgents coupling.
  */
 
@@ -47,7 +47,7 @@ export * from './mermaid/wiki.ts'
 export * from './okf/claim-sources.ts'
 export * from './okf/claims-verification.ts'
 export * from './okf/frontmatter.ts'
-export * from './okf/generated-provenance.ts'
+export * from './okf/generated-origin.ts'
 export * from './okf/index-labels.ts'
 export * from './okf/index-sync.ts'
 export * from './platform/diagnostics.ts'

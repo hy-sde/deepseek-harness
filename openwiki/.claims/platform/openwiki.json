@@ -14,7 +14,7 @@
     },
     {
       "id": "claim_a85ccd295d804ddfa8e5e89bc01e91c9",
-      "statement": "The engine core is a pure TypeScript library (only zod + yaml deps) organized as src/*: Lifecycle (begin/submit_plan/next_page/submit_page/finish with a durable .run.json checkpoint, git source fingerprinting, update no-op detection, and a .page-manifest.json ledger), Claims (add/confirm/update/retract mutations, .claims/ sidecar persistence, and a repository evidence resolver mapping repo://path#L20-L48 resources to repo-lines-v1:sha256: versions), OKF (v0.2 front matter validation/repair, generated provenance, index sync), Validation (Mermaid fences with graceful heuristic fallback, wiki-internal-link validation with broken-link stamping), Setup + fs (.openwikiignore, INSTRUCTIONS.md goal, WikiFs/createNodeWikiFs seam), and Integration (HostSessionManager + zod protocol).",
+      "statement": "The engine core is a pure TypeScript library (only zod + yaml deps) organized as src/*: Lifecycle (begin/submit_plan/next_page/submit_page/finish with a durable .run.json checkpoint, git source fingerprinting, update no-op detection, and a .page-manifest.json ledger), Claims (add/confirm/update/retract mutations, .claims/ sidecar persistence, and a repository evidence resolver mapping repo://path#L20-L48 resources to repo-lines-v1:sha256: versions), OKF (v0.2 front matter validation/repair, generated-event origin, index sync), Validation (Mermaid fences with graceful heuristic fallback, wiki-internal-link validation with broken-link stamping), Setup + fs (.openwikiignore, INSTRUCTIONS.md goal, WikiFs/createNodeWikiFs seam), and Integration (HostSessionManager + zod protocol).",
       "evidence": [
         {
           "resource": "repo://packages/openwiki/openwiki-core/README.md#L13-L38",
@@ -34,7 +34,7 @@
     },
     {
       "id": "claim_9e597b37921f401092ff778003ce82a7",
-      "statement": "openwiki_begin starts or resumes a durable run (.run.json) over a Git repository root and returns status=noop for clean updates; openwiki_submit_plan validates and durably persists the ordered PageJob queue (init requires /openwiki/quickstart.md, paths normalized); openwiki_next_page returns the first pending job; openwiki_submit_page proves the complete Claim set against the written page (front matter repair, Claims resolution, durable verification); openwiki_finish performs deterministic finalization including deletions, Mermaid validation, index sync, link validation, provenance, Claims finalization, and .run.json removal.",
+      "statement": "openwiki_begin starts or resumes a durable run (.run.json) over a Git repository root and returns status=noop for clean updates; openwiki_submit_plan validates and durably persists the ordered PageJob queue (init requires /openwiki/quickstart.md, paths normalized); openwiki_next_page returns the first pending job; openwiki_submit_page proves the complete Claim set against the written page (front matter repair, Claims resolution, durable verification); openwiki_finish performs deterministic finalization including deletions, Mermaid validation, index sync, link validation, generated-event origin, Claims finalization, and .run.json removal.",
       "evidence": [
         {
           "resource": "repo://packages/openwiki/tool-openwiki/README.md#L18-L29",
@@ -44,7 +44,7 @@
     },
     {
       "id": "claim_245cdca396b54a65b1fc462b8de772f8",
-      "statement": "The tool configuration is id/name plus config host (stable host identity recorded in run metadata) and producerActor (provenance actor for engine-owned finalizers).",
+      "statement": "The tool configuration is id/name plus config host (stable host identity recorded in run metadata) and producerActor (origin actor for engine-owned finalizers).",
       "evidence": [
         {
           "resource": "repo://packages/openwiki/tool-openwiki/README.md#L32-L40",

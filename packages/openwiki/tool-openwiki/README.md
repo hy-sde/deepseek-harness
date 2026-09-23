@@ -31,7 +31,7 @@ One Cordis agent-plane plugin (mounts as a preset or profile-patch row, injects 
 - `openwiki_submit_plan` — validate and durably persist the ordered PageJob queue; init requires `/openwiki/quickstart.md`, paths are normalized.
 - `openwiki_next_page` — first pending job with existing Markdown + Claims.
 - `openwiki_submit_page` — complete the current job by proving its complete Claim set against the written page (front matter repair then Claims resolution and durable verification).
-- `openwiki_finish` — deterministic finalization: planned/abandoned deletions, Mermaid validation, wiki index sync, link validation, generated provenance, Claims finalization + manifest replacement, run metadata, and `.run.json` removal.
+- `openwiki_finish` — deterministic finalization: planned/abandoned deletions, Mermaid validation, wiki index sync, link validation, generated-event origin, Claims finalization + manifest replacement, run metadata, and `.run.json` removal.
 
 ## Configuration
 
@@ -40,7 +40,7 @@ One Cordis agent-plane plugin (mounts as a preset or profile-patch row, injects 
   name: '@deepseek-ai/dsh-tool-openwiki'
   config:
     host: harness          # stable host identity recorded in run metadata
-    producerActor: harness # provenance actor for engine-owned finalizers
+    producerActor: harness # origin actor for engine-owned finalizers
 ```
 
 ## Model Experience

@@ -28,7 +28,7 @@ interface GeneratedEvent {
 }
 
 /**
- * Minimal pre-run state needed to finalize one concept's provenance.
+ * Minimal pre-run state needed to finalize one concept's generated-event origin.
  */
 interface ConceptSnapshot {
   /**
@@ -45,14 +45,14 @@ interface ConceptSnapshot {
 }
 
 /**
- * Run-scoped provenance baseline keyed by virtual concept path.
+ * Run-scoped generated-origin baseline keyed by virtual concept path.
  */
-export type GeneratedProvenanceSnapshot = ReadonlyMap<string, ConceptSnapshot>
+export type GeneratedOriginSnapshot = ReadonlyMap<string, ConceptSnapshot>
 
 /**
  * JSON-safe representation of one pre-run generated-page baseline.
  */
-export interface PersistedGeneratedProvenanceEntry {
+export interface PersistedGeneratedOriginEntry {
   /**
    * Canonical virtual path of the generated Markdown page.
    */
@@ -64,7 +64,7 @@ export interface PersistedGeneratedProvenanceEntry {
   bodyHash: string
 
   /**
-   * Existing generated-provenance metadata, when the page had it.
+   * Existing generated-event origin metadata, when the page had it.
    */
   generated?: {
     /**
@@ -80,17 +80,17 @@ export interface PersistedGeneratedProvenanceEntry {
 }
 
 /**
- * Deterministically ordered persisted provenance baseline.
+ * Deterministically ordered persisted generated-origin baseline.
  */
-export type PersistedGeneratedProvenanceSnapshot =
-  PersistedGeneratedProvenanceEntry[]
+export type PersistedGeneratedOriginSnapshot =
+  PersistedGeneratedOriginEntry[]
 
 /**
  * Serializes the exact pre-authoring baseline without changing its meaning.
  */
-export function serializeGeneratedProvenance(
-  snapshot: GeneratedProvenanceSnapshot,
-): PersistedGeneratedProvenanceSnapshot {
+export function serializeGeneratedOrigin(
+  snapshot: GeneratedOriginSnapshot,
+): PersistedGeneratedOriginSnapshot {
   return [...snapshot.entries()]
     .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
     .map(([page, value]) => ({
@@ -108,11 +108,11 @@ export function serializeGeneratedProvenance(
 }
 
 /**
- * Recreates the in-memory provenance baseline after process restart.
+ * Recreates the in-memory generated-origin baseline after process restart.
  */
-export function deserializeGeneratedProvenance(
-  persisted: PersistedGeneratedProvenanceSnapshot,
-): GeneratedProvenanceSnapshot {
+export function deserializeGeneratedOrigin(
+  persisted: PersistedGeneratedOriginSnapshot,
+): GeneratedOriginSnapshot {
   return new Map(
     persisted.map(({ page, bodyHash, generated }) => [
       page,
@@ -133,10 +133,10 @@ export function deserializeGeneratedProvenance(
  * @param outputMode - Current wiki target.
  * @returns Pre-run concept state keyed by virtual page path.
  */
-export async function snapshotGeneratedProvenance(
+export async function snapshotGeneratedOrigin(
   backend: BackendProtocolV2,
   outputMode: OpenWikiOutputMode,
-): Promise<GeneratedProvenanceSnapshot> {
+): Promise<GeneratedOriginSnapshot> {
   const snapshots = new Map<string, ConceptSnapshot>()
   for (const page of await listWikiConceptPaths(backend, outputMode)) {
     const content = await readRequiredContent(backend, page)
@@ -149,7 +149,7 @@ export async function snapshotGeneratedProvenance(
 }
 
 /**
- * Reconciles producer provenance against the final post-processed wiki.
+ * Reconciles producer events against the final post-processed wiki.
  * New pages and pages whose bodies changed in any way receive the run stamp.
  * An unchanged body receives its prior stamp back when an agent rewrite removed
  * or altered it; pages that were previously unstamped remain unstamped.
@@ -161,23 +161,23 @@ export async function snapshotGeneratedProvenance(
  * @param producerActor - Producer responsible for body changes in this run.
  * @param producerActorsByPage - Page-specific producer overrides.
  */
-export async function finalizeGeneratedProvenance(
+export async function finalizeGeneratedOrigin(
   backend: BackendProtocolV2,
   outputMode: OpenWikiOutputMode,
-  initialConcepts: GeneratedProvenanceSnapshot,
+  initialConcepts: GeneratedOriginSnapshot,
   now: string,
   producerActor: string,
   producerActorsByPage?: ReadonlyMap<string, string>,
 ): Promise<void> {
   if (producerActor.trim().length === 0) {
     throw new Error(
-      'Generated provenance requires a non-empty producer actor.',
+      'Generated-origin stamping requires a non-empty producer actor.',
     )
   }
   for (const [page, actor] of producerActorsByPage ?? []) {
     if (actor.trim().length === 0) {
       throw new Error(
-        `Generated provenance requires a non-empty producer actor for ${page}.`,
+        `Generated-origin stamping requires a non-empty producer actor for ${page}.`,
       )
     }
   }
@@ -187,7 +187,7 @@ export async function finalizeGeneratedProvenance(
     try {
       content = await readRequiredContent(backend, page)
     } catch {
-      // Generated provenance is optional trust metadata. If a page cannot be
+      // Generated-origin stamps are optional trust metadata. If a page cannot be
       // read during this best-effort pass, preserve the rest of the finalized
       // wiki instead of failing the complete run.
       continue
@@ -208,7 +208,7 @@ export async function finalizeGeneratedProvenance(
 
     if (reconciled !== content) {
       const result = await backend.write(page, reconciled)
-      // A provenance write is useful but not essential page content. The
+      // A generated-origin write is useful but not essential page content. The
       // deterministic fallback is the already-persisted unstamped/stale page;
       // later finalizers can still synchronize Claims against those bytes.
       if (result.error) continue

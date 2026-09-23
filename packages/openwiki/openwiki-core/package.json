@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-openwiki-core",
   "version": "0.1.2-rc.1",
-  "description": "In-fork port of the openwiki 0.4.3 deterministic engine core (MIT): resumable page-job lifecycle with durable .run.json and page manifest, Grounded Claims store/session/runtime with repository evidence resolution and .claims/ sidecars, OKF v0.2 front matter repair + index sync + generated provenance, Mermaid validation and wiki-link validation, behind a minimal WikiFs seam with no external openwiki CLI.",
+  "description": "In-fork port of the openwiki 0.4.3 deterministic engine core (MIT): resumable page-job lifecycle with durable .run.json and page manifest, Grounded Claims store/session/runtime with repository evidence resolution and .claims/ sidecars, OKF v0.2 front matter repair + index sync + generated-origin tracking, Mermaid validation and wiki-link validation, behind a minimal WikiFs seam with no external openwiki CLI.",
   "publishConfig": {
     "access": "public"
   },

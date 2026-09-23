@@ -43,7 +43,7 @@ Stored text is injection-neutralized (control chars, `<`/backticks, `~~~` fences
 - `memory_edit` — `update` (replace content/importance), `forget` (hard delete), `invalidate` (soft supersede, optional `replacement_id`); lesson and summary entries are read-only facts.
 - `learn` — capture one durable lesson (what/when/why) into `learned.md`; the write path strips prompt-injection markers and secrets.
 
-When the harness `sessionQuery` service is mounted alongside (the tool-session-query row), `recall`/`reflect` merge past-session hits (source `session`, read-only, sessionId/seq provenance), and `mine_sessions` harvests lessons from completed session logs — digests from compaction summaries, failures from turn/end error reasons, all-completed todos — stored as `learn` entries with the session as provenance and deduped per run; without the service every session feature degrades to a no-op.
+When the harness `sessionQuery` service is mounted alongside (the tool-session-query row), `recall`/`reflect` merge past-session hits (source `session`, read-only, sessionId/seq origin), and `mine_sessions` harvests lessons from completed session logs — digests from compaction summaries, failures from turn/end error reasons, all-completed todos — stored as `learn` entries attributed to the session and deduped per run; without the service every session feature degrades to a no-op.
 
 ## Prompt injection
 
@@ -53,4 +53,4 @@ When the harness `sessionQuery` service is mounted alongside (the tool-session-q
 
 - [Capability Seams](../architecture/seams.md) — the seam pattern behind `ctx.memory`.
 - [Session Data Plane](session-data-plane.md) — the ledger memory complements.
-- [Subagent Capability Family](subagents.md) — how memory provenance crosses sessions.
+- [Subagent Capability Family](subagents.md) — how memory origin crosses sessions.

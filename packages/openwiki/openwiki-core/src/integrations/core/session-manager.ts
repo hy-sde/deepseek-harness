@@ -34,7 +34,7 @@ export interface HostSessionManagerOptions {
   host: string
 
   /**
-   * Provenance actor, defaulting to the host identity when omitted.
+   * Origin actor, defaulting to the host identity when omitted.
    */
   producerActor?: string
 
@@ -64,7 +64,7 @@ export class HostSessionManager {
   private readonly host: string
 
   /**
-   * Validated producer identity recorded in generated provenance.
+   * Validated producer identity recorded in generated-event origin.
    */
   private readonly producerActor: string
 
@@ -244,7 +244,7 @@ export class HostSessionManager {
       {
         name: 'openwiki_finish',
         description:
-          'Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, provenance, Claims finalization, and run metadata persistence.',
+          'Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, generated-event origin, Claims finalization, and run metadata persistence.',
         schema: RunInput,
         handle: async input => this.finish(RunInput.parse(input)),
       },

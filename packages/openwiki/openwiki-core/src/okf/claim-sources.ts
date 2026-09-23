@@ -94,7 +94,7 @@ function mergeClaimSources(
 
 /**
  * Keeps precise line ranges in Claims state while exposing page-level source
- * files through OKF provenance.
+ * files through the OKF sources projection.
  */
 function toWholeFileRepositoryResource(resource: string): string {
   const parsed = parseRepositoryEvidenceResource(resource)

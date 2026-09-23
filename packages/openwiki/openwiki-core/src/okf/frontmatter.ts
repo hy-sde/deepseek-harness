@@ -183,7 +183,7 @@ export function validateOkfFrontmatter(content: string): FrontmatterValidation {
 }
 
 /**
- * Validates the optional OKF v0.2 provenance, trust, and lifecycle families
+ * Validates the optional OKF v0.2 generated-event origin, trust, and lifecycle families
  * (SPEC §5) when present. Only the shape OKF specifies is checked; extra keys
  * inside entries stay tolerated so producer extensions survive round trips.
  */
@@ -515,7 +515,7 @@ export function setFrontmatterField(
 }
 
 /**
- * Stamps the code-owned OKF `generated` provenance event on a page (SPEC §5.1),
+ * Stamps the code-owned OKF `generated` event on a page (SPEC §5.1),
  * setting or replacing a `generated: { by, at }` flow mapping and preserving
  * every other front-matter line byte-for-byte.
  *
@@ -551,7 +551,7 @@ export function setGeneratedEvent(
  *
  * @param content - Complete Markdown concept.
  * @param sources - Complete replacement source mappings.
- * @returns Markdown with the requested OKF provenance list.
+ * @returns Markdown with the requested OKF sources list.
  */
 export function setOkfSources(
   content: string,

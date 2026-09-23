@@ -32,7 +32,7 @@ kind: "package-reference"
 - `openwiki_submit_plan` — 校验并持久化有序的 PageJob 队列；init 需要 `/openwiki/quickstart.md`，路径会被归一化。
 - `openwiki_next_page` — 返回第一个待办的 job，附带既有 Markdown 与 Claims。
 - `openwiki_submit_page` — 用针对已写页面的完整 Claim 集来证明当前 job 完成（先修复前言，再做 Claims 解析与持久验证）。
-- `openwiki_finish` — 确定性收尾：计划内/放弃的删除、Mermaid 校验、wiki 索引同步、链接校验、生成出处、Claims 收尾 + manifest 替换、运行元数据，以及 `.run.json` 移除。
+- `openwiki_finish` — 确定性收尾：计划内/放弃的删除、Mermaid 校验、wiki 索引同步、链接校验、生成事件来源、Claims 收尾 + manifest 替换、运行元数据，以及 `.run.json` 移除。
 
 <a id="configuration"></a>
 ## 配置
@@ -42,7 +42,7 @@ kind: "package-reference"
   name: '@deepseek-ai/dsh-tool-openwiki'
   config:
     host: harness          # stable host identity recorded in run metadata
-    producerActor: harness # provenance actor for engine-owned finalizers
+    producerActor: harness # origin actor for engine-owned finalizers
 ```
 
 <a id="model-experience"></a>
