@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-code-runtime-kernels` gives the model a first-class `run_kernel_code` tool backed by persistent Python and JavaScript kernels whose session state survives across calls, mounting as an ordinary Cordis plugin row with no upstream harness changes. Use it for computation with intermediate results instead of scratch files: share a `session` id across related calls, omit it for one-offs, and pass `reset: true` when a session's state is corrupted. Two long-lived subprocesses run self-contained runners (Python standard library only; Node builtins only) under one shared host driver, with configurable budgets (`toolTimeoutMs`, `maxWallMs`, `maxOutputBytes`), session reaping, and SIGINT→SIGTERM→SIGKILL escalation. The main boundary is that kernel code has bash-equivalent trust — this is process confinement for robustness, not a security boundary — and a busy synchronous cell resists SIGINT at the cost of the session's state.
+`dsh-code-runtime-kernels` gives the model a `run_kernel_code` tool backed by persistent Python and JavaScript kernels whose session state survives across calls, mounting as a Cordis plugin row. Use it for computation with intermediate results instead of scratch files: share a `session` id, omit it for one-offs, and pass `reset: true` when state is corrupted. Two long-lived subprocesses run self-contained runners (Python standard library only; Node builtins only) under one shared host driver, with configurable budgets and interrupt escalation. The boundary is kernel code holding bash-equivalent trust — robustness, not a security boundary.
 
 ## Table of Contents
 

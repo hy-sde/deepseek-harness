@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`ast_grep` and `ast_edit` give an agent exact, syntax-aware access to a codebase: find every function, call, or class matching a tree pattern, or rewrite every match to a template after previewing the precise hunks. Both tools run the packaged ast-grep native binary, so no host install is needed, and every call is a bounded subprocess with a cooperative timeout. Use `ast_grep` when the shape matters and textual grep would be noise; use `ast_edit` when the change is a 1:1 structural substitution and the write should carry the filesystem seam's observation and version guard. The main cost is one subprocess spawn per call; the main boundary is that a capture cannot expand into sibling nodes unless the grammar permits it at that position.
+`ast_grep` and `ast_edit` give an agent exact, syntax-aware access to a codebase: find every function, call, or class matching a tree pattern, or rewrite every match to a template after previewing the precise hunks. Both run the packaged ast-grep native binary — no host install, one bounded subprocess per call. Use `ast_grep` when the shape matters and textual grep would be noise; use `ast_edit` for 1:1 structural substitution through the filesystem seam's observation and version guard. The boundary is grammar scope: a capture cannot expand into sibling nodes unless the grammar permits it.
 
 ## Table of Contents
 

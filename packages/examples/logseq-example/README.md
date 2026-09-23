@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-logseq-example` ports oh-my-pi's `logseq-diary.ts` and `logseq-work.ts` extensions into a runnable Cordis plugin: two model tools on `ctx.tools` (`logseq_diary_ingest`, `logseq_work_log_ingest`) and, when a command registry is composed, the `/diary` and `/diary-work` slash commands on `ctx.commands`. Mount it through the overlay at `examples/logseq/cordis.yml` with `dsh web --patch examples/logseq/cordis.yml`. Both tools reach the graph exclusively through the `logseq` CLI in JSON mode (`logseq <args> -o json`), so the binary must be on `PATH`; they resolve mentions against the graph, link an existing page or record the name as a page to create, and skip lines already present under the day block. Choose it as the reference harness wiring for this diary-ingest flow; it pins one shallow Logseq installation layout and is illustrative, not a supported product bundle.
+`dsh-logseq-example` ports oh-my-pi's `logseq-diary.ts` and `logseq-work.ts` extensions into a runnable Cordis plugin: two model tools on `ctx.tools` (`logseq_diary_ingest`, `logseq_work_log_ingest`) and, with a command registry, the `/diary` and `/diary-work` slash commands. Mount it through the overlay at `examples/logseq/cordis.yml`. Both tools reach the graph only through the `logseq` CLI in JSON mode (`logseq <args> -o json`), so the binary must be on `PATH`; they link mentions to existing pages or record them as pages to create, and skip lines already under the day block. It pins one shallow Logseq layout and is illustrative, not a supported bundle.
 
 ## Table of Contents
 

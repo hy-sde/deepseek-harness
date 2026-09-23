@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-agent-spine-demo` gives you a working agent in one plugin: mount it, add an LLM adapter and an executor, and you can run a full agent conversation — in-memory sessions with automatic titles, a system prompt with your persona and workspace instructions, tools for bash, skills, and background jobs, and a loop that runs turns with retries. You configure it in user terms: persona, tool order, workspace-context budget, which agents to pre-create, optional persisted goals, and background-job limits. It ships no UI, executor, or persistence backend, and it adds no prompts or tool schemas of its own — the model sees only what your configuration produces. Use it when you are building a headless, ACP, or JSON-RPC agent and want the common agent machinery without building it yourself. Read this package for what you get out of the box and what you must supply.
+`dsh-agent-spine-demo` gives you a working agent in one plugin: mount it, add an LLM adapter and an executor, and run a full conversation — in-memory sessions, a system prompt with your persona and workspace instructions, bash, skills, and background-job tools, and a turn loop with retries. Configure persona, tool order, workspace-context budget, agents, persisted goals, and job limits. It ships no UI, executor, or persistence backend and adds no prompts or schemas — the model sees only what your configuration produces. Use it when building a headless, ACP, or JSON-RPC agent.
 
 ## Table of Contents
 

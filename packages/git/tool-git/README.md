@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The three commit/review tools — `commit`, `commit_apply`, and `review` — drive the agentic git commit and review workflow ported from omp (oh-my-pi), and `worktree` provides a model-facing worktree pool with durable leases (firstmate/treehouse model) so parallel tasks get isolated, restart-proof working directories of the same repository. Reads route opportunistically through `ctx.vcs` when its `pi-vcs` probe is clean and fall back to `ctx.git`; mutation inputs always stay on `ctx.git`, so the write path is byte-for-byte unchanged. Choose this package when a composition wants the model to author deterministic split-commit plans, get bounded reviewer fan-out over the staged diff, and run concurrent tasks in leased worktrees. The cost is one analysis call per commit plus reviewer fan-out capped by `maxReviewers` and `maxReviewerDiffChars`; the boundary is that commit-review quality stays the model's own negotiation — the tool surface enforces structure, not semantic judgment.
+`commit`, `commit_apply`, and `review` drive the agentic git commit and review workflow, and `worktree` provides a model-facing worktree pool with durable leases so parallel tasks get isolated, restart-proof working directories. Reads route through `ctx.vcs` when its `pi-vcs` probe is clean, else `ctx.git`; mutations always stay on `ctx.git`, so the write path is unchanged. Choose it when a composition wants the model to author deterministic split-commit plans and get bounded reviewer fan-out over the staged diff. The cost is one analysis call per commit plus capped reviewer fan-out; review quality stays the model's own negotiation.
 
 ## Table of Contents
 

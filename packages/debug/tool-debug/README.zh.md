@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-debug` 通过 DSH DAP 能力缝（`ctx.dap`）暴露面向模型的 `debug` 工具：一个工具、28 个操作，覆盖 launch/attach、断点、continue/pause/step、线程与栈帧、作用域与变量、求值、反汇编、内存、模块、已加载源、custom_request、输出与终止。当 agent 需要调试真实进程、交互式驱动调试器或查看缝渲染出的会话快照时使用它。它以 `tool-debug` 插件行挂载，注入 `['tools', 'dap', 'systemPrompt']`，需要会话工作区 cwd，且不是并发安全的——调试会话互斥，每个 agent 同一时刻只有一个活动会话。边界：不建模控制台交互、未封装尸检附加辅助、harness 本身不隧道转发调试器端口。
+`dsh-tool-debug` 通过 DSH DAP 能力缝（`ctx.dap`）暴露面向模型的 `debug` 工具：一个工具、28 个操作，覆盖 launch/attach、断点、continue/pause/step、线程与栈帧、变量与求值、内存、模块、自定义请求、输出与终止。当 agent 需要调试真实进程或交互式驱动调试器时使用它。它以 `tool-debug` 插件行挂载，注入 `['tools', 'dap', 'systemPrompt']`，需要会话工作区 cwd，且不是并发安全的——调试会话互斥，每个 agent 同一时刻只有一个活动会话。边界：不建模控制台交互，harness 本身不隧道转发调试器端口。
 
 ## 目录
 

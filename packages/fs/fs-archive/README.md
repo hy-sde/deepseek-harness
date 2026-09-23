@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-fs-archive` is the pure-TS multi-format archive engine behind the harness `read` tool: it sniffs or infers the format of zip, tar, tar.gz, rar, 7z, iso, deb, rpm, cpio, cab, arj, and asar containers, and lists roots, directories, and individual members as text via `openArchive` and its `ArchiveReader`. Choose it when a tool must resolve `archive.ext:member/path` references; bounded `ArchiveLimits` keep attacker-controlled archives from driving unbounded allocation. Main costs: indexing loads the archive into memory up to `readMaxArchiveBytes` (default 256 MiB) because no streaming path is wired in, and archive writing is not exposed — members are read-only. It is an algorithmically 1:1 port of the MIT-licensed original, with the Bun runtime dependencies reimplemented on Node and `.ts` import suffixes.
+`dsh-fs-archive` is the pure-TS multi-format archive engine behind the harness `read` tool: it sniffs or infers the format of zip, tar, tar.gz, rar, 7z, iso, deb, rpm, cpio, cab, arj, and asar containers, and lists roots, directories, and members as text via `openArchive`. Choose it when a tool must resolve `archive.ext:member/path` references; bounded `ArchiveLimits` keep attacker-controlled archives from driving unbounded allocation. Main costs: indexing loads the archive into memory up to `readMaxArchiveBytes` (default 256 MiB), and archive writing is not exposed. It is an algorithmically 1:1 port of an MIT-licensed original, reimplemented on Node.
 
 ## Table of Contents
 

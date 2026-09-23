@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-宿主 `ctx.browser` 服务经 Chrome DevTools Protocol 持有真实浏览器连接，提供四种后端：`launch` 派生带 stealth 补丁的浏览器，`patch` 使用 CloakBrowser Chromium（源码级 C++ 指纹补丁；默认首选后端），`attach` 接入既有 CDP 端点，`relay` 通过进程内 relay 服务器＋MV3 扩展驱动用户自己的 Chrome 标签页。在这些连接之上，它打开并导航命名标签页、求值 JS、返回带稳定 `[ref=eN]` id 的 ARIA 快照、按 ref 或 CSS 选择器点击与输入、写出截图并关闭标签页。当需要 agent 化浏览器控制时选择它——`@deepseek-ai/dsh-tool-browser` 是其预期消费方，模型从不直接调用。代价是每个 cwd+kind 一个浏览器进程或连接，服务自身没有启停策略；隐身特性并非安全边界。
+宿主 `ctx.browser` 服务经 Chrome DevTools Protocol 持有真实浏览器连接，提供四种后端：`launch` 派生带 stealth 补丁的浏览器，`patch` 使用 CloakBrowser Chromium（源码级 C++ 指纹补丁；默认首选后端），`attach` 接入既有 CDP 端点，`relay` 通过进程内 relay 服务器＋MV3 扩展驱动用户自己的 Chrome 标签页。在这些连接之上，它打开并导航标签页、求值 JS、返回带稳定 `[ref=eN]` id 的 ARIA 快照并关闭标签页。`@deepseek-ai/dsh-tool-browser` 是其预期消费方。代价是每个 cwd+kind 一个连接，服务自身没有启停策略；隐身特性并非安全边界。
 
 ## 目录
 

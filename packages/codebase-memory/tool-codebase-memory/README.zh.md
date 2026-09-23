@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-codebase-memory` 把本地 codebase-memory daemon 暴露为模型侧的 `codebase_*` 工具，从终端发起一次性查询。每次调用派发一次 `codebase-memory-mcp cli --json <tool>` 并解析原始 MCP 结果信封，与 MCP server 前端的是同一个 daemon，因此索引、项目变更锁与索引 supervisor 完全共享——热 daemon 调用约 0.2 秒。与 stdio MCP 客户端行相比，选择它可获得每次调用一个进程、schema 精简、可按 preset 配置，而不是每个会话常驻一个长寿命 server；可把 MCP 行禁用挂起作为零维护备选。主要边界是精选 schema 是 CLI 输入 schema 的手工维护镜像，codebase-memory 发布新增工具时本包需要更新。
+`dsh-tool-codebase-memory` 把本地 codebase-memory daemon 暴露为模型侧的 `codebase_*` 工具，从终端发起一次性查询。每次调用派发一次 `codebase-memory-mcp cli --json <tool>` 并解析原始 MCP 结果信封——与 MCP server 前端的是同一个 daemon，因此索引、项目变更锁与索引 supervisor 完全共享。与 stdio MCP 客户端行相比，选择它可获得每次调用一个进程、schema 精简、可按 preset 配置，把 MCP 行禁用作为备选。主要边界是精选 schema 是 CLI 输入 schema 的手工维护镜像，codebase-memory 发布新增工具时本包需要更新。
 
 ## 目录
 

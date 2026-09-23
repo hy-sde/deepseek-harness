@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-面向模型方的提交／评审三工具——`commit`、`commit_apply`、`review`——驱动移植自 omp (oh-my-pi) 的 agent 化 git 提交与评审工作流；`worktree` 提供面向模型的工作树池（firstmate／treehouse 模型）与持久租约，使并行任务获得同一仓库的隔离、重启安全的工作目录。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时按机会路由到它，否则回退到 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径逐字节不变。组合需要让模型编写确定性的拆分提交计划、对已暂存 diff 做有界评审扇出、并在租借工作树中并发执行任务时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；边界是提交评审质量仍由模型自行协商——工具面只强制结构，不评判语义。
+`commit`、`commit_apply` 与 `review` 驱动 agent 化 git 提交与评审工作流，`worktree` 提供面向模型的工作树池与持久租约，使并行任务获得同一仓库的隔离、重启安全的工作目录。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时路由到它，否则回退 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径不变。组合需要让模型编写确定性的拆分提交计划、并对已暂存 diff 做有界评审扇出时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；评审质量仍由模型自行协商。
 
 ## 目录
 

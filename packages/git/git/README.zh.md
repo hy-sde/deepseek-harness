@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-宿主 `ctx.git` 服务为 agent 化提交与评审工作流提供经 `ctx.subprocess` 通道的无状态、轻量包装，外加面向模型方工具所需的 diff 解析原语与拆分提交执行动词。它读取仓库状态与捕获的 diff（以 `--binary` 捕获，因此二进制变更能安然通过暂存往返），按 hunk 选择把记录的 `--cached` diff 切回索引，并通过同一条有界子进程路径提交、推送与记录日志。组合需要 git 管线时选用它来支撑 `@deepseek-ai/dsh-tool-git`；模型从不直接消费它。成本是每个动词一次有界子进程，带 wall-clock 超时、宽限与收集上限；边界是提交／评审子集，无交互式 rebase、amend、stash、bisect 或凭据管线。
+宿主 `ctx.git` 服务为 agent 化提交与评审工作流提供经 `ctx.subprocess` 通道的无状态 `git` CLI 包装，外加面向模型方工具所需的 diff 解析原语与拆分提交执行动词。它读取仓库状态与捕获的 diff（以 `--binary` 捕获，因此二进制变更能安然通过暂存往返），按 hunk 选择把记录的 `--cached` diff 切回索引，并通过同一条有界子进程路径提交、推送与记录日志。组合需要 git 管线时选用它来支撑 `@deepseek-ai/dsh-tool-git`；模型从不直接消费它。边界是提交／评审子集，无交互式 history 重写或凭据管线。
 
 ## 目录
 

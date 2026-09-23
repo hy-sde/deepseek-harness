@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-code-runtime-kernels` 为模型提供一等公民的 `run_kernel_code` 工具，由跨调用保留会话状态的持久化 Python 与 JavaScript 内核支撑，以普通 Cordis 插件行挂载，无需改动上游 Harness。当计算需要中间结果时用它替代草稿文件：相关调用共享同一 `session` id，一次性计算省略 `session`，会话状态损坏或不需要时传 `reset: true`。两个长寿命子进程运行自包含 runner（Python 仅标准库；Node 仅内置），共享同一个 host 驱动，并有可配置的预算（`toolTimeoutMs`、`maxWallMs`、`maxOutputBytes`）、会话回收与 SIGINT→SIGTERM→SIGKILL 升级。主要边界是 kernel 代码拥有 bash 级信任——这是为健壮性做的进程隔离，而非安全边界——且繁忙的同步 cell 对 SIGINT 无响应，代价是丢失会话状态。
+`dsh-code-runtime-kernels` 为模型提供 `run_kernel_code` 工具，由跨调用保留会话状态的持久化 Python 与 JavaScript 内核支撑，以普通 Cordis 插件行挂载。当计算需要中间结果时用它替代草稿文件：相关调用共享同一 `session` id，一次性计算省略 `session`，会话状态损坏时传 `reset: true`。两个长寿命子进程运行自包含 runner（Python 仅标准库；Node 仅内置），共享同一个 host 驱动，并有可配置预算与中断升级。主要边界是 kernel 代码拥有 bash 级信任——这是为健壮性做的进程隔离，而非安全边界。
 
 ## 目录
 

@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-agentsview` 把本地 [agentsview](https://github.com/kenn-io/agentsview) 存档暴露为一个模型侧 `agentsview` 工具，含十个动作（`list`、`get`、`sessionUsage`、`health`、`stats`、`usage`、`search`、`recallQuery`、`recallBrief`、`exportSessions`）。每次调用派发一次 `agentsview <command> --format json` 并解析 JSON 文档——与 `tool-codebase-memory` 前置 codebase-memory CLI 的方式完全一致。agentsview CLI 本身就解析 DeepSeek Harness `session.jsonl.zstd` 日志（多帧、撕裂尾部、压缩去重、按响应记账 token 用量），因此该接缝对 harness 写出的同一批文件只读——无 DSH 索引、不写会话存储、进程内无需维护。它是 `tool-session-query`（继续作为进程内转录翻页器）的分析补充：健康等级/结局、窗口统计、token 成本报告、fts/语义/混合转录搜索、recall 简报与无内容导出都来自 CLI 而非移植。主要边界是精选 argv 映射是 CLI 标志的手工维护镜像，agentsview 发布改动命令或标志时本包需要更新。
+`dsh-tool-agentsview` 把本地 [agentsview](https://github.com/kenn-io/agentsview) 存档暴露为一个模型侧 `agentsview` 工具，含十个动作。每次调用派发一次 `agentsview <command> --format json` 并解析 JSON 文档。agentsview CLI 本身就解析 DeepSeek Harness 会话日志（多帧、撕裂尾部、压缩去重），因此该接缝对 harness 写出的同一批文件只读。它是 `tool-session-query`（进程内转录翻页器）的分析补充：健康等级、窗口统计、token 成本报告、转录搜索、recall 简报与无内容导出。边界是手工维护的 argv 映射：agentsview 发布改动标志时本包需要更新。
 
 ## 目录
 

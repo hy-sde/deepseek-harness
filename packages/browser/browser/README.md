@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The host `ctx.browser` service owns real browser connections over Chrome DevTools Protocol through four backends: `launch` spawns a stealth-patched browser, `patch` uses the CloakBrowser Chromium (source-level C++ fingerprint patches; the preferred default), `attach` joins an existing CDP endpoint, and `relay` drives the user's own Chrome tabs through an in-process relay server plus an MV3 extension. On those connections it opens and navigates named tabs, evaluates JS, returns ARIA snapshots with stable `[ref=eN]` ids, clicks and types by ref or CSS selector, writes screenshots, and closes tabs. Choose it when agentic browser control is needed — `@deepseek-ai/dsh-tool-browser` is its intended consumer and the model never calls it directly. The cost is one browser process or connection per cwd+kind with no launch/teardown policy of its own, and stealth features are not a security boundary.
+The host `ctx.browser` service owns real browser connections over Chrome DevTools Protocol through four backends: `launch` (stealth-patched browser), `patch` (CloakBrowser Chromium — source-level C++ fingerprint patches; preferred default), `attach` (existing CDP endpoint), and `relay` (the user's own Chrome tabs via an in-process relay plus an MV3 extension). On those connections it opens and navigates tabs, evaluates JS, returns ARIA snapshots with stable `[ref=eN]` ids, and closes tabs. `@deepseek-ai/dsh-tool-browser` is its intended consumer. The cost is one connection per cwd+kind with no launch/teardown policy; stealth features are not a security boundary.
 
 ## Table of Contents
 
