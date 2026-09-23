@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-vcs` 暴露 `ctx.vcs`——一个 host 平面服务，封装用户安装的 `pi-vcs` CLI，为 harness 提供窄的只读 VCS 数据面：修订、暂存与工作树差异（含 `--name-only`/`--numstat` 模式）、状态计数、分支名、仓库发现与 HEAD 变化 watch，每个文本数据面都与对应 `git diff` 输出逐字节兼容。当调用方需要 gitoxide 原生切片而不改变默认 TS/git-CLI 路径时选择它：该服务纯属增量，`pi-vcs` 不可达时降级到 git 服务。其代价是按功能探测与逐调用 shell-out——每个动词生成 `pi-vcs` 并采集受限输出，且二进制补丁只渲染标记。
+`dsh-vcs` 暴露 `ctx.vcs`——一个 host 平面服务，封装用户安装的 `pi-vcs` CLI，为 harness 提供窄的只读 VCS 数据面（修订、暂存与工作树差异含 `--name-only`/`--numstat` 模式、状态计数、分支名、仓库发现与 HEAD 变化 watch），每个文本数据面都与 `git diff` 逐字节兼容。当调用方需要 gitoxide 原生切片而不改变默认 TS/git-CLI 路径时选择它：该服务纯属增量，`pi-vcs` 不可达时降级到 git 服务。其代价是按功能探测与逐调用 shell-out，输出有界，二进制补丁只渲染标记。
 
 ## 目录
 

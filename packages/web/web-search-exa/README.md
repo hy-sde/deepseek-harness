@@ -111,11 +111,19 @@ Read these pages when the package-level contract is not enough. They move from t
 <a id="model-experience"></a>
 ## Model Experience
 
-Indirectly, through `dsh-tool-web`, which retains this provider's `maxResults`-bounded URLs, titles, first highlights, and publication dates or its exact `Exa search aborted`, `Exa search request failed: <error>`, and `Exa returned an unprocessable response body: <error>` failures under the consumer's error wrapper.
+### Search queries and results
+
+#### What the model sees
+
+The model calls `web_search` (owned by `dsh-tool-web`) with the query it authored; `dsh-web` routes that query to this provider, and `dsh-tool-web` renders the provider's `maxResults`-bounded results as source lines: a title-or-URL source link, the first non-blank highlight as the snippet, and the publication date when present.
+
+#### Token effect
+
+Each search call adds the query plus the returned source lines (title, snippet, publication date) to the conversation; data-dependent results are resent until compaction. The provider's error messages (`Exa search aborted`, `Exa search request failed: <error>`, `Exa returned an unprocessable response body: <error>`) appear only when a call fails, so they cost tokens only on failure.
 
 #### KV Cache effect
 
-No direct invalidation; the named consumer owns any request-prefix changes.
+No direct invalidation: the search query and rendered sources append to the request prefix, and the named consumer (`dsh-tool-web`) owns any request-prefix changes.
 
 ## Known Limitations and Deferred Work
 

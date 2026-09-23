@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-logseq` lets an agent drive a Logseq database graph from the terminal: list, show, search, Datalog-query, upsert, and remove blocks, pages, tags, properties, tasks, and assets, plus graph and server lifecycle actions. Choose it over the desktop-app MCP bridge when you want deterministic JSON output, Datalog querying, structured task upserts, or fully headless operation — the MCP bridge needs the app open and lacks removal, Datalog, and task commands. The tools run the installed `logseq` CLI on every call, so the CLI must be installed and each call pays one process spawn; the cheapest path is to batch writes into single `logseq_upsert` calls and start a headless server with `logseq_server start`.
+`dsh-tool-logseq` lets an agent drive a Logseq database graph from the terminal: list, show, search, Datalog-query, upsert, and remove blocks, pages, tags, properties, tasks, and assets, plus graph and server lifecycle actions. Choose it over the desktop-app MCP bridge for deterministic JSON output, Datalog querying, structured task upserts, or fully headless operation; the bridge needs the app open and lacks removal, Datalog, and task commands. Each call runs the installed `logseq` CLI, so the CLI must be present and each call pays one process spawn; batch writes into single `logseq_upsert` calls.
 
 ## Table of Contents
 

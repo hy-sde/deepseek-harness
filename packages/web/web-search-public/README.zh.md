@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-web-search-public` 是一个无需凭据的 `WebSearchProvider`，接入 harness web seam（`ctx.web`）：无需 API 密钥或环境变量，它将一个查询并发散开到五个公共引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。当部署需要零设置的公共网页搜索且能容忍引擎失败时选择它；它只注册 provider，不拥有任何面向模型的工具——那是 `dsh-tool-web` 的职责。其代价是共识带来的延迟底线、成倍放大的匿名请求（提高被风控风险），且其最佳努力解析器可能遭遇引擎无提示改版或拦截。
+`dsh-web-search-public` 是一个无需凭据的 `WebSearchProvider`，接入 harness web seam（`ctx.web`）：无需 API 密钥或环境变量，它将一个查询并发散开到五个公共引擎（Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek），并按跨引擎共识整合答案，因此任何单个引擎失败都不会阻塞或拖垮检索。当部署需要零设置的公共网页搜索且能容忍引擎失败时选择它；它只注册 provider，`dsh-tool-web` 拥有面向模型的工具。其代价是共识带来的延迟底线、成倍放大的匿名请求，以及可能因引擎改版而失效的最佳努力解析器。
 
 ## 目录
 

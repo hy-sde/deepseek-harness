@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/logseq/logseq-graph/README.md
-README.md: d9b6985ee2eba2cd4d734d41e935fcdd170eb9e3
-README.zh.md: bcb382fb31dd93021eab23872f0405945db0af57
+README.md: 1b907ec59ba3128651c8c3b17fd51e90fbb2c158
+README.zh.md: cf70a7237d1a4c49049abfc73d49fc3606e36738

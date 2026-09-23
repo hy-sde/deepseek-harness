@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`ctx.wikiGraph` 把 Logseq CLI 的 `db-worker-node` 图操作暴露为结构化 JSON 调用，与任何 agent 工具无关：页面与块树、标签、属性、Datalog 查询、upsert/remove，以及 `logseq_server` 生命周期。Web GUI 的 wiki 抽屉经该服务完成读写，面向模型的 `logseq_*` 工具直接调用同一个 CLI。组合需要一个宿主服务背后的 wiki 图存储、且每次调用一个逻辑变更时选用本包。成本是每个方法一次全新的 CLI 进程；图写入需要运行中的 db-worker-node 服务器；invariant 伴随组件在 CLI 二进制不可达时于启动期快速失败。
+`ctx.wikiGraph` 把 Logseq CLI 的 `db-worker-node` 图操作暴露为结构化 JSON 调用，与任何 agent 工具无关：页面/块树、标签、属性、Datalog 查询、upsert/remove，以及 `logseq_server` 生命周期。Web GUI 的 wiki 抽屉经该服务完成读写；面向模型的 `logseq_*` 工具直接调用同一个 CLI。组合需要一个宿主服务背后的 wiki 图存储、且每次调用一个逻辑变更时选用本包。其成本是每个方法一次全新的 CLI 进程；图写入需要运行中的 db-worker-node 服务器，且 invariant 在 CLI 二进制不可达时于启动期快速失败。
 
 ## 目录
 

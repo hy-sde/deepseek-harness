@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-session-url` registers a `session://` internal-URL scheme so the harness's own session history reads as files through the ported `read` and `grep` tools — directory listings, rendered transcripts, exact per-event JSON, and FTS-backed cross-session search. Choose it when an agent should inspect or grep past sessions through the file-shaped tools it already uses. It adds no tool code: `read` and `grep` route any registered scheme through `ctx.internalUrls`, and the handler reads the same live-preferred logical corpus as the session-query tools. Its boundary is read-only history: resources are immutable, `session://search` degrades when content search is disabled, and the handler fails loud at apply without `ctx.internalUrls` and `ctx.sessionQuery`.
+`dsh-session-url` registers a `session://` internal-URL scheme so the harness's own session history reads as files through the ported `read` and `grep` tools: directory listings, rendered transcripts, exact per-event JSON, and FTS-backed cross-session search. Choose it when an agent should inspect or grep past sessions through file-shaped tools it already uses. It adds no tool code: `read` and `grep` route any registered scheme through `ctx.internalUrls`, and the handler reads the same live-preferred corpus as the session-query tools. Its boundary is read-only history: resources are immutable, `session://search` degrades when content search is disabled.
 
 ## Table of Contents
 
