@@ -30,7 +30,7 @@ kind: "package-reference"
 
 - **生命周期** — 可恢复的仓库页面任务编排（`begin` / `submit_plan` / `next_page` / `submit_page` / `finish`），带持久的 `.run.json` 检查点、git 源指纹、更新无操作检测，以及作为正确性账本的 `.page-manifest.json`（`generation/*`、`agent/utils.ts`）。
 - **Claims** — Grounded Claims 核心（add/confirm/update/retract 变更）、带 `.claims/` 侧车持久化与验证的 code-brain 存储/会话/运行时，以及把 `repo://path#L20-L48` 资源映射到带重定位锚点的 `repo-lines-v1:sha256:` 不透明版本的仓库证据解析器（`claims/*`）。
-- **OKF** — OKF v0.2 前言校验/修复、生成出处、索引标签、递归概念索引同步、claim-sources 与 claims-verification 投影（`okf/*`）。
+- **OKF** — OKF v0.2 前言校验/修复、生成事件来源、索引标签、递归概念索引同步、claim-sources 与 claims-verification 投影（`okf/*`）。
 - **校验** — Mermaid 围栏校验（jsdom/mermaid 可选，优雅回退到启发式）与仓库内链接校验（含坏链盖印）（`mermaid/*`、`agent/wiki-link-validator.ts`）。
 - **安装 + fs** — `.openwikiignore` 加载、受管的 AGENTS.md/CLAUDE.md 片段 + `INSTRUCTIONS.md` wiki 目标、可恢复的 init wiki 替换，以及仓库内的 `WikiFs`/`createNodeWikiFs` 接缝（`agent/*`、`fs/*`）。
 - **集成** — 与传输无关的 `HostSessionManager` + zod 协议（`openwiki_begin` … `openwiki_finish`），以及 Git 仓库根解析（`integrations/core/*`）。

@@ -23,7 +23,7 @@ The core is a pure TypeScript library (only `zod` + `yaml` deps), organized as `
 
 - **Lifecycle** — resumable repository-page-job orchestration (`begin` / `submit_plan` / `next_page` / `submit_page` / `finish`) with a durable `.run.json` checkpoint, git source fingerprinting, update no-op detection, and a `.page-manifest.json` correctness ledger.
 - **Claims** — the Grounded Claims core (add/confirm/update/retract mutations), the code-brain store/session/runtime with `.claims/` sidecar persistence and verification, and the repository evidence resolver that maps `repo://path#L20-L48` resources to opaque `repo-lines-v1:sha256:` versions with relocation anchors.
-- **OKF** — OKF v0.2 front matter validation/repair, generated provenance, index-labels, recursive concept-index synchronization, claim-sources, and a claims-verification projection.
+- **OKF** — OKF v0.2 front matter validation/repair, generated-event origin, index-labels, recursive concept-index synchronization, claim-sources, and a claims-verification projection.
 - **Validation** — Mermaid fence validation (jsdom/mermaid optional, graceful heuristic fallback) and wiki-internal-link validation with broken-link stamping.
 - **Setup + fs** — `.openwikiignore` load, managed AGENTS.md/CLAUDE.md snippets plus `INSTRUCTIONS.md` wiki goal, recoverable init wiki replacement, and the in-fork `WikiFs`/`createNodeWikiFs` seam.
 - **Integration** — the transport-neutral `HostSessionManager` + zod protocol (`openwiki_begin` … `openwiki_finish`) and Git repository-root resolution.
@@ -36,7 +36,7 @@ The core is a pure TypeScript library (only `zod` + `yaml` deps), organized as `
 - `openwiki_submit_plan` — validate and durably persist the ordered PageJob queue; init requires `/openwiki/quickstart.md`, and paths are normalized.
 - `openwiki_next_page` — first pending job with existing Markdown + Claims.
 - `openwiki_submit_page` — complete the current job by proving its complete Claim set against the written page (front matter repair, then Claims resolution and durable verification).
-- `openwiki_finish` — deterministic finalization: planned/abandoned deletions, Mermaid validation, wiki index sync, link validation, generated provenance, Claims finalization + manifest replacement, run metadata, and `.run.json` removal.
+- `openwiki_finish` — deterministic finalization: planned/abandoned deletions, Mermaid validation, wiki index sync, link validation, generated-event origin, Claims finalization + manifest replacement, run metadata, and `.run.json` removal.
 
 Configuration:
 
@@ -45,7 +45,7 @@ Configuration:
   name: '@deepseek-ai/dsh-tool-openwiki'
   config:
     host: harness          # stable host identity recorded in run metadata
-    producerActor: harness # provenance actor for engine-owned finalizers
+    producerActor: harness # origin actor for engine-owned finalizers
 ```
 
 ## Model experience

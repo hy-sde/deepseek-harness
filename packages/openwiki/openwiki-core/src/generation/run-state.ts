@@ -38,7 +38,7 @@ export type PageJobStatus = 'pending' | 'skipped' | 'complete'
  */
 export interface RepositoryRunActor {
   /**
-   * Provenance actor used for page work performed by the current session.
+   * Origin actor used for page work performed by the current session.
    */
   producerActor: string
 
@@ -230,7 +230,7 @@ const UpdateMetadataSchema = z
 
 const PersistedPreparedWikiStateSchema = z
   .object({
-    generatedProvenance: z.array(
+    generatedOrigin: z.array(
       z
         .object({
           page: z.string().min(1),

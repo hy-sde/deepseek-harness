@@ -146,7 +146,7 @@ describe('run-state + page-manifest durability', () => {
         actor: { producerActor: 'test', metadataModel: 'test' },
         previousLastUpdate: null,
         beforeContentSnapshot: '{}',
-        preparedWiki: { generatedProvenance: [] },
+        preparedWiki: { generatedOrigin: [] },
       }
       await writeRepositoryRunState(root, state)
       const file = repositoryRunStatePath(root)

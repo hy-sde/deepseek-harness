@@ -48,7 +48,7 @@ export interface RepositoryPageManifestEntry extends RepositorySourceCheckpoint 
   /**
    * Durable run that recorded `completedBy` for this page.
    *
-   * @default undefined for coverage created before per-page provenance.
+   * @default undefined for coverage created before per-page origin records.
    */
   completedRunId?: string
 }

@@ -22,7 +22,7 @@ import type {
 export interface OpenWikiToolConfig {
   /** Stable host identity recorded in run metadata (default `harness`). */
   host?: string
-  /** Provenance actor for engine-owned finalizers (default `harness`). */
+  /** Origin actor for engine-owned finalizers (default `harness`). */
   producerActor?: string
 }
 
@@ -282,7 +282,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     name: 'openwiki_finish',
     device: true,
     description:
-      'Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, provenance, Claims finalization, and run metadata persistence.',
+      'Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, generated-event origin, Claims finalization, and run metadata persistence.',
     parameters: {
       runId: { type: 'string', description: 'Stable run UUID returned by openwiki_begin.', required: true },
     },

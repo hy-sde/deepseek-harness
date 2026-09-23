@@ -5063,7 +5063,7 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 
 ### `openwiki_finish`
 
-Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, provenance, Claims finalization, and run metadata persistence.
+Finish only after every PageJob is complete. Runs deterministic deletion, validation, indexing, generated-event origin, Claims finalization, and run metadata persistence.
 
 ```json
 {
