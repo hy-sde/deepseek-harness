@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-fs-archive` 是 harness `read` 工具背后的纯 TypeScript 多格式归档引擎：它嗅探或推断 zip、tar、tar.gz、rar、7z、iso、deb、rpm、cpio、cab、arj、asar 容器的格式，并经由 `openArchive` 及其 `ArchiveReader` 列出根、目录与单个成员文本。当工具必须解析 `archive.ext:member/path` 引用时选择它；有界的 `ArchiveLimits` 使攻击者构造的归档无法驱动无界内存分配。主要成本：索引会把归档整体载入内存、受 `readMaxArchiveBytes`（默认 256 MiB）限制，因为尚未接入流式路径；归档写入不暴露——成员只读。它是 MIT 许可原版的算法 1:1 移植，Bun 运行时依赖以 Node 重实现，并携带 `.ts` 导入后缀。
+`dsh-fs-archive` 是 harness `read` 工具背后的纯 TypeScript 多格式归档引擎：它嗅探或推断 zip、tar、tar.gz、rar、7z、iso、deb、rpm、cpio、cab、arj、asar 容器的格式，并经由 `openArchive` 列出根、目录与单个成员文本。当工具必须解析 `archive.ext:member/path` 引用时选择它；有界的 `ArchiveLimits` 使攻击者构造的归档无法驱动无界内存分配。主要成本：索引会把归档整体载入内存、受 `readMaxArchiveBytes`（默认 256 MiB）限制；归档写入不暴露，成员只读。它是 MIT 许可原版的算法 1:1 移植，并在 Node 上重实现。
 
 ## 目录
 

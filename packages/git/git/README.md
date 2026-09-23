@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The host `ctx.git` service gives the agentic commit and review workflow a stateless, thin wrapper around the `git` CLI through the `ctx.subprocess` seam, plus the diff-parsing primitives and split-commit execution verbs the model-facing tools need. It reads repository state and captured diffs — with `--binary` so binary changes survive staging round-trips — slices recorded `--cached` diffs back onto the index by hunk selection, and commits, pushes, and logs through the same bounded subprocess path. Choose it when a composition needs git plumbing for `@deepseek-ai/dsh-tool-git`; the model never consumes it directly. The cost is one bounded subprocess per verb with a wall-clock timeout, grace, and collected-output caps; the boundary is the commit/review subset, with no interactive rebase, amend, stash, bisect, or credential plumbing.
+The host `ctx.git` service gives the agentic commit and review workflow a stateless wrapper around the `git` CLI through the `ctx.subprocess` seam, plus the diff-parsing primitives and split-commit execution verbs the model-facing tools need. It reads repository state and captured diffs, slices recorded `--cached` diffs back onto the index by hunk selection, and commits, pushes, and logs through the same bounded subprocess path. Choose it when a composition needs git plumbing for `@deepseek-ai/dsh-tool-git`; the model never consumes it directly. The boundary is the commit/review subset, with no interactive history rewriting or credential plumbing.
 
 ## Table of Contents
 

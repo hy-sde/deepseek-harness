@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-codebase-memory` exposes the local codebase-memory daemon as model-facing `codebase_*` tools that run one-shot queries from the terminal. Each call spawns `codebase-memory-mcp cli --json <tool>` once and parses the raw MCP result envelope against the same daemon the MCP server fronts, so indexes, project mutation locks, and the index supervisor are fully shared — warm daemon calls cost ~0.2 s. Choose it over the stdio MCP client row when you want one process per call, tightened schemas, and per-preset configuration instead of a long-lived server inside every session, keeping the MCP row disabled as a zero-maintenance fallback. The main boundary is that the curated schemas are a hand-maintained mirror of the CLI's input schemas, so a codebase-memory release that adds tools needs this package updated.
+`dsh-tool-codebase-memory` exposes the local codebase-memory daemon as model-facing `codebase_*` tools that run one-shot queries from the terminal. Each call spawns `codebase-memory-mcp cli --json <tool>` once and parses the raw MCP result envelope — the same daemon the MCP server fronts — so indexes, project mutation locks, and the index supervisor are fully shared. Choose it over the stdio MCP client row for one process per call, tightened schemas, and per-preset configuration, disabling the MCP row as a fallback. The boundary is the hand-maintained schema mirror: a release that adds tools needs this package updated.
 
 ## Table of Contents
 

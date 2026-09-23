@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-debug` exposes the model-facing `debug` tool over the DSH DAP capability seam (`ctx.dap`): one tool with 28 operations covering launch/attach, breakpoints, continue/pause/step, threads and stack frames, scopes and variables, evaluate, disassembly, memory, modules, loaded sources, custom requests, output, and termination. Use it when the agent must debug a real process, drive a debugger interactively, or inspect session snapshots rendered from the seam. It mounts as the `tool-debug` plugin row injecting `['tools', 'dap', 'systemPrompt']`, requires a session workspace cwd, and is not concurrency-safe — debug sessions are exclusive, with one live session per agent. Boundaries: console interaction is not modeled, post-mortem attach helpers are not wrapped, and the harness does not tunnel debugger ports itself.
+`dsh-tool-debug` exposes the model-facing `debug` tool over the DSH DAP capability seam (`ctx.dap`): one tool with 28 operations covering launch/attach, breakpoints, continuing and stepping, threads and frames, variables and evaluation, memory, modules, custom requests, output, and termination. Use it when the agent must debug a real process or drive a debugger interactively. It mounts as a plugin row injecting `['tools', 'dap', 'systemPrompt']`, requires a session workspace cwd, and is not concurrency-safe — debug sessions are exclusive, one live session per agent. Boundaries: console interaction is not modeled and the harness does not tunnel debugger ports.
 
 ## Table of Contents
 

@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-logseq-example` 把 oh-my-pi 的 `logseq-diary.ts` 与 `logseq-work.ts` 扩展移植为一个可运行的 Cordis 插件：在 `ctx.tools` 上提供两个模型工具（`logseq_diary_ingest`、`logseq_work_log_ingest`），并在组合了命令注册表时于 `ctx.commands` 上提供 `/diary`、`/diary-work` 斜杠命令。通过 `examples/logseq/cordis.yml` 处的 overlay 挂载：`dsh web --patch examples/logseq/cordis.yml`。两个工具完全经 JSON 模式下的 `logseq` CLI（`logseq <args> -o json`）访问 graph，因此二进制必须位于 `PATH` 上；它们先针对 graph 解析提到的实体，链接现有页面或把名称记录为待创建页面，并跳过当天块下已存在的行。当需要这一日记摄取流程的参考 harness 接线时选择它；它固定一种浅层 Logseq 安装布局，仅为演示而非受支持的产品捆绑。
+`dsh-logseq-example` 把 oh-my-pi 的 `logseq-diary.ts` 与 `logseq-work.ts` 扩展移植为一个可运行的 Cordis 插件：在 `ctx.tools` 上提供两个模型工具（`logseq_diary_ingest`、`logseq_work_log_ingest`），并在组合了命令注册表时于 `ctx.commands` 上提供 `/diary`、`/diary-work` 斜杠命令。通过 `examples/logseq/cordis.yml` 处的 overlay 挂载。两个工具完全经 JSON 模式下的 `logseq` CLI（`logseq <args> -o json`）访问 graph，因此二进制必须位于 `PATH` 上；它们会把提到的实体链接到现有页面，或把名称记录为待创建页面，并跳过当天块下已存在的行。它固定一种浅层 Logseq 安装布局，仅为演示而非受支持的产品捆绑。
 
 ## 目录
 
