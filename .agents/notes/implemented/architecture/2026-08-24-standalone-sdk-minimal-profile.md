@@ -36,7 +36,7 @@ The Python runtime continues to package `dsh-web-app` and the frontend assets. `
 
 This decision partially supersedes the base-first and standalone-tree rejection in [one dsh launcher for application profiles](2026-08-22-single-dsh-application-launcher.md). Repository-owned, versioned standalone profile bundles are allowed when an explicit roster is the product behavior; caller-supplied complete trees and alternate executables remain rejected.
 
-It also supersedes the minimal-overlay realization in [Python SDK runtime through the dsh profile launcher](2026-08-23-python-sdk-dsh-profile-runtime.md) and the base-first default-profile statement in [profile plugin bundles](2026-08-05-profile-plugin-bundles.md). Those notes retain independent authority for launcher ownership, Python packaging and home requirements, general profile layering, and plugin management. No active note is fully superseded or eligible for archival.
+It also supersedes the minimal-overlay realization in [Python SDK runtime through the dsh profile launcher](../../archived/architecture/2026-08-23-python-sdk-dsh-profile-runtime.md) and the base-first default-profile statement in [profile plugin bundles](2026-08-05-profile-plugin-bundles.md). Those notes retain independent authority for launcher ownership, Python packaging and home requirements, general profile layering, and plugin management. No active note is fully superseded or eligible for archival.
 
 ## Verification
 

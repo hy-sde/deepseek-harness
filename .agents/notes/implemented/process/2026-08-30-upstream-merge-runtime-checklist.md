@@ -6,7 +6,7 @@ English | [中文](2026-08-30-upstream-merge-runtime-checklist.zh.md)
 
 ## Problem
 
-Merging stock upstream `v0.1.2-alpha.1` into the fork (merge commit `7e8f2b643c`) was validated with the doc gates and `tsc -b` — every static gate was green — and the product was still broken end to end. Two days of omp-session debugging (2026-08-29/30) were needed to reach a working state (`7dd2bfae37`). The cost came from one structural fact: the fork's own packages were written against pre-merge API semantics, and the upstream API changes that broke them are invisible to type and doc gates. Eight independent regressions surfaced only at runtime, each one hiding the next.
+Merging stock upstream `v0.1.2-alpha.1` into the fork (the 0.1.2-alpha.1 merge) was validated with the doc gates and `tsc -b` — every static gate was green — and the product was still broken end to end. Two days of omp-session debugging (2026-08-29/30) were needed to reach a working state (the post-merge fix commit). The cost came from one structural fact: the fork's own packages were written against pre-merge API semantics, and the upstream API changes that broke them are invisible to type and doc gates. Eight independent regressions surfaced only at runtime, each one hiding the next.
 
 The eight defect classes, in the order they were found:
 
@@ -36,7 +36,7 @@ Every upstream sync into this fork is a runtime release, not a doc exercise. The
 
 ## Testing
 
-This merge is the proof of the checklist: applying the steps in order surfaced defects 1 through 8 exactly as listed, and `7dd2bfae37` is the state where every step passes end to end (build, web boot, workspace pick, sessions visible, presets healthy, local provider routable). Future merges must re-run the checklist and record the result in the merge description.
+This merge is the proof of the checklist: applying the steps in order surfaced defects 1 through 8 exactly as listed, and the post-merge fix commit is the state where every step passes end to end (build, web boot, workspace pick, sessions visible, presets healthy, local provider routable). Future merges must re-run the checklist and record the result in the merge description.
 
 ## Consequences
 

@@ -22,7 +22,7 @@ typed locale 标准席位（`locale:` 注册声明 → 框架注入强类型 `t`
 
 **派生层不让展示文本承担身份。** ui-workspace 的 `relativeTime` 返回结构化 `{unit, n}`，由渲染组合字典模板；blank 会话标题和未分组 label 从 `blank` 标志/`workspaceId` 缺席派生，内部值保持为空或稳定；**搜索态 blank 行一律排除**（双语标题无法与单语查询稳定匹配）。日期不引 Intl：格式模板进字典（消息时钟 `clock.md`/`clock.ymd`，workspace hover `date.ymd`），格式化函数接收 `t` 参数。
 
-**测试与 e2e 口径**：`makeTranslate(...dicts)`（dsh-client-test-runtime）镜像服务查找链（首个命中字典胜出、key 兜底、`{name}` 插值），组件测试的 `t` 桩统一用它并以真实 props 席位定型。web e2e 统一通过 `newEnglishPage`（`en-US` 浏览器）打开，built-boot 快照 同样固定 navigator 语言：golden 因而不受语言迁移影响。settings 语言切换用例绕开该 helper 并开启 `zh-CN` 浏览器，因为在显式 Host 偏好到达前，暂定 locale 会跟随 `navigator`（[由浏览器推导初始 locale](../feature/2026-07-31-browser-derived-initial-locale.zh.md)）。
+**测试与 e2e 口径**：`makeTranslate(...dicts)`（dsh-client-test-runtime）镜像服务查找链（首个命中字典胜出、key 兜底、`{name}` 插值），组件测试的 `t` 桩统一用它并以真实 props 席位定型。web e2e 统一通过 `newEnglishPage`（`en-US` 浏览器）打开，built-boot 快照 同样固定 navigator 语言：golden 因而不受语言迁移影响。settings 语言切换用例绕开该 helper 并开启 `zh-CN` 浏览器，因为在显式 Host 偏好到达前，暂定 locale 会跟随 `navigator`（[由浏览器推导初始 locale](../../archived/feature/2026-07-31-browser-derived-initial-locale.md)）。
 
 [settings/locale/theme 分层 Note](../../proposed/architecture/2026-07-25-client-settings-locale-theme.zh.md) 中「apply 层订阅 `locale/change` 重注册刷新 label」的机制已被本决定取代（thunk + revision 生命周期）。
 
@@ -39,4 +39,4 @@ typed locale 标准席位（`locale:` 注册声明 → 框架注入强类型 `t`
 - 语言切换全 UI 即时刷新且零重注册；新包接入 = 字典 + declare-merge + `locale: NS` 三步，无手写胶水。
 - 代价：list label 的消费方必须知道 `resolveSlotLabel`（裸读 `options.label` 现在可能拿到函数）；类型上 `SlotLabel` 已挡住多数误用。
 - ui-primitives 要求本地化 label prop，因此新增原子组件渲染点也必须新增明确的文案 owner；遗漏会在类型检查失败，而不是选择隐藏语言。
-- e2e 英文钉死意味着 zh 文案面主要靠包级组件测试与 settings 语言切换用例覆盖，浏览器 e2e 不再验证 zh 文案。开场/回落 locale（浏览器未声明任何已注册语言，或非浏览器运行）是 `en` 而非 `zh`，见 [browser-derived initial locale](../feature/2026-07-31-browser-derived-initial-locale.zh.md)。
+- e2e 英文钉死意味着 zh 文案面主要靠包级组件测试与 settings 语言切换用例覆盖，浏览器 e2e 不再验证 zh 文案。开场/回落 locale（浏览器未声明任何已注册语言，或非浏览器运行）是 `en` 而非 `zh`，见 [browser-derived initial locale](../../archived/feature/2026-07-31-browser-derived-initial-locale.md)。

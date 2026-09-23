@@ -40,7 +40,7 @@ Assistant chunks update only their `turn:step` Context. Content-bearing chunks r
 
 ### Steering from predecessor Contexts
 
-Trajectory reconstructs steering from durable inbox history, using the same identity rule as the [Chat steering decision](../feature/2026-08-04-web-context-source-and-steer-marks.md) without sharing Chat's final Node.
+Trajectory reconstructs steering from durable inbox history, using the same identity rule as the [Chat steering decision](../../archived/feature/2026-08-04-web-context-source-and-steer-marks.md) without sharing Chat's final Node.
 
 Each `agent/inbox/spliced` Event targeting `next-step` starts an invisible Context identified by its Event seq. Its `start()` reads the nearest earlier inbox Context, appends the splice to persistent pending-ID state, and materializes that state only when a claim replaces the current claimed batch. The AgentLoop appends every admitted message from one claim before it can claim another batch; a rejected claim appends no `user/message`. A later user-origin `user/message` reads the nearest earlier inbox Context: an ID in the current claim produces a Steering Node, while every other user-origin message produces an ordinary User Node.
 
