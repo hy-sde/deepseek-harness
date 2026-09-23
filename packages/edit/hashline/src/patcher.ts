@@ -611,7 +611,7 @@ export class Patcher {
 	 * Reject an anchored edit that references a line the read which minted
 	 * `expected` never displayed. `matchedSnapshot` is the store version whose
 	 * text equals the live normalized content — the exact snapshot the model
-	 * anchored against. Absent means no provenance was recorded (the tag was
+	 * anchored against. Absent means no origin was recorded (the tag was
 	 * externally minted or aged out), so the edit applies as before. Only runs
 	 * on the no-drift path, where anchor line numbers index the tagged content
 	 * 1:1.

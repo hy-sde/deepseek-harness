@@ -3337,7 +3337,7 @@ export interface Config extends OpenWikiToolConfig {}
 export interface OpenWikiToolConfig {
   /** Stable host identity recorded in run metadata (default `harness`). */
   host?: string
-  /** Provenance actor for engine-owned finalizers (default `harness`). */
+  /** Origin actor for engine-owned finalizers (default `harness`). */
   producerActor?: string
 }
 ```

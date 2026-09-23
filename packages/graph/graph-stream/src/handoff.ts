@@ -26,7 +26,7 @@ export interface AgentGraphInputHandoff {
   }
 }
 
-/** The resolver a host provides: gives back committed text for a record's provenance. */
+/** The resolver a host provides: gives back committed text for a record's origin. */
 export interface AgentGraphConclusionTextResolver {
   resolveConclusionText(record: AgentGraphRecord): Promise<string | undefined>
 }

@@ -96,7 +96,7 @@ describe('InMemorySnapshotStore', () => {
     expect(store.byHash(OTHER, tagB)).toBeNull()
   })
 
-  it('relocate moves version history and read provenance to a new path', () => {
+  it('relocate moves version history and read origin to a new path', () => {
     const store = new InMemorySnapshotStore()
     const dest = '/tmp/__hashline-dest__.ts'
     const tag = store.record(PATH, 'A\n', [1])

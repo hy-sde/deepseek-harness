@@ -1,5 +1,5 @@
 /**
- * Provenance mention helpers in the session-history bridge: `encodeSessionUri`
+ * Origin mention helpers in the session-history bridge: `encodeSessionUri`
  * must stay format-compatible with session-reference's canonical `dsh-session:`
  * scheme (base64url of the JSON-encoded id), and `formatSessionMention` must
  * render a mention whose URI round-trips back to the id — so recall output
@@ -19,7 +19,7 @@ function decodeUri(uri: string): string {
   return parsed as string
 }
 
-describe('session history provenance mentions', () => {
+describe('session history origin mentions', () => {
   it('encodeSessionUri is canonical-compatible with session-reference', () => {
     const uri = encodeSessionUri('abc-123_session/x')
     expect(uri.startsWith('dsh-session:')).toBe(true)

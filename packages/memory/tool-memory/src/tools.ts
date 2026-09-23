@@ -373,7 +373,7 @@ export function applyMineSessionsTool(
       + '`sessionQuery` service; degrades to an unavailable notice without it). Reads the most recent '
       + 'few session logs (or one specific `session_id`), extracts digests from compaction summaries, '
       + 'failures from turn/end error reasons, and all-completed todos, then stores each new lesson '
-      + 'through `learn` with the session as provenance. Run occasionally to convert conversation '
+      + 'through `learn` attributed to the session. Run occasionally to convert conversation '
       + 'history into durable memory; deduped, so re-running adds nothing new.',
     parameters: {
       session_id: { type: 'string', description: 'Optional explicit session id to mine instead of the recent sessions of this project' },

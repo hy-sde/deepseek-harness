@@ -30,7 +30,7 @@ export interface GraphOperatorChildStartInput {
   readonly parentSessionId?: string
   /** The activation's run identity (claim `targetRunId`). */
   readonly runId?: string
-  /** Host-consumable labels (graph, operator, work provenance). */
+  /** Host-consumable labels (graph, operator, work origin). */
   readonly labels?: Record<string, string>
   /** Cancellation signal from the graph driver. */
   readonly abortSignal?: AbortSignal

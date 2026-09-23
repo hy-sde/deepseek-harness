@@ -1,7 +1,7 @@
 /**
  * Agent Graph stream layer (Maka port, slice P2): pure derivations over the
  * durable schedule rows in `dsh-graph-control` plus the process-local
- * coordinator driver. Records are copy-with-provenance (DSH has no immutable
+ * coordinator driver. Records are copy-with-origin (DSH has no immutable
  * cross-session event ledger); ordering and ids are deterministic.
  * @module
  */

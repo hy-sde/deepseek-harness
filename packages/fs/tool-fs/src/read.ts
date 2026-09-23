@@ -229,7 +229,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
       )
 
       // Hashline snapshot: when we hold the whole small UTF-8 file in memory,
-      // record it (with the displayed window lines as seen-line provenance)
+      // record it (with the displayed window lines as seen-line origin)
       // into the session's hashline snapshot store and surface its content-hash
       // tag as a [path#TAG] header, so the model anchors a follow-up edit on
       // exactly the content it saw. Windowed/streamed reads never snapshot:

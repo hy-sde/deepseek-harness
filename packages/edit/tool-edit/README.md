@@ -9,13 +9,13 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-edit` gives the model one `edit` tool with four modes — literal `replace` with a progressive fuzzy-match ladder, structured `patch` hunks, Codex-style `apply_patch` envelopes, and the default line-anchored `hashline` mode. It executes over the harness `ctx.fs` seam, so sandbox policy, read-before-edit observation, and diff-card presentation apply, and it supports optional LSP writethrough (`formatOnWrite`, `diagnosticsOnEdit`) when `ctx.lsp` is mounted. Choose it instead of the `tool-fs` edit variant when the rich four-mode editor is wanted, mounting one or the other since both register a tool named `edit`. Main cost: LSP diagnostics formatting needs a diagnosed language server in the workspace, and fuzzy replacement can misapply on short or repetitive old strings.
+`dsh-tool-edit` gives the model one `edit` tool with four modes — literal `replace` with a progressive fuzzy-match ladder, structured `patch` hunks, Codex-style `apply_patch` envelopes, and the default line-anchored `hashline` mode. It executes over the harness `ctx.fs` seam, so sandbox policy, read-before-edit observation, and diff-card presentation apply, and it supports optional LSP writethrough when `ctx.lsp` is mounted. Choose it over the `tool-fs` edit variant when the rich four-mode editor is wanted; mount one or the other, since both register a tool named `edit`.
 
 ## Table of Contents
 
 - [Configuration](#configuration)
 - [Coexistence with `tool-fs`](#coexistence-with-tool-fs)
-- [License / provenance](#license--provenance)
+- [License / attribution](#license--attribution)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 - [Dev Note](#dev-note)
@@ -60,7 +60,7 @@ Both packages register a tool named `edit`, so a preset mounts one or the other.
     mode: hashline
 ```
 
-## License / provenance
+## License / attribution
 
 Ported from @oh-my-pi/pi-coding-agent (MIT). Original copyright: `Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük`. Per-file attribution headers are preserved in the sources.
 

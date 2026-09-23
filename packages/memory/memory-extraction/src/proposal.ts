@@ -285,7 +285,7 @@ export function deterministicMemoryPolicyRejection(item: MemoryProposalItem): bo
 /**
  * Admit one proposal item: normalize content, verify every citation verbatim
  * against its referenced bounded evidence, and collect the cited seqs for
- * provenance. Returns undefined on any violation (fail closed).
+ * origin tracking. Returns undefined on any violation (fail closed).
  */
 export function admitMemoryProposalItem(
   item: MemoryProposalItem,

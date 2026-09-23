@@ -46,7 +46,7 @@ harness-runtime, or leave the binary at
 `native/dsh-omp-native/target/release/dsh-omp-native` (the default probe in
 `read-native.ts`).
 
-## Provenance
+## Attribution
 
 - `src/pdf.rs` — omp² `crates/tools/src/read/pdf.rs` (MIT), `omp_core::Str`
   replaced by `&'static str`.

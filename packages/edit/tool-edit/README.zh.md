@@ -9,13 +9,13 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-edit` 为模型提供一个 `edit` 工具，含四种模式：带渐进式模糊匹配阶梯的字面量 `replace`、结构化 `patch` hunks、Codex 式 `apply_patch` 信封，以及默认的以行为锚定 `hashline` 模式。它经 harness 的 `ctx.fs` seam 执行，因此沙箱策略、先读后改观察与 diff 卡片呈现一并生效；挂载 `ctx.lsp` 时还支持可选的 LSP 写透（`formatOnWrite`、`diagnosticsOnEdit`）。当需要这种富四模式编辑器时，用它替代 `tool-fs` 的编辑变体——两者都注册名为 `edit` 的工具，只能挂载其一。主要成本：LSP 诊断格式化依赖工作区提供已诊断的语言服务器，且旧字符串过短或重复时模糊替换可能误改。
+`dsh-tool-edit` 为模型提供一个 `edit` 工具，含四种模式：带渐进式模糊匹配阶梯的字面量 `replace`、结构化 `patch` hunks、Codex 式 `apply_patch` 信封，以及默认的以行为锚定 `hashline` 模式。它经 harness 的 `ctx.fs` seam 执行，因此沙箱策略、先读后改观察与 diff 卡片呈现一并生效；挂载 `ctx.lsp` 时还支持可选的 LSP 写透。当需要这种富四模式编辑器时，用它替代 `tool-fs` 的编辑变体——两者都注册名为 `edit` 的工具，只能挂载其一。
 
 ## 目录
 
 - [配置](#configuration)
 - [与 `tool-fs` 共存](#coexistence-with-tool-fs)
-- [许可证／来源](#license--provenance)
+- [许可证／来源](#license--attribution)
 - [模型体验](#model-experience)
 - [已知限制与延期工作](#known-limitations-and-deferred-work)
 - [开发备注](#dev-note)
@@ -62,7 +62,7 @@ kind: "package-reference"
     mode: hashline
 ```
 
-<a id="license--provenance"></a>
+<a id="license--attribution"></a>
 ## 许可证／来源
 
 移植自 @oh-my-pi/pi-coding-agent（MIT）。原始版权：`Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük`。源文件中保留了逐文件的署名头。

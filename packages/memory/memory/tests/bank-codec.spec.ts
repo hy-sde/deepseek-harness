@@ -1,7 +1,7 @@
 /**
  * The bank codec: default zstd framing matches the session container, legacy
  * plaintext banks read transparently and migrate on first write, edit rewrites
- * honor the configured encoding, and session provenance round-trips through
+ * honor the configured encoding, and session origin round-trips through
  * save/search.
  */
 
@@ -113,7 +113,7 @@ describe('bank codec', () => {
     expect(seen.items[0]?.content).toContain('edited row')
   })
 
-  it('round-trips session provenance through save and search', async () => {
+  it('round-trips session origin through save and search', async () => {
     const root = await tempRoot()
     const backend = backendFor(root)
     await backend.save({ cwd: CWD }, { content: 'decision: vitest', sessionId: 'session-abc' })
@@ -140,10 +140,10 @@ describe('bank codec', () => {
     expect((await decompressZstdFrame(frame)).toString()).toContain('"id":"x"')
   })
 
-  it('lesson provenance survives across backend instances', async () => {
+  it('lesson origin survives across backend instances', async () => {
     const root = await tempRoot()
-    await backendFor(root).save({ cwd: CWD }, { content: 'provenance row', source: 'retain', sessionId: 'session-1' })
-    const other = await backendFor(root).search({ cwd: CWD }, 'provenance')
+    await backendFor(root).save({ cwd: CWD }, { content: 'origin row', source: 'retain', sessionId: 'session-1' })
+    const other = await backendFor(root).search({ cwd: CWD }, 'origin')
     expect(other.items[0]?.sessionId).toBe('session-1')
   })
 })

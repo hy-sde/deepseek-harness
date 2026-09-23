@@ -19,7 +19,7 @@ import type {
 } from '@deepseek-ai/dsh-graph-control'
 /* ------------------------------- records ------------------------------ */
 
-/** One committed operator record: a *copy with provenance* (DSH has no immutable cross-session event log). */
+/** One committed operator record: a *copy with origin* (DSH has no immutable cross-session event log). */
 export interface AgentGraphRecord {
   readonly recordId: string
   readonly graphId: string
@@ -28,7 +28,7 @@ export interface AgentGraphRecord {
     readonly sessionId: string
     readonly runId: string
     readonly turnId?: string
-    /** The durable runtime event id this record copies (adapter-provided provenance). */
+    /** The durable runtime event id this record copies (adapter-provided origin). */
     readonly runtimeEventId?: string
     /** Monotonic per-session ordering key from the source. */
     readonly seq: number

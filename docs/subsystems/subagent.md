@@ -32,6 +32,12 @@ interface SubagentCapabilities {
   readonly depthLimit: boolean
   readonly toolFilter: boolean
   readonly persona: boolean
+  /**
+   * Optional (additive capability): absolute child workspace override.
+   * In-process providers honor it and advertise `true`; backends that cannot
+   * omit the field, and the service rejects a workspace request on them.
+   */
+  readonly workspace?: boolean
 }
 ```
 
@@ -74,6 +80,16 @@ interface SubagentStartRequest {
    * before initializing the separate child runtime.
    */
   readonly agentOptions?: AgentOptions
+  /**
+   * Optional absolute directory the child works in: the child session's
+   * durable cwd overrides the parent's workspace, so file tools default to
+   * that directory and a restarted child resumes with the same workspace.
+   * The directory must already exist and be enterable. Requires
+   * {@link SubagentCapabilities.workspace}; rejected at start otherwise.
+   * Typical use: pass a `worktree` lease path so one subagent owns one
+   * isolated git worktree (firstmate/treehouse model).
+   */
+  readonly workspace?: string
   /**
    * Object-rooted JSON Schema within `assertObjectJsonSchema`'s enforced subset. Start rejects
    * unsupported schemas or providers without the capability. Data must be plain host-realm JSON;

@@ -80,7 +80,7 @@ export interface BankRow {
   active: boolean
   /** Id of the entry that superseded this one, when retired by `invalidate`. */
   supersededBy?: string
-  /** Session that captured this entry (cross-session provenance). */
+  /** Session that captured this entry (cross-session origin). */
   sessionId?: string
 }
 

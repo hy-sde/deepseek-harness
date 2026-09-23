@@ -263,7 +263,7 @@ describe('Patcher mandatory snapshot tag policy', () => {
   })
 })
 
-describe('Patcher seen-line provenance', () => {
+describe('Patcher seen-line origin', () => {
   const CONTENT = 'l1\nl2\nl3\nl4\nl5\n'
 
   it('rejects an edit anchored on a line the read never displayed', async () => {

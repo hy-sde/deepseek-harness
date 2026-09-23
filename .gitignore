@@ -47,3 +47,8 @@ worktrees/
 .agents/worktrees/
 .typert-*/
 native/system/test/bin/
+
+# Local agent tooling state (never published)
+.codebase-memory/
+openwiki/.last-update.json
+openwiki/.page-manifest.json

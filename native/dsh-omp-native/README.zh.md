@@ -32,7 +32,7 @@ cargo test --release           # sqlite module unit tests
 然后在 harness 运行时导出 `DSH_OMP_NATIVE_PATH=/abs/path/to/dsh-omp-native`，或把二进制放在
 `native/dsh-omp-native/target/release/dsh-omp-native`（`read-native.ts` 的默认探测路径）。
 
-## 溯源
+## 署名
 
 - `src/pdf.rs` — omp² `crates/tools/src/read/pdf.rs`（MIT），其中 `omp_core::Str`
   替换为 `&'static str`。

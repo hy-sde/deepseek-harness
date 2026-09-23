@@ -40,6 +40,28 @@ interface PtcRunRequest {
    * binding calls are the CALLER's to settle — the runtime only stops asking.
    */
   signal?: AbortSignal
+  /**
+   * Optional persistent-kernel identity, a non-empty opaque string. Runs that
+   * share a `sessionId` execute against the SAME kernel state (globals,
+   * working directory, event loop), so a later program sees what an earlier
+   * one assigned. Absent means one-shot: every run executes in fresh state,
+   * exactly as before this field existed. Providers that do not implement
+   * persistence MUST ignore it — a namespace list, program, and abort signal
+   * are all the one-shot contract needs, so a provider gains persistence only
+   * by choosing to honor this field. The provider, not the caller, owns the
+   * session lifecycle (idle reaping, disposal); the caller MUST NOT rely on a
+   * session outliving the runtime.
+   */
+  sessionId?: string
+  /**
+   * With {@link sessionId}: discard that session's existing kernel state and
+   * start the run in a fresh one. Without `sessionId` this flag is a no-op
+   * (there is nothing to reset in a one-shot run). A resetting run waits for
+   * the previous kernel's shutdown before executing, so stateful cleanup in
+   * prior programs completes first. Both fields together let a program offer
+   * "reset the kernel" as a first-class recovery from corrupted state.
+   */
+  reset?: boolean
 }
 ```
 
@@ -89,6 +111,15 @@ interface PtcRunResult {
    * the outer result.
    */
   logs: string[]
+  /**
+   * The session's execution count after this run: 1 for the first run of a
+   * {@link PtcRunRequest.sessionId | session}, 2 for the second, and so on.
+   * Present only when the run executed through a persistent session and the
+   * runtime could observe the count; one-shot runs omit it. Purely
+   * informational — consumers may render it as cell numbering but must not
+   * drive behavior from it.
+   */
+  executionCount?: number
   /** Present iff the run failed; see {@link PtcRunFailure} for the taxonomy. */
   error?: PtcRunFailure
 }

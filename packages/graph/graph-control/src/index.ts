@@ -2,7 +2,7 @@
  * Durable control plane for the Agent Graph (Maka port, slice P1).
  *
  * This package owns the *decisions*, not the derivation. Following Maka's
- * split (verified against `docs/architecture/agent-graph-stream-scheduling-draft.md`):
+ * split (verified against `docs/subsystems/graph.md`):
  * schedule updates, intent claims, operator provisions, and supervisor wakes are
  * the only stateful rows; records, routes, readiness intents, work status, and
  * client snapshots are derived elsewhere (session-projection folds).

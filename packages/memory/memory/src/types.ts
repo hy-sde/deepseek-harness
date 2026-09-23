@@ -27,7 +27,7 @@ export interface MemoryEntryView {
   content: string
   /** Optional source context captured with the memory. */
   context?: string
-  /** Provenance label (`retain`, `learn`, `recall`, `invalidate`, …). */
+  /** Origin label (`retain`, `learn`, `recall`, `invalidate`, …). */
   source: string
   /** Bag of free-form tags when the backend supports them. */
   tags?: string[]
@@ -47,11 +47,11 @@ export interface MemorySaveInput {
   content: string
   /** Optional source context for the fact. */
   context?: string
-  /** Provenance label; defaults to `retain`/`learn` at the call sites. */
+  /** Origin label; defaults to `retain`/`learn` at the call sites. */
   source?: string
   /** Importance in `[0, 1]`; defaults to the backend's baseline. */
   importance?: number
-  /** Optional originating session id, captured for cross-session provenance. */
+  /** Optional originating session id, captured for cross-session origin. */
   sessionId?: string
 }
 
@@ -71,7 +71,7 @@ export interface MemorySearchItem {
   id?: string
   /** The matched content (preview). */
   content: string
-  /** Provenance label. */
+  /** Origin label. */
   source?: string
   /** ISO timestamp (UTC) of the entry. */
   timestamp?: string
@@ -81,7 +81,7 @@ export interface MemorySearchItem {
   readonly?: boolean
   /** The entry's importance when the backend tracks one. */
   importance?: number
-  /** Session id that originated this hit (bank provenance or a session-search hit). */
+  /** Session id that originated this hit (bank origin or a session-search hit). */
   sessionId?: string
   /** Event seq within the originating session, when known. */
   seq?: number
