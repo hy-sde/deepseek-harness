@@ -7,18 +7,9 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
-`dsh-graph-host` 是 Agent Graph 的主机侧装配（Maka 移植，P6–P7a 切片）：打开图控制单元（P1 `dsh-graph-control`），在真实 harness 接缝之上构建算子执行器（P3 `dsh-graph-executor`），通过运行身份账本喂给不带身份的 P3 记录汇，构造主管工具运行其上的 `AgentGraphController`（P4 `dsh-tool-graph`），并在图根会话的空闲边界驱动唤醒投递（P5 `dsh-graph-wakes`）。本包不提供任何工具或提示词段——模型可见面留在 `dsh-tool-graph`；本包提供服务与持久化 `graph/change` 事件流。
-
-`graph-host` Cordis 插件声明 `inject: ['agents', 'sessions', 'subagents', 'git', 'compaction']`，并在自身 fiber 上发布两个服务：
-
-| 服务 | 导出常量 | 值 |
-| --- | --- | --- |
-| 主管工具用 `ctx.get` 解析的控制器 | `SERVICE_AGENT_GRAPH_CONTROLLER` | `dsh-tool-graph` 的 `AGENT_GRAPH_CONTROLLER_SERVICE` = `'agentGraphController'` |
-| 整个装配句柄 | `SERVICE_GRAPH_HOST` | `'graphHostServices'` |
-
-插件 `Config` 字段：`rootSessionId`（必填——图根；只有此会话能驱动主管工具，它也拥有 `graph/change` 事件）、`subagentProvider`（必填——转发给 `subagents.start` 的提供者名；随附的进程内提供者为 `spawn`）、`backend?`（承载图控制单元的存储后端名，默认 `'sqlite'`）、`worktreeRepoRoot?` / `worktreeBaseBranch?` / `worktreeMaxSlots?`（worktree 池几何参数）、`maxNewActivations?`（每次协调驱动的算子新激活上限，默认 `4`）。
+`dsh-graph-host` 为某个部署根装配 Agent Graph。它打开图控制单元，在真实 harness 接缝上构建算子执行器，构造主管工具运行其上的控制器，并在图根的空闲边界驱动唤醒投递——全部以两个 `ctx.get` 服务发布。在主机组合中挂载 Cordis 行并提供根会话 id 与子代理提供者；工具与投影预设行挂载在该会话中。本包自身不提供任何工具或提示词段。
 
 ## 目录
 
@@ -27,6 +18,7 @@ kind: "package-reference"
 - [进一步探索](#further-exploration)
 - [模型体验](#model-experience)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
 
 <a id="use-this-package"></a>
 ## 使用本包
@@ -155,7 +147,19 @@ interface SessionGraphProjection {
 <a id="model-experience"></a>
 ## 模型体验
 
-此处不产生任何模型可见的提示词文本。模型看到的是 `dsh-tool-graph` 的三个主管工具；本包的贡献是它们运行其上的控制器服务与追加到根会话日志的 `graph/change` 事件（P6 投影的持久化输入，而非界面元素）。无 KV 缓存或 token 影响：执行器自身不调用模型提供者，而是通过注入接缝启动子代理。
+### 图控制器服务
+
+#### 模型看到什么
+
+本包没有直接可见内容。模型看到的是 `dsh-tool-graph` 的三个主管工具，它们运行在此处发布的 `agentGraphController` 服务上；本包自身的贡献是那个服务与追加到根会话日志的 `graph/change` 事件（P6 投影的持久化输入，而非界面元素）。
+
+#### Token 影响
+
+无——此处不产生任何提示词文本，本包也从不自行调用模型提供者；它通过注入接缝启动子代理。
+
+#### KV Cache 影响
+
+无。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
@@ -165,3 +169,8 @@ interface SessionGraphProjection {
 - **`graph/change` 去重是每个装配且内存内的**：指纹映射在重启时重置，因此重启的主机可能对未变化的图重新发出一个事件。
 - **每次挂载一个根会话**：插件 Config 命名单个 `rootSessionId`（唤醒运行时与发射目标以它为范围），且 `agentGraphController` 服务名是每个主机 fiber 的单例——部署多个图根时，每个根需要独立 realm 中的独立主机行，而不是共享一行。
 - **终态工作项在持久化调度日志中保持 `requested`**，直到停止/完成更新提交；会话投影从折叠的终态记录推导 `finished`，因此丢失记录的主机重启会再次显示 `claimed`/`executing`（见记录折叠限制）。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details><summary>维护者的工作上下文——点击展开</summary>无。</details>

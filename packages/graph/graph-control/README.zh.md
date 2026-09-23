@@ -7,15 +7,9 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
-`dsh-graph-control` 是 Agent Graph 的持久化决策存储（Maka 移植，P1 切片）。它只持有图真正需要的有状态行——调度更新日志、恰好一次的意图声明、操作员预置和主管唤醒——其余一律不存：记录、路由、就绪意图、工作状态和客户端快照留给后续切片中的派生层（session-projection 折叠）。
-
-本包围绕 Maka 的一条硬规则设计：**持久化声明（含预分配的 turn/run 身份）必须在运行时被要求执行之前写入**，且每个声明/预置转换都以其观察到的调度修订号为前置条件。因此重试只会复用同一个激活身份，而不会第二次调用提供方。所有 ID 均为确定性 sha256（`graph_update_…`、`graph_claim_…`、`graph_operator_…`、`graph_wake_…`），重放天然幂等。
-
-持久化：一个 `KvUnit`（`name: agent_graph`）承载五张权威表；派生唯一性索引在打开时从权威行重建，撕裂写入可自愈而非损坏。存储契约禁止同一单元的并发写入者，因此本存储将全部变更串在一条写链上，每条记录写入均持久化。
-
-本包不提供任何工具、提示词或插件行——由协调器（P2）、执行器适配器（P3）和主管工具（P4）消费。
+`dsh-graph-control` 是 Agent Graph 背后的持久化决策存储。它在同一个 `KvUnit` 中记录调度更新、恰好一次的意图声明、操作员预置与主管唤醒，因此重放天然幂等、重试复用同一激活身份。每个进程装载一次：取得存储后端后打开 `agent_graph` 单元，然后在观察到的修订号上提交调度更新并声明意图。所有变更串在一条写链上，派生唯一性索引在打开时重建，撕裂写入可自愈而非损坏。本包不提供任何工具、提示词或插件行；由图协调器、执行器适配器与主管工具消费。
 
 ## 目录
 
@@ -24,6 +18,7 @@ kind: "package-reference"
 - [进一步探索](#further-exploration)
 - [模型体验](#model-experience)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
 
 <a id="use-this-package"></a>
 ## 使用本包
@@ -53,13 +48,25 @@ const { claim } = await store.claimIntentAtScheduleRevision(claimRequest, update
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [`port_maka.md`](../../../../workspace/port_maka.md) — 移植设计说明与阶段清单。
+- Maka 设计说明：`~/Documents/workspace/port_maka.md` —— 移植设计说明与阶段清单。
 - Maka 参考：Maka 检出中的 `docs/architecture/agent-graph-stream-scheduling-draft.md`（第 7 章）。
 
 <a id="model-experience"></a>
 ## 模型体验
 
-无模型可见面。本包是主机侧机制；模型看到的是 P4 切片的主管工具。
+### 图调度记录
+
+#### 模型看到什么
+
+无。本包是主机侧机制，模型不会直接收到其行记录。P4 切片的主管工具才是把图事实（`调度更新`、`意图声明`、`操作员预置`、`主管唤醒`）暴露给模型的地方。
+
+#### Token 影响
+
+无——主机侧行记录从不进入模型上下文，因此本包不增加也不消耗任何 token。
+
+#### KV Cache 影响
+
+无 KV Cache 影响：本存储写入持久化主机行，对模型上下文无任何贡献。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
@@ -67,3 +74,8 @@ const { claim } = await store.claimIntentAtScheduleRevision(claimRequest, update
 - 无 epoch 表：按设计决策，一个 DSH 会话拥有一个图（每根多图推迟）。
 - 多行 CAS 为进程原子（单写链）而非事务原子；崩溃后序列中撕裂的写入在打开时自愈，因为索引是派生的。撕裂写入的声明由协调器检查运行事实恢复，与 Maka 一致。
 - 派生工作状态（`requested/stopped/superseded`）、记录、路由、就绪与客户端快照属于后续切片，不在此存储。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details><summary>维护者的工作上下文——点击展开</summary>无。</details>

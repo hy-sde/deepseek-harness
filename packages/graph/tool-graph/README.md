@@ -9,11 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-graph` is the model-facing port slice P4 of the Agent Graph (Maka `stream-graph-supervisor-tools`). It contributes exactly three tools — `view_agent_graph`, `update_agent_graph`, `yield_agent_graph` — plus the `orchestration:graph` prompt section, and the host-side controller they run on. The tools are root-only and direct-only: only the graph's root session may call them, and they address the graph by id instead of delegating work generation to the model.
-
-The host composes the storage (P1) and derivation (P2) packages, constructs one `AgentGraphController`, and provides it under the `agentGraphController` service. The plugin resolves that service with `ctx.get`; when it is absent the tools still mount (an agent preset never breaks session creation over an optional host assembly) and every graph tool call fails loud with `[agent-graph-unavailable]` until the host provides the controller. All durable decisions flow through the controller's coordinator, so a tool call commits exactly one store update and never re-runs a provider.
-
-Every model-visible list is bounded with explicit `omitted` counts, and every `update_agent_graph` payload is cleaned by Maka's discriminator-tolerant preprocessors before it reaches the store. Source-triple idempotency makes a replayed or retried call a no-op: the same graph/session/key payload commits once and returns the existing row.
+`dsh-tool-graph` is the model-facing surface of the Agent Graph: three root-only tools (`view_agent_graph`, `update_agent_graph`, `yield_agent_graph`), the `orchestration:graph` prompt section, and the host-side `AgentGraphController` they run on. Only the graph's root session may call them; each call commits exactly one durable decision, and retried calls are idempotent no-ops. Mount it as a preset row of the graph root session, with the host row providing the controller service. It gives the model the graph view, update, and yield verbs without writing or delegating work generation.
 
 ## Table of Contents
 
@@ -22,6 +18,7 @@ Every model-visible list is bounded with explicit `omitted` counts, and every `u
 - [Further Exploration](#further-exploration)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 ## Use this package
 
@@ -53,17 +50,24 @@ Construct exactly one controller per graph root session. The plugin's `apply` re
 
 ## Further Exploration
 
-- [`port_maka.md`](../../../../workspace/port_maka.md) — the port's design note and phase checklist.
+- Maka design note: `~/Documents/workspace/port_maka.md` — the port's design note and phase checklist.
 - Maka reference: `packages/runtime/src/stream-graph-supervisor-tools.ts` in the Maka checkout.
 
 ## Model Experience
 
-The model sees three tools and one prompt section (nothing else in this package is model-visible):
+### Supervisor tools and prompt section
 
-- `view_agent_graph` — bounded snapshot of one graph: work statuses, truncated record summaries, readiness intents, `omitted` counts, and an opaque `nextCursor` for paging live state.
-- `update_agent_graph` — one durable decision per call: add work (one identity field per item via `targetKind`, `replaces` an existing work id), stop targets, or finish the graph with committed result ids. `idempotencyKey` makes retries safe.
-- `yield_agent_graph` — ends the supervisor turn cooperatively while graph work continues; the host wakes the root session at the next durable checkpoint.
-- `orchestration:graph` prompt section — instructs the supervisor to yield instead of poll, report outcomes per wave, and never invent work ids.
+#### What the model sees
+
+Three root-only tools and one prompt section — nothing else in this package is model-visible: `view_agent_graph` (bounded snapshot of one graph: work statuses, truncated record summaries, readiness intents, `omitted` counts, opaque `nextCursor`), `update_agent_graph` (one durable decision per call: add work via `targetKind`, stop targets, or finish with committed result ids; `idempotencyKey` keeps retries safe), `yield_agent_graph` (ends the supervisor turn cooperatively), and the `orchestration:graph` prompt section instructing the supervisor to yield instead of poll, report per wave, and never invent work ids.
+
+#### Token effect
+
+Each tool result is bounded — 64-item pages, per-item truncated summaries, explicit `omitted` counts — so a graph view costs a bounded number of tokens. The prompt section is a fixed contributed block, constant per session.
+
+#### KV Cache effect
+
+None — the package adds no per-call cache entry beyond the ordinary tool call/result pair in the session transcript.
 
 ## Known Limitations and Deferred Work
 
@@ -71,3 +75,7 @@ The model sees three tools and one prompt section (nothing else in this package 
 - Completed work stays `requested` (P2 status model has no terminal work state), so `yield_agent_graph.pendingWorkCount` counts requested schedule rows — activity (claims/intents) is reflected by the wake gate, not the count.
 - The tools accept an explicit `workId` per addWork item (an extension over Maka) so an update can reference its own new work deterministically; deterministically derived ids remain the default.
 - The plugin is exercised through a hand-built test composition; a Loader-booted cordis.yml composition test (packages/AGENTS.md product-plugin policy) is deferred to the integration slice. The opt-in composition patch at [`apps/cli/config/examples/graph/cordis.yml`](../../../apps/cli/config/examples/graph/cordis.yml) shows the intended mount: the host row provides the controller and this package mounts as a preset row of the graph root session.
+
+### Dev Note
+
+<details><summary>Working context for maintainers — click to expand</summary>None.</details>

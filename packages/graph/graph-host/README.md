@@ -9,16 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-host` is the host-plane assembly of the Agent Graph (Maka port, slices P6–P7a): it opens the graph control unit (P1 `dsh-graph-control`), builds the operator executor (P3 `dsh-graph-executor`) over real harness seams, feeds the identity-less P3 record sink through a run-identity ledger, constructs the `AgentGraphController` (P4 `dsh-tool-graph`) the supervisor tools run on, and drives wake delivery (P5 `dsh-graph-wakes`) on the graph root session's idle boundaries. The package contributes no tool and no prompt section — the model-facing surface stays in `dsh-tool-graph`; this package supplies the services and the durable `graph/change` event stream.
-
-The `graph-host` Cordis plugin declares `inject: ['agents', 'sessions', 'subagents', 'git', 'compaction']` and publishes two services on its own fiber:
-
-| service | exported constant | value |
-| --- | --- | --- |
-| controller the supervisor tools resolve with `ctx.get` | `SERVICE_AGENT_GRAPH_CONTROLLER` | `AGENT_GRAPH_CONTROLLER_SERVICE` from `dsh-tool-graph` = `'agentGraphController'` |
-| the whole assembly handle | `SERVICE_GRAPH_HOST` | `'graphHostServices'` |
-
-The plugin `Config` fields: `rootSessionId` (required — the graph root; only this session may drive supervisor tools and it owns the `graph/change` events), `subagentProvider` (required — provider name forwarded to `subagents.start`; the shipped in-process provider is `spawn`), `backend?` (storage backend name hosting the graph control unit, default `'sqlite'`), `worktreeRepoRoot?` / `worktreeBaseBranch?` / `worktreeMaxSlots?` (worktree pool geometry), and `maxNewActivations?` (cap on new operator activations per reconcile drive, default `4`).
+`dsh-graph-host` assembles the Agent Graph for one deployment root. It opens the graph control unit, builds the operator executor over real harness seams, constructs the controller the supervisor tools run on, and drives wake delivery at the graph root's idle boundaries — all published as two `ctx.get` services. Mount the Cordis row in the host composition with a root session id and subagent provider; the tool and projection preset rows mount in that session. It supplies no tool or prompt section of its own.
 
 ## Table of Contents
 
@@ -27,6 +18,7 @@ The plugin `Config` fields: `rootSessionId` (required — the graph root; only t
 - [Further Exploration](#further-exploration)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 ## Use this package
 
@@ -151,7 +143,19 @@ Work entries are capped (`SESSION_PROJECTION_MAX_WORK = 128`: requested head plu
 
 ## Model Experience
 
-No model-facing prompt text originates here. The model sees the three supervisor tools of `dsh-tool-graph`; this package's contributions are the controller service they run on and the `graph/change` events appended to the root session log (durable input to the P6 projection, not a surface element). No KV-cache or token effect: the executor does not call a model provider itself, it starts subagent children through the injected seam.
+### Graph controller service
+
+#### What the model sees
+
+Nothing directly from this package. The model sees the three supervisor tools of `dsh-tool-graph`, which run on the `agentGraphController` service published here; this package's own contributions are that service and the `graph/change` events appended to the root session log (durable input to the P6 projection, not a surface element).
+
+#### Token effect
+
+None — no prompt text originates here, and the package never calls a model provider itself; it starts subagent children through the injected seam.
+
+#### KV Cache effect
+
+None — the controller never passes graph rows into a provider request; cached context is whatever the model's own tools build.
 
 ## Known Limitations and Deferred Work
 
@@ -160,3 +164,7 @@ No model-facing prompt text originates here. The model sees the three supervisor
 - **`graph/change` dedup is per-assembly and in-memory**: the fingerprint map resets on restart, so a restarted host may re-emit one event for an unchanged graph.
 - **One root session per mount**: the plugin Config names a single `rootSessionId` (the wake runtime and the emission target are scoped to it), and the `agentGraphController` service name is a singleton per host fiber — a deployment with several graph roots needs per-root host rows in separate realms rather than one shared row.
 - **Terminal work items stay `requested` in the durable schedule log** until a stop/finish update commits; the session projection derives `finished` from the folded terminal record, so a host restart that loses records shows `claimed`/`executing` again (see the record-fold limitation).
+
+### Dev Note
+
+<details><summary>Working context for maintainers — click to expand</summary>None.</details>

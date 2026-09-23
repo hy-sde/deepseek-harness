@@ -9,13 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-executor` is the child-operator executor adapter of the Agent Graph (Maka port, slice P3). It implements the coordinator's `AgentGraphExecutor` surface over two injected seams: a `GraphOperatorWorktreePool` (acquire/release worktree leases for one repository) and a `GraphOperatorChildRunner` (one provider-backed child run per activation). The control store stays the durable authority — provisions and bindings are rows, and everything else is derived.
-
-Provisioning is deterministic and idempotent: `provisionOperator` derives `graph_operator_lease_<sha256(graphId, workId, provisionFingerprint)[32]>` from the provision, so a retry adopts the same lease key, and `pool.acquire` is idempotent per key (process-local by design; the binding row is the durable hint a real pool consults after a restart). When no lease can be acquired the method returns `undefined` and the reconciler defers the work to a later drive.
-
-Execution is serialized per operator (one child run at a time) and settles into exactly one terminal record per activation: the runner's summary is truncated to 16 KiB (`truncateUtf8`, `…` suffix) and emitted as an `AgentGraphRecordSourceEvent` (`facets: ['message', 'terminal']`) through `recordSink`; a failed run without a summary emits `[operator failed] <message>`. A child failure never throws from `runClaimedAgentGraphIntent` — records are the observation channel.
-
-This package contributes no tool, prompt, or plugin row — the coordinator (P2) and supervisor tools (P4) consume it.
+`dsh-graph-executor` is the child-operator executor adapter of the Agent Graph. It acquires deterministic worktree leases, binds operators durably, and runs one child per activation, settling each into exactly one terminal record. Provisioning is idempotent so retries adopt the same lease key, and execution is serialized per operator with child summaries truncated to 16 KiB before emission. Mount it with a worktree pool, a child runner, and a record sink; the control store stays the durable authority. It contributes no tool, prompt, or plugin row — the graph coordinator and supervisor tools consume it.
 
 ## Table of Contents
 
@@ -24,6 +18,7 @@ This package contributes no tool, prompt, or plugin row — the coordinator (P2)
 - [Further Exploration](#further-exploration)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 ## Use this package
 
@@ -74,7 +69,19 @@ The P1 store gained one authoritative table, `operator_bindings` (row key `provi
 
 ## Model Experience
 
-No model-facing surface. The package is host-side machinery: it renders no prompt (P2 does), and the terminal summaries it records are what the P4 supervisor tools present.
+### Operator run records
+
+#### What the model sees
+
+Nothing directly. The package is host-side machinery: it renders no prompt (the coordinator does), and every child run settles into one `AgentGraphRecordSourceEvent` whose truncated summary is what the P4 supervisor tools later present to the model.
+
+#### Token effect
+
+None — the package adds no tokens itself. The 16 KiB-truncated summary (`[operator failed] <message>` on a failed run without one) enters model context only if a supervisor tool renders the record.
+
+#### KV Cache effect
+
+None — the package writes durable host rows and never contributes to model context.
 
 ## Known Limitations and Deferred Work
 
@@ -82,3 +89,7 @@ No model-facing surface. The package is host-side machinery: it renders no promp
 - Worktrees intentionally survive terminal runs (Maka contract); the executor never releases a lease. Pool release is wired in for graph teardown in a later slice.
 - `recordSink` failures propagate as execution failures — the reconciler reports them and the host retries; there is no crash-consistent terminal-event log in this slice.
 - `runClaimedAgentGraphIntent` observes the seam contract the P2 README documents (`provisionOperator` may return `undefined`); the P2 `AgentGraphExecutor` type in `packages/graph/graph-stream/src/types.ts` still declares a non-optional provision result and is expected to line up on integration.
+
+### Dev Note
+
+<details><summary>Working context for maintainers — click to expand</summary>None.</details>

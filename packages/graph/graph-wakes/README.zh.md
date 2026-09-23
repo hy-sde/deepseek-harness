@@ -7,13 +7,9 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
-`dsh-graph-wakes` 是 Agent Graph 主管唤醒路径的投递半侧（Maka 移植，P5 切片）。`dsh-graph-control`（P1）已拥有持久化唤醒行（`pending | running | waiting_permission | delivered | superseded | retryable_failed`）；本包提供进程内运行时，在**下一个空闲边界**把到期唤醒送入其所属根会话——绝不在 turn 运行中——并通过存储自身的 begin/complete CAS 持久化结算每次尝试。
-
-运行时刻意解耦。`GraphWakeRuntime` 接收存储接缝（`GraphControlStore` 结构性满足）、接收 `{ graphId, wakeId, rootSessionId, snapshotVersion }` 的 `deliver` 钩子（P6 接线重新驱动 `AgentGraphCoordinator` 并投递主管检查点——运行时绝不导入协调器）、可选的 `onCompact(sessionId)` 压缩钩子，以及可注入的空闲观察器。投递在构造上即空闲门控：唯一投递入口是 `handleIdle()`，注入的观察器把 `agent/status === 'idle'` 边界转发给它——与 Schedule 包使用的状态观察接缝相同——因此运行时从不自行启动投递。
-
-本包不提供任何工具、提示词或插件行——P6 的主机接线负责挂载运行时并提供观察器与投递钩子。
+`dsh-graph-wakes` 在根会话的下一个空闲边界投递 Agent Graph 的主管唤醒——绝不在 turn 运行中——并通过控制存储自身的 begin/complete CAS 持久化结算每次尝试。它提供基于结构性存储接缝加投递钩子与可注入空闲观察器的进程内 `GraphWakeRuntime`；投递在构造上即空闲门控，因此运行时从不自行启动任何内容。由主机接线挂载，让 P6 投递钩子重新驱动图协调器即可。本包不添加任何工具、提示词或插件行。
 
 ## 目录
 
@@ -22,6 +18,7 @@ kind: "package-reference"
 - [进一步探索](#further-exploration)
 - [模型体验](#model-experience)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
 
 <a id="use-this-package"></a>
 ## 使用本包
@@ -104,7 +101,19 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 <a id="model-experience"></a>
 ## 模型体验
 
-无模型可见面。本包为主机侧机制；模型看到的是 P4 切片的主管工具，P6 接线把 `deliver` 变成模型可见的检查点 turn。
+### 空闲门控唤醒检查点
+
+#### 模型看到什么
+
+本包没有直接可见内容。它是主机侧机制：模型看到的是 P4 切片的主管工具，P6 接线把 `deliver` 钩子变成下一个空闲边界到达根会话的模型可见检查点 turn。
+
+#### Token 影响
+
+无——运行时不组装任何提示词；一次已投递唤醒的 token 属于 `deliver` 返回后根会话执行的检查点 turn。
+
+#### KV Cache 影响
+
+无。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
@@ -115,3 +124,8 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 - `waiting_permission` 唤醒被停驻且绝不重试；权限响应恢复（Maka `notifyPermissionResponse`）推迟到 P6。
 - 跨进程协调不在范围内：与协调器一样，运行时是进程本地的，因此持有同一存储的另一进程不会唤醒本运行时。
 - 图级停止约定（`targetId` 等于根/图 id 的日志停止）在此定义；工作项停止绝不抑制唤醒。P4 必须以根身份提交图停止，抑制才会生效。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details><summary>维护者的工作上下文——点击展开</summary>无。</details>
