@@ -36,7 +36,7 @@ Python 运行时继续打包 `dsh-web-app` 与前端产物。`dsh web` 会从已
 
 本决策部分取代[应用 profile 使用同一个 dsh launcher](2026-08-22-single-dsh-application-launcher.zh.md)中的 base 优先规则与独立配置树否决。显式清单属于产品行为时，可以使用仓库自有且有版本的独立 profile 组合包；由调用方提供的完整配置树与替代可执行程序仍被否决。
 
-本决策也取代 [Python SDK 运行时通过 dsh profile launcher 启动](2026-08-23-python-sdk-dsh-profile-runtime.zh.md)中的极简 overlay 实现，以及 [profile 插件组合包](2026-08-05-profile-plugin-bundles.zh.md)中默认 profile 均以 base 开头的表述。这些 Agent Note 对 launcher 所有权、Python 打包与 home 要求、普通 profile 分层及插件管理仍保持独立权威。没有活跃 Agent Note 被完全取代或符合归档条件。
+本决策也取代 [Python SDK 运行时通过 dsh profile launcher 启动](../../archived/architecture/2026-08-23-python-sdk-dsh-profile-runtime.md)中的极简 overlay 实现，以及 [profile 插件组合包](2026-08-05-profile-plugin-bundles.zh.md)中默认 profile 均以 base 开头的表述。这些 Agent Note 对 launcher 所有权、Python 打包与 home 要求、普通 profile 分层及插件管理仍保持独立权威。没有活跃 Agent Note 被完全取代或符合归档条件。
 
 ## 验证
 

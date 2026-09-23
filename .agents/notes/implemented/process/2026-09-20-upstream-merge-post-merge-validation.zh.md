@@ -10,7 +10,7 @@ Status: implemented
 
 - **0.1.2-alpha.1（2026-08-30）：** [upstream-merge-runtime-checklist](2026-08-30-upstream-merge-runtime-checklist.zh.md) 记录了八类运行时缺陷，它们都藏在绿色的 `tsc -b` + 文档门禁之后，耗费两天调试。
 - **0.1.5（2026-09-12）：** 合并看似全绿，但三个 fork 侧回归直到事后才浮出水面： （a）上游把 persona 行配置键从 `text:` 改名为 `prefix:`/`suffix:`，静默打破了每个 用户自建 preset（`~/.dsh/.agent-presets/*/agent.cordis.yml`）的 schemastery 校验 — 会话无法发消息，且每次重试都会重新挂载坏 preset；（b）一次把跨插件依赖改成 `workspace:^` 的升级使 `file:` 消费方以 `ERR_PNPM_WORKSPACE_PKG_NOT_FOUND` 失败； （c）上游用只把空**对象**视为「未配置兼容」的版本替换了 fork 的 `configuredCompatEntries` — 但 schemastery 会把缺失的 `allowedFallbackModels` 物化为 `[]`（空**数组**），于是手写且无兼容声明的路由被拒绝，provider 从未注册，默认模型 每回合 `INVALID_CONFIG`。三者都是事后排查发现的；fork 自带包测试套件（其中就有 (c) 的回归测试）在合并验证期间从未运行过。
-- **0.1.6-alpha.2（2026-09-20）：** 合并提交 `13bcd9930e` 通过了安装、类型检查、配置 门禁和一次完整重建 — 然后正在运行的 `dsh web` **每**一回合都报 `Cannot read properties of undefined (reading 'prepare')`，对用户呈现为赤裸的 `UNKNOWN`（「This turn failed」）。根因（本会话的实机调试）：tsx **源码**启动为 CLI 引导从 `src` 加载工作区包（tsconfig `paths`），而 profile 加载器树按 package `exports` 解析到 `lib`；`dsh-tools` 在进程里出现两份，`TOOL_RUNTIME_SCHEDULER` 是模块级 `unique symbol`，于是 `dsh-agent-loop`（lib）查到的符号与 `tools` 服务实例（src） 创建的不是同一个。0.1.6 alpha 合并首次引入了跨包符号握手，所以原本就存在的平面 分裂直到这次合并才变成致命问题。修复提交为 `f8c9911928`（源码启动检测、按启动 整顿 fallback、ambient 优先的行解析；详见 [source-launch 笔记](../architecture/2026-07-29-dsh-source-launch-tsx-esm.zh.md)）。
+- **0.1.6-alpha.2（2026-09-20）：** 0.1.6-alpha.2 合并通过了安装、类型检查、配置 门禁和一次完整重建 — 然后正在运行的 `dsh web` **每**一回合都报 `Cannot read properties of undefined (reading 'prepare')`，对用户呈现为赤裸的 `UNKNOWN`（「This turn failed」）。根因（本会话的实机调试）：tsx **源码**启动为 CLI 引导从 `src` 加载工作区包（tsconfig `paths`），而 profile 加载器树按 package `exports` 解析到 `lib`；`dsh-tools` 在进程里出现两份，`TOOL_RUNTIME_SCHEDULER` 是模块级 `unique symbol`，于是 `dsh-agent-loop`（lib）查到的符号与 `tools` 服务实例（src） 创建的不是同一个。0.1.6 alpha 合并首次引入了跨包符号握手，所以原本就存在的平面 分裂直到这次合并才变成致命问题。源码启动加载树修复（源码启动检测、按启动 整顿 fallback、ambient 优先的行解析；详见 [source-launch 笔记](../architecture/2026-07-29-dsh-source-launch-tsx-esm.zh.md)）。
 
 三次的共同模式：**在本 fork 中，绿色静态树是上游合并的必要条件，但永远不充分 — fork 包和运行中的 profile 绑定的是上游运行时语义（符号身份、配置 schema 形状、加载器 平面），静态门禁观察不到这些。**
 
@@ -59,7 +59,7 @@ Status: implemented
 
 ## 测试
 
-本笔记是三次合并的累积结果。0.1.6 的证据链：合并 `13bcd9930e` 在所有静态门禁上全绿 → 用户会话以 `UNKNOWN` 失败 → 会话日志显示 `Cannot read properties of undefined (reading 'prepare')`（位于 `agent-loop/lib/index.js:586`）→ 实机 inspector 证明存在 两个 `dsh-tools` 模块实例且 `Object.is(srcSymbol, libSymbol) === false` → `f8c9911928` 让源码启动单一平面，同一个恢复回合随后正常执行了它的工具调用。按顺序 执行清单正是抓住各类问题的方式；未来合并必须运行它并把结果记入合并描述，这也是 0.1.2 清单笔记已有的要求。
+本笔记是三次合并的累积结果。0.1.6 的证据链：0.1.6-alpha.2 合并在所有静态门禁上全绿 → 用户会话以 `UNKNOWN` 失败 → 会话日志显示 `Cannot read properties of undefined (reading 'prepare')`（位于 `agent-loop/lib/index.js:586`）→ 实机 inspector 证明存在 两个 `dsh-tools` 模块实例且 `Object.is(srcSymbol, libSymbol) === false` → 源码启动加载树修复让源码启动单一平面，同一个恢复回合随后正常执行了它的工具调用。按顺序 执行清单正是抓住各类问题的方式；未来合并必须运行它并把结果记入合并描述，这也是 0.1.2 清单笔记已有的要求。
 
 ## 后果
 
