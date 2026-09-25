@@ -259,6 +259,7 @@ function makeHarness(
   const openSkill = vi.fn<(name: string) => void>()
   const loadOlder = vi.fn()
   const loadThrough = vi.fn<(seq: number) => Promise<void>>().mockResolvedValue(undefined)
+  const retryOpen = vi.fn()
   // Mutable outline holder: tests swap the value and drive a re-render via set().
   let outlineValue: unknown
   const openView = vi.fn<(view: string, focus: string) => void>()
@@ -408,6 +409,7 @@ function makeHarness(
     openExternalLink: vi.fn(),
     loadOlder,
     loadThrough,
+    retryOpen,
     loadImage: vi.fn(() => Promise.reject(new Error('not used'))),
     chatScroll,
     forkAt,
@@ -435,7 +437,7 @@ function makeHarness(
   }
   return {
     set, setSession: session.set, setChat: chatSource.set, ChatView, props,
-    openFile, openSkill, loadOlder, loadThrough, openView,
+    openFile, openSkill, loadOlder, loadThrough, openView, retryOpen,
     setOutline: (value: unknown) => { outlineValue = value },
     chatScroll, forkAt, toolOwners,
     setTranscriptView: (mode: TranscriptViewMode) => { transcriptView.set(mode) },
@@ -2814,6 +2816,8 @@ describe('ChatView', () => {
     })
     const view = render(<h.ChatView {...h.props} />)
     expect(view.getByText(/历史加载失败：boom/)).toBeTruthy()
+    fireEvent.click(view.getByText('重试'))
+    expect(h.retryOpen).toHaveBeenCalledTimes(1)
     const loading = makeHarness({}, { openState: 'loading' })
     const lv = render(<loading.ChatView {...loading.props} />)
     expect(lv.getByText('载入历史…')).toBeTruthy()

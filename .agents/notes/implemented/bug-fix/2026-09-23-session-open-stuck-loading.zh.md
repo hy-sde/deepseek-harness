@@ -40,6 +40,12 @@ Status: implemented
 - `reopen()` 是新的公共 `ISession` 动词：所有测试夹具的 `SessionFace` 字面量与手写的 `api-catalog.ts` 声明都要镜像它；`FixtureSession` 增加标准的 fail-loud 桩。
 - 过期的“深度求索中…”运行位是另一个症状（新 `Session` 从过期的 `summary.running` 派生）；本修复不改变运行状态的清除逻辑。
 
+## 后续 · 2026-09-25 — 不合法基线现在降级而非失败
+
+上面提到的不合法基线路径，后来被根因定位为旧 Host 进程产生的基线记录，其 `chunk` 不是无损 JSON 对象（即实际观察到的错误信息）。持久化日志被证明完全干净（扫描 6496 条流，0 失败）；出错的记录只存在于旧 Host 进程中，已无法恢复。与其把它呈现为可重试的错误，客户端现在直接丢弃不合法的重连基线并保留持久化历史窗口：[`ClientAssistantStream.replace()`](../../../../packages/api/session-controller/src/client/sessions/assistant-stream.ts) 用 try/catch 包裹 `expandAssistantStream`；失败时清空 `activeAttempt`、原样返回持久化条目，并用 `console.warn` 记录。
+
+`session.client.spec.ts` 现在断言不合法开窗基线落在 `openState = 'open'` 且完整持久化窗口可见（原先：error），`assistant-stream.client.spec.ts` 增加了针对丢弃行为的单元测试。
+
 ## 验证
 
 - `session.client.spec.ts`：不合法开窗基线 → `openState = 'error'` 且 `gateway/internal`（原先：卡在 `loading`）；永不产出的首帧配合 `openTimeoutMs: 25` → 错误“did not settle within 25ms”；`reopen()` 在失败打开后落地新窗口。

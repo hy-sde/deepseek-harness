@@ -11,6 +11,7 @@ import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 import { RemoteStreamCarrierError } from '@deepseek-ai/dsh-api-gateway/client'
 import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { LlmAttemptId } from '@deepseek-ai/dsh-llm'
 import { ok, type RemoteMock } from '@deepseek-ai/dsh-remote-mock'
 import { createClientTest, type TestClient, webApp } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
 import { JUMP_PAGE_MESSAGES, Session } from '../src/client/sessions/session.ts'
@@ -109,6 +110,56 @@ describe('Session open', () => {
     await session.open()
     expect(session.getSnapshot().openState).toBe('error')
     expect(session.getSnapshot().openError).toMatchObject({ code: 'gateway/internal', message: 'socket died' })
+  })
+
+  it('drops a malformed opening baseline and still lands the durable window', async ({ mock, start }) => {
+    const session = await sessionBench(mock, start, SID)
+    // The opening snapshot's Assistant stream is malformed (dt length 0 with 2
+    // members): expandAssistantStream throws TypeError synchronously inside the
+    // publish path of the journal open. Pre-fix that escaped the stream and
+    // left openState 'loading' forever; the fix degrades the reconnect baseline
+    // instead of failing the whole history open.
+    mock.stream(FOLLOW, followScript(history(plainTurn(SessionSeq(10), 3, '问', '答')), {
+      assistantStream: {
+        revision: 1,
+        activeAttempt: {
+          attemptId: LlmAttemptId('session:1'),
+          startedAfterSeq: -1,
+          turn: 1,
+          step: 1,
+          nextIndex: 1,
+          stream: [{ type: 'text-chunks', time0: 0, index: 0, dt: [], texts: ['a', 'b'] }],
+        },
+      },
+    }))
+    await session.open()
+    const snapshot = session.getSnapshot()
+    expect(snapshot.openState).toBe('open')
+    // The durable history is fully visible; the malformed transient prefix is gone.
+    expect(eventSeqs(session)).toEqual([10, 11, 12, 13, 14, 15])
+  })
+
+  it('times out a never-settling opening first frame instead of hanging in loading', async ({ mock, start }) => {
+    const session = await sessionBench(mock, start, SID, { openTimeoutMs: 25 })
+    mock.stream(FOLLOW, () => new Promise<void>(() => { })) // never yields an opening frame
+    const opening = session.open()
+    await opening
+    const snapshot = session.getSnapshot()
+    expect(snapshot.openState).toBe('error')
+    expect(snapshot.openError?.code).toBe('gateway/internal')
+    expect(snapshot.openError?.message).toContain('did not settle within 25ms')
+  }, COLD_BOOT_TIMEOUT_MS)
+
+  it('reopen retries a failed open and lands the new window', async ({ mock, start }) => {
+    const session = await sessionBench(mock, start, SID)
+    mock.stream(FOLLOW, followScript(err(new RemoteError('session/not-found', 'gone', { sessionId: SID }))))
+    await session.open()
+    expect(session.getSnapshot().openState).toBe('error')
+    mock.stream(FOLLOW, followScript(history(plainTurn(SessionSeq(10), 3, '问', '答'))))
+    await session.reopen()
+    const snapshot = session.getSnapshot()
+    expect(snapshot.openState).toBe('open')
+    expect(eventSeqs(session)).toEqual([10, 11, 12, 13, 14, 15])
   })
 
   it('stitches live frames landing right behind the opening snapshot, dropping the page overlap', async ({ mock, start }) => {

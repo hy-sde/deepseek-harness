@@ -47,11 +47,35 @@ function projectionsBaseline(value: SessionProjectionBaseline): ProjectionsBasel
   }
 }
 
+/** Normalize an arbitrary thrown value into the Remote failure the snapshot reports. */
+function remoteFailureOf(value: unknown): RemoteFailure {
+  return new RemoteError(
+    'gateway/internal',
+    value instanceof Error ? value.message : String(value),
+    {},
+    { cause: value },
+  )
+}
+
+/** Race one open against a wall-clock budget; the budget is a hard 'timed-out' win (no open cancellation). */
+function openWithTimeout<T>(opening: Promise<T>, timeoutMs: number): Promise<T | 'timed-out'> {
+  if (timeoutMs <= 0) return opening
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { resolve('timed-out') }, timeoutMs)
+    void opening.then(
+      (value) => { clearTimeout(timer); resolve(value) },
+      (error: unknown) => { clearTimeout(timer); reject(error instanceof Error ? error : new Error(String(error))) },
+    )
+  })
+}
+
 /** Messages requested per history page. */
 export const PAGE_MESSAGES = 50
 
 /** Messages requested per page while a turn jump loops backwards (fewer, larger round trips). */
 export const JUMP_PAGE_MESSAGES = 200
+/** Default wall-clock budget that bounds a Session open's first history frame (see SessionOptions.openTimeoutMs). */
+export const DEFAULT_OPEN_TIMEOUT_MS = 30_000
 
 /** Manager-owned observers of a Session object's local state edges. */
 export interface SessionOptions {
@@ -74,6 +98,13 @@ export interface SessionOptions {
    * private store (bare object-layer construction).
    */
   projections?: ProjectionValueStore
+  /**
+   * Wall-clock budget for the first history frame of an open. A Session whose
+   * opening never settles within the budget lands in openState 'error'
+   * (retryable through {@link reopen}) instead of hanging in 'loading'
+   * forever. Defaults to {@link DEFAULT_OPEN_TIMEOUT_MS}; 0 disables the guard.
+   */
+  openTimeoutMs?: number
 }
 
 /**
@@ -387,6 +418,25 @@ export class Session implements SessionFace {
     return promise
   }
 
+  /**
+   * Rebuild the history window from scratch — the retry path after a failed
+   * or stale open (snapshot.openState 'error'). Invalidates any in-flight
+   * open first, then re-runs the tail-page open.
+   * @returns completion once the new window is open; a retry failure lands in snapshot.openError.
+   */
+  async reopen(): Promise<void> {
+    this.openGeneration++
+    const events = this.events
+    this.events = undefined
+    await events?.dispose()
+    this.openPromise = null
+    this.openState = 'cold'
+    this.openError = null
+    this.baseSeq = SessionLogOffset(0)
+    this.notifier.markDirty()
+    await this.open()
+  }
+
   /** Page up: pull one earlier page with the window's first seq as beforeSeq and prepend. */
   async loadOlder(): Promise<void> {
     if (this.openState !== 'open' || !this.hasMore || this.loadingOlder) return
@@ -457,16 +507,7 @@ export class Session implements SessionFace {
    *  reconnecting control stream and remains untouched. */
   async resync(): Promise<void> {
     if (this.openState === 'cold') return // never opened: no window to rebuild (doOpen flips to 'loading' synchronously, so cold implies no in-flight open)
-    this.openGeneration++
-    const events = this.events
-    this.events = undefined
-    await events?.dispose()
-    this.openPromise = null
-    this.openState = 'cold'
-    this.openError = null
-    this.baseSeq = SessionLogOffset(0)
-    this.notifier.markDirty()
-    await this.open()
+    await this.reopen()
   }
 
   // ---- Subscription API (useSyncExternalStore direct wiring) ----
@@ -599,15 +640,23 @@ export class Session implements SessionFace {
     })
     this.events = events
     try {
-      await events.open({ maxMessages: PAGE_MESSAGES })
+      const timeoutMs = this.options.openTimeoutMs ?? DEFAULT_OPEN_TIMEOUT_MS
+      const outcome = await openWithTimeout(events.open({ maxMessages: PAGE_MESSAGES }), timeoutMs)
+      if (outcome === 'timed-out') {
+        throw new RemoteError(
+          'gateway/internal',
+          `session open did not settle within ${timeoutMs}ms (the first history frame never arrived)`,
+          {},
+        )
+      }
       if (generation !== this.openGeneration || this.events !== events) return
       this.openState = 'open'
     } catch (error) {
       if (generation !== this.openGeneration || this.events !== events) return
-      if (!isRemoteFailure(error)) throw error
       this.events = undefined
       this.openState = 'error'
-      this.openError = error
+      this.openError = isRemoteFailure(error) ? error : remoteFailureOf(error)
+      void events.dispose()
     } finally {
       if (generation === this.openGeneration) this.notifier.markDirty()
     }
@@ -781,12 +830,11 @@ export class Session implements SessionFace {
   /** Publish a terminal background failure only while this stream still owns the Session. */
   private failEventStream(events: SessionEventStream, generation: number, error: unknown): void {
     if (generation !== this.openGeneration || this.events !== events) return
-    if (!isRemoteFailure(error)) throw error
     this.openGeneration++
     this.events = undefined
     this.openPromise = null
     this.openState = 'error'
-    this.openError = error
+    this.openError = isRemoteFailure(error) ? error : remoteFailureOf(error)
     void events.dispose()
     this.notifier.markDirty()
   }

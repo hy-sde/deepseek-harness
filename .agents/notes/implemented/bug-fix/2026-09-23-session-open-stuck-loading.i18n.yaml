@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-23-session-open-stuck-loading.md
-2026-09-23-session-open-stuck-loading.md: 0d0e2f601f83ac10ccda7103280eebd440d76511
-2026-09-23-session-open-stuck-loading.zh.md: a2adcb41121303f83661c01b45db33ff9d17c95b
+2026-09-23-session-open-stuck-loading.md: e7b8c48510c7f44cf963b5db1e26ddccd281b34d
+2026-09-23-session-open-stuck-loading.zh.md: c75dcf7a573eb45851d2134bfa3ebd6e11b8dbd1

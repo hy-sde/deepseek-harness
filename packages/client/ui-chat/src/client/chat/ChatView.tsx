@@ -221,7 +221,7 @@ const ChatNodeList = memo(function ChatNodeList({ order, ...seatProps }: ChatNod
 export function ChatView({
   useSession, useChat, useChatNode, useChatNodeProcess, useSessions, useStore, actions, renderSlot,
   sessionId, openFile, openSkill, openExternalLink, loadOlder, loadThrough, loadImage, openView, chatScroll, forkAt, fileMentions,
-  useTranscriptView, useProjection, t,
+  retryOpen, useTranscriptView, useProjection, t,
 }: ChatViewSlotProps) {
   const order = useChat(s => s.order)
   const nodeStore = useChat(s => s.nodes)
@@ -777,6 +777,9 @@ export function ChatView({
           {openState === 'error' && openError !== null && (
             <div className={css.openError}>
               {t('chat.loadError', { message: openError.message, code: openError.code })}
+              <div className={css.openRetry}>
+                <button type="button" onClick={retryOpen}>{t('retry')}</button>
+              </div>
             </div>
           )}
           {/* Projection-driven graph summary row; absent or quiet renders nothing. */}

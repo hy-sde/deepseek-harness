@@ -208,4 +208,28 @@ describe('ClientAssistantStream', () => {
       kind: 'committed', eventType: 'assistant/attempt', seq: 2,
     }))).toEqual({ type: 'rebaseline' })
   })
+
+  it('drops a malformed reconnect baseline and keeps the durable window', () => {
+    const stream = new ClientAssistantStream()
+    const durable = ordinary(4)
+    // dt length 0 with 2 members fails validateRun: expandAssistantStream throws.
+    const malformed: SessionAssistantStreamBaseline = {
+      revision: 2,
+      activeAttempt: {
+        attemptId: ATTEMPT,
+        startedAfterSeq: -1,
+        turn: 1,
+        step: 1,
+        nextIndex: 2,
+        stream: [{ type: 'text-chunks', time0: 20, index: 0, dt: [], texts: ['first', 'second'] }],
+      },
+    }
+    const visible = stream.replace([durable], malformed)
+
+    expect(visible).toEqual([durable])
+    // The dropped baseline must not leave a half-installed attempt behind.
+    expect(stream.acceptFrame(end(0, { kind: 'abandoned' }))).toBeUndefined()
+    const next = messageEvent(5)
+    expect(stream.acceptDurable(next)).toEqual({ type: 'publish', entry: next })
+  })
 })

@@ -5,7 +5,7 @@ import type {
   SessionAssistantStreamFrame,
 } from '../../types.ts'
 import { expandAssistantStream } from '@deepseek-ai/dsh-llm/assistant-stream'
-import type { AssistantStreamRecord } from '@deepseek-ai/dsh-llm/assistant-stream'
+import type { AssistantStreamRecord, TimedStreamChunk } from '@deepseek-ai/dsh-llm/assistant-stream'
 import type { LlmAttemptId } from '@deepseek-ai/dsh-llm/brand'
 import type {
   SessionAssistantSettlementEntry,
@@ -70,9 +70,20 @@ export class ClientAssistantStream {
     this.publishedSeqs = new Set(visible.map(entry => entry.event.seq))
     this.durableCursor = visible.reduce((cursor, entry) => Math.max(cursor, entry.event.seq), -1)
     if (opening !== undefined) {
-      for (const [index, member] of expandAssistantStream(
-        opening.stream as unknown as readonly AssistantStreamRecord[],
-      ).entries()) {
+      // The reconnect baseline is process-local transient state; its records
+      // are validated like any durable stream because a malformed prefix must
+      // not block the (independently validated) durable history window.
+      let reconstructed: readonly TimedStreamChunk[]
+      try {
+        reconstructed = expandAssistantStream(
+          opening.stream as unknown as readonly AssistantStreamRecord[],
+        )
+      } catch (error) {
+        console.warn('[session-controller] dropping malformed assistant stream baseline:', error)
+        this.activeAttempt = undefined
+        return visible
+      }
+      for (const [index, member] of reconstructed.entries()) {
         this.transientInGap += 1
         visible.push({
           type: 'transient',

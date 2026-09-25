@@ -148,6 +148,8 @@ export interface ChatViewInjected {
   loadOlder: () => void
   /** Jump loader: page history back through seq; resolves when the window covers it. */
   loadThrough: (seq: SessionSeq) => Promise<void>
+  /** Rebuild the history window after a failed or stale open (the retry button). */
+  retryOpen: () => void
   loadImage: MessageImageLoader
   chatScroll: {
     save: (position: ChatScrollPosition | null) => void

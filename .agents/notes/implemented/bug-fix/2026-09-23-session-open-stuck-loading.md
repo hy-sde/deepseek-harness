@@ -40,6 +40,12 @@ In [session.ts](../../../../packages/api/session-controller/src/client/sessions/
 - `reopen()` is a new public `ISession` verb: all test fixture `SessionFace` literals and the hand-written `api-catalog.ts` declaration mirror it; `FixtureSession` gains the standard fail-loud stub.
 - The stale "Deep diving…" running bit is a separate symptom (fresh `Session` seeded from a stale `summary.running`); this fix does not change running-state clearing.
 
+## Follow-up · 2026-09-25 — malformed baselines now degrade, not fail
+
+The malformed-baseline path above was later root-caused to a one-off Host-side baseline record whose `chunk` was not a lossless JSON object (the observed error message). Durable logs are provably clean (6496 streams scanned, 0 failures); the failing record existed only in the old Host process and is unrecoverable. Rather than surfacing that as a Retry-able error, the client now drops the malformed reconnect baseline and keeps the durable history window: [`ClientAssistantStream.replace()`](../../../../packages/api/session-controller/src/client/sessions/assistant-stream.ts) wraps `expandAssistantStream` in try/catch; on failure it clears `activeAttempt`, returns the durable entries unchanged, and logs with `console.warn`.
+
+`session.client.spec.ts` now asserts the malformed opening lands `openState = 'open'` with the full durable window (was: error), and `assistant-stream.client.spec.ts` gains a unit test for the drop behavior.
+
 ## Verification
 
 - `session.client.spec.ts`: malformed opening baseline → `openState = 'error'` with `gateway/internal` (was: hang in `loading`); never-yielding first frame with `openTimeoutMs: 25` → error "did not settle within 25ms"; `reopen()` after a failed open lands the new window.

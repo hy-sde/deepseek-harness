@@ -37,6 +37,7 @@ function sessionFakeFor() {
   return {
     loadOlder: vi.fn<ISession['loadOlder']>(() => Promise.resolve()),
     loadThrough: vi.fn<ISession['loadThrough']>(() => Promise.resolve()),
+    reopen: vi.fn<ISession['reopen']>(() => Promise.resolve()),
     readAttachment: vi.fn<ISession['readAttachment']>(() => Promise.resolve({
       ok: true,
       value: { attachment: ATTACHMENT, data: Uint8Array.of(1) },
@@ -116,6 +117,9 @@ describe('Chat inject API', () => {
 
     void injected.loadThrough(SessionSeq(42))
     expect(b.session.loadThrough).toHaveBeenCalledWith(42)
+
+    injected.retryOpen()
+    expect(b.session.reopen).toHaveBeenCalledOnce()
 
     injected.forkAt(17)
     await vi.waitFor(() => {

@@ -148,6 +148,25 @@
   line-height: calc(18px + var(--dsh-content-font-delta-secondary, 0px));
 }
 
+.openRetry {
+  margin-top: 8px;
+  display: flex;
+}
+
+.openRetry button {
+  border: none;
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+  cursor: pointer;
+}
+
+.openRetry button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
 .older {
   display: flex;
   justify-content: center;

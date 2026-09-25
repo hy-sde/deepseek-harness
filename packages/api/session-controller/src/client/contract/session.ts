@@ -138,6 +138,12 @@ export interface ISession {
    * @returns the admission result, or the Remote face's error branch.
    */
   command(line: string): Promise<RemoteResult<{ matched: boolean }>>
+  /**
+   * Rebuild the history window from scratch — the retry path after a failed
+   * or stale open (snapshot.openState 'error').
+   * @returns completion once the new window is open; a retry failure lands in snapshot.openError.
+   */
+  reopen(): Promise<void>
 }
 
 /**
