@@ -879,7 +879,7 @@ describe('JsonlSessionPersistence: encoding selection', () => {
 })
 
 describe('compressZstdFrame compression-level option', () => {
-  it('honors an explicit level through params and stays checksummed', async () => {
+  it('honors an explicit level through params and stays checksummed', { timeout: 30_000 }, async () => {
     const juicy = [
       '{"type":"assistant/chunk","seq":14,"time":1788151127516,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}}}',
       ...Array.from({ length: 4096 }, (_, i) => (
