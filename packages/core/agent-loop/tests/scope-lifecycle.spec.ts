@@ -356,7 +356,7 @@ describe('agent scope lifecycle', () => {
         agentCtx.systemPrompt.section({ name: 'deployment:persona-prefix', order: 0, text: 'You are the child.' })
       },
     })
-    expect(order).toEqual(['setup', 'agent/created', 'persona:You are the child.'])
+    expect(order).toEqual(['setup', 'agent/created', 'personaPrefix:You are the child.'])
     await handle.dispose()
   })
 
