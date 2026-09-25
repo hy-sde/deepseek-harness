@@ -32,8 +32,36 @@ import type {
 } from '@deepseek-ai/dsh-session-persistence'
 import type { SessionWriteLease } from './lease.ts'
 
-/** Maximum intentional wait before a routed live session batch starts writing. */
-export const LIVE_WRITE_BATCH_MAX_DELAY_MS = 200
+/**
+ * Default maximum intentional wait before a routed live session batch starts
+ * writing. A longer window coalesces streamed chunk deltas into fewer, bigger
+ * zstd frames — each frame compresses independently, so frame count dominates
+ * the on-disk ratio (measured: a real session stored 64,532 frames of median
+ * 165 B at 200 ms, ~2:1; the same bytes are ~7:1 as one frame). Checkpoint
+ * flushes drain regardless of this window, so it only bounds intra-step crash
+ * loss and never delays step-boundary durability.
+ */
+export const LIVE_WRITE_BATCH_MAX_DELAY_MS = 1000
+
+/**
+ * Default raw-byte threshold that forces a live batch to write early. A batch
+ * reaching this many buffered bytes drains on the next tick instead of waiting
+ * out the delay window, so a bursting stream cannot pile an unbounded buffer.
+ */
+export const LIVE_WRITE_BATCH_MAX_BYTES = 256 * 1024
+
+/** Live batching policy for one write handle (see the JSONL backend Config). */
+export interface LiveFlushPolicy {
+  /** Maximum wait (ms) from the first buffered event to an automatic drain. */
+  readonly maxDelayMs: number
+  /** Raw-byte threshold that forces an immediate drain when crossed. */
+  readonly maxBytes: number
+}
+
+/** Approximate contribution of one buffered event to the live batch's raw size. */
+function jsonEventBytes(event: SessionEvent): number {
+  return JSON.stringify(event).length + 1
+}
 
 /** The file-storage primitives the handle drives on its owning service. */
 export interface JsonlHandleStorage {
@@ -88,6 +116,8 @@ export class JsonlSessionHandle implements SessionHandle {
   private observedLength = 0
   /** Routed live events awaiting their batching deadline (persistence-owned copies). */
   private buffered: SessionEvent[] = []
+  /** Approximate raw bytes of `buffered` (JSON serialization lengths + newlines). */
+  private bufferedBytes = 0
   private batchTimer: ReturnType<typeof setTimeout> | undefined
   /** Set when a drain failed; the automatic timer stays quiet until the next drain. */
   private drainPaused = false
@@ -101,6 +131,10 @@ export class JsonlSessionHandle implements SessionHandle {
     private readonly state: StorageHandleState,
     /** The cross-process write lock; a create handle acquires it lazily at first materialization. */
     private lease?: SessionWriteLease,
+    private readonly liveFlush: LiveFlushPolicy = {
+      maxDelayMs: LIVE_WRITE_BATCH_MAX_DELAY_MS,
+      maxBytes: LIVE_WRITE_BATCH_MAX_BYTES,
+    },
   ) {}
 
   /** Exact fork-inherited prefix length stored with this session's log. */
@@ -273,11 +307,15 @@ export class JsonlSessionHandle implements SessionHandle {
    */
   enqueueLive(event: SessionEvent, reportBackgroundFailure: (error: unknown) => void): void {
     this.buffered.push(structuredClone(event))
+    this.bufferedBytes += jsonEventBytes(event)
     if (this.batchTimer !== undefined || this.drainPaused) return
+    // A batch over the byte threshold drains on the next tick instead of
+    // waiting out the delay window; otherwise the window is the deadline.
+    const delay = this.bufferedBytes >= this.liveFlush.maxBytes ? 0 : this.liveFlush.maxDelayMs
     this.batchTimer = setTimeout(() => {
       this.batchTimer = undefined
       this.drainLive().catch(reportBackgroundFailure)
-    }, LIVE_WRITE_BATCH_MAX_DELAY_MS)
+    }, delay)
   }
 
   /**
@@ -304,10 +342,12 @@ export class JsonlSessionHandle implements SessionHandle {
         // Only this single-flight drain splices the buffer, so the batch the
         // while-guard saw is still here when the chained turn runs.
         const batch = this.buffered.splice(0)
+        this.bufferedBytes = 0
         try {
           await this.persistContiguous(materializeAppendBatch(batch))
         } catch (error: unknown) {
           this.buffered = batch.concat(this.buffered)
+          this.bufferedBytes = batch.reduce((total, event) => total + jsonEventBytes(event), 0)
           this.drainPaused = true
           throw error
         }
@@ -356,7 +396,7 @@ export class JsonlSessionHandle implements SessionHandle {
   /** Serialize one operation onto the chain without the closed-handle refusal (drain-from-close). */
   private enqueueChain(op: () => Promise<void>): Promise<void> {
     const next = this.chain.then(op)
-    this.chain = next.catch(() => {})
+    this.chain = next.catch(() => { })
     return next
   }
 

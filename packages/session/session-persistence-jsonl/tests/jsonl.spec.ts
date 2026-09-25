@@ -2711,7 +2711,7 @@ describe('JsonlSessionPersistence: live batching policy', () => {
       await vi.advanceTimersByTimeAsync(499)
       const reader = await ctx.sessionPersistence.open(session.id, 'read')
       try {
-        expect(await reader.read()).toEqual([])
+        expect((await reader.read()).events).toEqual([])
       } finally {
         await reader.close()
       }

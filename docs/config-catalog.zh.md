@@ -2403,6 +2403,28 @@ export interface Config {
   root: string
   /** Physical encoding; defaults to checksummed Zstandard frames. */
   compression?: JsonlCompression
+  /**
+   * Zstandard frame compression level (1 = fastest, 22 = best ratio).
+   * Defaults to 15: session logs are many small frames, and a higher level
+   * buys ~25-40% smaller logs at negligible per-frame CPU cost. Level 1 is
+   * available for throughput-first deployments. Ignored when
+   * `compression: 'none'`.
+   */
+  compressionLevel?: number
+  /**
+   * Maximum intentional wait (ms) between the first buffered live event and
+   * an automatic batch write; defaults to 1000. A longer window coalesces
+   * streamed deltas into fewer, larger zstd frames (frame count dominates the
+   * on-disk ratio), and only bounds intra-step crash loss — checkpoint
+   * flushes drain immediately regardless.
+   */
+  liveFlushMaxDelayMs?: number
+  /**
+   * Buffered live-event byte threshold that forces a batch write early
+   * (default 262144). A bursting stream cannot pile up past this window in
+   * the delay budget alone.
+   */
+  liveFlushMaxBytes?: number
 }
 
 /** Physical encoding selected for JSONL session artifacts. */
@@ -4044,7 +4066,7 @@ Depends on: `Readable` (`node:stream`) · `Writable` (`node:stream`)
 ## `@deepseek-ai/dsh-session-persistence-jsonl`
 
 
-来源：[`packages/session/session-persistence-jsonl/src/index.ts:88`](../packages/session/session-persistence-jsonl/src/index.ts)
+来源：[`packages/session/session-persistence-jsonl/src/index.ts:99`](../packages/session/session-persistence-jsonl/src/index.ts)
 
 <a id="deepseek-aidsh-session-projection-cache"></a>
 
