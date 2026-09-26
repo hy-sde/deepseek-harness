@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-06-20-branded-ids.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-06-20-branded-ids.md
-2026-06-20-branded-ids.md: bc6c0d54563329a0afe89a9a31f257c5d3ee9054
-2026-06-20-branded-ids.zh.md: 1ea8d0b1a92f03597ba962de2492285654d73b05
+/agent-note-branded-ids-everywhere-they-belong:
+  en: 697f227bd71f73bc
+  zh: 8b5cf44bf4db7872
+/agent-note-branded-ids-everywhere-they-belong/problem:
+  en: 86f36fbde635bf6b
+  zh: 1b67bf3e9ec55e4e
+/agent-note-branded-ids-everywhere-they-belong/decision:
+  en: cc97c9c3a37f58a6
+  zh: f0f171ce9487b387
+/agent-note-branded-ids-everywhere-they-belong/alternatives-considered:
+  en: 6119e2aff3b6be5a
+  zh: 76136ef5249c23eb
+/agent-note-branded-ids-everywhere-they-belong/alternatives-considered/why-not-typing-owner-as-sessionid:
+  en: 67ce29946593d6d7
+  zh: 26812bbeda0f15a8
+/agent-note-branded-ids-everywhere-they-belong/out-of-scope-possible-extensions:
+  en: 6b3813d76c1b7ad3
+  zh: 11e6ad13b6b7a554
+/agent-note-branded-ids-everywhere-they-belong/verification:
+  en: 564d90afeee06ebb
+  zh: fa2c35e6250c572d
+/agent-note-branded-ids-everywhere-they-belong/consequences:
+  en: e83db6ae5c41b17e
+  zh: 6157c69b48868ef3

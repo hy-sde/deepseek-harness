@@ -42,7 +42,7 @@ kind: "package-reference"
 
 其存储后端必须暴露 `kv` 面（shipped 的 `sqlite` 后端可以；`storage-json` 不可以）—— 参见 [示例补丁](../../../apps/cli/config/examples/memory-extraction/cordis.yml)。引擎本身是纯的，可在无 cordis 下测试：
 
-```ts
+```ts ignore-check
 import { MemoryExtractionEngine } from '@deepseek-ai/dsh-memory-extraction'
 
 const engine = new MemoryExtractionEngine(ports) // readGate/readEvents/read+write cursor+receipt+failure/commitItems/generate
@@ -73,6 +73,10 @@ const result = await engine.execute(snapshot)   // never throws; idempotent by o
 - `src/runtime.ts` —— 主机接线：按会话的顺序队列、generate 适配器（`BlockAssembler`、`AbortSignal.timeout`、路由 provider/model 覆盖）、基于真实服务的同步/异步端口实现。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：抽取是尽力而为的 LLM 管线，其输出为建议性来源轨迹，而非伴生包可观测的持久模式面。
+
 ## 进一步探索
 
 - 移植来源：Maka 仓库 `packages/runtime/src/memory-extraction.ts`。

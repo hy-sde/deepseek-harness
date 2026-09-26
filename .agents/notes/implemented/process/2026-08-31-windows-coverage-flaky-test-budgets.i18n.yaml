@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-31-windows-coverage-flaky-test-budgets.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-31-windows-coverage-flaky-test-budgets.md
-2026-08-31-windows-coverage-flaky-test-budgets.md: 475bd79adf2721202d860d3c7bc86e1e4b68d6c2
-2026-08-31-windows-coverage-flaky-test-budgets.zh.md: 2a16ba8c6ea983d7ad457eb579c9e5e367cf4d68
+/agent-note-deterministic-assertions-and-dispose-budgets-for-the-windows-coverage-lane:
+  en: 62a43a5a637cf3d6
+  zh: 33b7c640dd51f4a8
+/agent-note-deterministic-assertions-and-dispose-budgets-for-the-windows-coverage-lane/problem:
+  en: 44bfeea8ffbc8597
+  zh: 309ef7e25cd6ef5f
+/agent-note-deterministic-assertions-and-dispose-budgets-for-the-windows-coverage-lane/decision:
+  en: 7e48439df8380772
+  zh: c598bf15c593d2a9
+/agent-note-deterministic-assertions-and-dispose-budgets-for-the-windows-coverage-lane/verification:
+  en: 68fa14a0305df57d
+  zh: abfc1294a4c8210d
+/agent-note-deterministic-assertions-and-dispose-budgets-for-the-windows-coverage-lane/alternatives-considered:
+  en: 8128306609009b6a
+  zh: beb83bd2fce69994
+/agent-note-deterministic-assertions-and-dispose-budgets-for-the-windows-coverage-lane/consequences:
+  en: e63d606c9c3c8982
+  zh: e87096f8fb44ec51

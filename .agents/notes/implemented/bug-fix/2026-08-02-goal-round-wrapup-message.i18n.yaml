@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-02-goal-round-wrapup-message.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-02-goal-round-wrapup-message.md
-2026-08-02-goal-round-wrapup-message.md: 22a7d329d28ec989faa890c1b3687ec8b96d4a86
-2026-08-02-goal-round-wrapup-message.zh.md: fb62391655d7e1c2b09207765cf307edde6d5260
+/agent-note-goal-round-wrap-up-message:
+  en: 5ff52232a5979de8
+  zh: 56a86b34d9dabf95
+/agent-note-goal-round-wrap-up-message/problem:
+  en: d46fdc412824ad4a
+  zh: 6792d73d7de9a05c
+/agent-note-goal-round-wrap-up-message/decision:
+  en: 6596002732219acd
+  zh: f76630421406e807
+/agent-note-goal-round-wrap-up-message/verification:
+  en: d215387fd1dbdd9f
+  zh: c8ab9ca9f5388028
+/agent-note-goal-round-wrap-up-message/alternatives-considered:
+  en: aa768c9910338552
+  zh: cace489f29feba31
+/agent-note-goal-round-wrap-up-message/consequences:
+  en: 2064f6083d03e56d
+  zh: a46f18a4b81adeea

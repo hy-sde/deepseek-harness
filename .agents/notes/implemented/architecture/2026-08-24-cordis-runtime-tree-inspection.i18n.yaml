@@ -1,6 +1,37 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-cordis-runtime-tree-inspection.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-24-cordis-runtime-tree-inspection.md
-2026-08-24-cordis-runtime-tree-inspection.md: 2cd63aa41567adc19d52d584874583183aef3cdc
-2026-08-24-cordis-runtime-tree-inspection.zh.md: 88cf2b344d4feef10f3632918539d3cb98750fc9
+/agent-note-cordis-runtime-tree-inspection:
+  en: 073eae696be74855
+  zh: c7b3eefbfc8ff18f
+/agent-note-cordis-runtime-tree-inspection/problem:
+  en: ea6372dea2181f2e
+  zh: a4e6f8537cc82585
+/agent-note-cordis-runtime-tree-inspection/decision:
+  en: 93e46a35e85564c4
+  zh: 161a78668012164b
+/agent-note-cordis-runtime-tree-inspection/cordis-tree-model:
+  en: 424e6dfcf4e69ecb
+  zh: 68bb680366328422
+/agent-note-cordis-runtime-tree-inspection/identity-and-lifetime:
+  en: f85268d213a195a6
+  zh: 9f1b95247393e933
+/agent-note-cordis-runtime-tree-inspection/realm-object-bridge:
+  en: 805716ca8b511cf9
+  zh: 5c23b105322f07e0
+/agent-note-cordis-runtime-tree-inspection/worker-repository-and-updates:
+  en: beb0f5116546c613
+  zh: e46de2b20c082c1f
+/agent-note-cordis-runtime-tree-inspection/cdp-projection:
+  en: 0b343c3f15056b58
+  zh: daaf83bf5b0b98a7
+/agent-note-cordis-runtime-tree-inspection/alternatives-considered:
+  en: 7fe2f357858bb2fa
+  zh: 3350d24f6178d34c
+/agent-note-cordis-runtime-tree-inspection/verification:
+  en: db0352816ec57ab7
+  zh: 376f0208c5c06245
+/agent-note-cordis-runtime-tree-inspection/consequences:
+  en: 764f33f4409744f3
+  zh: a6e2a1081484c16a

@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/fs/internal-urls/README.md
-README.md: 215c00ec056245c9693b45916aed9f555a646131
-README.zh.md: 22633a6887e7da5ee153f06ebbe828cf59dc617d
+/:
+  en: d3761fab98041be9
+  zh: e2e6840ea0de5b90
+/deepseek-ai-dsh-fs-internal-urls:
+  en: e01402614f038c75
+  zh: a51ceb971e042017
+/deepseek-ai-dsh-fs-internal-urls/summary:
+  en: 4548325a7aeb1200
+  zh: 9392509ab2e28d17
+/deepseek-ai-dsh-fs-internal-urls/table-of-contents:
+  en: 80b31a934611cb4a
+  zh: 05f3f7f9cb2fd881
+/deepseek-ai-dsh-fs-internal-urls/use-this-package:
+  en: c3fced45e0e22bc4
+  zh: 87473efd9595fb7d
+/deepseek-ai-dsh-fs-internal-urls/use-this-package/registered-schemes:
+  en: b284f04706581cd1
+  zh: 322d1b573289b66d
+/deepseek-ai-dsh-fs-internal-urls/understand-the-implementation:
+  en: 6b582f208081f1ff
+  zh: 55d99fc88b735591
+/deepseek-ai-dsh-fs-internal-urls/further-exploration:
+  en: da6c98c25123e626
+  zh: 906a708edfe1062b
+/deepseek-ai-dsh-fs-internal-urls/known-limitations-and-deferred-work:
+  en: c087f900dd22aafc
+  zh: 6334e7353543e85a
+/deepseek-ai-dsh-fs-internal-urls/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

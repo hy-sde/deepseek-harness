@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-10-web-remove-steering-interjection-caption.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-10-web-remove-steering-interjection-caption.md
-2026-08-10-web-remove-steering-interjection-caption.md: d7d33052397d126ff16964e8fc9e8263d4075523
-2026-08-10-web-remove-steering-interjection-caption.zh.md: 0be45d09fc98ec4cf8463b1c178a923b0474837a
+/agent-note-remove-the-steering-interjection-caption:
+  en: 9433ecc6967b3164
+  zh: 3c2222d12a135f1a
+/agent-note-remove-the-steering-interjection-caption/problem:
+  en: 7d46a50ab198ae15
+  zh: fdae68d97b9fefd5
+/agent-note-remove-the-steering-interjection-caption/decision:
+  en: 1617b5f0645a16eb
+  zh: c6f21642b37a09c1
+/agent-note-remove-the-steering-interjection-caption/alternatives-considered:
+  en: 159d48ba240d52a2
+  zh: 0cd33b4b10e218c7
+/agent-note-remove-the-steering-interjection-caption/testing:
+  en: abb558267e66d93f
+  zh: 590b2672c6a89c17
+/agent-note-remove-the-steering-interjection-caption/consequences:
+  en: 56511ca39ff8a258
+  zh: 7445a2ff80c78cab

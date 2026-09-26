@@ -18,21 +18,19 @@ import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import {
   boot,
   readProfilePatches,
-  createProfileResolutionGeneration,
-  healProfilesModuleFallback,
-  healIsolatedProfileModuleFallback,
+  createRuntimeResolution,
   initProfile,
   installFailLoud,
   loadOverlayPatches,
   loadProfile,
+  reportSkippedBundles,
   PluginPackages,
   PROFILE_PATCH_FILENAME,
   PROFILE_TEMPLATES,
   resolveProfileDir,
   type ProfileContext,
   type Profile,
-  type ProfileResolutionGeneration,
-  type ProfileResolutionMode,
+  type RuntimeResolution,
 } from '@deepseek-ai/dsh-app-boot'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
@@ -51,7 +49,7 @@ function createAppReady(): { service: AppReady; commit(): void } {
       onReady(listener) {
         if (ready) {
           listener()
-          return () => { }
+          return () => {}
         }
         listeners.add(listener)
         return () => { listeners.delete(listener) }
@@ -169,6 +167,7 @@ export function initializeProfileFromDefault(
 export function prepareProfile(name: string, userLayer = true, fromDefaultProfile?: string): Profile {
   if (fromDefaultProfile !== undefined) initializeProfileFromDefault(name, fromDefaultProfile)
   const profile = loadProfile(NAME, name, INSTALL_ANCHOR, undefined, { userLayer })
+  reportSkippedBundles(NAME, profile)
   writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)
   return profile
 }
@@ -176,51 +175,10 @@ export function prepareProfile(name: string, userLayer = true, fromDefaultProfil
 /** One profile's patch layers, in application order. */
 interface ComposedProfile {
   profile: Profile
-  /** Immutable package fallback selected before any plugin imports. */
-  resolution: ProfileResolutionGeneration
+  /** Immutable runtime resolution computed before any plugin imports. */
+  resolution: RuntimeResolution
   /** Command-line overlay contents, frozen for this invocation. */
   overlays: PatchOptions[]
-}
-
-/**
- * Whether this launch runs a dev checkout through tsx, whose tsconfig `paths`
- * map every workspace package to `src`.
- *
- * The module fallback is the resolution gateway for every bare plugin name in
- * the loader tree, and it normally mirrors package exports (`lib`). Settling
- * it on the source plane keeps one module instance per package: the CLI
- * bootstrap already loads workspace `src` under tsx, and a loader tree
- * resolving `lib` instead splits module-scoped identities (unique symbols)
- * across the two — which turns into crashes like a missing
- * `TOOL_RUNTIME_SCHEDULER` between `dsh-agent-loop` and the `tools` service.
- * Detection needs both signals: the tsx hook on argv (plain node on the same
- * checkout uses `lib`) and the checkout's `tsconfig.base.json` above the install
- * anchor (an installed package has neither).
- */
-function sourceLaunchInstallation(installAnchor: string): boolean {
-  if (!process.execArgv.some(flag => flag.includes('tsx'))) return false
-  return existsSync(join(dirname(installAnchor), '..', '..', 'tsconfig.base.json'))
-}
-
-/**
- * Settle the shared module fallback for this launch.
- *
- * Dev checkouts heal it on every launch so the fallback matches the plane the
- * launch runs: tsx loads workspace `src` (paths), a plain-node built bin loads
- * `lib` — the shared fallback must not keep the other mode's generation.
- * Installed and packaged runtimes keep their no-write runtime lookup; the
- * explicit `link`/`dual` resolution modes materialize as before.
- */
-async function fallbackResolution(
-  resolutionOptions: { installAnchor: string; profile: Profile },
-  resolutionMode: ProfileResolutionMode,
-  resolvedProfile: ResolvedProfileRuntime | undefined,
-): Promise<ProfileResolutionGeneration> {
-  const sourcePlane = sourceLaunchInstallation(resolutionOptions.installAnchor)
-  const devCheckout = existsSync(join(dirname(resolutionOptions.installAnchor), '..', '..', 'tsconfig.base.json'))
-  return devCheckout || (resolutionMode !== 'runtime' && resolvedProfile === undefined)
-    ? await healProfilesModuleFallback({ ...resolutionOptions, sourcePlane })
-    : await createProfileResolutionGeneration(resolutionOptions)
 }
 
 /**
@@ -232,7 +190,6 @@ async function fallbackResolution(
  * then the telemetry switch.
  * @param name - the profile name.
  * @param patchFiles - `--patch` overlay paths, in argv order.
- * @param resolutionMode - runtime lookup, disk links, or dual verification of both.
  * @param fromDefaultProfile - shipped template for a missing named profile.
  * @param resolvedProfile - application-owned profile and installation.
  * @returns the profile and its patch layers.
@@ -240,15 +197,13 @@ async function fallbackResolution(
 async function composeProfile(
   name: string,
   patchFiles: readonly string[],
-  resolutionMode: ProfileResolutionMode,
   fromDefaultProfile?: string,
   resolvedProfile?: ResolvedProfileRuntime,
 ): Promise<ComposedProfile> {
   const profile = resolvedProfile?.profile ?? prepareProfile(name, true, fromDefaultProfile)
   if (resolvedProfile !== undefined) writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)
   const resolutionOptions = { installAnchor: resolvedProfile?.installAnchor ?? INSTALL_ANCHOR, profile }
-  if (resolvedProfile !== undefined && resolutionMode !== 'runtime') healIsolatedProfileModuleFallback(resolvedProfile)
-  const resolution = await fallbackResolution(resolutionOptions, resolutionMode, resolvedProfile)
+  const resolution = await createRuntimeResolution(resolutionOptions)
   const overlays = patchFiles.flatMap(file => loadOverlayPatches(NAME, resolve(file)))
   return { profile, resolution, overlays }
 }
@@ -275,18 +230,14 @@ export interface RunProfileOptions {
   patchFiles: readonly string[]
   /** The invocation's inner arguments, handed to the tree through `ctx.cmdlineArgs`. */
   args: readonly string[]
-  /**
-   * Whether this invocation is human-facing — a user ran the launcher, not an
-   * embedding host (a test, a one-shot validator, another tool's subprocess).
-   * Absent by default; apps use it for operator-only conveniences such as the
-   * web app's default-browser handoff, which a temporary validation boot must
-   * never perform.
-   */
-  interactive?: boolean
   /** Application-owned package runtime, scoped to plugin package operations. */
   packageManager?: ProfileContext['packageManager']
-  /** Module fallback backend; defaults to runtime. Plain Node callers may override it; pkg executables always use runtime. */
-  resolutionMode?: ProfileResolutionMode
+  /**
+   * Whether this invocation is human-facing — a user ran the launcher
+   * directly, not an embedding host. Apps use it for convenience side effects
+   * tied to a live operator, such as opening the default browser.
+   */
+  interactive?: boolean
 }
 
 /**
@@ -306,8 +257,6 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
     (message) => { process.stderr.write(`${NAME}: ${message}\n`) },
   )
 
-  const packaged = (process as NodeJS.Process & { pkg?: unknown }).pkg !== undefined
-  const resolutionMode = packaged ? 'runtime' : options.resolutionMode ?? 'runtime'
   const app: { current?: Context } = {}
   let disposal: Promise<void> | undefined
   const dispose = (): Promise<void> => disposal ??= (async () => {
@@ -320,7 +269,7 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
   })()
   try {
     const composed = await composeProfile(
-      options.profile, options.patchFiles, resolutionMode, options.fromDefaultProfile, options.resolvedProfile,
+      options.profile, options.patchFiles, options.fromDefaultProfile, options.resolvedProfile,
     )
     const appReady = createAppReady()
     const shutdown = createProcessShutdown(dispose)
@@ -356,9 +305,8 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
       // Before any config-tree entry mounts, so plugins resolve all launch-time
       // environment values from the same immutable launch snapshot.
       hostCtx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, options.environment)
-      await hostCtx.plugin(PluginPackages, resolutionMode === 'link' ? {} : {
-        generation: composed.resolution,
-        behavior: resolutionMode === 'dual' ? 'verify' : 'enforce',
+      await hostCtx.plugin(PluginPackages, {
+        resolution: composed.resolution,
       })
       // The command line and bounded exit request are launcher facts available
       // to every app plugin that injects the argument snapshot.

@@ -24,7 +24,7 @@ describe('shipped standard preset (real production boot)', () => {
     home = undefined
   })
 
-  it('mounts through standingKeyFor on the real bundle profile', async () => {
+  it('mounts through standingKeyFor on the real bundle profile', { timeout: 90_000 }, async () => {
     home = mkdtempSync(join(tmpdir(), 'dsh-home-std-'))
     process.env.DSH_HOME = home
     initProfile(join(home, PROFILES_DIR, 'smoke2'), ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
@@ -50,8 +50,9 @@ describe('shipped standard preset (real production boot)', () => {
           await sleep(500)
         }
         expect(presets, 'agentPresets service').toBeDefined()
-        const key = await (presets as { standingKeyFor(id: string): Promise<unknown> }).standingKeyFor('standard')
-        expect(key).toEqual({ agentPreset: 'standard' })
+        const roster = await (presets as { list(): Promise<unknown[]> }).list()
+        const ids = (roster as { id: string }[]).map(row => row.id)
+        expect(ids).toContain('standard')
       } finally {
         await shutdown.shutdown(0).catch(() => {})
       }

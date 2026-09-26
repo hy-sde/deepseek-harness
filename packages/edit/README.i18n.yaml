@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/edit/README.md
-README.md: 69a0e3b3320f8a4268fa2a55c593ca38d7ff4690
-README.zh.md: 285a6a764e3e3c2effc5b89803f14b5aec6530d1
+/:
+  en: bf541702bc2dcb3f
+  zh: fa06de1e057b4daa
+/edit-rich-editor-capability-family:
+  en: 9a931c1b81f362b0
+  zh: 4cb96810c1c562ab
+/edit-rich-editor-capability-family/summary:
+  en: cd37c324e712acb5
+  zh: 02d3e589460f56e0
+/edit-rich-editor-capability-family/table-of-contents:
+  en: 1eb35b015a6c423f
+  zh: a8a3dceee2c9e943
+/edit-rich-editor-capability-family/packages:
+  en: 54da1f5a4c8c7978
+  zh: b2e1c24b25085c5d
+/edit-rich-editor-capability-family/related-documentation:
+  en: a434a28eee245e9c
+  zh: 0f7f490d8289d99c
+/edit-rich-editor-capability-family/dev-note:
+  en: 5de1d6304e00c58f
+  zh: 6d2630973a3dd550

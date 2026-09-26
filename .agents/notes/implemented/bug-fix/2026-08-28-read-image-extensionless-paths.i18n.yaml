@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-28-read-image-extensionless-paths.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-28-read-image-extensionless-paths.md
-2026-08-28-read-image-extensionless-paths.md: cf7d82b2ed86208bcb8ef6287dfcfc7c4391ccc4
-2026-08-28-read-image-extensionless-paths.zh.md: 8d4cd15f6c414bb28307863bfe61ea3a7181ed02
+/agent-note-read-image-accepts-extension-less-image-paths:
+  en: d66f7b037d5e0f5f
+  zh: 37c7726648fb6d63
+/agent-note-read-image-accepts-extension-less-image-paths/problem:
+  en: 852674f0f7facb67
+  zh: 19c6df244c6a85bb
+/agent-note-read-image-accepts-extension-less-image-paths/decision:
+  en: bc0d1bf4049489ee
+  zh: 1fe4426772b1611d
+/agent-note-read-image-accepts-extension-less-image-paths/alternatives-considered:
+  en: 534f4cec73523f66
+  zh: f4b5c298d406c1c3
+/agent-note-read-image-accepts-extension-less-image-paths/consequences:
+  en: 111ca5194b70e7cd
+  zh: 95e359ccb66d5bb2

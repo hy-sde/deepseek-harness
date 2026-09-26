@@ -1,6 +1,95 @@
 {
   "initial": [
     {
+      "name": "ast_edit",
+      "description": "Structurally rewrite source files by AST pattern. By default it PREVIEWS the proposed hunks without writing anything; set apply: true to write the files. Supports ast-grep pattern syntax: `$NAME` captures one node referenced in the rewrite as `$NAME`. Every matched node is rewritten; there is no interactive selection.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pat": {
+            "type": "string",
+            "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+          },
+          "rewrite": {
+            "type": "string",
+            "description": "Replacement template. Captured metavariables from pat substitute here (e.g. `$NAME`). Empty rewrite deletes the matched node."
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+          },
+          "include": {
+            "type": "string",
+            "description": "One glob filter for which files to rewrite (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+          },
+          "strictness": {
+            "type": "string",
+            "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia.",
+            "enum": [
+              "cst",
+              "smart",
+              "ast",
+              "relaxed",
+              "signature",
+              "template"
+            ]
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "true to write the rewrites to disk; false (default) previews only."
+          }
+        },
+        "required": [
+          "pat",
+          "rewrite"
+        ]
+      }
+    },
+    {
+      "name": "ast_grep",
+      "description": "Structurally search source files by AST pattern. Returns matching nodes with line numbers, grouped by file. Returns the first 100 matches inline; a capped result reports the total. Supports ast-grep pattern syntax: `$NAME` captures one node, `$_` matches any single node, `$$$NAME` captures zero+ nodes. Use read on a matched file for surrounding context.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pat": {
+            "type": "string",
+            "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+          },
+          "include": {
+            "type": "string",
+            "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+          },
+          "strictness": {
+            "type": "string",
+            "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia; \"signature\" matches node kinds without text.",
+            "enum": [
+              "cst",
+              "smart",
+              "ast",
+              "relaxed",
+              "signature",
+              "template"
+            ]
+          }
+        },
+        "required": [
+          "pat"
+        ]
+      }
+    },
+    {
       "name": "bash",
       "description": "Run commands in a bash shell\n* When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.\n* You don't have access to the internet via this tool.\n* You do have access to a mirror of common linux and python packages via apt and pip.\n* State is persistent across command calls and discussions with the user.\n* To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.\n* Please avoid commands that may produce a very large amount of output.\n* Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.",
       "parameters": {

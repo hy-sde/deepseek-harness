@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-01-streamed-tool-call-identity.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-01-streamed-tool-call-identity.md
-2026-09-01-streamed-tool-call-identity.md: c52f39b735199270d65ed30a388333a217003237
-2026-09-01-streamed-tool-call-identity.zh.md: 9a7ffb6343870a08e06507408e007ad94fbad178
+/agent-note-streamed-tool-call-identity-survives-empty-continuation-deltas:
+  en: 33b9904715ee27a5
+  zh: 21715a67124616b9
+/agent-note-streamed-tool-call-identity-survives-empty-continuation-deltas/problem:
+  en: d2c5d567500e1bd3
+  zh: 22f0d69ec7a96032
+/agent-note-streamed-tool-call-identity-survives-empty-continuation-deltas/decision:
+  en: a3ac31f657a7ff93
+  zh: 91666cb42c8e2cd9
+/agent-note-streamed-tool-call-identity-survives-empty-continuation-deltas/alternatives-considered:
+  en: ca791203526ed566
+  zh: 19b928b1e16e2696
+/agent-note-streamed-tool-call-identity-survives-empty-continuation-deltas/consequences:
+  en: 92c22ffce5ad60cd
+  zh: 6b991872f639de9c
+/agent-note-streamed-tool-call-identity-survives-empty-continuation-deltas/testing:
+  en: 99cfa24cdc26ce05
+  zh: a9d0af03f905d53a

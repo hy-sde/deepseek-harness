@@ -43,7 +43,7 @@ The host row lives in the **host composition** — it injects host services and 
 
 The plugin mounts the assembly when the root agent publishes (`agent/created`) or immediately when it is already live, and withdraws the services with its fiber. The assembly can also be built explicitly:
 
-```ts
+```ts ignore-check
 import { createGraphHostServices } from '@deepseek-ai/dsh-graph-host'
 
 const services = await createGraphHostServices({
@@ -103,7 +103,7 @@ Records are derived state, and this slice keeps them **in process memory on purp
 
 `buildSessionGraphProjection` turns the controller's whole-graph snapshot into the bounded P6 payload. Every `graph/change` event carries `{ graphId, snapshot, revision }`:
 
-```ts
+```ts ignore-check
 interface SessionGraphProjection {
   readonly schemaVersion: 1
   readonly graphId: string
@@ -130,6 +130,10 @@ Work entries are capped (`SESSION_PROJECTION_MAX_WORK = 128`: requested head plu
 ### Wake delivery
 
 `attachGraph` registers the controller and starts the wake runtime scoped to the root session. Delivery runs only at idle boundaries (`observeIdle` → `handleIdle`): the deliver hook re-drives the coordinator and emits a fresh `graph/change`. A closed graph short-circuits to `superseded` (the runtime also folds the schedule log itself: a `finish` update or a graph/root-targeted stop supersedes the wake without delivery). A failed delivery returns `retryable_failed`; a provider-confirmed context overflow (`GraphHostContextOverflowError` or an `overflow === true` marker) triggers the runtime's one-compaction recovery, and a second overflow of the same wake carries the bounded partial snapshot (`partialResult: true`) so the wake exhausts at the attempt cap (`DEFAULT_MAX_DELIVERY_ATTEMPTS = 3`) instead of retrying a third full delivery. The post-reconcile projection read is part of the delivery: an overflow-marked failure there triggers the same one-compaction path.
+
+## Runtime invariants
+
+No runtime invariant companion is published: host wiring only mounts graph-control, graph-stream, graph-wakes, and tool-graph, whose own companions already cover the surface.
 
 ## Further Exploration
 

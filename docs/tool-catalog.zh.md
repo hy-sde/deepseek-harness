@@ -53,6 +53,7 @@
 | `@deepseek-ai/dsh-experimental-tool-agent-team` | `interrupt_agent`、`list_agents`、`send_message`、`spawn_teammate`、`team_task_create`、`team_task_get`、`team_task_list`、`team_task_update`、`wait_agent` | `ctx.tools`、`ctx.systemPrompt`、`ctx.agentTeams`、`an exact live Team member Agent` | `tool/call`、`team/member`、`team/message/queued`、`team/message/delivered`、`team/task`、`tool/result` | - | 这 9 个工具限定于隐式 Team Lead 与持久 teammate 作用域。随产品发布的 dsh-base bundle 默认禁用该包；文档中的 Agent Teams profile patch 会启用它，并禁用旧 continuable child 的同名控制工具。 |
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
+| `@deepseek-ai/dsh-tool-workspace-dependencies` | `load_workspace_dependencies` | `ctx.tools` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
 | `@deepseek-ai/dsh-tool-git` | `commit`、`commit_apply`、`review`、`worktree` | `ctx.tools`、`ctx.git`、`ctx.systemPrompt`、`ctx.subagents at call time for review` | `tool/call`、`tool/result` | - | 模型驱动的 git 提交＋评审：`commit` 分析已暂存 diff 并返回计划骨架与锁文件自动归位提示；`commit_apply` 校验并执行（hunk 感知拆分、依赖顺序、dry-run）；`review` 把已暂存 diff 分发给 subagent 评审者并聚合出 ship/reject 结论。 |
 | `@deepseek-ai/dsh-tool-browser` | `browser` | `ctx.tools`、`ctx.browser`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 浏览器工具（omp 移植）：open/close/run/state 覆盖 launch（stealth 补丁）、CloakBrowser patch（源码级 C++ 指纹，默认）、CDP-attach 或本地 relay＋扩展；观察为带 click-by-selector 的 ARIA ref 树，截图写 PNG 路径。 |
@@ -64,7 +65,9 @@
 
 <a id="deepseek-aidsh-plugin-manager"></a>
 
+
 ## `@deepseek-ai/dsh-plugin-manager`
+
 
 ### `plugin_manager`
 
@@ -83,7 +86,9 @@
         "set_plugin",
         "set_bundle",
         "install_bundle",
-        "remove_bundle"
+        "remove_bundle",
+        "list_version_exemptions",
+        "set_version_exemption"
       ]
     },
     "target": {
@@ -92,7 +97,15 @@
     },
     "enabled": {
       "type": "boolean",
-      "description": "Required for set operations; defaults to true for installation."
+      "description": "Required for set operations; defaults to true for installation. For set_version_exemption, true grants and false revokes."
+    },
+    "runtimeVersion": {
+      "type": "string",
+      "description": "For set_version_exemption: exact DSH version from list_version_exemptions. Target must be the manifest package-name@version, not an alias or version range."
+    },
+    "acceptRisk": {
+      "type": "boolean",
+      "description": "For granting an exemption: true only after warning the user about possible crashes and data loss and receiving explicit permission for this exact plugin/runtime pair. General installation permission is not enough."
     },
     "approvedBuilds": {
       "type": "array",
@@ -100,6 +113,10 @@
       "items": {
         "type": "string"
       }
+    },
+    "registry": {
+      "type": "string",
+      "description": "For install_bundle: the npm registry URL asked first, when the user names one; otherwise the configured registry is asked, and its configured fallbacks while a registry is unreachable."
     },
     "offset": {
       "type": "number",
@@ -120,7 +137,9 @@
 
 <a id="deepseek-aidsh-mcp-resources"></a>
 
+
 ## `@deepseek-ai/dsh-mcp-resources`
+
 
 ### `list_mcp_resource_templates`
 
@@ -147,6 +166,7 @@
 
 来源： [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
 
+
 ### `list_mcp_resources`
 
 列出 MCP 服务器提供的资源。
@@ -171,6 +191,7 @@
 ```
 
 来源： [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
+
 
 ### `read_mcp_resource`
 
@@ -200,7 +221,9 @@
 
 <a id="deepseek-aidsh-experimental-browser-use-stagehand-native"></a>
 
+
 ## `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`
+
 
 ### `stagehand_act`
 
@@ -228,6 +251,7 @@
 ```
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
 
 ### `stagehand_extract`
 
@@ -298,6 +322,7 @@
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
 
+
 ### `stagehand_navigate`
 
 将 Stagehand 浏览器标签页导航至指定 URL。
@@ -324,6 +349,7 @@
 ```
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
 
 ### `stagehand_observe`
 
@@ -352,6 +378,7 @@
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
 
+
 ### `stagehand_screenshot`
 
 截取 Stagehand 标签页图像以供视觉检查。
@@ -378,6 +405,7 @@
 ```
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
+
 
 ### `stagehand_tabs`
 
@@ -447,7 +475,9 @@
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
+
 ## `@deepseek-ai/dsh-tool-ask-user`
+
 
 ### `ask_user_question`
 
@@ -521,7 +551,9 @@ ask_user_question 会暂停工具调用，直到当前 UI 提供方返回人类�
 
 <a id="deepseek-aidsh-tools"></a>
 
+
 ## `@deepseek-ai/dsh-tools`
+
 
 ### `run_code`
 
@@ -553,7 +585,7 @@ ask_user_question 会暂停工具调用，直到当前 UI 提供方返回人类�
     },
     "justification": {
       "type": "string",
-      "description": "Reason this complete program needs wider access, shown to the user for approval."
+      "description": "Reason this complete program needs wider access, shown to the user for approval. Use the language of the user’s current request."
     },
     "session": {
       "type": "string",
@@ -577,7 +609,9 @@ ask_user_question 会暂停工具调用，直到当前 UI 提供方返回人类�
 
 <a id="deepseek-aidsh-plan-mode"></a>
 
+
 ## `@deepseek-ai/dsh-plan-mode`
+
 
 ### `exit_plan_mode`
 
@@ -604,7 +638,9 @@ ask_user_question 会暂停工具调用，直到当前 UI 提供方返回人类�
 
 <a id="deepseek-aidsh-tool-bash"></a>
 
+
 ## `@deepseek-ai/dsh-tool-bash`
+
 
 ### `bash`
 
@@ -624,7 +660,7 @@ ask_user_question 会暂停工具调用，直到当前 UI 提供方返回人类�
     },
     "timeoutMs": {
       "type": "number",
-      "description": "Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."
+      "description": "Timeout in milliseconds. The executor applies its configured default and cap; on expiry the command moves to the background as a job instead of being killed."
     },
     "workdir": {
       "type": "string",
@@ -650,7 +686,9 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
 
 
 
+
 ## `@deepseek-ai/dsh-tool-present`
+
 
 ### `present`
 
@@ -662,6 +700,7 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
   "properties": {
     "files": {
       "type": "array",
+      "description": "Usually the 1-2 most important deliverables; at most 4 per call.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -692,7 +731,9 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
 交付物归属于调用它的 Session；Web ui-deliverables 提供源文件打开与卡片展示。
 
 <a id="deepseek-aidsh-tool-pwsh"></a>
+
 ## `@deepseek-ai/dsh-tool-pwsh`
+
 
 ### `pwsh`
 
@@ -712,7 +753,7 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
     },
     "timeoutMs": {
       "type": "number",
-      "description": "Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."
+      "description": "Timeout in milliseconds. The executor applies its configured default and cap; on expiry the command moves to the background as a job instead of being killed."
     },
     "workdir": {
       "type": "string",
@@ -736,7 +777,9 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 <a id="deepseek-aidsh-tool-cordis"></a>
 
+
 ## `@deepseek-ai/dsh-tool-cordis`
+
 
 ### `cordis_inspect_list`
 
@@ -750,6 +793,7 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 ```
 
 来源： [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
+
 
 ### `cordis_inspect_query`
 
@@ -793,7 +837,9 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 <a id="deepseek-aidsh-tool-bash-persistent"></a>
 
+
 ## `@deepseek-ai/dsh-tool-bash-persistent`
+
 
 ### `bash`
 
@@ -820,7 +866,9 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 <a id="deepseek-aidsh-tool-pwsh-persistent"></a>
 
+
 ## `@deepseek-ai/dsh-tool-edit`
+
 
 ### `edit`
 
@@ -914,7 +962,9 @@ apply_patch / hashline mode: { input: string }
 四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。
 
 <a id="deepseek-aidsh-tool-fs"></a>
+
 ## `@deepseek-ai/dsh-tool-pwsh-persistent`
+
 
 ### `pwsh`
 
@@ -941,7 +991,9 @@ apply_patch / hashline mode: { input: string }
 
 
 
+
 ## `@deepseek-ai/dsh-tool-str-replace-editor`
+
 
 ### `str_replace_editor`
 
@@ -1044,7 +1096,9 @@ apply_patch / hashline mode: { input: string }
 Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool-str-replace-editor/src/index.ts)
 
 独立于文件系统接缝的查看／创建／唯一字面替换／行插入工具；可与任何 Shell 或终端 API 组合使用。
+
 ## `@deepseek-ai/dsh-tool-fs`
+
 
 ### `edit`
 
@@ -1060,7 +1114,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
     },
     "old_string": {
       "type": "string",
-      "description": "Literal text to replace. Must match exactly."
+      "description": "Literal text to replace."
     },
     "new_string": {
       "type": "string",
@@ -1080,6 +1134,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 ```
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
+
 
 ### `read`
 
@@ -1110,6 +1165,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
+
 ### `read_image`
 
 读取 PNG/JPEG/WebP/GIF 文件并返回图像本身。无扩展名的路径同样被接受；格式按文件内容检测，因此规范化附件路径可以直接传入，无需复制或重命名。Harness 会在下一次模型请求前校验并缩小受支持的大图，因此仅为查看图片时应直接使用此工具，无需安装图片库或创建缩略图。可以用小批次并发读取彼此独立的文件。要求当前模型接受图像输入。
@@ -1130,6 +1186,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 ```
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
+
 
 ### `write`
 
@@ -1162,7 +1219,9 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 <a id="deepseek-aidsh-tool-fs-search"></a>
 
 
+
 ## `@deepseek-ai/dsh-tool-graph`
+
 
 ### `update_agent_graph`
 
@@ -1313,6 +1372,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
 
+
 ### `view_agent_graph`
 
 ```json
@@ -1336,6 +1396,7 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 
 Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
 
+
 ### `yield_agent_graph`
 
 ```json
@@ -1358,7 +1419,9 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 ```
 
 Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
+
 ## `@deepseek-ai/dsh-tool-fs-search`
+
 
 ### `glob`
 
@@ -1384,6 +1447,7 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 ```
 
 来源：[`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-search/src/index.ts)
+
 
 ### `grep`
 
@@ -1422,7 +1486,9 @@ glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn �
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 
+
 ## `@deepseek-ai/dsh-tool-ast`
+
 
 ### `ast_edit`
 
@@ -1478,6 +1544,7 @@ glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn �
 
 来源：[`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
 
+
 ### `ast_grep`
 
 按 AST 模式对源文件进行结构化搜索。返回带行号、按文件分组的匹配节点。内联返回前 100 条匹配；被截断时汇报总数。支持 ast-grep 模式语法：`$NAME` 捕获一个节点，`$_` 匹配任意单个节点，`$$$NAME` 捕获零个或多个节点。对匹配文件使用 read 获取周边上下文。
@@ -1527,7 +1594,9 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 <a id="deepseek-aidsh-tool-memory"></a>
 
+
 ## `@deepseek-ai/dsh-tool-memory`
+
 
 ### `learn`
 
@@ -1553,6 +1622,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 ```
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
 
 ### `memory_edit`
 
@@ -1597,6 +1667,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
+
 ### `mine_sessions`
 
 从本项目自己的过往会话中收割可复用教训（需要宿主 `sessionQuery` 服务；没有它则降级为不可用的提示）。读取最近数条会话日志（或明确指定的某个 `session_id`），从压缩摘要、turn/end 错误原因、全部完成的 todos 中抽取教训，并通过 `learn` 以会话作为溯源逐条存入。可偶尔运行以把对话历史转化为持久记忆；按内容去重，因此重复运行不会新增内容。
@@ -1614,6 +1685,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 ```
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
 
 ### `recall`
 
@@ -1640,6 +1712,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
+
 ### `reflect`
 
 从相关的长期项目记忆中综合出一个连贯的回答；与 recall 不同，它会混合多条记忆。用于横跨大量存储事实的开放式问题：“关于这位用户你知道什么？”、“总结项目决策。”、“我对 X 的偏好是什么？”。可选的 `context` 将综合聚焦于特定角度。回答仅以存储的记忆为依据——在依赖之前请先验证仓库事实。
@@ -1664,6 +1737,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 ```
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
+
 
 ### `retain`
 
@@ -1703,7 +1777,9 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。同时挂载 `sessionQuery` 服务（tool-session-query 行）时，`recall`/`reflect` 合并过往会话命中（source `session`、只读、带 sessionId/seq 溯源），`mine_sessions` 从已完成的会话日志中收割教训——压缩摘要中的要点、turn/end 错误原因中的失败、全部完成的 todos——以 `learn` 条目存储并以会话作为溯源、按运行去重；没有该服务时所有会话特性降级为无操作，`mine_sessions` 报告 `available: false`。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。
 
 <a id="deepseek-aidsh-tool-terminal"></a>
+
 ## `@deepseek-ai/dsh-tool-terminal`
+
 
 ### `terminal_close`
 
@@ -1726,6 +1802,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
 
+
 ### `terminal_list`
 
 列出当前 agent 所有的持久终端会话。
@@ -1738,6 +1815,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+
 
 ### `terminal_open`
 
@@ -1768,6 +1846,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
 
+
 ### `terminal_read`
 
 从持久终端读取一页有界的保留输出，不发送输入。
@@ -1796,6 +1875,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+
 
 ### `terminal_send`
 
@@ -1830,6 +1910,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+
 
 ### `terminal_signal`
 
@@ -1868,7 +1949,9 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 <a id="deepseek-aidsh-tool-goal"></a>
 
+
 ## `@deepseek-ai/dsh-tool-goal`
+
 
 ### `create_goal`
 
@@ -1895,6 +1978,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
 
+
 ### `get_goal`
 
 读取当前的同会话目标，包括确切的 id／revision、目标、阶段、已完成的延续 Round 数、Round 上限、存在时的阻塞原因，以及是否已准备下一次延续。更新目标前请先调用此工具。
@@ -1907,6 +1991,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
+
 
 ### `update_goal`
 
@@ -1926,7 +2011,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
     },
     "action": {
       "type": "string",
-      "description": "edit | pause | resume | complete | blocked",
+      "description": "edit, pause, and resume require a direct top-level human request. complete and blocked are also allowed during an automatic continuation of this goal; blocked is rejected before the configured minimum round count.",
       "enum": [
         "edit",
         "pause",
@@ -1945,7 +2030,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
     },
     "blocked_reason": {
       "type": "string",
-      "description": "Concrete blocking condition; required only with action blocked."
+      "description": "Required only with action blocked: the concrete condition that persisted across rounds and blocks progress."
     }
   },
   "required": [
@@ -1962,7 +2047,9 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 <a id="deepseek-aidsh-schedule"></a>
 
+
 ## `@deepseek-ai/dsh-schedule`
+
 
 ### `schedule_create`
 
@@ -1976,13 +2063,82 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
       "type": "string",
       "description": "Reminder content to present when the target becomes due."
     },
+    "title": {
+      "type": "string",
+      "description": "Task name of at most 120 characters, shown on the task card and in task lists."
+    },
     "after_seconds": {
       "type": "number",
-      "description": "Positive safe-integer delay in seconds."
+      "description": "Delay in whole seconds."
     },
     "every_seconds": {
       "type": "number",
-      "description": "Fixed-rate safe-integer interval in seconds, at least 300."
+      "description": "Fixed-rate interval in whole seconds, at least 60, aligned to the creation time; changing it with schedule_update re-aligns it to the save time."
+    },
+    "daily": {
+      "type": "object",
+      "description": "Every day at a local time.",
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "type": "string",
+          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 23:00:00."
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
+        }
+      },
+      "required": [
+        "time",
+        "time_zone"
+      ]
+    },
+    "weekly": {
+      "type": "object",
+      "description": "On the given weekdays at a local time.",
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "type": "string",
+          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 09:00:00."
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
+        },
+        "weekdays": {
+          "type": "array",
+          "description": "ISO weekdays, Monday 1 through Sunday 7, without repetitions.",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "time",
+        "time_zone",
+        "weekdays"
+      ]
+    },
+    "cron": {
+      "type": "object",
+      "description": "Five-field Vixie cron expression in a time zone.",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "type": "string",
+          "description": "minute hour day-of-month month day-of-week, for example \"*/15 9-17 * * 1-5\". When both day fields are restricted, a date matches if either one matches."
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
+        }
+      },
+      "required": [
+        "expression",
+        "time_zone"
+      ]
     },
     "at": {
       "oneOf": [
@@ -2010,16 +2166,18 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
           ]
         }
       ],
-      "description": "Absolute target as strict offset RFC 3339 or local date/time with an explicit IANA zone."
+      "description": "Absolute target: an RFC 3339 date-time with offset, or a local date, time, and IANA time_zone."
     }
   },
   "required": [
-    "prompt"
+    "prompt",
+    "title"
   ]
 }
 ```
 
 来源：[`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
+
 
 ### `schedule_delete`
 
@@ -2031,7 +2189,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
   "properties": {
     "id": {
       "type": "string",
-      "description": "Exact session-local schedule id."
+      "description": "Schedule id returned by schedule_list."
     }
   },
   "required": [
@@ -2041,6 +2199,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 ```
 
 来源：[`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
+
 
 ### `schedule_list`
 
@@ -2059,7 +2218,139 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 <a id="deepseek-aidsh-tool-debug"></a>
 
+
+### `schedule_update`
+
+原地修改一条提醒并保留其 id。提供新的 title、prompt，或至多一个时间参数；未提供的字段保持原值。需要相对延迟时请新建一条提醒。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Schedule id returned by schedule_list."
+    },
+    "title": {
+      "type": "string",
+      "description": "New task name of at most 120 characters."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "New reminder content."
+    },
+    "every_seconds": {
+      "type": "number",
+      "description": "Fixed-rate interval in whole seconds, at least 60, aligned to the creation time; changing it with schedule_update re-aligns it to the save time."
+    },
+    "daily": {
+      "type": "object",
+      "description": "Every day at a local time.",
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "type": "string",
+          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 23:00:00."
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
+        }
+      },
+      "required": [
+        "time",
+        "time_zone"
+      ]
+    },
+    "weekly": {
+      "type": "object",
+      "description": "On the given weekdays at a local time.",
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "type": "string",
+          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 09:00:00."
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
+        },
+        "weekdays": {
+          "type": "array",
+          "description": "ISO weekdays, Monday 1 through Sunday 7, without repetitions.",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "time",
+        "time_zone",
+        "weekdays"
+      ]
+    },
+    "cron": {
+      "type": "object",
+      "description": "Five-field Vixie cron expression in a time zone.",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "type": "string",
+          "description": "minute hour day-of-month month day-of-week, for example \"*/15 9-17 * * 1-5\". When both day fields are restricted, a date matches if either one matches."
+        },
+        "time_zone": {
+          "type": "string",
+          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
+        }
+      },
+      "required": [
+        "expression",
+        "time_zone"
+      ]
+    },
+    "at": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "date": {
+              "type": "string"
+            },
+            "time": {
+              "type": "string"
+            },
+            "time_zone": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "date",
+            "time",
+            "time_zone"
+          ]
+        }
+      ],
+      "description": "Absolute target: an RFC 3339 date-time with offset, or a local date, time, and IANA time_zone."
+    }
+  },
+  "required": [
+    "id"
+  ]
+}
+```
+
+Source: [`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
+
+Schedule 服务加载期间，在 live 根 Agent scope 内注册。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。
+
+<a id="deepseek-aidsh-tool-lsp"></a>
+
 ## `@deepseek-ai/dsh-tool-debug`
+
 
 ### `debug`
 
@@ -2266,7 +2557,9 @@ Source: [`packages/debug/tool-debug/src/index.ts`](../packages/debug/tool-debug/
 debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter.
 
 
+
 ## `@deepseek-ai/dsh-code-runtime-kernels`
+
 
 ### `run_kernel_code`
 
@@ -2310,7 +2603,9 @@ run_kernel_code 在持久化 kernel（python3 或 node 子进程，仅标准库�
 
 <a id="deepseek-aidsh-tool-lsp"></a>
 
+
 ## `@deepseek-ai/dsh-tool-lsp`
+
 
 ### `lsp`
 
@@ -2367,7 +2662,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-ralph"></a>
 
+
 ## `@deepseek-ai/dsh-tool-ralph`
+
 
 ### `ralph`
 
@@ -2398,7 +2695,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-skill"></a>
 
+
 ## `@deepseek-ai/dsh-tool-skill`
+
 
 ### `skill`
 
@@ -2423,7 +2722,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-session-query"></a>
 
+
 ## `@deepseek-ai/dsh-tool-session-query`
+
 
 ### `session_event_read`
 
@@ -2457,6 +2758,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+
 
 ### `session_event_search`
 
@@ -2518,6 +2820,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
 
+
 ### `session_event_trace`
 
 读取已获授权会话中某个事件的所有直接替换关系，以及该事件与其引用的来源事件之间的关系。
@@ -2542,6 +2845,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+
 
 ### `session_search`
 
@@ -2636,6 +2940,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
 
+
 ### `session_trace`
 
 读取围绕一个会话的已授权会话谱系，包括完整可见的祖先和后代关系。
@@ -2658,7 +2963,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-subagent"></a>
 
+
 ## `@deepseek-ai/dsh-tool-subagent`
+
 
 ### `list_subagent_models`
 
@@ -2682,6 +2989,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/subagent/tool-subagent/src/list-models.ts`](../packages/subagent/tool-subagent/src/list-models.ts)
 
+
 ### `subagent`
 
 将一项自包含任务委派给 subagent（在自身上下文中工作的独立 agent），用它卸载聚焦且独立的工作，例如研究、限定范围的实现或分析，以免消耗当前对话的上下文。subagent 会返回结果，但不会返回中间步骤。请提供完整、独立的提示词，因为它看不到当前对话。此调用默认等待结果。设置 `run_in_background: true` 可返回 job id；使用 `job_output` 收集结果，使用 `job_kill` 停止任务。
@@ -2700,7 +3008,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
     },
     "run_in_background": {
       "type": "boolean",
-      "description": "Whether to run as a background job and return its id. Defaults to false; collect with job_output or stop with job_kill."
+      "description": "Run as a background job and return its id (collect with job_output, stop with job_kill). Defaults to false."
     },
     "workspace": {
       "type": "string",
@@ -2720,7 +3028,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-subagent-control"></a>
 
+
 ## `@deepseek-ai/dsh-tool-subagent-control`
+
 
 ### `interrupt_agent`
 
@@ -2732,7 +3042,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
   "properties": {
     "agent_id": {
       "type": "string",
-      "description": "The agent id of the running agent to interrupt."
+      "description": "The id of an agent created under you: your direct child or a deeper descendant."
     }
   },
   "required": [
@@ -2742,6 +3052,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)
+
 
 ### `list_agents`
 
@@ -2753,7 +3064,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
   "properties": {
     "scope": {
       "type": "string",
-      "description": "children (default) lists direct children only; descendants walks the complete tree below you.",
+      "description": "children (default) lists direct children, which accept send_message in any status. descendants lists the whole tree below you with each entry's parent session id and depth; entries deeper than 1 accept only interrupt_agent.",
       "enum": [
         "children",
         "descendants"
@@ -2764,6 +3075,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/subagent/tool-subagent-control/src/list-agents.ts`](../packages/subagent/tool-subagent-control/src/list-agents.ts)
+
 
 ### `send_message`
 
@@ -2795,7 +3107,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-subagent-report"></a>
 
+
 ## `@deepseek-ai/dsh-tool-subagent-report`
+
 
 ### `report`
 
@@ -2855,7 +3169,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-jobs"></a>
 
+
 ## `@deepseek-ai/dsh-tool-jobs`
+
 
 ### `job_kill`
 
@@ -2882,6 +3198,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/jobs/tool-jobs/src/index.ts`](../packages/jobs/tool-jobs/src/index.ts)
 
+
 ### `job_list`
 
 列出你的后台任务（包括正在运行和已完成的任务）及其 id、种类和状态。
@@ -2894,6 +3211,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/jobs/tool-jobs/src/index.ts`](../packages/jobs/tool-jobs/src/index.ts)
+
 
 ### `job_output`
 
@@ -2909,11 +3227,11 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
     },
     "wait": {
       "type": "boolean",
-      "description": "Block until the job reaches a terminal status or the timeout expires. A timed-out wait returns [status: running] and leaves the job alive."
+      "description": "Block until the job finishes or the timeout expires; a timed-out wait leaves the job running. Defaults to false."
     },
     "timeout_ms": {
       "type": "number",
-      "description": "Max wait in milliseconds (only meaningful with wait: true). Defaults to the configured wait timeout; capped by the configured maximum."
+      "description": "Max wait in milliseconds with wait: true. Defaults to and is capped by configuration."
     }
   },
   "required": [
@@ -2926,7 +3244,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 与任务种类无关的后台任务控制器：后台 bash 命令、PTY 发送和 subagent 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。
 
+
 ## `@deepseek-ai/dsh-experimental-tool-agent-team`
+
 
 ### `interrupt_agent`
 
@@ -2938,7 +3258,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
   "properties": {
     "target": {
       "type": "string",
-      "description": "Teammate name."
+      "description": "Teammate target returned by spawn_teammate or list_agents."
     }
   },
   "required": [
@@ -2948,6 +3268,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+
 
 ### `list_agents`
 
@@ -2962,6 +3283,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
+
 ### `send_message`
 
 向另一名 Team member 发送一条持久消息。running target 会在最近的步骤边界收到消息；idle target 会启动一个 turn；inactive teammate 会冷恢复。
@@ -2972,7 +3294,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
   "properties": {
     "target": {
       "type": "string",
-      "description": "Team member name, or lead."
+      "description": "Member target returned by spawn_teammate or list_agents, including lead."
     },
     "message": {
       "type": "string",
@@ -2987,6 +3309,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+
 
 ### `spawn_teammate`
 
@@ -3026,6 +3349,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+
 
 ### `team_task_create`
 
@@ -3067,6 +3391,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
+
 ### `team_task_get`
 
 在修改或执行共享任务前，读取其完整的最新值。
@@ -3088,6 +3413,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
+
 ### `team_task_list`
 
 列出共享任务，包括 readiness、owner、revision、blocker 与 write-scope warning。
@@ -3107,7 +3433,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
     },
     "owner": {
       "type": "string",
-      "description": "Optional member-name filter; use unowned for tasks without an owner."
+      "description": "Optional member target from spawn_teammate or list_agents, matching ownerName; use unowned for tasks without an owner."
     },
     "ready": {
       "type": "boolean",
@@ -3126,6 +3452,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+
 
 ### `team_task_update`
 
@@ -3181,7 +3508,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
     },
     "owner": {
       "type": "string",
-      "description": "Member name for Lead-only reassign; omit to unassign."
+      "description": "Member target from spawn_teammate or list_agents for Lead-only reassign; omit to unassign."
     }
   },
   "required": [
@@ -3193,6 +3520,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+
 
 ### `wait_agent`
 
@@ -3218,6 +3546,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 <a id="deepseek-aidsh-tool-todo"></a>
 
 ## `@deepseek-ai/dsh-tool-todo`
+
 
 ### `todo_write`
 
@@ -3267,7 +3596,9 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 <a id="deepseek-aidsh-tool-workflow"></a>
 
+
 ## `@deepseek-ai/dsh-tool-workflow`
+
 
 ### `workflow`
 
@@ -3292,11 +3623,11 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
   "properties": {
     "script": {
       "type": "string",
-      "description": "The plain-JS workflow script body (top-level await allowed; NO `export const meta` statement; end with `return <json-value>`)."
+      "description": "The plain JavaScript body, not TypeScript and without an `export const meta` statement; top-level await is allowed. End with `return <value>`; the JSON-serializable value is this tool's result."
     },
     "meta": {
       "type": "object",
-      "description": "The workflow identity block (plain JSON — never code).",
+      "description": "The workflow identity as plain JSON, not code.",
       "additionalProperties": true,
       "properties": {
         "name": {
@@ -3350,6 +3681,10 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
       "type": "object",
       "description": "Optional JSON input exposed to the script as the `args` global (wrap a bare list as a field, e.g. {\"files\": [...]}).",
       "additionalProperties": true
+    },
+    "run_in_background": {
+      "type": "boolean",
+      "description": "Run as a background job: return a job id immediately instead of waiting; the return value arrives with the completion notice."
     }
   },
   "required": [
@@ -3363,7 +3698,26 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 <a id="deepseek-aidsh-tool-web"></a>
 
+
+## `@deepseek-ai/dsh-tool-workspace-dependencies`
+
+### `load_workspace_dependencies`
+
+获取随包附带的 Python 和库目录的绝对路径，以及随包 Python 发行版的版本。payload 提供 Node.js 和 pnpm 时才返回对应路径。Python 含 numpy、pandas、python-docx、python-pptx、openpyxl、Pillow、lxml 与 XlsxWriter。除非用户或工作区指令选择了别的环境，Office 文件请使用这些库。返回 Node.js 和 pnpm 路径时，用该 Node 可执行文件和 pnpm 脚本路径运行 pnpm。本工具不改 PATH，也不改包管理器设置。
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+来源：[`packages/skill/tool-workspace-dependencies/src/index.ts`](../packages/skill/tool-workspace-dependencies/src/index.ts)
+
+<a id="deepseek-aidsh-tool-web"></a>
+
 ## `@deepseek-ai/dsh-tool-web`
+
 
 ### `web_fetch`
 
@@ -3386,6 +3740,7 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 来源：[`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
+
 ### `web_search`
 
 在 Web 上搜索最新信息。在必填的 `queries` 数组中提供 1–4 个查询。返回可选的摘要答案和来源 URL 列表。
@@ -3396,7 +3751,7 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
   "properties": {
     "queries": {
       "type": "array",
-      "description": "Required search queries; accepts 1–4 items and merges their results.",
+      "description": "1–4 search queries; their results are merged.",
       "items": {
         "type": "string"
       }
@@ -3413,7 +3768,9 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。
 <a id="deepseek-aidsh-tool-git"></a>
 
+
 ## `@deepseek-ai/dsh-tool-git`
+
 
 ### `commit`
 
@@ -3441,6 +3798,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 ```
 
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
 
 ### `commit_apply`
 
@@ -3598,6 +3956,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
 
+
 ### `review`
 
 用专门的评审者 subagent 对 git 变更（工作区、已暂存区或一个提交区间）执行并行代码评审。每条发现按 P0–P3 分级并带置信度分数；工具返回按严重度排序的全部发现，以及带解释的 ship/reject 结论。评审者只读（git diff/log/show、read、grep、ast_grep），从不编辑文件或运行构建。可用 focus 过滤器只评审相关路径。
@@ -3640,6 +3999,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 ```
 
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
+
 
 ### `worktree`
 
@@ -3725,7 +4085,9 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 <a id="deepseek-aidsh-tool-browser"></a>
 
+
 ## `@deepseek-ai/dsh-tool-browser`
+
 
 ### `browser`
 
@@ -3821,7 +4183,9 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.
 
+
 ## `@deepseek-ai/dsh-tool-av`
+
 
 ### `av_catalog`
 
@@ -3850,6 +4214,7 @@ Browser tool (port of omp): open/close/run/state over launch (stealth-patched), 
 
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
 
+
 ### `av_doctor`
 
 校验已安装开发工具的 Automic Vault 加固状态（运行 `av doctor [tool] --json`）：哪些已加固工具健康、哪些有问题，并给出每条 issue 的修复步骤（stub/target 路径）。只读；代理报告，加固由用户运行。先用 `av_catalog` 查看工具名称。
@@ -3868,6 +4233,7 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
 
+
 ### `av_list`
 
 列出 Automic Vault 中已保存密钥的名称（`av list`）。只返回**名称**——绝不返回值，绝不释放密钥。用它告知用户保管库中有什么，再由用户决定如何处置。
@@ -3880,6 +4246,7 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 ```
 
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
+
 
 ### `av_scan`
 
@@ -3916,7 +4283,9 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 
 <a id="deepseek-aidsh-tool-logseq"></a>
 
+
 ## `@deepseek-ai/dsh-tool-logseq`
+
 
 ### `logseq_graph`
 
@@ -3965,6 +4334,7 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
 
 ### `logseq_list`
 
@@ -4048,6 +4418,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
+
 ### `logseq_query`
 
 对图运行 Datascript 查询（`logseq query --query <EDN>`），或按名称运行已保存查询并附可选 inputs。用于页面/块/标签一次跳转答不了的结构性问题。
@@ -4077,6 +4448,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
 
 ### `logseq_remove`
 
@@ -4118,6 +4490,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
+
 ### `logseq_search`
 
 按内容文本搜索 Logseq 块/页面/属性/标签（`logseq search <type> --content <text>`）。返回匹配项。
@@ -4150,6 +4523,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
+
 ### `logseq_server`
 
 管理 db-worker-node 服务（`logseq server ...`）：list/start/stop/restart/cleanup。无头场景需要它：每张图 start 一次，随后任何读/写工具都不再依赖桌面 App。
@@ -4174,6 +4548,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
 
 ### `logseq_show`
 
@@ -4212,6 +4587,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
+
 
 ### `logseq_upsert`
 
@@ -4355,7 +4731,9 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。
 <a id="deepseek-aidsh-tool-codebase-memory"></a>
 
+
 ## `@deepseek-ai/dsh-tool-codebase-memory`
+
 
 ### `codebase_delete_project`
 
@@ -4374,6 +4752,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
 
 ### `codebase_detect_changes`
 
@@ -4409,6 +4788,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_get_architecture`
 
 从知识图给出项目的高层架构概览：包、服务、依赖，以及对调用/导入图做 Leiden 社区检测得到的 de-facto 模块（含凝聚力与代表性节点）。深入遍历代码前使用，并据此检验重构是否符合真实接缝。可选目录前缀限定分析范围。
@@ -4438,6 +4818,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_get_code_snippet`
 
 读取已索引项目中单个符号的源码——codebase_search_graph 给出的完整限定名，或短函数名。在已知道符号（来自 codebase_search_graph / codebase_trace_path）时，用它替代若干次文件读取 + grep 循环。
@@ -4464,6 +4845,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_get_graph_schema`
 
 返回项目知识图中的节点标签与边类型——codebase_query_graph 的 Cypher 与 codebase_search_graph 接受的标签词汇表。
@@ -4481,6 +4863,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
 
 ### `codebase_index_repository`
 
@@ -4525,6 +4908,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_index_status`
 
 报告项目的索引状态与覆盖率：节点/边数量、新鲜度、跳过与部分解析的文件，以及上次索引运行的日志文件。在信任一个关于近期改动仓库的答案前使用。
@@ -4542,6 +4926,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
 
 ### `codebase_ingest_traces`
 
@@ -4585,6 +4970,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_list_projects`
 
 列出已索引进 codebase-memory 知识图的全部项目（名称、根路径、git 状态）。在其他 codebase_* 工具之前使用，取到目标仓库的标准 `project` 名，再传给其它工具。
@@ -4597,6 +4983,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
 
 ### `codebase_manage_adr`
 
@@ -4636,6 +5023,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_query_graph`
 
 对 codebase-memory 知识图执行原始 Cypher 查询，表达精选工具无法表达的多跳模式、聚合与跨服务分析。响应带 total（返回行数）；图有硬性 10 万行上限，宽泛查询请加 LIMIT。每个 Function/Method 节点还带有 complexity/cognitive/loop/recursion 热点属性。
@@ -4661,6 +5049,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
 
 ### `codebase_search_code`
 
@@ -4712,6 +5101,7 @@ grep 增强的代码搜索：按文本找匹配，再把匹配丰富进包含它
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
+
 
 ### `codebase_search_graph`
 
@@ -4801,6 +5191,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
+
 ### `codebase_trace_path`
 
 追踪 codebase-memory 知识图中的调用/数据流/跨服务路径。callers/callees（calls 模式）、带参数表达式的值传播（data_flow），或穿过 HTTP/异步路由节点并跨仓库（cross_service）。调用方浮出声明与每条入边。
@@ -4868,7 +5259,9 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 <a id="deepseek-aidsh-tool-agentsview"></a>
 
+
 ## `@deepseek-ai/dsh-tool-agentsview`
+
 
 ### `agentsview`
 
@@ -4997,7 +5390,9 @@ Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/u
 
 <a id="deepseek-aidsh-tool-openwiki"></a>
 
+
 ## `@deepseek-ai/dsh-tool-openwiki`
+
 
 ### `openwiki_begin`
 
@@ -5037,6 +5432,7 @@ Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/u
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
 
+
 ### `openwiki_finish`
 
 仅在每个 PageJob 都完成后调用。执行确定性的删除、校验、索引、出处、Claims 收尾与运行元数据持久化。
@@ -5058,6 +5454,7 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
 
+
 ### `openwiki_next_page`
 
 返回第一个待办的页面任务及其当前 Claims；无剩余任务时返回 status=complete。
@@ -5078,6 +5475,7 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 ```
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
 
 ### `openwiki_submit_page`
 
@@ -5141,6 +5539,7 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 ```
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
+
 
 ### `openwiki_submit_plan`
 

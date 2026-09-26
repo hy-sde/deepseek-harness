@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-12-hero-fish-hover-swim-morph.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-12-hero-fish-hover-swim-morph.md
-2026-08-12-hero-fish-hover-swim-morph.md: c485f94e244040d7e72838065f977e698391c00d
-2026-08-12-hero-fish-hover-swim-morph.zh.md: 46fa50732bf98aa5e3afb503e84f8e23001499b2
+/agent-note-hero-fish-hover-swim-morph:
+  en: a109a95b17b04730
+  zh: b718a66b90327236
+/agent-note-hero-fish-hover-swim-morph/problem:
+  en: cb230d12aa6a198e
+  zh: ff59c4bfcabbc0a9
+/agent-note-hero-fish-hover-swim-morph/decision:
+  en: 295f3a8da5d7613a
+  zh: 3695ff66a2c1609c
+/agent-note-hero-fish-hover-swim-morph/alternatives-considered:
+  en: 0ab1837b38d19cd2
+  zh: 68e80a97098dc966
+/agent-note-hero-fish-hover-swim-morph/consequences:
+  en: f4d5986776fef54c
+  zh: 03d8115b4668a710

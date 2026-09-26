@@ -10,7 +10,7 @@ Source: [`packages/graph/graph-stream/src/coordinator.ts`](../../packages/graph/
 
 A `AgentGraphScheduledWork` declares one operator ("child agent") bound to an operator id, a text instruction, and the ids of its inputs (records produced by other operators or raw session records); `replaces` edges turn sequential steps into chains while every work item stays addressable by its deterministic `workId`. The schedule update is the ONLY write surface: `commitScheduleUpdate` appends to the schedule log; each update carries a `source` triple (sessionId + runId + toolCallId) and is idempotent under retry, so a re-sent update returns the already-committed `revision` instead of double-applying.
 
-```ts
+```ts ignore-check
 /** One schedule update: add/supervise/stop/finish in a single commit. */
 interface AgentGraphScheduleUpdateRequest {
   graphId: string
@@ -29,7 +29,7 @@ The coordinator drives five phases — provision (A), supervisor intents (B), se
 
 `AgentGraphExecutor` is the seam every host implements: `provisionOperator` returns the durable provision row — or `undefined` to defer — while `runClaimedAgentGraphIntent` executes one claimed intent and `stopSession` cancels it. The shipped executor maps provision to a deterministic worktree lease (`graph_operator_lease_<hash>`), persists the binding in the control store, serializes one activation per operator, and settles into a terminal record (`recordSink`). Wakes are the host's interrupt: `yield_agent_graph` parks the supervisor at the next idle point of the root session; the wake runtime delivers at most 3 attempts (`pending → running → delivered | waiting_permission | retryable_failed | superseded`) and never mid-turn. On context overflow the runtime compacts once and allows one bounded partial delivery. Every state change the client can see is published as a `graph/change` event on the root session log; the `graph` projection unit folds it into the standing snapshot.
 
-```ts
+```ts ignore-check
 /** The client-visible graph snapshot, published whole. */
 interface SessionGraphProjection {
   schemaVersion: 1

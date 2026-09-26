@@ -1,6 +1,61 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/graph/graph-stream/README.md
-README.md: 620f8b85c1377797a02dcd470b08b6990071e301
-README.zh.md: 10c4f0ba84e829da2ff6dd2acc2a8694cd2dd29f
+/:
+  en: aabc3093f343d3e3
+  zh: 8676a371a302907d
+/deepseek-ai-dsh-graph-stream:
+  en: 37a8f9d8bb64c846
+  zh: 7c323ddbebd92ad9
+/deepseek-ai-dsh-graph-stream/summary:
+  en: 142a72dbfe38e812
+  zh: c9c695da1c822e1e
+/deepseek-ai-dsh-graph-stream/table-of-contents:
+  en: 65663b0d5dfa1600
+  zh: 55b2121ae6059425
+/deepseek-ai-dsh-graph-stream/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 1a3cb9583c5272ea
+/deepseek-ai-dsh-graph-stream/understand-the-implementation:
+  en: ee4615a04fa6503d
+  zh: ee2c5fb2204a43cf
+/deepseek-ai-dsh-graph-stream/understand-the-implementation/deterministic-identities-and-ordering:
+  en: bdb70592ba66ae53
+  zh: 373ce7a75688d84d
+/deepseek-ai-dsh-graph-stream/understand-the-implementation/projections:
+  en: ad9267abe33f9be1
+  zh: f4b57f6b3311f3b2
+/deepseek-ai-dsh-graph-stream/understand-the-implementation/reconciliation-and-the-coordinator:
+  en: 4e0e6de09e581f86
+  zh: 4fd9d1408d3bdcae
+/deepseek-ai-dsh-graph-stream/understand-the-implementation/executor-seam:
+  en: 35a2dbd6688d30e4
+  zh: e275ea12ef792adb
+/deepseek-ai-dsh-graph-stream/runtime-invariants:
+  en: 3427d984cbf6eb83
+  zh: 888ff6b7b071fbd7
+/deepseek-ai-dsh-graph-stream/further-exploration:
+  en: 26084ed152cbb64d
+  zh: 14e705ca079b418d
+/deepseek-ai-dsh-graph-stream/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-graph-stream/model-experience/scheduled-work-handoff-prompt:
+  en: 8edcde37b619110f
+  zh: c8e9f8a04238d821
+/deepseek-ai-dsh-graph-stream/model-experience/scheduled-work-handoff-prompt/what-the-model-sees:
+  en: 4ae12cb31729f257
+  zh: 4eac580a131a993e
+/deepseek-ai-dsh-graph-stream/model-experience/scheduled-work-handoff-prompt/token-effect:
+  en: c22e7366c62067be
+  zh: a5c55cc20aa8bce3
+/deepseek-ai-dsh-graph-stream/model-experience/scheduled-work-handoff-prompt/kv-cache-effect:
+  en: ebe17c40dcdfa850
+  zh: b4757779a1ac1f40
+/deepseek-ai-dsh-graph-stream/known-limitations-and-deferred-work:
+  en: 511b9b18cce83260
+  zh: a69ecbfd5a2335a6
+/deepseek-ai-dsh-graph-stream/known-limitations-and-deferred-work/dev-note:
+  en: 28f86c8678cdac84
+  zh: bb1a874321eab82b

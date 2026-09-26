@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-fs-archive",
   "description": "Pure-TS multi-format archive engine (zip/tar/rar/7z/iso/deb/rpm/cpio/cab/arj/asar + codecs), ported from @oh-my-pi/pi-utils (MIT)",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -27,10 +27,10 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:~",
     "@types/node": "^22.0.0",
     "vitest": "^4.1.8"
   }

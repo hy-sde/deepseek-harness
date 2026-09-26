@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { PtcRuntime } from '@deepseek-ai/dsh-ptc-runtime'
 import { createScope, type Scope } from '@deepseek-ai/dsh-scope'
+import { computeFileHash } from '@deepseek-ai/dsh-hashline'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
@@ -26,7 +27,6 @@ import type {
   FsWriteOutcome,
 } from '@deepseek-ai/dsh-fs'
 import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
-import { computeFileHash } from '@deepseek-ai/dsh-hashline'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import { STREAM_MIN_SIZE } from '../src/read.ts'
 import { formatReadOutput } from '../src/read-render.ts'
@@ -42,6 +42,7 @@ const testToolSignal = new AbortController().signal
 
 /** An in-memory fake provider; a test can arm a rejection on any primitive. */
 class FakeFs extends FileSystem {
+  override watch(): never { throw new Error('Fixture does not support watching') }
   files = new Map<string, string>()
   rejectWith?: FsError
   writeIntents: (FsWriteIntent | undefined)[] = []
@@ -75,7 +76,7 @@ class FakeFs extends FileSystem {
   }
   override async streamText(target: FsTarget): Promise<AsyncIterable<string>> {
     const content = this.files.get(target.targetKey) ?? ''
-    return (async function*() { yield content })()
+    return (async function* () { yield content })()
   }
   override async readBytes(target: FsTarget, _signal: AbortSignal | undefined, maxBytes: number): Promise<Uint8Array> {
     const bytes = new TextEncoder().encode(this.files.get(target.targetKey) ?? '')
@@ -179,8 +180,8 @@ describe('registration', () => {
     const { ctx } = await setup()
     const prompt = renderPrompt(await ctx.systemPrompt.assemble())
     expect(prompt).toContain('Use the read tool')
-    expect(prompt).toContain('Use the write tool')
-    expect(prompt).toContain('Use the edit tool')
+    expect(prompt).toContain('before overwriting it with write')
+    expect(prompt).toContain('before editing it')
   })
 
   it('stays pending until ctx.fs exists (inject)', async () => {
@@ -365,10 +366,7 @@ describe('read tool', () => {
       lines: [{ number: 1, text: 'const x = 1' }, { number: 2, text: 'const y = 2' }],
       totalLines: 2,
       lang: 'ts',
-      content: [{
-        type: 'text',
-        text: `[/abs/a.ts#${computeFileHash('const x = 1\nconst y = 2')}]\n1: const x = 1\n2: const y = 2\n\n(End of file - total 2 lines)`,
-      }],
+      content: [{ type: 'text', text: `[/abs/a.ts#${computeFileHash('const x = 1\nconst y = 2')}]\n1: const x = 1\n2: const y = 2\n\n(End of file - total 2 lines)` }],
     })
   })
 
@@ -1013,8 +1011,8 @@ async function guidanceScope(ctx: Context) {
 
 const originalGuidance = {
   read: 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text.',
-  write: 'Use the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.',
-  edit: 'Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.',
+  write: 'Read an existing file before overwriting it with write (the default fs-observation-policy requires it) and prefer edit for targeted changes.',
+  edit: 'Read a file before editing it (the default fs-observation-policy requires it), unless you just created or edited it in this session.',
 }
 
 describe('scope-aware filesystem guidance', () => {

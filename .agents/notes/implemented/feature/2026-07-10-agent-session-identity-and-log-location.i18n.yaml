@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-10-agent-session-identity-and-log-location.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-10-agent-session-identity-and-log-location.md
-2026-07-10-agent-session-identity-and-log-location.md: c849ffb882a3334c380b6736a8c8fd8d07a9da40
-2026-07-10-agent-session-identity-and-log-location.zh.md: 07826993839257dd893ef2a56059170ef9d0db31
+/agent-note-expose-agent-session-identity-to-tools-and-hooks:
+  en: f9d5b430b565789b
+  zh: da64ede2d25bad9a
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/problem:
+  en: 499bcc32489d0dac
+  zh: 0f90afc44a14316d
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/decision:
+  en: 9c3823301c9c4bb5
+  zh: 166a4b0c790681a4
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/peer-product-findings:
+  en: 75573dc43b80675e
+  zh: 471e4acac7b709bb
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/lifecycle-and-persistence-semantics:
+  en: 8a5ed744ce367017
+  zh: 2df3823bbb3273b4
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/testing:
+  en: 935c14119931514e
+  zh: 4a632df948a5a503
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/alternatives-considered:
+  en: 11be6a55c3110387
+  zh: 0a115464079cf07c
+/agent-note-expose-agent-session-identity-to-tools-and-hooks/consequences:
+  en: 3b4dfacdd17ffb67
+  zh: 1182587b3b0c1193

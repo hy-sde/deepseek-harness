@@ -1,6 +1,55 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/memory/memory-extraction/README.md
-README.md: 0dcaf317cbb62cce91756b45a5c7e3abb2ca0f97
-README.zh.md: 2628946f79c06ba6b371aa341d3eb6a8bd4d487d
+/:
+  en: 9fe143be56172e52
+  zh: ba20cd72622a0f67
+/deepseek-ai-dsh-memory-extraction:
+  en: fdb3bbbf5b4e9a62
+  zh: a546d19e04c0c7ae
+/deepseek-ai-dsh-memory-extraction/summary:
+  en: fd010082f1ce21c4
+  zh: 8ba201c90cd9c914
+/deepseek-ai-dsh-memory-extraction/table-of-contents:
+  en: 65663b0d5dfa1600
+  zh: 56d8f9a3d715e967
+/deepseek-ai-dsh-memory-extraction/use-this-package:
+  en: b1842d9880ac53b6
+  zh: 8868d9c1d6e89d4e
+/deepseek-ai-dsh-memory-extraction/use-this-package/wiring:
+  en: a11199696d47738a
+  zh: ed2413146eaa0b57
+/deepseek-ai-dsh-memory-extraction/understand-the-implementation:
+  en: ee4615a04fa6503d
+  zh: ee2c5fb2204a43cf
+/deepseek-ai-dsh-memory-extraction/understand-the-implementation/load-bearing-rules-ported-from-maka:
+  en: 525d15bb557ee874
+  zh: 56fef6c31e8c5c31
+/deepseek-ai-dsh-memory-extraction/runtime-invariants:
+  en: 9e9cd7f5666e988a
+  zh: 2693bec903cfa713
+/deepseek-ai-dsh-memory-extraction/further-exploration:
+  en: acbf7e0a74b42697
+  zh: f408bf64dad03e33
+/deepseek-ai-dsh-memory-extraction/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-memory-extraction/model-experience/auxiliary-extraction-prompts:
+  en: d29dda44543c8297
+  zh: b50c8498a0114ad1
+/deepseek-ai-dsh-memory-extraction/model-experience/auxiliary-extraction-prompts/what-the-model-sees:
+  en: a1567deee83452c6
+  zh: 460b61433a9e7430
+/deepseek-ai-dsh-memory-extraction/model-experience/auxiliary-extraction-prompts/token-effect:
+  en: 4dec91a7d2131f40
+  zh: 63d19be9f229b8c9
+/deepseek-ai-dsh-memory-extraction/model-experience/auxiliary-extraction-prompts/kv-cache-effect:
+  en: 955733717b903e58
+  zh: deac38f402a1b8a3
+/deepseek-ai-dsh-memory-extraction/known-limitations-and-deferred-work:
+  en: 68822cca39675194
+  zh: fea5cc6e2228f3d6
+/deepseek-ai-dsh-memory-extraction/known-limitations-and-deferred-work/dev-note:
+  en: 28f86c8678cdac84
+  zh: bb1a874321eab82b

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-web-per-turn-token-usage.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-24-web-per-turn-token-usage.md
-2026-08-24-web-per-turn-token-usage.md: 91aab0f2c261e2141ee964c828e7209ba2b3f72f
-2026-08-24-web-per-turn-token-usage.zh.md: f9c424fa0f84b802e98280bea9eaf4038bf31f19
+/agent-note-exact-web-per-turn-token-usage:
+  en: be46c25e4720805b
+  zh: 6a73c0bb49832410
+/agent-note-exact-web-per-turn-token-usage/problem:
+  en: 49086e7a4cd88bc8
+  zh: 18321a7ff74836c4
+/agent-note-exact-web-per-turn-token-usage/decision:
+  en: af9b971962da7a08
+  zh: 47d352485b7b216c
+/agent-note-exact-web-per-turn-token-usage/alternatives-considered:
+  en: 7f4a207202187c1a
+  zh: cd4df74c43bde4c1
+/agent-note-exact-web-per-turn-token-usage/consequences:
+  en: ab63f76a26d7d4ff
+  zh: 3cec1f75b03775c0

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-session-snapshot-envelope-projection.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-08-18-session-snapshot-envelope-projection.md
-2026-08-18-session-snapshot-envelope-projection.md: 28f8f7f823b552c68dcb2c54e62f0551e1615134
-2026-08-18-session-snapshot-envelope-projection.zh.md: a8c302c48d3924c3ffd4386a2039d0ea8b7af962
+/agent-note-session-snapshot-envelope-projection:
+  en: 83d7f52ea6daf29c
+  zh: e294802b306b9029
+/agent-note-session-snapshot-envelope-projection/problem:
+  en: 606c48bc88ec8b58
+  zh: f22c554ff5c45bdb
+/agent-note-session-snapshot-envelope-projection/decision:
+  en: c739fc344bd8d834
+  zh: 08bf53eaaeb8bf1b
+/agent-note-session-snapshot-envelope-projection/alternatives-considered:
+  en: 8098cbd566ce5aaf
+  zh: 10b25fca551d76dd
+/agent-note-session-snapshot-envelope-projection/consequences:
+  en: 9f81ca77f4fee6d5
+  zh: a347d5182243395f

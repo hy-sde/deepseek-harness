@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-30-web-queue-steer-action.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-30-web-queue-steer-action.md
-2026-07-30-web-queue-steer-action.md: 2718c5b3cc95f1ab02db80230ba158d9b5c3b4e6
-2026-07-30-web-queue-steer-action.zh.md: 377117e2aa9c20b1c39d1fb7f450dbe729b00580
+/agent-note-steer-a-queued-web-message-into-the-active-turn:
+  en: b8c35d97692b8e7e
+  zh: 41b4a460b42d9ecb
+/agent-note-steer-a-queued-web-message-into-the-active-turn/problem:
+  en: ae8f5fe976cadb79
+  zh: 98865de862382d70
+/agent-note-steer-a-queued-web-message-into-the-active-turn/decision:
+  en: a15c7c13f167e5ac
+  zh: 63bcc2ef60c2f344
+/agent-note-steer-a-queued-web-message-into-the-active-turn/decision/product-contract:
+  en: 6b00b70d81a85d2c
+  zh: 98263aef89860d0c
+/agent-note-steer-a-queued-web-message-into-the-active-turn/decision/agent-and-lifecycle-boundary:
+  en: 3718223a70b2f1c5
+  zh: 4e75f1c078a650e3
+/agent-note-steer-a-queued-web-message-into-the-active-turn/decision/host-and-client-boundary:
+  en: 14df6ef62d69cd58
+  zh: 76c69a21782b6270
+/agent-note-steer-a-queued-web-message-into-the-active-turn/decision/verification:
+  en: 7dd14b943f6a0261
+  zh: e66825e2e73e0a35
+/agent-note-steer-a-queued-web-message-into-the-active-turn/alternatives-considered:
+  en: 5439f125c3e75cb1
+  zh: b9bb43a9cafc7766
+/agent-note-steer-a-queued-web-message-into-the-active-turn/consequences:
+  en: 4608718155287abc
+  zh: 9d718f138b31e39f

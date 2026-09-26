@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-agentsview",
   "description": "Model-facing agentsview CLI access tool (`agentsview list/get/health/stats/usage/search/recall/export`) that runs one-shot queries against the local agentsview archive built from the DeepSeek Harness session store — session intelligence (health grades + outcomes), windowed analytics, token cost reports, semantic search and the recall brief, all from the CLI that already parses DSH session.jsonl.zstd files",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -43,16 +43,16 @@
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-invariants": "workspace:*",
+    "@deepseek-ai/dsh-system-prompt": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-invariants": "workspace:*",
+    "@deepseek-ai/dsh-system-prompt": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^5.9.0",
     "vitest": "^4.1.8"

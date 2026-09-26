@@ -1,3 +1,0 @@
-name: 极简模式
-description: 仅提供持久 bash 与 rich edit（replace / patch / apply_patch / hashline）的双工具编码 Agent。
-order: 3

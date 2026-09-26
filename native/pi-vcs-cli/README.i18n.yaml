@@ -1,6 +1,13 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write native/pi-vcs-cli/README.md
-README.md: 63ec1300ca7eef3d7f0a172c417682bdd6e8cce4
-README.zh.md: 3df86a9a9ee80e854055d70c1ef4a04f87e0ec1a
+/pi-vcs-cli:
+  en: de8e981ea037f308
+  zh: e62fce155acb300d
+/pi-vcs-cli/build:
+  en: 59d4d4a8b284dfe9
+  zh: d3a7b42ac490ad13
+/pi-vcs-cli/usage:
+  en: 2ac2828d4c991546
+  zh: aeb59c01af92f2cd

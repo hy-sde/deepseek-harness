@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-local-submission-echoes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-26-local-submission-echoes.md
-2026-08-26-local-submission-echoes.md: 258df8f3f4bdd0441b714c7602273897d2d79fc7
-2026-08-26-local-submission-echoes.zh.md: 57a9523a1eaa399e596f0c8eb6f8913545976f87
+/agent-note-local-submission-echoes-over-the-prompt-rpcid:
+  en: 091aaf8d523ef0a3
+  zh: 436c675109a52e0b
+/agent-note-local-submission-echoes-over-the-prompt-rpcid/problem:
+  en: 0a7cd1724c8ab390
+  zh: 873a0f27523a3cc1
+/agent-note-local-submission-echoes-over-the-prompt-rpcid/decision:
+  en: 32d1f95e75807ba9
+  zh: 5c139220e3184114
+/agent-note-local-submission-echoes-over-the-prompt-rpcid/consequences:
+  en: 686a84af93bba234
+  zh: 16984d9a93426b4f
+/agent-note-local-submission-echoes-over-the-prompt-rpcid/verification:
+  en: 6951b6294463c414
+  zh: 6bb370bb5429a575
+/agent-note-local-submission-echoes-over-the-prompt-rpcid/alternatives-considered:
+  en: 5177c95e7c351559
+  zh: 33627d4b28b53fec

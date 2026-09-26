@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-code-runtime-python-reply-backlog-and-surrogate-count.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-29-code-runtime-python-reply-backlog-and-surrogate-count.md
-2026-08-29-code-runtime-python-reply-backlog-and-surrogate-count.md: 5ae31f669e2e207bc2f496d11ca3464f032783f1
-2026-08-29-code-runtime-python-reply-backlog-and-surrogate-count.zh.md: 799178dd54ceddd9b80b11e94d723282a037d398
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend:
+  en: 3e62ab9e2dba0aec
+  zh: 21374a76b29875c3
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/problem:
+  en: 8a4cca2a8d8edc76
+  zh: be1e80f5743fa618
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/decision:
+  en: a15c7c13f167e5ac
+  zh: a15c7c13f167e5ac
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/decision/the-reply-backlog-is-capped-at-1024-pending-frames:
+  en: 297af8ebabf98856
+  zh: 9b2d506c97a43062
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/decision/lone-surrogates-are-counted-by-length-difference-not-by-a-match-list:
+  en: c7bd6e5960d620a6
+  zh: aef1bb58b50c947d
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/testing:
+  en: 73be6b5cd666044d
+  zh: e71e9f23f98862da
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/alternatives-considered:
+  en: fbac12dcd77a41fa
+  zh: 30ae334fdfa148c2
+/agent-note-bound-the-reply-backlog-and-count-lone-surrogates-without-a-match-list-in-the-cpython-backend/consequences:
+  en: 0d8fdf61f7359e0c
+  zh: 8ba4cd0e180882ed

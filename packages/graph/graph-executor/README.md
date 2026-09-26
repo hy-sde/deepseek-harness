@@ -22,7 +22,7 @@ English | [中文](README.zh.md)
 
 ## Use this package
 
-```ts
+```ts ignore-check
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 import { AgentGraphCoordinator } from '@deepseek-ai/dsh-graph-stream'
 import { createGraphOperatorExecutor } from '@deepseek-ai/dsh-graph-executor'
@@ -59,6 +59,10 @@ After the child settles, one `AgentGraphRecordSourceEvent` is built (`runtimeEve
 ### Bindings in the control store
 
 The P1 store gained one authoritative table, `operator_bindings` (row key `provisionId`), with a derived `${graphId}:${workId}` index rebuilt at open. Methods: `bindOperatorWorktree` (idempotent same-lease rebind keeps the original `boundAt`; different-lease rebind throws `binding-conflict`), `readOperatorBinding`, `readOperatorBindingByWork`, `listOperatorBindings(graphId?)`.
+
+## Runtime invariants
+
+No runtime invariant companion is published: the executor delegates work rows to graph-control and graph-wakes, so a companion would duplicate the state machines instead of comparing across independently maintained components.
 
 ## Further Exploration
 

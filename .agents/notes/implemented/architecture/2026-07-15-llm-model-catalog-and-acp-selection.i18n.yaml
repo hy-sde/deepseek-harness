@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-15-llm-model-catalog-and-acp-selection.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-15-llm-model-catalog-and-acp-selection.md
-2026-07-15-llm-model-catalog-and-acp-selection.md: fef23711a9214eae414809833bcd9ee9e26105ae
-2026-07-15-llm-model-catalog-and-acp-selection.zh.md: 85e9fa35ac99b72a7df207fdb4971b57cf6dc525
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection:
+  en: 286906110f6ec6f3
+  zh: d221bda3fd904d81
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/problem:
+  en: 60278c8f9552f1c6
+  zh: c62490e057a21057
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/decision:
+  en: a15c7c13f167e5ac
+  zh: 63bcc2ef60c2f344
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/decision/provider-neutral-advisory-discovery:
+  en: 5016bfc35808ce42
+  zh: d40d2f0d0e05cc52
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/decision/per-session-selection-in-the-front-end:
+  en: e1254a34905ca7eb
+  zh: dfca06436721b18b
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/decision/prompt-request-consistency-and-durability:
+  en: 767230780c39078f
+  zh: 002505f2810213ee
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/alternatives-considered:
+  en: 2ad008c3be4fa0eb
+  zh: 6ba3ec8377a129b7
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/consequences:
+  en: 1d4db3ea0b66aaf3
+  zh: f6a083833d5116fc
+/agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/testing:
+  en: 7076e86a1a181088
+  zh: fdcad001e15daf50

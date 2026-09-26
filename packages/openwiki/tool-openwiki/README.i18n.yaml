@@ -1,6 +1,55 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/openwiki/tool-openwiki/README.md
-README.md: 393a9dfca43fa8b39d5e1d46ead15c11238b2c92
-README.zh.md: 636900d8286af8d705c5651d4f8327f0f25c4533
+/:
+  en: aa6f0c446e73aee4
+  zh: 51bbca881fb86f21
+/deepseek-ai-dsh-tool-openwiki:
+  en: 28a16c2a971bb9ba
+  zh: 2bfa783e43c58d8c
+/deepseek-ai-dsh-tool-openwiki/summary:
+  en: 901064c92ae50d2f
+  zh: dfb9796b5c2a391a
+/deepseek-ai-dsh-tool-openwiki/table-of-contents:
+  en: 6f7d2bdd1446a86b
+  zh: 8999210fd3892161
+/deepseek-ai-dsh-tool-openwiki/surface:
+  en: 33828c2ce0fb0dd8
+  zh: 25c17359a285afc7
+/deepseek-ai-dsh-tool-openwiki/configuration:
+  en: 37f210b46aa90130
+  zh: 1568268287286e5d
+/deepseek-ai-dsh-tool-openwiki/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-openwiki/model-experience/tool-schemas:
+  en: 3039bc5e7a796b21
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-tool-openwiki/model-experience/tool-schemas/what-the-model-sees:
+  en: 75929f54dc6d4d06
+  zh: 9a163c9a9132ce8c
+/deepseek-ai-dsh-tool-openwiki/model-experience/tool-schemas/token-effect:
+  en: 1ec6a353087714eb
+  zh: 29138506362527a6
+/deepseek-ai-dsh-tool-openwiki/model-experience/tool-schemas/kv-cache-effect:
+  en: 8ba649e0fd7cd51c
+  zh: 4e6d24ffe8dec9a1
+/deepseek-ai-dsh-tool-openwiki/model-experience/prompt-section:
+  en: ff23ee0a6ddaf713
+  zh: 34c09118b5db22f0
+/deepseek-ai-dsh-tool-openwiki/model-experience/prompt-section/what-the-model-sees:
+  en: 75cfaa5d957862f9
+  zh: 9311a060d4f3b4b9
+/deepseek-ai-dsh-tool-openwiki/model-experience/prompt-section/token-effect:
+  en: cf749a4ac9802693
+  zh: 1fd0f176d0393984
+/deepseek-ai-dsh-tool-openwiki/model-experience/prompt-section/kv-cache-effect:
+  en: 6215b062bf5f144f
+  zh: 48e333775c581f78
+/deepseek-ai-dsh-tool-openwiki/known-limitations-and-deferred-work:
+  en: 0baefa32e5884df7
+  zh: 566146b63b01f9fa
+/deepseek-ai-dsh-tool-openwiki/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

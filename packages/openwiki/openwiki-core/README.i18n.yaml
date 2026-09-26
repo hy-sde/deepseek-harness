@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/openwiki/openwiki-core/README.md
-README.md: a68b19944072456ef53a4c400a92225cb34a9da1
-README.zh.md: 0848e0c2e6cc887eaddc8cd1bca340edc74bc0d3
+/:
+  en: 17d982d2c31f612c
+  zh: 32bb2f9f97379c55
+/deepseek-ai-dsh-openwiki-core:
+  en: af19092ca0a83f2c
+  zh: ee52e3c101b01042
+/deepseek-ai-dsh-openwiki-core/summary:
+  en: f9d15a0397b4d1c8
+  zh: 4c14423e19a8f3c9
+/deepseek-ai-dsh-openwiki-core/table-of-contents:
+  en: a6d72d33a038ef17
+  zh: 1e812299f811f4ed
+/deepseek-ai-dsh-openwiki-core/surface:
+  en: d61e2a6e3f0ddf15
+  zh: 86b3d7c7e0db22f7
+/deepseek-ai-dsh-openwiki-core/usage:
+  en: 9ef1c96e25684c6a
+  zh: 324c7a20e7f766e2
+/deepseek-ai-dsh-openwiki-core/model-experience:
+  en: 5dec836c7717721e
+  zh: 295459469cc83723
+/deepseek-ai-dsh-openwiki-core/model-experience/kv-cache-effect:
+  en: 3a337b4bfaf89bf5
+  zh: b6d62b501fc9603c
+/deepseek-ai-dsh-openwiki-core/known-limitations-and-deferred-work:
+  en: d75eb82105337cfa
+  zh: 78ca838a63d43adb
+/deepseek-ai-dsh-openwiki-core/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

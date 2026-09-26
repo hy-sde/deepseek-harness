@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-11-trajectory-conversation-context-assembly.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-11-trajectory-conversation-context-assembly.md
-2026-08-11-trajectory-conversation-context-assembly.md: c633ceb56f9961855ced39c917b5a101bb280ac2
-2026-08-11-trajectory-conversation-context-assembly.zh.md: 9bde44c7b8eecfec190df9d98d80d50dd91de9c2
+/agent-note-trajectory-assembly-from-registered-conversation-contexts:
+  en: 87f6d986753ca499
+  zh: ea8b1a4aeade3934
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/problem:
+  en: d88f7f29504305b3
+  zh: 19bb07143b32b1ca
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/decision:
+  en: 4f4d6fef83020ea4
+  zh: 88c4feec3f0f2641
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/decision/business-definitions:
+  en: 6bb0e3b82b948a39
+  zh: 173dfbca79265a20
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/decision/steering-from-predecessor-contexts:
+  en: 3eb4ef8728a51b4e
+  zh: ddbba4997650f2db
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/decision/window-paths-and-complexity:
+  en: 0a81d9aa2708a1c7
+  zh: 6b599df1dbc99002
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/decision/independent-presentation-hot-paths:
+  en: 4ea038911e03df0e
+  zh: 49f8034245df3b00
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/alternatives-considered:
+  en: 0eb9d3ceeb5f8edf
+  zh: f28a7dcab9986f48
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/verification:
+  en: c623dfb5b13876ef
+  zh: f84c116fd8e4f8cd
+/agent-note-trajectory-assembly-from-registered-conversation-contexts/consequences:
+  en: c14b8e705c7f7954
+  zh: 918ebf642fcc800a

@@ -1,6 +1,58 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/graph/graph-executor/README.md
-README.md: f85e9878f4ddfcb37de045ccebd72b00e43de349
-README.zh.md: 51be6827ca0f67a494c081707cafaca34ddab4e1
+/:
+  en: 15fe06621445fd47
+  zh: 618feae6fa5df2a6
+/deepseek-ai-dsh-graph-executor:
+  en: 55f11470a30110e3
+  zh: 6719287b6ba0148c
+/deepseek-ai-dsh-graph-executor/summary:
+  en: 02dae8dfdaa25662
+  zh: 30b46bf07ae7dd0b
+/deepseek-ai-dsh-graph-executor/table-of-contents:
+  en: 65663b0d5dfa1600
+  zh: 55b2121ae6059425
+/deepseek-ai-dsh-graph-executor/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 1a3cb9583c5272ea
+/deepseek-ai-dsh-graph-executor/understand-the-implementation:
+  en: ee4615a04fa6503d
+  zh: ee2c5fb2204a43cf
+/deepseek-ai-dsh-graph-executor/understand-the-implementation/provision-lease-key-binding-and-the-durable-row:
+  en: 5794c3b05bbc3b9c
+  zh: 4e202aee7debd419
+/deepseek-ai-dsh-graph-executor/understand-the-implementation/run-admission-serialization-and-settlement:
+  en: 8bdd3ac5465bdcbf
+  zh: dd6dcb24cf5b810a
+/deepseek-ai-dsh-graph-executor/understand-the-implementation/bindings-in-the-control-store:
+  en: 5674ad97b22ca147
+  zh: 0902d551063cd8f3
+/deepseek-ai-dsh-graph-executor/runtime-invariants:
+  en: ec63f400929f5f67
+  zh: 0fc20479b557f109
+/deepseek-ai-dsh-graph-executor/further-exploration:
+  en: aaa09708eece872e
+  zh: 0e822d2e69e31f3a
+/deepseek-ai-dsh-graph-executor/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-graph-executor/model-experience/operator-run-records:
+  en: 300099f049a1e760
+  zh: 095b95dd1cee2638
+/deepseek-ai-dsh-graph-executor/model-experience/operator-run-records/what-the-model-sees:
+  en: 2a632296a1d5c596
+  zh: d4a4d1d7e4b5ab07
+/deepseek-ai-dsh-graph-executor/model-experience/operator-run-records/token-effect:
+  en: ee2bcc7c05c754dd
+  zh: 8ef2d6990b585372
+/deepseek-ai-dsh-graph-executor/model-experience/operator-run-records/kv-cache-effect:
+  en: 3d11cd463d314adb
+  zh: 89d5da7b1efc6c44
+/deepseek-ai-dsh-graph-executor/known-limitations-and-deferred-work:
+  en: 90e1e4efd60fc0e5
+  zh: 5c75e5e6f2a0f004
+/deepseek-ai-dsh-graph-executor/known-limitations-and-deferred-work/dev-note:
+  en: 28f86c8678cdac84
+  zh: bb1a874321eab82b

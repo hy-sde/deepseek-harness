@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-max-token-replay-state-alignment.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-15-max-token-replay-state-alignment.md
-2026-08-15-max-token-replay-state-alignment.md: 0d8c9f2e55d826769325ea489d797a8561ac0e8e
-2026-08-15-max-token-replay-state-alignment.zh.md: 30f11b990abbe1ddfb36241b2f80c188de75ed22
+/agent-note-replay-state-aligns-with-assembled-content-by-construction:
+  en: fb7e4b2ec72c1abb
+  zh: bab5f49678dffbc3
+/agent-note-replay-state-aligns-with-assembled-content-by-construction/problem:
+  en: 8f547d6b6f17c449
+  zh: 0a7a536567c0ff9d
+/agent-note-replay-state-aligns-with-assembled-content-by-construction/decision:
+  en: e1da601972368e03
+  zh: 2d48a186a3f7cf17
+/agent-note-replay-state-aligns-with-assembled-content-by-construction/verification:
+  en: ac4a366a59a056e3
+  zh: 1ede450f55cf3249
+/agent-note-replay-state-aligns-with-assembled-content-by-construction/alternatives-considered:
+  en: d9d98959543500c8
+  zh: 72e9e050d596bf1c
+/agent-note-replay-state-aligns-with-assembled-content-by-construction/consequences:
+  en: ab83c2295ed32623
+  zh: dae6e7db839a4894

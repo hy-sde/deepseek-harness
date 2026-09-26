@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-06-tool-result-retention-library.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-06-tool-result-retention-library.md
-2026-07-06-tool-result-retention-library.md: 464e3d51a0051487b7c29f0c01a11acb91d160e5
-2026-07-06-tool-result-retention-library.zh.md: 49361eec4b649d2d68dc36929baa0f9ff580eb68
+/agent-note-tool-result-retention-library:
+  en: ac27fc655eb29392
+  zh: 0930c7466fcb703b
+/agent-note-tool-result-retention-library/problem:
+  en: c85592daecf707c7
+  zh: 1a8d05614cbd126e
+/agent-note-tool-result-retention-library/decision:
+  en: d17bbc7b8f335076
+  zh: 095481b8afd2357d
+/agent-note-tool-result-retention-library/decision/strategies:
+  en: cfcb9290a2868d7d
+  zh: cd256c53eaeac423
+/agent-note-tool-result-retention-library/decision/tool-mapping:
+  en: f683963200694213
+  zh: 552643d8e7ba8f28
+/agent-note-tool-result-retention-library/decision/notices:
+  en: 60c90521ed3869e9
+  zh: e8912bda380feca4
+/agent-note-tool-result-retention-library/consequences:
+  en: 3f26b591c9478f84
+  zh: b2bd169a06cef3e9
+/agent-note-tool-result-retention-library/alternatives-considered:
+  en: 4ca333e3c3701941
+  zh: 42fc6631a2acfaa6

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-llm-pi-ai-empty-compat-merge-regression.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-12-llm-pi-ai-empty-compat-merge-regression.md
-2026-09-12-llm-pi-ai-empty-compat-merge-regression.md: 4f2b855e4d5d7ef7584ef7376efe1290792df8c6
-2026-09-12-llm-pi-ai-empty-compat-merge-regression.zh.md: 1c4be8d34edef9015bb69fbfe4083b01ceedfabf
+/agent-note-llm-pi-ai-empty-compat-merge-regression:
+  en: 05009e881e5b7c89
+  zh: 85e2306bd5b69ce7
+/agent-note-llm-pi-ai-empty-compat-merge-regression/problem:
+  en: ec7a49a5af6fb9c4
+  zh: eda7b80148c73c4e
+/agent-note-llm-pi-ai-empty-compat-merge-regression/decision:
+  en: 4ba7314c1957634b
+  zh: 39adb687a10aa576
+/agent-note-llm-pi-ai-empty-compat-merge-regression/alternatives-considered:
+  en: 44b73e6d7778345f
+  zh: 49f106a7a36932a2
+/agent-note-llm-pi-ai-empty-compat-merge-regression/consequences:
+  en: 97d7b560a4e5dfe1
+  zh: 1c4cc1686041c8ec
+/agent-note-llm-pi-ai-empty-compat-merge-regression/testing:
+  en: 273d7730ba002f66
+  zh: f9206c4cda94ea20

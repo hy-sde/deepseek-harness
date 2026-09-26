@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-folder-reference-pick-vs-drill.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-24-folder-reference-pick-vs-drill.md
-2026-08-24-folder-reference-pick-vs-drill.md: de5d4930eb86a2fc961044cab8aecb7bcaf87a9c
-2026-08-24-folder-reference-pick-vs-drill.zh.md: 773e5b2b7cf54b02bc93638ad20bbdc08f34c3d1
+/agent-note-folder-references-settle-on-pick-descent-moves-to-an-explicit-drill-verb:
+  en: cabd5868da402983
+  zh: 80fe2e10ca205ce1
+/agent-note-folder-references-settle-on-pick-descent-moves-to-an-explicit-drill-verb/problem:
+  en: d3acdd5afc1b16e7
+  zh: 88122c217960d5b1
+/agent-note-folder-references-settle-on-pick-descent-moves-to-an-explicit-drill-verb/decision:
+  en: aae1f68f7ea35eaf
+  zh: 0908eca163d15bb1
+/agent-note-folder-references-settle-on-pick-descent-moves-to-an-explicit-drill-verb/alternatives-considered:
+  en: 5fdd305e57df222b
+  zh: d63755fc86424912
+/agent-note-folder-references-settle-on-pick-descent-moves-to-an-explicit-drill-verb/consequences:
+  en: 91f10d9568503a5a
+  zh: 004d9634298e44b5

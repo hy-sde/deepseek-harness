@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-webworker-node-face.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-20-webworker-node-face.md
-2026-08-20-webworker-node-face.md: 05c3bfe7fa07b34189229f6454be597d4956226a
-2026-08-20-webworker-node-face.zh.md: 0a0f4badff192f02e962cfb38b64ef9d89fcd420
+/agent-note-the-worker-s-node-face-builtins-vfs-and-the-shell-process-layer:
+  en: 6355b50b8ac05723
+  zh: b30127b44f9161e6
+/agent-note-the-worker-s-node-face-builtins-vfs-and-the-shell-process-layer/problem:
+  en: 25d91283219af291
+  zh: 09f859d318462fa5
+/agent-note-the-worker-s-node-face-builtins-vfs-and-the-shell-process-layer/decision:
+  en: 1a47a74a055f5045
+  zh: 76b534d1ab696366
+/agent-note-the-worker-s-node-face-builtins-vfs-and-the-shell-process-layer/alternatives-considered:
+  en: f9cac38fbfdf8992
+  zh: 53e399fddf69466b
+/agent-note-the-worker-s-node-face-builtins-vfs-and-the-shell-process-layer/consequences:
+  en: bf7782967acbf95c
+  zh: fd3ba8620762a994

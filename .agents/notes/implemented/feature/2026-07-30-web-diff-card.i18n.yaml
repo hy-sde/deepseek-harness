@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-30-web-diff-card.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-30-web-diff-card.md
-2026-07-30-web-diff-card.md: 8497038d6f3d4c512d3c5e44d9cb69e0b3aaaabe
-2026-07-30-web-diff-card.zh.md: 40fc079f36009a444a4618982f39ad032266ec13
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser:
+  en: 46fea57ce1b771e7
+  zh: b12f318fa1891f35
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser/problem:
+  en: 058b47f11e9e68dc
+  zh: 57fecd19d43796d6
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser/decision:
+  en: 085517cfd8eaf50b
+  zh: 191e9b6edf8d0e7a
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser/alternatives-considered:
+  en: 6d87b1f8a76b5a8b
+  zh: 5fb74ca2e410aa13
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser/consequences:
+  en: 5b7a983d8e920093
+  zh: 2abc099e5ae703f3
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser/testing:
+  en: d96317ebd21040cd
+  zh: 4cf4acd57a19baa4
+/agent-note-web-diff-card-the-write-edit-render-intent-reaches-the-browser/related:
+  en: 9666a658cf5a4f9d
+  zh: 4a8e9ed2729b0fdf

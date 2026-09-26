@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-plugin-inventory-agent-preset-scopes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-29-plugin-inventory-agent-preset-scopes.md
-2026-08-29-plugin-inventory-agent-preset-scopes.md: a07f5a14a2c9f39e9a789aaf09d6fb4627618e92
-2026-08-29-plugin-inventory-agent-preset-scopes.zh.md: c7ef215c6ca7ee2e20ae1a7106076e1c37ae197b
+/agent-note-the-plugin-inventory-carries-every-agent-preset-s-composition:
+  en: bb554bf839fb3166
+  zh: 4369a167fce96753
+/agent-note-the-plugin-inventory-carries-every-agent-preset-s-composition/problem:
+  en: f0ea98db8742fd9e
+  zh: 476f54fc40e2a5a0
+/agent-note-the-plugin-inventory-carries-every-agent-preset-s-composition/decision:
+  en: dd457670b8b9aeb8
+  zh: 6f3f905a9c89b3a7
+/agent-note-the-plugin-inventory-carries-every-agent-preset-s-composition/alternatives-considered:
+  en: 5c2980442c822daa
+  zh: f2beb3739b038fe1
+/agent-note-the-plugin-inventory-carries-every-agent-preset-s-composition/consequences:
+  en: 0c797149ec98f593
+  zh: 96e11aa6397dafc7

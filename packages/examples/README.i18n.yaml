@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/examples/README.md
-README.md: 42a5bf5548a897fa245d192252044c1fbea5d94e
-README.zh.md: 67e458e21293f6dfeaf0adb0475143f915423eef
+/:
+  en: 7b56d004d5f2823a
+  zh: d2d49bdc673c2cff
+/examples-reusable-composition-bundles:
+  en: 6629636017dff271
+  zh: 7c2fb3ca97c75142
+/examples-reusable-composition-bundles/summary:
+  en: 201c1121efb4697a
+  zh: 0b90f64da1a11f73
+/examples-reusable-composition-bundles/table-of-contents:
+  en: 1eb35b015a6c423f
+  zh: a8a3dceee2c9e943
+/examples-reusable-composition-bundles/packages:
+  en: da8c6e82103fac91
+  zh: 71e2c476e6e372bc
+/examples-reusable-composition-bundles/related-documentation:
+  en: a87697a7562a61c1
+  zh: 3e0da7de549ee3b4
+/examples-reusable-composition-bundles/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

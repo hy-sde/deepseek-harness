@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/session-query/session-url/README.md
-README.md: 76dc288d947c969b7fe9646a3b49373ffb1f9750
-README.zh.md: 99ef84bff5b53c150c15a6262e93b507689a2a60
+/:
+  en: f830ff14d67b373e
+  zh: 1ee13e50ce7cedaf
+/dsh-session-url:
+  en: 4f63689b204e8927
+  zh: 87f41702e33ee99a
+/dsh-session-url/summary:
+  en: 61ba3ecf72bdd3bc
+  zh: 1845d0562c05149d
+/dsh-session-url/table-of-contents:
+  en: 6eff0b1a06af964a
+  zh: 5fae3ccc4a48cd1a
+/dsh-session-url/url-surface:
+  en: 85454dc78947c60c
+  zh: 3fdfb6a3d762b95a
+/dsh-session-url/behavioral-notes:
+  en: bc74bb092d714537
+  zh: b8be0a9e00c2f303
+/dsh-session-url/mounting:
+  en: bfe27dd6da9b87d5
+  zh: 566fe9f0101ad418
+/dsh-session-url/package-layout:
+  en: e9811040601794c3
+  zh: 59e22711cc26ed2b
+/dsh-session-url/known-limitations-and-deferred-work:
+  en: e4f7159690d68274
+  zh: 6da1cb63335613a6
+/dsh-session-url/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

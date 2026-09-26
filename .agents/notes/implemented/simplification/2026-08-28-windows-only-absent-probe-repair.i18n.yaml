@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-28-windows-only-absent-probe-repair.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-28-windows-only-absent-probe-repair.md
-2026-08-28-windows-only-absent-probe-repair.md: 55fa7bee8d6e16eb96223fa9745f95891cfdf89c
-2026-08-28-windows-only-absent-probe-repair.zh.md: 5a459cab1f3d914934945465be1d1f08e0c4530b
+/agent-note-the-absent-probe-parent-repair-runs-on-windows-only:
+  en: ea2ad2c0300049db
+  zh: d769048fcc654e93
+/agent-note-the-absent-probe-parent-repair-runs-on-windows-only/problem:
+  en: da71e6b60a00eca0
+  zh: 93b9f42226df3028
+/agent-note-the-absent-probe-parent-repair-runs-on-windows-only/decision:
+  en: 7bc05f1985a4b4ba
+  zh: efbf28c3b4d2ee32
+/agent-note-the-absent-probe-parent-repair-runs-on-windows-only/testing:
+  en: 32fbc9ade8a01bb5
+  zh: 07b3d89491d8a818
+/agent-note-the-absent-probe-parent-repair-runs-on-windows-only/alternatives-considered:
+  en: 98077fdcf5ab14cb
+  zh: 556afafaa753973e
+/agent-note-the-absent-probe-parent-repair-runs-on-windows-only/consequences:
+  en: 2ea78c88f5ed528c
+  zh: 664caf9ae412e18a

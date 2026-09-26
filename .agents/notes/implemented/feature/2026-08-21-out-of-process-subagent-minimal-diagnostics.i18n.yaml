@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-out-of-process-subagent-minimal-diagnostics.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-21-out-of-process-subagent-minimal-diagnostics.md
-2026-08-21-out-of-process-subagent-minimal-diagnostics.md: 82f2d2b131c5e991891b030d7c48873aa803386b
-2026-08-21-out-of-process-subagent-minimal-diagnostics.zh.md: 4cf5a1ebef0ba83a241dec5a9d8cd21ee2010671
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics:
+  en: f372a2a1543a6472
+  zh: 6207df82b78d0b1e
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/problem:
+  en: 9fe932f2936bcafd
+  zh: 9710342b0f94c564
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/decision:
+  en: aadaceede2552df8
+  zh: 0316ecefb0a1684e
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/decision/safe-failure-text:
+  en: 085d89f91f452433
+  zh: a7f7e38f227014a5
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/decision/acp-facts:
+  en: 37c568658b301553
+  zh: d0c50857ed83a8a8
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/decision/dsh-sdk-facts:
+  en: 784b5382a9513b36
+  zh: 2c0870d0a68cf7c7
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/decision/ownership-and-lifecycle:
+  en: cc10cc68a75756e3
+  zh: 0dad27c2422cf680
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/verification:
+  en: 23498485a218a0a1
+  zh: 0ea5934fa452431c
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/alternatives-considered:
+  en: a91058fade5f0b7a
+  zh: 4436206388ae540a
+/agent-note-out-of-process-subagents-expose-minimal-actionable-diagnostics/consequences:
+  en: 642c4e9683059f6a
+  zh: d494e84da91b4ae8

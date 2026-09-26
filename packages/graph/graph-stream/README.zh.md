@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-```ts
+```ts ignore-check
 import Storage, { storageBackendServiceKey } from '@deepseek-ai/dsh-storage'
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 import { AgentGraphCoordinator } from '@deepseek-ai/dsh-graph-stream'
@@ -66,7 +66,7 @@ const result = await coordinator.reconcileAndWait()             // runs one driv
 
 ### 执行器接缝
 
-```ts
+```ts ignore-check
 export interface AgentGraphExecutor {
   provisionOperator(request: AgentGraphOperatorProvisionRequest): Promise<AgentGraphOperatorProvisionResult | undefined>
   runClaimedAgentGraphIntent(input: AgentGraphRunClaimedIntentInput): Promise<void>
@@ -77,6 +77,10 @@ export interface AgentGraphExecutor {
 协调器从不直接调用提供方——P3 提供基于子代理与工作树的实现。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：graph-stream 将图行投影为流安全增量，graph-control 已在写边界验证。
+
 ## 进一步探索
 
 - `packages/graph/graph-control`（P1）：本层折叠的持久化行。

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-09-broken-preset-roster-rows.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-09-broken-preset-roster-rows.md
-2026-08-09-broken-preset-roster-rows.md: 4ae92f0b12f2ebede925d6047b358b8cafb10149
-2026-08-09-broken-preset-roster-rows.zh.md: 60d1ff533e3e968e04dad8526042fe4579752569
+/agent-note-broken-presets-are-roster-rows-not-gaps:
+  en: a4020b289c0cbe71
+  zh: 82deccef48482bd3
+/agent-note-broken-presets-are-roster-rows-not-gaps/problem:
+  en: c78fc442e8e1f547
+  zh: 568a49367f935837
+/agent-note-broken-presets-are-roster-rows-not-gaps/decision:
+  en: 21fc2e6e1fee39fb
+  zh: ca5087736b14fda8
+/agent-note-broken-presets-are-roster-rows-not-gaps/consequences:
+  en: 758b0acbf0c5372e
+  zh: 8acc327650ffe90d
+/agent-note-broken-presets-are-roster-rows-not-gaps/load-bearing-details:
+  en: 15a27771e6aca1a5
+  zh: a92e4c2ab6c8f788
+/agent-note-broken-presets-are-roster-rows-not-gaps/alternatives-considered:
+  en: 0c4b1c22b2b8d9df
+  zh: cb9701c81ab10038

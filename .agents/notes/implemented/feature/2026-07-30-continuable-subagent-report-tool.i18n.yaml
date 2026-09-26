@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-30-continuable-subagent-report-tool.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-30-continuable-subagent-report-tool.md
-2026-07-30-continuable-subagent-report-tool.md: 07d17f18f318a86070d9b8612512fa3c2a3815e2
-2026-07-30-continuable-subagent-report-tool.zh.md: 9cbf76a9f3f50d9b1a84b573621cd6fc2a1611c4
+/agent-note-continuable-subagent-report-tool:
+  en: ec138fba6dff2781
+  zh: 191c2223ddbe6d72
+/agent-note-continuable-subagent-report-tool/problem:
+  en: 1f1c1d72dc0d0158
+  zh: 9ef4bf1399514be8
+/agent-note-continuable-subagent-report-tool/decision:
+  en: 9146ea7adecea789
+  zh: 1c0f5e953d037beb
+/agent-note-continuable-subagent-report-tool/decision/model-facing-contract:
+  en: dfc202232dbbb967
+  zh: fee5cc7e3664ae9f
+/agent-note-continuable-subagent-report-tool/decision/service-authority:
+  en: dfbadc9797fb9474
+  zh: cc57ac8d95486531
+/agent-note-continuable-subagent-report-tool/decision/delivery-policy:
+  en: 7804e4b0729eab32
+  zh: dd831acf6b71d7eb
+/agent-note-continuable-subagent-report-tool/decision/acknowledgement-and-recovery:
+  en: c2d06aea5df7eb31
+  zh: 9b9dbcb8c32946d3
+/agent-note-continuable-subagent-report-tool/decision/composition-and-lifecycle:
+  en: c89fb05fbe85f071
+  zh: 4bd3e8161f7ccca0
+/agent-note-continuable-subagent-report-tool/decision/snapshot-coverage:
+  en: f53b898f53639f3e
+  zh: f6155970eb48d630
+/agent-note-continuable-subagent-report-tool/alternatives-considered:
+  en: 6119e2aff3b6be5a
+  zh: 76136ef5249c23eb
+/agent-note-continuable-subagent-report-tool/alternatives-considered/automatically-deliver-every-final-answer:
+  en: 3c353c9ce60078d7
+  zh: d09fdb0627046055
+/agent-note-continuable-subagent-report-tool/alternatives-considered/always-wake-the-parent:
+  en: 8b94f0ec1fe3cab5
+  zh: 4493fd7c1b5a6811
+/agent-note-continuable-subagent-report-tool/alternatives-considered/let-the-child-choose-the-delivery-mode:
+  en: 0955a976412a23d7
+  zh: 9ce7d3886324527a
+/agent-note-continuable-subagent-report-tool/alternatives-considered/register-a-global-tool:
+  en: daec4ff85f84fe4d
+  zh: cba0f54f5de2fe96
+/agent-note-continuable-subagent-report-tool/alternatives-considered/combine-both-directions-in-the-control-package:
+  en: 1c55b4284b67b773
+  zh: 1da383239fb152e9
+/agent-note-continuable-subagent-report-tool/alternatives-considered/persist-an-offline-parent-mailbox:
+  en: fb41518156facdd4
+  zh: 3422b91307a7a565
+/agent-note-continuable-subagent-report-tool/alternatives-considered/reintroduce-a-task-or-result-promise:
+  en: 46a6381c02316cf4
+  zh: 2029f17ebc6601f8
+/agent-note-continuable-subagent-report-tool/alternatives-considered/validate-setup-after-agent-creation:
+  en: 30e65e75f51378cc
+  zh: 82562f877e16cfcd
+/agent-note-continuable-subagent-report-tool/consequences:
+  en: 6e5a564f98fd47a3
+  zh: c7046e9f534dfab9
+/agent-note-continuable-subagent-report-tool/consequences/accepted-risks:
+  en: 3f9e4d355bcb6a6d
+  zh: b577e88e47afe784

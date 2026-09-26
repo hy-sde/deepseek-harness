@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-30-client-locale-full-rollout.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-30-client-locale-full-rollout.md
-2026-07-30-client-locale-full-rollout.md: 3d036ccd64fa7fe9cdff75ec406ea88baf4d754a
-2026-07-30-client-locale-full-rollout.zh.md: 222dbd16e8ab89b42247187d8a13f8867e9ac349
+/agent-note-full-client-copy-rollout-onto-the-typed-locale-seat:
+  en: c402e3fe07d3a536
+  zh: e446ae04e566703e
+/agent-note-full-client-copy-rollout-onto-the-typed-locale-seat/problem:
+  en: 138af9ebeffab960
+  zh: 949e7275df4e818e
+/agent-note-full-client-copy-rollout-onto-the-typed-locale-seat/decision:
+  en: beeda99dda80df17
+  zh: 8387f5a8988716e9
+/agent-note-full-client-copy-rollout-onto-the-typed-locale-seat/alternatives-considered:
+  en: df95cf8c84661098
+  zh: c315fa1cb2310b6a
+/agent-note-full-client-copy-rollout-onto-the-typed-locale-seat/consequences:
+  en: d85e3da492b09cbe
+  zh: 7d6a9b0968db7126

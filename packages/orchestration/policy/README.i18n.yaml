@@ -1,6 +1,70 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/orchestration/policy/README.md
-README.md: c20d44c0c04c8cd97061457a3ca06ce8ebdd310b
-README.zh.md: f5e7a8bb5adf37de4a42e1c97d535e8fb0f83c0b
+/:
+  en: 9bd4ecfe7eefce57
+  zh: f7b436fd269adc11
+/deepseek-ai-dsh-orchestration-policy:
+  en: de1a812b66df997d
+  zh: 503990f624c6ec03
+/deepseek-ai-dsh-orchestration-policy/summary:
+  en: e8b0ddfd8bb4a5cd
+  zh: 227432b3a77d7142
+/deepseek-ai-dsh-orchestration-policy/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 3a2f21ff0dc3420d
+/deepseek-ai-dsh-orchestration-policy/use-this-package:
+  en: 3c5830149213e7d5
+  zh: f3f8cb3e593f791b
+/deepseek-ai-dsh-orchestration-policy/use-this-package/configuration-knobs-all-optional:
+  en: 7118defc9e1de6c4
+  zh: d09416476b07049b
+/deepseek-ai-dsh-orchestration-policy/use-this-package/what-the-policy-changes:
+  en: 066642195f87a182
+  zh: 8105cfe024910062
+/deepseek-ai-dsh-orchestration-policy/understand-the-implementation:
+  en: 29f8290fe8dd8587
+  zh: e13ddc0db3de40f0
+/deepseek-ai-dsh-orchestration-policy/understand-the-implementation/three-parts-one-source-of-truth:
+  en: 0cb58c4c352f44a4
+  zh: cf09a5eb6b3f5f65
+/deepseek-ai-dsh-orchestration-policy/understand-the-implementation/service-registration-is-the-arming-switch:
+  en: fed25c8bdc7c603b
+  zh: fde4310d0eed14ee
+/deepseek-ai-dsh-orchestration-policy/understand-the-implementation/guard-semantics-matrix:
+  en: 0e4886ab87f82669
+  zh: ff28ec5535a27a7b
+/deepseek-ai-dsh-orchestration-policy/understand-the-implementation/push-gate-mechanics-p2:
+  en: 2c62587d2e2283bb
+  zh: befb758070ddf658
+/deepseek-ai-dsh-orchestration-policy/understand-the-implementation/reporting-contract-p3:
+  en: 93e4a858e2d15156
+  zh: c854be3b93b11ee2
+/deepseek-ai-dsh-orchestration-policy/further-exploration:
+  en: ff5c0061ea5e53f3
+  zh: 2855d972350e7ee9
+/deepseek-ai-dsh-orchestration-policy/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-orchestration-policy/model-experience/system-prompt-section:
+  en: c17d2aa0c515f8f3
+  zh: 90dc24632e32d23d
+/deepseek-ai-dsh-orchestration-policy/model-experience/system-prompt-section/what-the-model-sees:
+  en: 2e8fb2794f0b6df7
+  zh: a1d9e50c918ff63c
+/deepseek-ai-dsh-orchestration-policy/model-experience/system-prompt-section/what-the-model-sees/section-template:
+  en: 5f25994dec3c83c9
+  zh: d0cc921035fa41ff
+/deepseek-ai-dsh-orchestration-policy/model-experience/system-prompt-section/token-effect:
+  en: 4641579caab55677
+  zh: e89af2d161442e0b
+/deepseek-ai-dsh-orchestration-policy/model-experience/system-prompt-section/kv-cache-effect:
+  en: 2607660c7e24cd5a
+  zh: 22037410c7ae6262
+/deepseek-ai-dsh-orchestration-policy/known-limitations-and-deferred-work:
+  en: bc9345d3668b9193
+  zh: cb018da874e101fd
+/deepseek-ai-dsh-orchestration-policy/known-limitations-and-deferred-work/dev-note:
+  en: 421346c0919e6460
+  zh: 58f7c6b7e2303d7e

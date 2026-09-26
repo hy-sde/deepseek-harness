@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-web-turn-rail-outline-jump.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-30-web-turn-rail-outline-jump.md
-2026-08-30-web-turn-rail-outline-jump.md: af2a464513d108429859c4f9ed8b4bfc58175e3c
-2026-08-30-web-turn-rail-outline-jump.zh.md: b63b1c1f656689997b8a8266ee332dfdb47d4035
+/agent-note-full-session-turn-rail-with-outline-projection-and-jump-paging:
+  en: e9e8b862346a4135
+  zh: 14571153c35d67c1
+/agent-note-full-session-turn-rail-with-outline-projection-and-jump-paging/problem:
+  en: b46f3b96eaecfcf8
+  zh: 65ff3d1263faa21a
+/agent-note-full-session-turn-rail-with-outline-projection-and-jump-paging/decision:
+  en: b401acd2b864ac0a
+  zh: db1e63f957d72a24
+/agent-note-full-session-turn-rail-with-outline-projection-and-jump-paging/alternatives-considered:
+  en: b508d6fa710678bb
+  zh: 78734edc5bb8664a
+/agent-note-full-session-turn-rail-with-outline-projection-and-jump-paging/consequences:
+  en: 7d7519b9f4e73901
+  zh: fd2e82537d4ca208

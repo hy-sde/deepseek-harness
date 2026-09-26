@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-31-viewport-activated-syntax-highlighting.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-31-viewport-activated-syntax-highlighting.md
-2026-08-31-viewport-activated-syntax-highlighting.md: b2a53fbe60be93cb7b2748316e35a4cb229fc314
-2026-08-31-viewport-activated-syntax-highlighting.zh.md: 284f17df56520e36de493eb13d26d1b78359164e
+/agent-note-viewport-activated-syntax-highlighting:
+  en: 71a5dd5ed7322244
+  zh: 61f55003b73d5e01
+/agent-note-viewport-activated-syntax-highlighting/problem:
+  en: 68d3d18dbb778c1b
+  zh: ee184da6e3081903
+/agent-note-viewport-activated-syntax-highlighting/decision:
+  en: b4906d389a1e476c
+  zh: 7b346ba77847c9a9
+/agent-note-viewport-activated-syntax-highlighting/testing:
+  en: bdfc12eae92154f6
+  zh: 08f0b0e7a19b5bf9
+/agent-note-viewport-activated-syntax-highlighting/alternatives-considered:
+  en: ad37c65223f8e05b
+  zh: d9ab3a36d4de992f
+/agent-note-viewport-activated-syntax-highlighting/consequences:
+  en: 14a9d10c4b40f4d4
+  zh: bdc31fd3e538bb49

@@ -12,7 +12,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentOptions, CreateAgentOptions } from '@deepseek-ai/dsh-agent'
 import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
 import type { Session, SessionId } from '@deepseek-ai/dsh-session'
-import type { } from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-system-prompt'
 import type { ToolRestriction } from '@deepseek-ai/dsh-tools'
 // Type-only: make `ctx.get('sandboxPolicy')`, `ctx.get('approval')`, and
 // `ctx.get('permissionPresets')` resolve to their services when composed — delegation consumes them
@@ -26,7 +26,7 @@ import type {} from '@deepseek-ai/dsh-permission-presets'
 // documented `ctx.get` pattern), never as a hard dep. A rosterless deployment
 // keeps its model-facing rows on the host plane, where the child already sees
 // them through the tool registry's global layer.
-import type { } from '@deepseek-ai/dsh-agent-presets'
+import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import { delegationDepthOf } from './depth.ts'
 
 /** Thrown when starting a child would exceed the requested depth cap. */
@@ -174,9 +174,9 @@ export interface ChildComposition {
  */
 export const SUBAGENT_DELEGATION_CONTEXT
   = 'You are a delegated subagent: your permission scope was fixed when you were started and cannot be '
-  + 'widened from inside this session — operations that require approval are rejected automatically. '
-  + 'When the task needs access beyond that scope, do not retry the denied operation; state the '
-  + 'limitation in your reply so the delegating agent can handle it.'
+    + 'widened from inside this session — operations that require approval are rejected automatically. '
+    + 'When the task needs access beyond that scope, do not retry the denied operation; state the '
+    + 'limitation in your reply so the delegating agent can handle it.'
 
 /**
  * Compose one child inside its creation window: join its parent's preset,
@@ -223,7 +223,10 @@ export function applyChildComposition(
 
 /** Policy seeded onto a child session's log at the delegation boundary. */
 export interface DelegatedPolicyOverrides {
-  /** The shared-bundle preset identity when the parent currently runs in Auto or Full access. */
+  /**
+   * The parent's current preset identity when it runs in Auto or Full access;
+   * the child keeps it under the pinned `never` approval policy.
+   */
   readonly permissionPreset: 'auto' | 'danger-full-access' | undefined
   /** The parent session's explicit sandbox-mode override, or `undefined` without one. */
   readonly sandboxMode: SandboxMode | undefined

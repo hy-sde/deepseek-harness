@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-24-provider-retry-policies.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-24-provider-retry-policies.md
-2026-07-24-provider-retry-policies.md: 968f40272d3d3cb0efa362c97dcb8630888f80ec
-2026-07-24-provider-retry-policies.zh.md: 3274d0311bb79825ef9551549e4783a33c1cb6ee
+/agent-note-per-provider-request-retry-policies:
+  en: 2f297e08c7f61564
+  zh: 2294afe701fce200
+/agent-note-per-provider-request-retry-policies/problem:
+  en: c5f976afc3bf708a
+  zh: bcd4e118a68be925
+/agent-note-per-provider-request-retry-policies/decision:
+  en: bbd4c4196661092d
+  zh: dd5a16544d1197c7
+/agent-note-per-provider-request-retry-policies/alternatives-considered:
+  en: 859f6f5f3750ebad
+  zh: 1e4ca9411fdc03e0
+/agent-note-per-provider-request-retry-policies/verification:
+  en: 899573c8024741e3
+  zh: ea92be5d4b80b42a
+/agent-note-per-provider-request-retry-policies/consequences:
+  en: 42beaccb516f7eda
+  zh: b731d85470d07fda

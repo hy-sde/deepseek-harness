@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-composer-gesture-editable-gate.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-26-composer-gesture-editable-gate.md
-2026-08-26-composer-gesture-editable-gate.md: 9b01a79d8d8a546641eaf87040d7a19fc5b4d5bc
-2026-08-26-composer-gesture-editable-gate.zh.md: b5dc8d36c7b195a152d32e92fac7ae36eea880d9
+/agent-note-composer-e2e-gestures-gate-on-the-contenteditable-attribute:
+  en: a5776fd48ceb3b8b
+  zh: 32180c100b9c9837
+/agent-note-composer-e2e-gestures-gate-on-the-contenteditable-attribute/problem:
+  en: d9f68fa0ce28dd25
+  zh: 974b0d240af3cb11
+/agent-note-composer-e2e-gestures-gate-on-the-contenteditable-attribute/decision:
+  en: 06d0f49305bb070b
+  zh: b0f25e992dd5755f
+/agent-note-composer-e2e-gestures-gate-on-the-contenteditable-attribute/alternatives-considered:
+  en: bb2c807100502830
+  zh: d1b64ae84aeb3068
+/agent-note-composer-e2e-gestures-gate-on-the-contenteditable-attribute/consequences:
+  en: 8574e55ba2745777
+  zh: 9cffd2523dfcaa6a

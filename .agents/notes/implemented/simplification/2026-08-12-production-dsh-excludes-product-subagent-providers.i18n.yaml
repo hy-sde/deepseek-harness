@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-12-production-dsh-excludes-product-subagent-providers.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.md
-2026-08-12-production-dsh-excludes-product-subagent-providers.md: 551cf86bd0d1901e5ad8e33588b7bf274cb2c8fe
-2026-08-12-production-dsh-excludes-product-subagent-providers.zh.md: 611c6192c501f6289911c18c36ca21a31c57e2cd
+/agent-note-production-dsh-excludes-product-subagent-providers:
+  en: 924bdcd99aad6bbd
+  zh: f1f48a3ff6228577
+/agent-note-production-dsh-excludes-product-subagent-providers/problem:
+  en: e0a002ed17e7d282
+  zh: 6b65e6c16dd33ae5
+/agent-note-production-dsh-excludes-product-subagent-providers/decision:
+  en: 5fac53aa956e5807
+  zh: fb5c8ce23231cd51
+/agent-note-production-dsh-excludes-product-subagent-providers/verification:
+  en: 193adbfe096f4c4a
+  zh: dab745a5ee431f3f
+/agent-note-production-dsh-excludes-product-subagent-providers/alternatives-considered:
+  en: c55d002ef0efa59d
+  zh: 481307b2b77f033d
+/agent-note-production-dsh-excludes-product-subagent-providers/consequences:
+  en: 84e006ae2d3dac91
+  zh: 7a10787d83a12ccc

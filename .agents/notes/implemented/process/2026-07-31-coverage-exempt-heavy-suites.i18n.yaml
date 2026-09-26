@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-31-coverage-exempt-heavy-suites.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-07-31-coverage-exempt-heavy-suites.md
-2026-07-31-coverage-exempt-heavy-suites.md: fe33308cfcbd709a563e697a5e62585be58f214d
-2026-07-31-coverage-exempt-heavy-suites.zh.md: 233fdc403fe734b21d116240b8067eaef119cd45
+/agent-note-coverage-exempt-heavy-suites:
+  en: c101ff50f57c3c67
+  zh: 2d7d6cfb8661584c
+/agent-note-coverage-exempt-heavy-suites/problem:
+  en: 8dbe9514357186e6
+  zh: 3493bbeac92d3736
+/agent-note-coverage-exempt-heavy-suites/decision:
+  en: c8ab6461bbdbd141
+  zh: be8abbd075fb81e1
+/agent-note-coverage-exempt-heavy-suites/decision/the-roster-reconciled-entry-by-entry:
+  en: d15e82e5605937f3
+  zh: 29a9fc99174e5310
+/agent-note-coverage-exempt-heavy-suites/decision/membership-contract:
+  en: edcc4014a6837425
+  zh: d7e8110548ed36ec
+/agent-note-coverage-exempt-heavy-suites/decision/the-gate-polices-the-roster-automatically:
+  en: e8aceff2fd87ff63
+  zh: b24ff8f76df27dde
+/agent-note-coverage-exempt-heavy-suites/alternatives-considered:
+  en: beef4ce837b1e203
+  zh: 8c677703ca254720
+/agent-note-coverage-exempt-heavy-suites/verification:
+  en: 441197b4b09c4997
+  zh: b87c97433a22724c
+/agent-note-coverage-exempt-heavy-suites/consequences:
+  en: d3d60aa2902ea0dc
+  zh: 3f64f3d78498a184

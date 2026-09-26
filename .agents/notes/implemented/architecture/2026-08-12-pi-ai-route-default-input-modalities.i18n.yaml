@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-12-pi-ai-route-default-input-modalities.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-12-pi-ai-route-default-input-modalities.md
-2026-08-12-pi-ai-route-default-input-modalities.md: 83158d686b028a085fc8801f83a7cea1a369471b
-2026-08-12-pi-ai-route-default-input-modalities.zh.md: 18ee56db7bfe5cba63c125341b5ecc5fe3905c5b
+/agent-note-a-pi-ai-model-declares-its-own-input-modalities-and-undeclared-means-text:
+  en: 25d21ed6acf65327
+  zh: 2c732d0eaa1f5976
+/agent-note-a-pi-ai-model-declares-its-own-input-modalities-and-undeclared-means-text/problem:
+  en: d2a05b52bd5c491c
+  zh: 4e21528e11661ac1
+/agent-note-a-pi-ai-model-declares-its-own-input-modalities-and-undeclared-means-text/decision:
+  en: e50159a3257f5033
+  zh: be2b43c4a1df55c9
+/agent-note-a-pi-ai-model-declares-its-own-input-modalities-and-undeclared-means-text/alternatives-considered:
+  en: 756991ab69498ac2
+  zh: 1312b6f5ef82913d
+/agent-note-a-pi-ai-model-declares-its-own-input-modalities-and-undeclared-means-text/consequences:
+  en: 54441b70d205de09
+  zh: 4fa2638e6a8ff9cc
+/agent-note-a-pi-ai-model-declares-its-own-input-modalities-and-undeclared-means-text/testing:
+  en: 9d4e535da4fa2593
+  zh: a0aed0c779d0b14d

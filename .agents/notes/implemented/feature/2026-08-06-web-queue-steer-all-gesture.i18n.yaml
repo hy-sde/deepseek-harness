@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-06-web-queue-steer-all-gesture.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-06-web-queue-steer-all-gesture.md
-2026-08-06-web-queue-steer-all-gesture.md: c51e837d37b61a73f9602445daea9fbdfc77a299
-2026-08-06-web-queue-steer-all-gesture.zh.md: b0009a7a51ebe89f61d1a4b995b1138a7247d266
+/agent-note-steer-the-whole-web-queue-with-an-empty-draft-cmd-ctrl-enter:
+  en: 11f688877e0f6656
+  zh: 3f2447cbc13851b7
+/agent-note-steer-the-whole-web-queue-with-an-empty-draft-cmd-ctrl-enter/problem:
+  en: 1c020d84bb59c101
+  zh: 05f656b8f542d20e
+/agent-note-steer-the-whole-web-queue-with-an-empty-draft-cmd-ctrl-enter/decision:
+  en: 3f9fa711d7b99695
+  zh: f51587623522a083
+/agent-note-steer-the-whole-web-queue-with-an-empty-draft-cmd-ctrl-enter/consequences:
+  en: 1449ca43ab9fafd3
+  zh: d62a86dbb3cb5998
+/agent-note-steer-the-whole-web-queue-with-an-empty-draft-cmd-ctrl-enter/related:
+  en: 4ca33375d94cd8a5
+  zh: baef509c55c49198
+/agent-note-steer-the-whole-web-queue-with-an-empty-draft-cmd-ctrl-enter/alternatives-considered:
+  en: e0809b310d3b9bfc
+  zh: a2b5a39fac6ae347

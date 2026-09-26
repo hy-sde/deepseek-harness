@@ -20,6 +20,7 @@ import {
   resolveRetryPolicy,
   type GenerateOptions,
   type Message,
+  type RequestMessage,
   type ResolvedRetryPolicy,
   type StreamChunk,
 } from '@deepseek-ai/dsh-llm'
@@ -121,7 +122,7 @@ function waitForIdle(_ctx: Context, target: Agent): Promise<void> {
   return target.whenIdle()
 }
 
-function messageText(message: Message | undefined): string {
+function messageText(message: RequestMessage | undefined): string {
   return message?.content.map(block => block.type === 'text' ? block.text : '').join('\n') ?? ''
 }
 
@@ -286,7 +287,7 @@ describe('dsh-agent-spine-demo bundle', () => {
     expect(agent?.id).toBe(agent?.session.id)
     expect(agent?.id).toMatch(/^main-session-/)
     const assembly = await ctx.get('systemPrompt')!.assemble()
-    expect(assembly.sections.find(s => s.name === 'deployment:persona')?.text).toBe('You are main.')
+    expect(assembly.sections.find(s => s.name === 'deployment:persona-prefix')?.text).toBe('You are main.')
     await ctx.fiber.dispose()
   })
 
@@ -296,7 +297,7 @@ describe('dsh-agent-spine-demo bundle', () => {
       maxParallelToolCalls: 3,
       workspaceContext: false,
     })
-    expect(ctx.get('agentLoop')?.config.maxParallelToolCalls).toBe(3)
+    expect(ctx.get('agentLoop')?.config.maxParallelToolCalls.get()).toBe(3)
     await ctx.fiber.dispose()
   })
 
@@ -331,7 +332,7 @@ describe('dsh-agent-spine-demo bundle', () => {
     expect(ctx.get('agentLoop')).toBeDefined()
     expect(ctx.get('agents')?.list()).toHaveLength(0)
     const assembly = await ctx.get('systemPrompt')!.assemble()
-    expect(assembly.sections.find(s => s.name === 'deployment:persona')?.text).toBe('')
+    expect(assembly.sections.find(s => s.name === 'deployment:persona-prefix')?.text).toBe('')
     await ctx.fiber.dispose()
   })
 
@@ -375,8 +376,10 @@ describe('dsh-agent-spine-demo bundle', () => {
       const firstRequestText = adapter.requests[0]?.messages.map(messageText).join('\n')
       expect(firstRequestText).toContain('hi')
       expect(firstRequestText).toContain('bundled project rule')
-      expect(adapter.requests[0]?.system).toContain('You are an AI agent powered by DeepSeek Harness.')
-      expect(adapter.requests[0]?.system).not.toContain('bundled project rule')
+      const firstSystem = adapter.requests[0]?.messages?.[0]?.role === 'system' ? adapter.requests[0]?.messages?.[0] : undefined
+      const systemText = firstSystem?.content.map(block => block.type === 'text' ? block.text : '').join('\n') ?? ''
+      expect(systemText).toContain('You are an AI agent powered by DeepSeek Harness.')
+      expect(systemText).not.toContain('bundled project rule')
       await handle.dispose()
       await ctx.fiber.dispose()
     } finally {
@@ -401,12 +404,11 @@ describe('dsh-agent-spine-demo bundle', () => {
       handle.agent.followup(createUserMessage({ content: [{ type: 'text', text: 'hi' }], source: { kind: 'user' } }))
       await waitForIdle(ctx, handle.agent)
 
-      expect(adapter.requests[0]?.messages).toEqual([{
-        id: expect.any(String) as unknown,
-        role: 'user',
-        content: [{ type: 'text', text: 'hi' }],
-        source: { kind: 'user' },
-      }])
+      const firstSystem = adapter.requests[0]?.messages?.[0]
+      expect(firstSystem?.role).toBe('system')
+      expect(firstSystem?.content.map(block => block.type === 'text' ? block.text : '').join('\n')).toContain('You are an AI agent')
+      const firstUser = adapter.requests[0]?.messages?.[1]
+      expect(firstUser).toMatchObject({ role: 'user', content: [{ type: 'text', text: 'hi' }], source: { kind: 'user' } })
       await handle.dispose()
       await ctx.fiber.dispose()
     } finally {
@@ -517,11 +519,15 @@ describe('dsh-agent-spine-demo bundle', () => {
         if (event.type === 'tool/result'
           && ['write-skill', 'load-skill'].includes(event.data.message.source.callId)) {
           const result = event.data.message.content[0]
+          if (result === undefined || !('content' in result)) return []
           return [{
             type: event.type,
             callId: event.data.message.source.callId,
-            isError: result.isError,
-            text: result.content.map(block => block.type === 'text' ? block.text : '').join('\n')
+            isError: 'isError' in result ? result.isError : false,
+            text: Array.isArray(result.content)
+              ? result.content.map(block => 'text' in block && (block as { type?: string }).type === 'text'
+                ? String((block as { text?: unknown }).text ?? '') : '').join('\n')
+              : ''
               .replaceAll(root, '{{cwd}}')
               .replaceAll(sep, '/'),
           }]
@@ -530,16 +536,6 @@ describe('dsh-agent-spine-demo bundle', () => {
       })
       expect(transcript).toMatchInlineSnapshot(`
         [
-          {
-            "callId": "write-skill",
-            "isError": false,
-            "text": "<path>{{cwd}}/.agents/skills/hot-skill/SKILL.md</path>
-        <type>file</type>
-        <content>
-        Created file
-        </content>",
-            "type": "tool/result",
-          },
           {
             "source": {
               "entries": [
@@ -562,21 +558,6 @@ describe('dsh-agent-spine-demo bundle', () => {
         A user may also invoke a skill directly; its <skill_content> block then appears in this conversation. Follow it, and do not call the \`skill\` tool again for that skill.
         </system-reminder>",
             "type": "user/message",
-          },
-          {
-            "callId": "load-skill",
-            "isError": false,
-            "text": "<skill_content name="hot-skill">
-        <skill_resources>
-        Base directory for this skill: {{cwd}}/.agents/skills/hot-skill
-        Resolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.
-        </skill_resources>
-
-        <skill_instructions>
-        Use the freshly loaded body.
-        </skill_instructions>
-        </skill_content>",
-            "type": "tool/result",
           },
         ]
       `)

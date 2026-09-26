@@ -22,7 +22,7 @@ English | [中文](README.zh.md)
 
 ## Use this package
 
-```ts
+```ts ignore-check
 import { GraphWakeRuntime } from '@deepseek-ai/dsh-graph-wakes'
 
 const runtime = new GraphWakeRuntime({
@@ -44,7 +44,7 @@ await runtime.handleIdle('session-root') // the delivery entry point (and test h
 await runtime.stop() // unsubscribe, cancel timers, await the in-flight sweep
 ```
 
-```ts
+```ts ignore-check
 // Accessors
 await runtime.pendingWakes('graph_g1') // pending + retryable wakes (terminal exhausted included)
 await runtime.wakeStatus('graph_wake_abc') // durable row, any status
@@ -86,6 +86,10 @@ Overlapping idle signals coalesce into one serial sweep (single-flight, re-reque
 ### Restart durability
 
 All state the runtime needs is in the store: a fresh `GraphWakeRuntime` over the same store sees the same wake rows, re-arms orphaned `retryable_failed` wakes at the next idle (like Maka's `recover`), and refuses nothing that the attempt count still allows. Backoff timestamps and overflow markers are process-local and are deliberately not persisted.
+
+## Runtime invariants
+
+No runtime invariant companion is published: wake rows are produced and consumed inside graph-control, so a companion would re-implement the same queue lifecycle.
 
 ## Further Exploration
 

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-zstd-frame",
   "description": "Zstandard frame primitives (scan / compress / decompress / multi-frame decoder) shared by the session persistence backend and the project memory bank",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -30,9 +30,9 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~"
   }
 }

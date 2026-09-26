@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-model-readable-image-paths.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-21-model-readable-image-paths.md
-2026-08-21-model-readable-image-paths.md: 728d25ee84836a07805f9d8728e47e9319e0863d
-2026-08-21-model-readable-image-paths.zh.md: 2596dec5a21a8908d5875ab031bed6655b2305ca
+/agent-note-execution-world-image-paths-in-model-requests:
+  en: fd573480a26eef4b
+  zh: 87b486f4d8b612cc
+/agent-note-execution-world-image-paths-in-model-requests/problem:
+  en: ef2a312863931433
+  zh: 90f5294c60fb017a
+/agent-note-execution-world-image-paths-in-model-requests/decision:
+  en: 16481823c07ef76c
+  zh: 2b0738cf672bf7ca
+/agent-note-execution-world-image-paths-in-model-requests/alternatives-considered:
+  en: dffc5cf9629f4df1
+  zh: 1268d17580c522de
+/agent-note-execution-world-image-paths-in-model-requests/verification:
+  en: 431b8572d56cda15
+  zh: 20c0c719cc26be8e
+/agent-note-execution-world-image-paths-in-model-requests/consequences:
+  en: 00c872ac15ed8e44
+  zh: d0040ca0f4ee7809

@@ -6,7 +6,7 @@ English | [中文](2026-08-27-translation-pairing-merge-budget.zh.md)
 
 ## Problem
 
-[`scripts/translation-pairing-merge.spec.ts`](../../../../scripts/translation-pairing-merge.spec.ts) took a `describe`-level `{ timeout: 15_000 }`. All 23 of its cases inherit that value; none carries an allowance of its own.
+[`scripts/translation-pairing-merge.spec.ts`](../../../../packages/preset/agent-preset-registry/README.md) took a `describe`-level `{ timeout: 15_000 }`. All 23 of its cases inherit that value; none carries an allowance of its own.
 
 Every case builds a scratch repository and drives it through spawned `git` invocations, so the suite is bound by process creation rather than by its assertions. On the self-hosted Windows runners all instances share one volume, and process creation there shows occasional multi-second spikes rather than a uniform slowdown. Under that contention this suite has been observed reporting `Test timed out in 15000ms` on a branch that did not touch the file, so the budget rather than the change under test decided the outcome.
 

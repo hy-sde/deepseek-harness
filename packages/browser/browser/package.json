@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-browser",
   "description": "Agentic browser plumbing: the host ctx.browser service (launch / CDP-attach / relay backends, tab registry, navigation, ARIA snapshot, screenshot, JS eval) backing the browser tool in @deepseek-ai/dsh-tool-browser",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -44,16 +44,16 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:~",
     "playwright-core": "^1.61.1",
     "ws": "^8.21.0",
     "cloakbrowser": "^0.5.10"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:~",
     "@types/node": "^22.0.0",
     "playwright-core": "^1.61.1",
     "ws": "^8.21.0",

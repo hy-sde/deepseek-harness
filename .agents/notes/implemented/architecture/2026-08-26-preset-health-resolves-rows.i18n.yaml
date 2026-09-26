@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-preset-health-resolves-rows.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-26-preset-health-resolves-rows.md
-2026-08-26-preset-health-resolves-rows.md: 909423e373bc2368b5fb1e81b1172275920282aa
-2026-08-26-preset-health-resolves-rows.zh.md: d2cffae66f7bd7fb78e068bd4242d009b95d3c5c
+/agent-note-preset-health-resolves-the-rows-it-can-prove-will-start:
+  en: 653e592b7d730295
+  zh: 9d0727deae879ed4
+/agent-note-preset-health-resolves-the-rows-it-can-prove-will-start/problem:
+  en: 91299fb19dbdb708
+  zh: c55b9136675702da
+/agent-note-preset-health-resolves-the-rows-it-can-prove-will-start/decision:
+  en: ee76481cb3e952c3
+  zh: 9ce9a81fc10c47ff
+/agent-note-preset-health-resolves-the-rows-it-can-prove-will-start/alternatives-considered:
+  en: 238185e1ac76a73c
+  zh: 922bc4caa90f3147
+/agent-note-preset-health-resolves-the-rows-it-can-prove-will-start/consequences:
+  en: bc2ddaa617a321c8
+  zh: da3529612714a6e2

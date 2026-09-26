@@ -1,6 +1,5 @@
 - id: session-title-llm
   disabled: true
-
 # pi-ai route and isolated-path patch over the shipped headless profile.
 - id: headless-startup
   disabled: true

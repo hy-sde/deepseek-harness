@@ -1,6 +1,70 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/graph/graph-wakes/README.md
-README.md: 2e2db3bba8e71daef1083daa93b86b5d16a3249e
-README.zh.md: 6195039f4bcd862c112475c4d705329ea0889e73
+/:
+  en: a41e32d0ed6206f3
+  zh: 9e30007e2b9b64e1
+/deepseek-ai-dsh-graph-wakes:
+  en: e7fff438a02648b5
+  zh: 2057d0d79a530c71
+/deepseek-ai-dsh-graph-wakes/summary:
+  en: 64dfd227c6f1b12e
+  zh: f23c3e82c0e938b4
+/deepseek-ai-dsh-graph-wakes/table-of-contents:
+  en: 65663b0d5dfa1600
+  zh: 55b2121ae6059425
+/deepseek-ai-dsh-graph-wakes/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 1a3cb9583c5272ea
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation:
+  en: ee4615a04fa6503d
+  zh: ee2c5fb2204a43cf
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/idle-gated-delivery:
+  en: 74b6d1d3b2746e36
+  zh: 090904760f941283
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/delivery-attempts-and-the-durable-state-machine:
+  en: 231fd6420feea66a
+  zh: 5c6eaf6b8c855433
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/retries-backoff-and-terminal-failure:
+  en: 6945ba09f0be981e
+  zh: bfeae1d64b9f7685
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/context-overflow-recovery:
+  en: 32bba983f5050086
+  zh: b9891e3c04c5ca96
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/stop-suppression:
+  en: e769e5e240d3571f
+  zh: f9b34663c8e05230
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/single-flight-and-idempotency:
+  en: 152a89da3741a7da
+  zh: 940793ceb8308f3d
+/deepseek-ai-dsh-graph-wakes/understand-the-implementation/restart-durability:
+  en: 9aa69a640bc4923c
+  zh: b3f80ecaf870c49e
+/deepseek-ai-dsh-graph-wakes/runtime-invariants:
+  en: 20a10787321b78ff
+  zh: c61312aa43d94867
+/deepseek-ai-dsh-graph-wakes/further-exploration:
+  en: c08893686235088f
+  zh: 91cf873d08685d46
+/deepseek-ai-dsh-graph-wakes/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-graph-wakes/model-experience/idle-gated-wake-checkpoint:
+  en: 296c28429dac040d
+  zh: 0842b05b0b93d1c1
+/deepseek-ai-dsh-graph-wakes/model-experience/idle-gated-wake-checkpoint/what-the-model-sees:
+  en: 8babacf0db9e73a0
+  zh: f0ee9b86ba1e970a
+/deepseek-ai-dsh-graph-wakes/model-experience/idle-gated-wake-checkpoint/token-effect:
+  en: db907c450919b062
+  zh: d129ddd6b2ffd1fc
+/deepseek-ai-dsh-graph-wakes/model-experience/idle-gated-wake-checkpoint/kv-cache-effect:
+  en: 3a44aa1a687906b4
+  zh: 549ab4bd42766195
+/deepseek-ai-dsh-graph-wakes/known-limitations-and-deferred-work:
+  en: 8069cd3ae85980d3
+  zh: 8dd8fad5fade5949
+/deepseek-ai-dsh-graph-wakes/known-limitations-and-deferred-work/dev-note:
+  en: 28f86c8678cdac84
+  zh: bb1a874321eab82b

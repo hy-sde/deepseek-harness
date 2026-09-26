@@ -44,7 +44,7 @@ kind: "package-reference"
 
 插件在根代理发布（`agent/created`）时装配，或在其已存活时立即装配，并随其 fiber 撤回服务。装配也可显式构建：
 
-```ts
+```ts ignore-check
 import { createGraphHostServices } from '@deepseek-ai/dsh-graph-host'
 
 const services = await createGraphHostServices({
@@ -105,7 +105,7 @@ P3 `recordSink` 收到的 `AgentGraphRecordSourceEvent` **不带**算子/会话�
 
 `buildSessionGraphProjection` 把控制器整图快照变成有界的 P6 载荷。每条 `graph/change` 事件携带 `{ graphId, snapshot, revision }`：
 
-```ts
+```ts ignore-check
 interface SessionGraphProjection {
   readonly schemaVersion: 1
   readonly graphId: string
@@ -134,6 +134,10 @@ interface SessionGraphProjection {
 `attachGraph` 注册控制器并把唤醒运行时限定到根会话启动。投递只在空闲边界运行（`observeIdle` → `handleIdle`）：投递钩子重新驱动协调器并发出新的 `graph/change`。关闭的图短路为 `superseded`（运行时也自行折叠调度日志：`finish` 更新或图/根目标停止会在不投递的情况下取代唤醒）。失败的投递返回 `retryable_failed`；提供者确认的上下文溢出（`GraphHostContextOverflowError` 或 `overflow === true` 标记）触发运行时的一次压缩恢复，同一唤醒的第二次溢出携带部分快照（`partialResult: true`），使唤醒在尝试上限（`DEFAULT_MAX_DELIVERY_ATTEMPTS = 3`）处耗尽，而不是第三次完整重试。协调后投影读取属于投递的一部分：那里的溢出标记失败触发同一条一次压缩路径。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：宿主接线仅挂载 graph-control、graph-stream、graph-wakes 与 tool-graph，其各自伴生包已覆盖该面。
+
 ## 进一步探索
 
 - [dsh-graph-control](../graph-control/README.zh.md)（P1）— 本装配打开的持久化存储（调度日志、声明、供应、唤醒）。

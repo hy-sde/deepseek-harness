@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-product-subagent-minimal-diagnostics.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-21-product-subagent-minimal-diagnostics.md
-2026-08-21-product-subagent-minimal-diagnostics.md: b99ed487911a7ac9bf7c0751ea02290ff92cad6a
-2026-08-21-product-subagent-minimal-diagnostics.zh.md: 46f948334df0268a095f8cb34ab1a7707eee811b
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics:
+  en: ef61b7ee75349361
+  zh: 46aff3a3253ded72
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics/problem:
+  en: 8769ef882c82b4e8
+  zh: 0cc711d45ce87e40
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics/decision:
+  en: afa39003f0e97c56
+  zh: 2dd84aef26c625c1
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics/decision/ownership-and-lifecycle:
+  en: 72282639cbe36a83
+  zh: 29af96b4a7b6799e
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics/verification:
+  en: bccaa2ae8022b671
+  zh: 7217c2dfc386cfc5
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics/alternatives-considered:
+  en: eb92dad462a292aa
+  zh: fba99747cd50f7d1
+/agent-note-product-subagents-expose-minimal-actionable-diagnostics/consequences:
+  en: 52933c4ea90ceb32
+  zh: 40f5a5d60a05d1aa

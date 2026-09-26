@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-remove-agent-spine-demo.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-26-remove-agent-spine-demo.md
-2026-08-26-remove-agent-spine-demo.md: 47c9341ed9a52c558e5e33e897314a3d94b92abf
-2026-08-26-remove-agent-spine-demo.zh.md: 5b48f71d3b35f3c048aef20b2971fb9c66aa6c3a
+/agent-note-remove-the-agent-spine-demo-package:
+  en: 68bcbf2943314976
+  zh: e257761fd6ffa426
+/agent-note-remove-the-agent-spine-demo-package/problem:
+  en: f3273dbc5e5f13ac
+  zh: c2d0f3a26b352ddd
+/agent-note-remove-the-agent-spine-demo-package/decision:
+  en: 4aab8dc2413e3a93
+  zh: 17888f34f409bad3
+/agent-note-remove-the-agent-spine-demo-package/verification:
+  en: 93e3d3455cfee274
+  zh: ab90c49e3a41b2e1
+/agent-note-remove-the-agent-spine-demo-package/alternatives-considered:
+  en: 7b2da85c7a729cbf
+  zh: 273ac5465a8bea11
+/agent-note-remove-the-agent-spine-demo-package/consequences:
+  en: d12d93a25ee1dbef
+  zh: db7c1086b4e86e09

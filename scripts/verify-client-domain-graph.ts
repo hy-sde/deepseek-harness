@@ -64,6 +64,7 @@ function checkPackage(pkgName: string, clientDir: string): Violation[] {
       if (spec === undefined) continue
       const target = resolveClientImport(rel, spec)
       if (target === '..' || target.startsWith('../')) continue // package-level rules govern
+      if (/\.(css|svg|png|jpe?g|webp|gif|mp4|woff2?|ico)$/u.test(target)) continue // asset imports carry no module domain
       const toDomain = domainOf(target)
       if (toDomain === '' || CONTRACT_DIRS.has(toDomain)) continue // top-level shared file or contract layer
       if (fromDomain === toDomain) continue // inside one domain

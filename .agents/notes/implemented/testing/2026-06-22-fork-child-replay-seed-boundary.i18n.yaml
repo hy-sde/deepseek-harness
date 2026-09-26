@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-06-22-fork-child-replay-seed-boundary.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-06-22-fork-child-replay-seed-boundary.md
-2026-06-22-fork-child-replay-seed-boundary.md: 1fefc3546ebe029ba95318dad3ac2d463a3fe497
-2026-06-22-fork-child-replay-seed-boundary.zh.md: bb43eacf075318dc0101fca2cacb45a03d847764
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly:
+  en: 623d6e42cbc7d999
+  zh: bd85cac27bd094ac
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/problem:
+  en: fa6bb88ab3ca7bc2
+  zh: 1beca5482995cf1d
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/decision:
+  en: 2e273b3d97cc13ad
+  zh: db6d90f9262af86b
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/decision/1-lineage-metadata-and-an-exact-body-owned-cut:
+  en: 10a5e1b4883c1ab5
+  zh: 1737e49f73b58946
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/decision/2-jsonl-round-trips-it:
+  en: c165ae1eab422b45
+  zh: 0cad326063d5386b
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/decision/3-replay-derives-a-child-script-after-the-boundary:
+  en: 81979f7a732f8a9b
+  zh: 861f57a201cc45c0
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/alternatives-considered:
+  en: 78b067080c1bac8e
+  zh: df6cc19e9421b4c2
+/agent-note-persist-the-seed-boundary-so-fork-child-replay-routes-correctly/consequences:
+  en: 9dd11607a15178e6
+  zh: 9f12782020623ec9

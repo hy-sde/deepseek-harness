@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-graph-stream",
   "description": "Agent Graph stream layer: pure derivations (records, trace, readiness, handoff, schedule reconcile) and the process-local coordinator (Maka port, slice P2)",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -27,9 +27,11 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-graph-control": "workspace:^"
+    "@deepseek-ai/dsh-graph-control": "workspace:*",
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-graph-control": "workspace:^"
+    "@deepseek-ai/dsh-graph-control": "workspace:*",
+    "@deepseek-ai/cordis": "workspace:~"
   }
 }

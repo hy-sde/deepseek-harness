@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-code-runtime-python-load-and-dispatch-hardening.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-29-code-runtime-python-load-and-dispatch-hardening.md
-2026-08-29-code-runtime-python-load-and-dispatch-hardening.md: 3d64f96420cd337fc8c7bb44e02f912e1868deed
-2026-08-29-code-runtime-python-load-and-dispatch-hardening.zh.md: 64772eb14a09585b1ee0ab10ffcf1298b77b0a35
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend:
+  en: 74670b75acc809a7
+  zh: 85ad962d8ccab946
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/problem:
+  en: 509ce8b847076ef1
+  zh: a66e252a438bc1af
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/decision:
+  en: a15c7c13f167e5ac
+  zh: a15c7c13f167e5ac
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/decision/an-explicit-pythonbin-must-be-an-executable-regular-file-at-load:
+  en: cc5570336dfa3e48
+  zh: 4350294a1eb0b735
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/decision/binding-callables-are-snapshotted-during-validation:
+  en: ac05bdd7bd76917b
+  zh: 56c1a9358eeebf83
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/decision/the-reply-drain-settles-on-a-destroyed-pipe:
+  en: 142a2a6f8f52b427
+  zh: f07118d0848db723
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/testing:
+  en: 84be57092eebb41a
+  zh: abb53495f528c7b6
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/alternatives-considered:
+  en: 9774d0721776ad68
+  zh: 085596177717d80e
+/agent-note-load-time-pythonbin-validation-binding-snapshot-and-reply-drain-settle-in-the-cpython-backend/consequences:
+  en: 0415e233a1b56abb
+  zh: 03473b7fd14926fa

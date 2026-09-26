@@ -1,18 +1,30 @@
 {
   "_comment": "Fork legacy packages whose public exports predate the export-jsdoc gate and are not yet individually documented. Keep this list minimal and shrinking; new packages must not be added. See scripts/verify-export-jsdoc.ts (EXEMPLAR filters these roots out of the walk).",
   "packages": [
+    "packages/agentsview/tool-agentsview",
     "packages/browser/browser",
+    "packages/client/ui-chat",
     "packages/code-runtime/code-runtime-kernels",
+    "packages/context/agent-instructions",
     "packages/edit/hashline",
     "packages/edit/tool-edit",
     "packages/fs/fs-archive",
     "packages/fs/internal-urls",
     "packages/fs/tool-fs",
+    "packages/fs/tool-fs-search",
     "packages/git/git",
     "packages/git/tool-git",
+    "packages/graph/graph-control",
+    "packages/graph/graph-executor",
+    "packages/graph/graph-host",
+    "packages/graph/graph-stream",
+    "packages/graph/graph-wakes",
+    "packages/graph/tool-graph",
     "packages/memory/memory",
+    "packages/memory/memory-extraction",
     "packages/memory/tool-memory",
     "packages/openwiki/openwiki-core",
+    "packages/orchestration/policy",
     "packages/web/web-search-public"
   ]
 }

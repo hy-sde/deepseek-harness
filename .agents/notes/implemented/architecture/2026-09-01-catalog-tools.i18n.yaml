@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-01-catalog-tools.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-01-catalog-tools.md
-2026-09-01-catalog-tools.md: 1c4402d2bb145133c4b3772dab70cb851e4d8190
-2026-09-01-catalog-tools.zh.md: 432860d0c2383f3f205157dc4be684b3dd589057
+/agent-note-device-tools-over-the-dyn-catalog-transport:
+  en: 84633a9b774245d6
+  zh: 2b0b3f50459b8998
+/agent-note-device-tools-over-the-dyn-catalog-transport/problem:
+  en: 61e98145fb2f88b6
+  zh: f41be0047edfdbbd
+/agent-note-device-tools-over-the-dyn-catalog-transport/decision:
+  en: 7f9b451f25598caf
+  zh: c8b7e36d802111f3
+/agent-note-device-tools-over-the-dyn-catalog-transport/alternatives-considered:
+  en: b28528f592814f2f
+  zh: 934569fe0f733ac7
+/agent-note-device-tools-over-the-dyn-catalog-transport/consequences:
+  en: 989b5ced4b2b15b1
+  zh: e8dc679616dc341b
+/agent-note-device-tools-over-the-dyn-catalog-transport/testing:
+  en: 69f4ce612a863b86
+  zh: a9f0010c32cfcc8e
+/agent-note-device-tools-over-the-dyn-catalog-transport/deferred:
+  en: a0fed530d013c95b
+  zh: bd915d07bfd8f164

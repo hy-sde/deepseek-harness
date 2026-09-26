@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-webworker-pack-lowering-and-preview.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-20-webworker-pack-lowering-and-preview.md
-2026-08-20-webworker-pack-lowering-and-preview.md: 24dd5ba6e3eb633253321b219781b537f1faf429
-2026-08-20-webworker-pack-lowering-and-preview.zh.md: 5ee59e9a508767be928e2de804514b6357fe4ffd
+/agent-note-pack-time-lowering-and-the-single-build-preview:
+  en: 78cdf83de5bb872f
+  zh: 73538b18e4972426
+/agent-note-pack-time-lowering-and-the-single-build-preview/problem:
+  en: 1179689b6906f21f
+  zh: 4900f0f923337508
+/agent-note-pack-time-lowering-and-the-single-build-preview/decision:
+  en: 6ec725014097d73d
+  zh: 8133203598332ea8
+/agent-note-pack-time-lowering-and-the-single-build-preview/alternatives-considered:
+  en: fb422b91d74c0633
+  zh: 50c93db81d45b3e4
+/agent-note-pack-time-lowering-and-the-single-build-preview/consequences:
+  en: 9e1d2d189a74a982
+  zh: f06e6e17dffae3cd

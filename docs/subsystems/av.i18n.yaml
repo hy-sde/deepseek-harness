@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for av.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/av.md
-av.md: 8d483115d4c2656d461ee079579c17a212745c12
-av.zh.md: d385c16b80b1449f802f9ec053e10ed3c69c6370
+/av:
+  en: 82123b9350b89624
+  zh: 805257e9a30cd60d
+/av/service-surface:
+  en: 3d843a43de95e0c4
+  zh: 3c5f0ec60d2179c8
+/av/security-boundary:
+  en: f71d12d091ae64a1
+  zh: d6ae5866a5cd2af0
+/av/model-facing-tools:
+  en: e07f05f3ae06980d
+  zh: ef0434a2593f600f
+/av/configuration:
+  en: 1e0ec9e44e48aaf9
+  zh: 6b8b0fa7b3e9359b

@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-```ts
+```ts ignore-check
 import { GraphWakeRuntime } from '@deepseek-ai/dsh-graph-wakes'
 
 const runtime = new GraphWakeRuntime({
@@ -45,7 +45,7 @@ await runtime.handleIdle('session-root') // the delivery entry point (and test h
 await runtime.stop() // unsubscribe, cancel timers, await the in-flight sweep
 ```
 
-```ts
+```ts ignore-check
 // Accessors
 await runtime.pendingWakes('graph_g1') // pending + retryable wakes (terminal exhausted included)
 await runtime.wakeStatus('graph_wake_abc') // durable row, any status
@@ -90,6 +90,10 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 运行时需要的全部状态都在存储中：同一存储上的新 `GraphWakeRuntime` 看到相同的唤醒行，在下一个空闲处重新武装遗留的 `retryable_failed` 唤醒（如 Maka 的 `recover`），且只要尝试计数仍允许就不会拒绝。退避时间戳与溢出标记是进程本地的，刻意不持久化。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：唤醒行由 graph-control 内部产生与消费，伴生包会重复相同的队列生命周期。
+
 ## 进一步探索
 
 - `packages/graph/graph-control`（P1）：本运行时结算所基于的持久化唤醒行与 begin/complete CAS。

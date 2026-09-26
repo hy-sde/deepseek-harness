@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-28-web-connection-recovery-control.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-28-web-connection-recovery-control.md
-2026-08-28-web-connection-recovery-control.md: 6fec265c8e166836a5ab9413f1612cdaa6461a1d
-2026-08-28-web-connection-recovery-control.zh.md: e45119b272c297a783a650b71743e4f81c1a1565
+/agent-note-web-connection-recovery-control:
+  en: 13ad2236ac368b7a
+  zh: 48f44b8f5fa5afa9
+/agent-note-web-connection-recovery-control/problem:
+  en: 054468c889231bcb
+  zh: 0a583af14a5207ac
+/agent-note-web-connection-recovery-control/decision:
+  en: a0af0a045118bf03
+  zh: 1a6839d5e7bdc811
+/agent-note-web-connection-recovery-control/alternatives-considered:
+  en: 3af74fc85340cbf6
+  zh: 79461b05c0ee739d
+/agent-note-web-connection-recovery-control/consequences:
+  en: 8a3dfb9ef01f2d29
+  zh: a10c723c2fbf3062
+/agent-note-web-connection-recovery-control/testing:
+  en: 9be7b91363888799
+  zh: 6205e450f71625fb

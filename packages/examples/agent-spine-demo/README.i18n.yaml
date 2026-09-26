@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/examples/agent-spine-demo/README.md
-README.md: 8baa2ea6212944c0a6215cbd2e49fdb1afd5c5bb
-README.zh.md: 7ebc42b27dd83b56bcad33098725c4124cbc9f55
+/:
+  en: 95a07f014ab76a3c
+  zh: 05361c0c204b73c2
+/deepseek-ai-dsh-agent-spine-demo:
+  en: c64f1b96425989ff
+  zh: e805725f292ef8b0
+/deepseek-ai-dsh-agent-spine-demo/summary:
+  en: 7b0a7b5025c3380e
+  zh: fe5cd75f63f242fc
+/deepseek-ai-dsh-agent-spine-demo/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-agent-spine-demo/use-this-package:
+  en: b78443f7358f079e
+  zh: aa29c2c1b21a0545
+/deepseek-ai-dsh-agent-spine-demo/use-this-package/what-the-bundle-includes:
+  en: 77c40d545c77b8af
+  zh: b6d0508ec5e02638
+/deepseek-ai-dsh-agent-spine-demo/use-this-package/what-stays-outside-the-bundle:
+  en: 9a64c260455db47a
+  zh: 9275c042f994ce12
+/deepseek-ai-dsh-agent-spine-demo/use-this-package/minimal-configuration:
+  en: d703f0c9f40729cc
+  zh: 537d4960fd22343b
+/deepseek-ai-dsh-agent-spine-demo/use-this-package/request-retry-and-billing:
+  en: 2d04b29ae64e6830
+  zh: 5522dcf958b62e33
+/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation:
+  en: 88c45624a4ecca5b
+  zh: 4c4c8a5b8de64087
+/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/composition-model:
+  en: 299280144a11df60
+  zh: 888c5668e2992787
+/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/the-tree-it-loads:
+  en: f1faac329898aee5
+  zh: d519aa6427a2f728
+/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/why-a-code-bundle-not-a-shared-yaml-include:
+  en: 6ef37b3a4e6c130f
+  zh: d367cb27c22c4906
+/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/invariant-companions:
+  en: 4cb265de060aa58a
+  zh: cdcacedba76d0e42
+/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/source-map:
+  en: 0edff174909d51a0
+  zh: 95e6f198772c3cf1
+/deepseek-ai-dsh-agent-spine-demo/further-exploration:
+  en: dba4d3258f826b41
+  zh: 035e42e87bbe3bcd
+/deepseek-ai-dsh-agent-spine-demo/model-experience:
+  en: b07c83cc581799c4
+  zh: f5b77082828d5ce1
+/deepseek-ai-dsh-agent-spine-demo/model-experience/kv-cache-effect:
+  en: d0457108bcb2e55a
+  zh: 6dfd2359399f6771
+/deepseek-ai-dsh-agent-spine-demo/known-limitations-and-deferred-work:
+  en: 1b30f682aee398cd
+  zh: 3db2430074fe19ec
+/deepseek-ai-dsh-agent-spine-demo/known-limitations-and-deferred-work/dev-note:
+  en: 21cc5b56a4700e6c
+  zh: dc21b19c2bbd6daf

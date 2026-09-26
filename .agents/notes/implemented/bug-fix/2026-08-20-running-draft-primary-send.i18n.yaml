@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-running-draft-primary-send.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-20-running-draft-primary-send.md
-2026-08-20-running-draft-primary-send.md: 79c8c3a74fc49a325b229324b0d96b2387308d3d
-2026-08-20-running-draft-primary-send.zh.md: 180352810f57ecc04882322318f9708cf247a09c
+/agent-note-running-drafts-take-the-primary-send-action:
+  en: 0899dedd9bb3d745
+  zh: c0fc8bb2a101bd57
+/agent-note-running-drafts-take-the-primary-send-action/problem:
+  en: d2b116087615cc6f
+  zh: 226695752acf85b3
+/agent-note-running-drafts-take-the-primary-send-action/decision:
+  en: ffc7f0dda4acaeab
+  zh: b8553344c474cac6
+/agent-note-running-drafts-take-the-primary-send-action/verification:
+  en: 3fbe4f846f0b3224
+  zh: 56b56180756e7f52
+/agent-note-running-drafts-take-the-primary-send-action/alternatives-considered:
+  en: 23f24db96f5f0f97
+  zh: 726bccdd92cfd1b8
+/agent-note-running-drafts-take-the-primary-send-action/consequences:
+  en: 6cfa3711fa4df1d6
+  zh: a30a5c15b891e510

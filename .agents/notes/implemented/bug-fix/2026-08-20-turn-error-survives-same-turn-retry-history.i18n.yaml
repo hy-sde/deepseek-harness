@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-turn-error-survives-same-turn-retry-history.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-20-turn-error-survives-same-turn-retry-history.md
-2026-08-20-turn-error-survives-same-turn-retry-history.md: 68b09fc32f2d409a9060bb8e53f11837dd365657
-2026-08-20-turn-error-survives-same-turn-retry-history.zh.md: 1aa78aa405113fecc890fb2213f41cf41afec6b4
+/agent-note-terminal-turn-errors-survive-same-turn-retry-history:
+  en: 9b4b36fa9c549206
+  zh: 593e30cfbf4ebc91
+/agent-note-terminal-turn-errors-survive-same-turn-retry-history/problem:
+  en: ada511bc51e6c6c0
+  zh: 3d5115cedfbe1e7d
+/agent-note-terminal-turn-errors-survive-same-turn-retry-history/decision:
+  en: b667001327d1b0b2
+  zh: 294e161534353a0a
+/agent-note-terminal-turn-errors-survive-same-turn-retry-history/testing:
+  en: 00e6572112fce408
+  zh: 2c88d37c7274e633
+/agent-note-terminal-turn-errors-survive-same-turn-retry-history/alternatives-considered:
+  en: 2fc0d7885a75a4c1
+  zh: 4ac6c2e677431536
+/agent-note-terminal-turn-errors-survive-same-turn-retry-history/consequences:
+  en: 054cec4a348c2eb4
+  zh: a5c312c49c36a746

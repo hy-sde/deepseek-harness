@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-projection-cache-per-session-files.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-19-projection-cache-per-session-files.md
-2026-08-19-projection-cache-per-session-files.md: c0ead55557e45905cfd368c70d826bf0c3eaade3
-2026-08-19-projection-cache-per-session-files.zh.md: e5582d14d68c1aed76ef8aab08a8d575e8a1842d
+/agent-note-projection-cache-as-per-session-files:
+  en: 72dd8be19e511b41
+  zh: 7aa554ef42d4fc94
+/agent-note-projection-cache-as-per-session-files/problem:
+  en: 5d4203ef09df8a03
+  zh: 782b40e9f0896160
+/agent-note-projection-cache-as-per-session-files/decision:
+  en: 27d77d5230d102c8
+  zh: 4e651d1e7d5cc03e
+/agent-note-projection-cache-as-per-session-files/consequences:
+  en: 1745e31d46f86977
+  zh: 67d15c62fe305473
+/agent-note-projection-cache-as-per-session-files/alternatives-considered:
+  en: 7daa49cc47196d04
+  zh: 18ee0686ff623fb3

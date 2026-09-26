@@ -55,6 +55,9 @@
     },
     {
       "path": "../../util/zstd"
+    },
+    {
+      "path": "../../util/code-language"
     }
   ]
 }

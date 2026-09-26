@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-structural-ast-search-and-rewrite-tools.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-18-structural-ast-search-and-rewrite-tools.md
-2026-08-18-structural-ast-search-and-rewrite-tools.md: 57481f378aa232b8b4cd58331409e1e0585e0974
-2026-08-18-structural-ast-search-and-rewrite-tools.zh.md: 07f5a0a84e049b60035e49de8c5dc4c76a51effb
+/agent-note-structural-ast-search-and-rewrite-tools:
+  en: 9bd81cf3e9a84dc2
+  zh: 6880e783cecd8494
+/agent-note-structural-ast-search-and-rewrite-tools/problem:
+  en: d4245cb5aff367eb
+  zh: f4a055cc6602b74b
+/agent-note-structural-ast-search-and-rewrite-tools/decision:
+  en: 0d298d2d069581d0
+  zh: 5e87b68215c703ae
+/agent-note-structural-ast-search-and-rewrite-tools/engine-boundary:
+  en: 0ca915790b55f015
+  zh: 1a3efa755dc99b95
+/agent-note-structural-ast-search-and-rewrite-tools/mutations-stay-in-the-filesystem-seam:
+  en: fc1863978ed4629e
+  zh: 058a020aa2c1bbf3
+/agent-note-structural-ast-search-and-rewrite-tools/config-and-caps:
+  en: 3cc78cdc6c79ecb4
+  zh: f9aff258cfd94ccf
+/agent-note-structural-ast-search-and-rewrite-tools/alternatives-considered:
+  en: b3d8e6ebeb848ff7
+  zh: 7e098b2cc6dcc8f7
+/agent-note-structural-ast-search-and-rewrite-tools/testing:
+  en: 1b26334f36534e89
+  zh: 6b35d234c179323a
+/agent-note-structural-ast-search-and-rewrite-tools/consequences:
+  en: 7fb3779b818b5ddd
+  zh: 03f5f9cd86a2d665

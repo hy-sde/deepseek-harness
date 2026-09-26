@@ -140,7 +140,7 @@ async function framedCompactedSession(): Promise<Uint8Array> {
     + '{"type":"assistant/message","seq":1,"time":1,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"old answer"}]}}}\n'
     + '{"type":"tool/result","seq":2,"time":2,"surfaceOp":"append","data":{"message":{"role":"tool","content":[{"type":"text","text":"old result"}]}}}\n'
     + '{"type":"compaction/summary","seq":3,"time":3,"data":{"summary":[{"type":"text","text":"digest of the old exchange"}],"shadowedSeqs":[0,1,2]}}\n'
-    + '{"type":"user/message","seq":4,"time":4,"surfaceOp":{"op":"replace","start":0,"end":2},"sourceEventSeqs":[0,3,1,2],"data":{"content":[{"type":"text","text":"digest of the old exchange"}]}}\n'
+    + '{"type":"user/message","seq":4,"time":4,"surfaceOp":{"op":"replace","startSeq":0,"endSeq":2},"sourceEventSeqs":[0,3,1,2],"data":{"content":[{"type":"text","text":"digest of the old exchange"}]}}\n'
     + '{"type":"user/message","seq":5,"time":5,"surfaceOp":"append","data":{"content":[{"type":"text","text":"follow-up"}]}}\n'
     + '{"type":"assistant/message","seq":6,"time":6,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"new answer"}]}}}\n',
   )

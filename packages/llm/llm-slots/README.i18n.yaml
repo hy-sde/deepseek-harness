@@ -1,6 +1,40 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/llm/llm-slots/README.md
-README.md: a2d3aa90a6f62fdafb820d712a071ff7571ad81a
-README.zh.md: c003377259f38c0a10b80d3d2f33f9fa3f15db49
+/:
+  en: d67e4cbf5035d731
+  zh: ec9d52fa8d108fff
+/deepseek-ai-dsh-llm-slots:
+  en: c48875a0970c772a
+  zh: 21d7b7be6f760be0
+/deepseek-ai-dsh-llm-slots/summary:
+  en: 3e9bcdae1180cc39
+  zh: 097bbc9a36bc32e4
+/deepseek-ai-dsh-llm-slots/table-of-contents:
+  en: 8da58aef41198b95
+  zh: 15fd3dcab02346cc
+/deepseek-ai-dsh-llm-slots/how-it-works:
+  en: 6a75ef0f3ba7f502
+  zh: d69520f3f7a95077
+/deepseek-ai-dsh-llm-slots/composition:
+  en: 8606c4d0080dbf5a
+  zh: b61dc96594f3386f
+/deepseek-ai-dsh-llm-slots/service-surface:
+  en: e10ac0ac307cdcc7
+  zh: adec4fc422a0d9ac
+/deepseek-ai-dsh-llm-slots/development:
+  en: 8f8a920523e134bb
+  zh: bbfef86ad2ac7536
+/deepseek-ai-dsh-llm-slots/model-experience:
+  en: c109d87c9de134f3
+  zh: f5133a87579a6864
+/deepseek-ai-dsh-llm-slots/model-experience/kv-cache-effect:
+  en: 8d05c67ecb02cfb5
+  zh: 7ce95e9cda5dae1b
+/deepseek-ai-dsh-llm-slots/known-limitations-and-deferred-work:
+  en: b52f9a229154d52a
+  zh: 322dae06a8465f30
+/deepseek-ai-dsh-llm-slots/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

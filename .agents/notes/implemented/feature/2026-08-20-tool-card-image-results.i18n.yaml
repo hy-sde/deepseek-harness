@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-tool-card-image-results.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-20-tool-card-image-results.md
-2026-08-20-tool-card-image-results.md: 7659bc46858b0d65c300e51020867a7c156c4d11
-2026-08-20-tool-card-image-results.zh.md: 10f4b3182d8302ce34660b6b4abf6bd47d968baf
+/agent-note-tool-card-image-results:
+  en: 29e4b7dc767479e0
+  zh: fe1c5eb481a614b9
+/agent-note-tool-card-image-results/problem:
+  en: 9265693c21f6d978
+  zh: 29f4aafc44eed279
+/agent-note-tool-card-image-results/decision:
+  en: dd88c34736cd4437
+  zh: 7f58450b2dd45622
+/agent-note-tool-card-image-results/alternatives-considered:
+  en: 200223a10362eef5
+  zh: e15a8e7000f0260e
+/agent-note-tool-card-image-results/verification:
+  en: 151d621164c21fd5
+  zh: f6a94fdab95e4bb1
+/agent-note-tool-card-image-results/consequences:
+  en: 22f0040d56eee00f
+  zh: 524076357b30ce59

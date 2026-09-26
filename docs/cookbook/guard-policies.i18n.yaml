@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for guard-policies.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cookbook/guard-policies.md
-guard-policies.md: c3b616e79678b1898ca04f410396bfe27407548f
-guard-policies.zh.md: a75b0544e82a1ec37dbd85f0afcbe983360650ce
+/layering-the-guard-family-repeat-tool-reminder-timeout-policy:
+  en: dfc59668290ec93a
+  zh: 680637e093d9a40b
+/layering-the-guard-family-repeat-tool-reminder-timeout-policy/the-stack-at-a-glance:
+  en: 11e234220d38bb01
+  zh: 5974f69d4a0a3153
+/layering-the-guard-family-repeat-tool-reminder-timeout-policy/the-one-composition-to-copy:
+  en: 2760a2f4ddd6e576
+  zh: 40a5ce560ef3798c
+/layering-the-guard-family-repeat-tool-reminder-timeout-policy/how-they-compose-not-conflict:
+  en: 003ab8f6838c0b81
+  zh: c82103641b74f9b2
+/layering-the-guard-family-repeat-tool-reminder-timeout-policy/tuning:
+  en: e360549932e71bb9
+  zh: 5673faeada30e6f9
+/layering-the-guard-family-repeat-tool-reminder-timeout-policy/when-not-to:
+  en: dccff1d10e8bdd50
+  zh: 6c25c089731a3f30

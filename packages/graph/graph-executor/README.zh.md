@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-```ts
+```ts ignore-check
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 import { AgentGraphCoordinator } from '@deepseek-ai/dsh-graph-stream'
 import { createGraphOperatorExecutor } from '@deepseek-ai/dsh-graph-executor'
@@ -63,6 +63,10 @@ const coordinator = new AgentGraphCoordinator(graphId, {
 P1 存储新增一张权威表 `operator_bindings`（行键 `provisionId`），并带有一个在打开时重建的派生索引 `${graphId}:${workId}`。方法：`bindOperatorWorktree`（同租约幂等重绑保留原始 `boundAt`；异租约重绑抛 `binding-conflict`）、`readOperatorBinding`、`readOperatorBindingByWork`、`listOperatorBindings(graphId?)`。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：执行器将工作行委托给 graph-control 与 graph-wakes，独立伴生包会重复状态机，而不是对比跨组件独立维护的状态。
+
 ## 进一步探索
 
 - `packages/graph/graph-control`（P1）：存储行（预置、绑定）及其持久化契约。

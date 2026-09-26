@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-explicit-web-index-paths.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-20-explicit-web-index-paths.md
-2026-08-20-explicit-web-index-paths.md: 815cdd81d458547513225f9136a1d23b0f228ccc
-2026-08-20-explicit-web-index-paths.zh.md: 4cbbac8413d3c4c8a5dcd25b5979dc0b70d47df5
+/agent-note-explicit-web-index-paths-and-404-static-misses:
+  en: e81230600de6ecc5
+  zh: b46d5fc26aad430d
+/agent-note-explicit-web-index-paths-and-404-static-misses/problem:
+  en: ef8bd89206f2d754
+  zh: 8dd51551e892db63
+/agent-note-explicit-web-index-paths-and-404-static-misses/decision:
+  en: 2dcbf9dfd5c75c20
+  zh: 060bf0c1bb472ef0
+/agent-note-explicit-web-index-paths-and-404-static-misses/alternatives-considered:
+  en: fb4338793a58f439
+  zh: 402fd6dbecd0fd7a
+/agent-note-explicit-web-index-paths-and-404-static-misses/consequences:
+  en: a0b37a02f312c79a
+  zh: 7f31d4f93a678e12

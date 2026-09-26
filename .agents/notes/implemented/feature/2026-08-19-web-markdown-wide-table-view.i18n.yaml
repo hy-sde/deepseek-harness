@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-web-markdown-wide-table-view.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-web-markdown-wide-table-view.md
-2026-08-19-web-markdown-wide-table-view.md: fc025f6755caa2ca160b02f0c03ae80fd04cc1c7
-2026-08-19-web-markdown-wide-table-view.zh.md: a9e3f664680f94111b735f5e76e1b14a312df801
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out:
+  en: 73e17e161154f40b
+  zh: d480c1e6bbe680e7
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out/problem:
+  en: cc19f0a588d7fffc
+  zh: 822f10156b50a106
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out/decision:
+  en: 241588b851d35a85
+  zh: f923cfc52a2e8034
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out/alternatives-considered:
+  en: 0d2b8d14f789e68e
+  zh: 5be7ca7f18838ddc
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out/consequences:
+  en: 8713344263581fcd
+  zh: ccd904601dce3441
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out/testing:
+  en: 6d3a72a5bfc0ccfc
+  zh: 95ae89efb89a3af3
+/agent-note-web-markdown-tables-fill-the-column-by-count-wide-ones-break-out/related:
+  en: 71c2e844553a9c3f
+  zh: 9b683f6a6af60fec

@@ -1,6 +1,79 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-31-code-runtime-python-settlement-fixes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-07-31-code-runtime-python-settlement-fixes.md
-2026-07-31-code-runtime-python-settlement-fixes.md: c422f4519f7e8dcfeaafe0b3ad1e86b8db9fc854
-2026-07-31-code-runtime-python-settlement-fixes.zh.md: 2c85a2f69cd27a0057308801e3df8d5cd515f7b6
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend:
+  en: d561524215760ce8
+  zh: a3d5dad3e8772847
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/problem:
+  en: 3312988f3fc8122b
+  zh: da82bca937a66918
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision:
+  en: 1e5c28de403c7a0e
+  zh: 4dd87569054713a7
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/the-unknown-binding-preview-is-escaped-from-a-1-kib-prefix:
+  en: b564c323686520e8
+  zh: 04972aaed0564bb1
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/a-merged-open-log-entry-is-billed-once-split-across-its-fragments:
+  en: 3c2596a856ea4fac
+  zh: d140316a7943aa4b
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/boot-write-failure-no-longer-rejects-run:
+  en: 4c5dcef6cb6c6d56
+  zh: 29e87a890740f756
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/log-capture-is-serialized-against-settlement:
+  en: a9563e6db8daea4f
+  zh: 1e2904db63212789
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/fd-3-residual-is-copied-not-viewed:
+  en: 84d7d28926750e2d
+  zh: 9d18927b2aabef29
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/output-cap-load-bound-is-parse-cap-minus-envelope-not-divided-by-six:
+  en: 67d7a7c28098dcab
+  zh: 047e6adfed889421
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/same-group-survivors-are-reaped-before-the-fiber-goes-quiescent:
+  en: 8a6688e085186293
+  zh: c80455097b2d083d
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/rlimit-clamps-against-the-inherited-soft-limit-not-only-the-hard:
+  en: c09c1b59b1990052
+  zh: 8046d07ce3c919a5
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/concurrent-binding-replies-are-paced-against-fd-3:
+  en: 50944ae8d9faaf60
+  zh: e8cc72c9c957f1f0
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/binding-replies-complete-on-the-calling-loop-s-thread:
+  en: d21c789c955c4500
+  zh: 1c853a3ba69e835f
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/the-blocking-frame-reader-reads-in-chunks-not-byte-by-byte:
+  en: b72f03e852a0b9ba
+  zh: edcc06cc81dd7dd3
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/synchronous-spawn-failure-resolves-worker-exit-not-reject:
+  en: 8fc93f6a2146035c
+  zh: bc1604cc7b81b67d
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/interpreter-selection-and-the-child-environment-settle-at-load:
+  en: bda53c56bc275636
+  zh: 1ce81f56f170758e
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/stray-pipe-output-is-aggregated-by-line-not-by-transport-chunk:
+  en: dbe8ceb302e7f13f
+  zh: 3d75844cb03189d1
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/an-incompatible-output-budget-addressspacemb-pair-is-rejected-at-load:
+  en: f9320f4537705c2a
+  zh: ff35e0b374a892fd
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/the-completion-value-and-error-are-pre-encoded-at-their-validation-point:
+  en: c7913af12318174f
+  zh: 9bbe08cf880effa4
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/a-budget-flush-retains-an-unfinished-trailing-multibyte-sequence:
+  en: fa9959c01a546723
+  zh: 1b19f054c13e3705
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/a-late-binding-rejection-returns-before-formatting-the-error:
+  en: 2113359160a83334
+  zh: c2f8284ff72f1602
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/decision/a-newline-free-drip-seals-its-fragments-the-cpu-soft-limit-is-kept-below-the-hard-the-done-frame-falls-back-to-a-fixed-literal-the-reply-queue-clears-consumed-slots:
+  en: f0b6bbbd4ac4425a
+  zh: ae52ea63e917c071
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/testing:
+  en: 3a14e97d9aab5c63
+  zh: e07fea16ccfba471
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/alternatives-considered:
+  en: 55e4c97780ae1e2a
+  zh: 790e6a867d8e0cd9
+/agent-note-settlement-framing-and-lifecycle-fixes-in-the-cpython-backend/consequences:
+  en: dd32b11fcc249277
+  zh: 95efa73801413462

@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-countdown/README.md
-README.md: 42d12d0f7f6fa8402aec3aa10aa32759f6315a3a
-README.zh.md: ff0661f24dacd7fc63c46666a1e4475034d48db3
+/:
+  en: 41d79bbbfb085fb8
+  zh: 6596ea8c4d4a5e5e
+/deepseek-ai-dsh-client-ui-countdown:
+  en: 0ac212839b1e5dd6
+  zh: 48fe6aed4ed519fc
+/deepseek-ai-dsh-client-ui-countdown/summary:
+  en: f587edc5c72029b9
+  zh: dbf2161a68d975b2
+/deepseek-ai-dsh-client-ui-countdown/table-of-contents:
+  en: 80b31a934611cb4a
+  zh: 05f3f7f9cb2fd881
+/deepseek-ai-dsh-client-ui-countdown/use-this-package:
+  en: cf4798886cc3ce2e
+  zh: 63c3d66032b497a1
+/deepseek-ai-dsh-client-ui-countdown/use-this-package/configuration:
+  en: 784fc204f282f3f2
+  zh: 702aeb7168a7f1e3
+/deepseek-ai-dsh-client-ui-countdown/understand-the-implementation:
+  en: 6e85e8d8207c3609
+  zh: a0eef68e52b4c3d0
+/deepseek-ai-dsh-client-ui-countdown/further-exploration:
+  en: 81dcf086baf7dd99
+  zh: 4f04659f776c38f8
+/deepseek-ai-dsh-client-ui-countdown/known-limitations-and-deferred-work:
+  en: b64032a3df45a4d8
+  zh: aae4b2b13c10cafc
+/deepseek-ai-dsh-client-ui-countdown/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

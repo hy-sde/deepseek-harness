@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-documentation-site-tag-release.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-21-documentation-site-tag-release.md
-2026-08-21-documentation-site-tag-release.md: 3f7a9d04a018bdcaefb1f09e5f2410b138c0c8d4
-2026-08-21-documentation-site-tag-release.zh.md: cd1f128bc6e9fb9370162eda95170c7d27ad7b63
+/agent-note-publish-the-documentation-site-from-a-release-tag:
+  en: 7ae5f630fd3eee82
+  zh: 3ad410ab60e6fc16
+/agent-note-publish-the-documentation-site-from-a-release-tag/problem:
+  en: 762c513a4daf25f9
+  zh: 3fc565b399892294
+/agent-note-publish-the-documentation-site-from-a-release-tag/decision:
+  en: bbbe61b92dacdc56
+  zh: b4c7600bdeaf9a4a
+/agent-note-publish-the-documentation-site-from-a-release-tag/alternatives-considered:
+  en: 10c5994d587fb33a
+  zh: 1bc7027c4fbbee31
+/agent-note-publish-the-documentation-site-from-a-release-tag/consequences:
+  en: 6b33f7250b1296de
+  zh: b76ea0664c173cc7

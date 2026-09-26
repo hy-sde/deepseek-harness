@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-```ts
+```ts ignore-check
 import toolGraph, { createAgentGraphController } from '@deepseek-ai/dsh-tool-graph'
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 
@@ -51,6 +51,10 @@ await ctx.plugin(toolGraph, {})
 - **唤醒语义**：工具从不轮询——当存在请求工作、活动声明或就绪意图时，`yield_agent_graph` 调用 `claimSupervisorWake`，否则返回 `nothing_to_yield`。主机驱动协调，并从持久化唤醒行唤醒根会话。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：该工具适配 graph-control 调用，其不变式由 graph-control 伴生包所有。
+
 ## 进一步探索
 
 - Maka 设计说明：`~/Documents/workspace/port_maka.md` —— 移植设计说明与阶段清单。

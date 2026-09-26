@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-client-build-environment.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-18-client-build-environment.md
-2026-08-18-client-build-environment.md: c23a73e9520392e41949f95d04029dbf34213dd0
-2026-08-18-client-build-environment.zh.md: 5dbb5deeee75eb0f1b2cadf7e38ad8bfc5661f5c
+/agent-note-build-time-public-environment-variables-for-client-business-code:
+  en: 4d29a3aedda524d9
+  zh: ec01b79cee38328a
+/agent-note-build-time-public-environment-variables-for-client-business-code/problem:
+  en: d8601194f318bdbf
+  zh: 6d0fc71962d298dd
+/agent-note-build-time-public-environment-variables-for-client-business-code/decision:
+  en: 25cd116936c6aea3
+  zh: 9a4512944a84d69e
+/agent-note-build-time-public-environment-variables-for-client-business-code/alternatives-considered:
+  en: c28644f2db2b9c78
+  zh: 3efb5e4a1d62091f
+/agent-note-build-time-public-environment-variables-for-client-business-code/consequences:
+  en: b398e8763db6f967
+  zh: 6fa7cf4cad02a6ba

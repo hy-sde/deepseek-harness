@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-25-sparse-first-party-prompt-section-orders.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-25-sparse-first-party-prompt-section-orders.md
-2026-08-25-sparse-first-party-prompt-section-orders.md: 3cfdb58af3c576b3e46449a763db1c811073517e
-2026-08-25-sparse-first-party-prompt-section-orders.zh.md: 31cbb98eab9eb786ac9d854b76df4c18efb88563
+/agent-note-centralize-sparse-first-party-prompt-section-orders:
+  en: bc64fba9dd6b9546
+  zh: b3e543f7579c449a
+/agent-note-centralize-sparse-first-party-prompt-section-orders/problem:
+  en: d3ee56dddd487556
+  zh: cac957f5811086d2
+/agent-note-centralize-sparse-first-party-prompt-section-orders/decision:
+  en: 62c9c176370a7f91
+  zh: e5586ca684d1077f
+/agent-note-centralize-sparse-first-party-prompt-section-orders/verification:
+  en: 90b986859554b7c0
+  zh: ff77633e9d51130f
+/agent-note-centralize-sparse-first-party-prompt-section-orders/alternatives-considered:
+  en: c70c22b8e00002f3
+  zh: e7eb5af02e501bb8
+/agent-note-centralize-sparse-first-party-prompt-section-orders/consequences:
+  en: 6ec3d78573b27879
+  zh: 0341eb9e13ad1bff

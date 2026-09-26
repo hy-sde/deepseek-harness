@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/util/zstd/README.md
-README.md: 81ce289dbb6744e2c99dd8b674090063e1bdf875
-README.zh.md: 519c198d4466abbded840fc31b59b5e5e27be796
+/:
+  en: 7d2bdadcf3bf4ff7
+  zh: 44a686d72bc13b9c
+/zstd-zstandard-frame-primitives:
+  en: 01cee8f009806f20
+  zh: b9fc35b77e5d5056
+/zstd-zstandard-frame-primitives/summary:
+  en: b5b599e2e28cebb8
+  zh: 517d840882aa6cb2
+/zstd-zstandard-frame-primitives/table-of-contents:
+  en: 60d0f4794e03a7f0
+  zh: 3608bd19f4c0345b
+/zstd-zstandard-frame-primitives/known-limitations-and-deferred-work:
+  en: 528708f1de954851
+  zh: cb42de1c9def824d
+/zstd-zstandard-frame-primitives/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

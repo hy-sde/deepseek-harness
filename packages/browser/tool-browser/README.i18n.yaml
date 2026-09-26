@@ -1,6 +1,52 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/browser/tool-browser/README.md
-README.md: a23823ddd3a01495cd9842168072542ed8b59293
-README.zh.md: 82ad21af226a7567b9681f81fa8051a7b701baa5
+/:
+  en: d8e252999a71b618
+  zh: f8b32d698f6f52ab
+/deepseek-ai-dsh-tool-browser:
+  en: 90b6f0db6119bb72
+  zh: 5eebadcb77e458ee
+/deepseek-ai-dsh-tool-browser/summary:
+  en: a89b7c62a8be3abd
+  zh: bd2dca70bae0b2c1
+/deepseek-ai-dsh-tool-browser/table-of-contents:
+  en: 040d22fa4ee73f53
+  zh: a5e3fa2a64fedaa8
+/deepseek-ai-dsh-tool-browser/what-it-does:
+  en: f43988ec8c704c96
+  zh: 870bb83dbb7565f2
+/deepseek-ai-dsh-tool-browser/aria-refs:
+  en: 1ddfb920bc126f22
+  zh: 5d19fff3749497c1
+/deepseek-ai-dsh-tool-browser/configuration:
+  en: 662612eaf8ba7d10
+  zh: 19a4de9a6d983aa1
+/deepseek-ai-dsh-tool-browser/session-isolation:
+  en: b0f61661e1467f29
+  zh: a421b6877cc39b97
+/deepseek-ai-dsh-tool-browser/targeting-the-local-harness-gui:
+  en: a89c20174d687314
+  zh: 02914c30167eaa46
+/deepseek-ai-dsh-tool-browser/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-browser/model-experience/tool-schema:
+  en: e4c7376d4f29dbd5
+  zh: d06e64e8cc4865d1
+/deepseek-ai-dsh-tool-browser/model-experience/tool-schema/what-the-model-sees:
+  en: 0d959d9234cfb0e3
+  zh: d8b59538fff9196d
+/deepseek-ai-dsh-tool-browser/model-experience/tool-schema/token-effect:
+  en: 3537062eee3f6a5e
+  zh: aa92607d45dbb768
+/deepseek-ai-dsh-tool-browser/model-experience/tool-schema/kv-cache-effect:
+  en: 36ede9519da26050
+  zh: 71f44771e8c5dc93
+/deepseek-ai-dsh-tool-browser/known-limitations-and-deferred-work:
+  en: 800c6b9767d82f6f
+  zh: a713a45356d667d3
+/deepseek-ai-dsh-tool-browser/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

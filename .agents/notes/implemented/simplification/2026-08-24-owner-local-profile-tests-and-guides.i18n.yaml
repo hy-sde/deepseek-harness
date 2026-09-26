@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-owner-local-profile-tests-and-guides.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-24-owner-local-profile-tests-and-guides.md
-2026-08-24-owner-local-profile-tests-and-guides.md: 26a62dd9c28a55d5195ab9a8a56c5369bf521362
-2026-08-24-owner-local-profile-tests-and-guides.zh.md: fa65c09b8b886b1bf442ff5a52976e06032bb75c
+/agent-note-owner-local-profile-tests-and-runnable-guides:
+  en: deac90b23e241914
+  zh: fe0d4fe10d5e2750
+/agent-note-owner-local-profile-tests-and-runnable-guides/problem:
+  en: 514bd061456bc78a
+  zh: 23e6a7fda96e0040
+/agent-note-owner-local-profile-tests-and-runnable-guides/decision:
+  en: 51da86d052f9d15b
+  zh: 91e70ae793fb1ea8
+/agent-note-owner-local-profile-tests-and-runnable-guides/alternatives-considered:
+  en: 24c5f33f1cc19e14
+  zh: d6e0e5f1cd186cc2
+/agent-note-owner-local-profile-tests-and-runnable-guides/consequences:
+  en: c3592cafceb397d6
+  zh: 4353688797c70614

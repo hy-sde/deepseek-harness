@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-31-code-runtime-portable-identifier-seam.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-31-code-runtime-portable-identifier-seam.md
-2026-07-31-code-runtime-portable-identifier-seam.md: e4cf236f62407c9fda42a3e2cdcc5d3ef02a1f92
-2026-07-31-code-runtime-portable-identifier-seam.zh.md: 63fc89eb0d674a381ce7a5a626bd51d5f8b234d3
+/agent-note-the-code-runtime-seam-owns-portable-identifier-exclusions:
+  en: 3a51fa96d6b11f9c
+  zh: 0eb18529565ea039
+/agent-note-the-code-runtime-seam-owns-portable-identifier-exclusions/problem:
+  en: 846d523505925393
+  zh: 8006973be0bac659
+/agent-note-the-code-runtime-seam-owns-portable-identifier-exclusions/decision:
+  en: f60dcffaaaa66558
+  zh: d78653f56df174a6
+/agent-note-the-code-runtime-seam-owns-portable-identifier-exclusions/scope:
+  en: bb0f9e6cb2e4751c
+  zh: e5219d02484995b1
+/agent-note-the-code-runtime-seam-owns-portable-identifier-exclusions/alternatives-considered:
+  en: 79b5da74c231e3c4
+  zh: 6db34dcb43c07412
+/agent-note-the-code-runtime-seam-owns-portable-identifier-exclusions/consequences:
+  en: 4543d6a3fd769d2b
+  zh: 06de7aa117430717

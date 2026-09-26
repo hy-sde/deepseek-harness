@@ -158,9 +158,9 @@ const reviewedPull = (labels) => ({
 
 test('keeps only Bug, Feature, and Task Issue templates with used frontmatter', () => {
   const directory = new URL('../ISSUE_TEMPLATE/', import.meta.url)
-  assert.deepEqual(readdirSync(directory).sort(), ['bug.md', 'config.yml', 'feature.md', 'task.md'])
+  assert.deepEqual(readdirSync(directory).sort(), ['bug.md', 'config.yml', 'feature.md', 'idea.md', 'research.md', 'task.md'])
 
-  for (const file of ['bug.md', 'feature.md', 'task.md']) {
+  for (const file of ['bug.md', 'feature.md', 'task.md', 'idea.md', 'research.md']) {
     const source = readFileSync(new URL(file, directory), 'utf8')
     const frontmatter = source.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ''
     const keys = frontmatter
@@ -168,6 +168,11 @@ test('keeps only Bug, Feature, and Task Issue templates with used frontmatter', 
       .filter(Boolean)
       .map((line) => line.slice(0, line.indexOf(':')))
       .sort()
+    if (file === 'idea.md' || file === 'research.md') {
+      assert.deepEqual(keys, ['about', 'assignees', 'labels', 'name', 'title', 'type'], file)
+      assert.doesNotMatch(source, /^## /m, file)
+      continue
+    }
     assert.deepEqual(keys, ['about', 'name', 'type'], file)
     assert.match(source, /^## /m, file)
     assert.match(source, /<!-- [^\n]+ -->/, file)

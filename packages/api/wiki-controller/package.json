@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-api-wiki-controller",
   "description": "LLM-wiki Remote commands over the headless logseq graph seam",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -48,16 +48,16 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-logseq-graph": "workspace:^",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:^",
+    "@deepseek-ai/dsh-logseq-graph": "workspace:*",
+    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-logseq-graph": "workspace:^",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-logseq-graph": "workspace:*",
+    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
   }
 }

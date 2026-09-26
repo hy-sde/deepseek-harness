@@ -1,6 +1,70 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/graph/graph-host/README.md
-README.md: 0b6ea1bbc2391fe70f1741c26835860e3677e490
-README.zh.md: bb3cfdcdd340de6a4e9b7eafd0e9cb881842aa60
+/:
+  en: 1c465b5a534be898
+  zh: 35df6eb8c7495093
+/deepseek-ai-dsh-graph-host:
+  en: bd2707a880cc92f6
+  zh: 9cf843b06d476461
+/deepseek-ai-dsh-graph-host/summary:
+  en: 4eb55b12e0c822bc
+  zh: 8bbfe931e92a2a99
+/deepseek-ai-dsh-graph-host/table-of-contents:
+  en: 65663b0d5dfa1600
+  zh: 55b2121ae6059425
+/deepseek-ai-dsh-graph-host/use-this-package:
+  en: 21dc2b21cc86e6cb
+  zh: 8be54644c38740a0
+/deepseek-ai-dsh-graph-host/use-this-package/wiring:
+  en: 98ce106682687bc7
+  zh: b66f091dbbbccdab
+/deepseek-ai-dsh-graph-host/understand-the-implementation:
+  en: ee4615a04fa6503d
+  zh: ee2c5fb2204a43cf
+/deepseek-ai-dsh-graph-host/understand-the-implementation/plane-split-host-row-against-preset-row:
+  en: af42154a9ab4a39f
+  zh: 1bacd942c66b6451
+/deepseek-ai-dsh-graph-host/understand-the-implementation/facades-over-real-services:
+  en: d3791028f8305ce8
+  zh: f912ad9a2def63d1
+/deepseek-ai-dsh-graph-host/understand-the-implementation/exactly-once-activation-guard:
+  en: 8c2f139ff9006663
+  zh: ff60cffb449e45d3
+/deepseek-ai-dsh-graph-host/understand-the-implementation/record-fold-and-the-no-durable-record-decision:
+  en: 4990a3b8c8f0ba71
+  zh: 49f130ae07a0bc19
+/deepseek-ai-dsh-graph-host/understand-the-implementation/session-projection-and-the-graph-change-contract:
+  en: f7c6aabde9e3ac66
+  zh: 041b305e6aab256d
+/deepseek-ai-dsh-graph-host/understand-the-implementation/wake-delivery:
+  en: 9fc970cc6e59e344
+  zh: d2dbe82f76f610c8
+/deepseek-ai-dsh-graph-host/runtime-invariants:
+  en: 86738cf600eb2ef4
+  zh: 26d1110438d96687
+/deepseek-ai-dsh-graph-host/further-exploration:
+  en: 5bd3241bb3589cc6
+  zh: 8420e107ca492ea7
+/deepseek-ai-dsh-graph-host/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-graph-host/model-experience/graph-controller-service:
+  en: 7437f2e880a708cf
+  zh: a40d097b25188383
+/deepseek-ai-dsh-graph-host/model-experience/graph-controller-service/what-the-model-sees:
+  en: 050553c52a05e98e
+  zh: c7fa6d283a9c16ed
+/deepseek-ai-dsh-graph-host/model-experience/graph-controller-service/token-effect:
+  en: bfec91d5f07cc413
+  zh: 8c5c3333d3d709ea
+/deepseek-ai-dsh-graph-host/model-experience/graph-controller-service/kv-cache-effect:
+  en: 5c324f085a3daa43
+  zh: 549ab4bd42766195
+/deepseek-ai-dsh-graph-host/known-limitations-and-deferred-work:
+  en: e5e63ac7cfc08cd4
+  zh: f890da796de77588
+/deepseek-ai-dsh-graph-host/known-limitations-and-deferred-work/dev-note:
+  en: 28f86c8678cdac84
+  zh: bb1a874321eab82b

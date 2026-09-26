@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-shared-win32-process-primitives.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-19-shared-win32-process-primitives.md
-2026-08-19-shared-win32-process-primitives.md: 8765e5f7350dab56ad42169f6e16b55679ca8982
-2026-08-19-shared-win32-process-primitives.zh.md: b21ece8445e8863c08818c42d6c9bf7672813823
+/agent-note-windows-sandbox-process-primitives-have-one-low-level-owner:
+  en: 2531b0af0a7d4496
+  zh: 9be080b6a9043b15
+/agent-note-windows-sandbox-process-primitives-have-one-low-level-owner/problem:
+  en: d0dbf472966eec8c
+  zh: b880e22c3a7b3c55
+/agent-note-windows-sandbox-process-primitives-have-one-low-level-owner/decision:
+  en: 982fb5768f411552
+  zh: 10d7b0aa9954373b
+/agent-note-windows-sandbox-process-primitives-have-one-low-level-owner/verification:
+  en: 2b590ca9fa1657f1
+  zh: 051535493e0c1f1b
+/agent-note-windows-sandbox-process-primitives-have-one-low-level-owner/alternatives-considered:
+  en: 80614cf45effdeb1
+  zh: 2c2b8a747ffaaff5
+/agent-note-windows-sandbox-process-primitives-have-one-low-level-owner/consequences:
+  en: 86c52613c79c4601
+  zh: 8d4572e4fde606c7

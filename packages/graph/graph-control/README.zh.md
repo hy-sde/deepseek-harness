@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-```ts
+```ts ignore-check
 import Storage, { storageBackendServiceKey } from '@deepseek-ai/dsh-storage'
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 
@@ -46,6 +46,10 @@ const { claim } = await store.claimIntentAtScheduleRevision(claimRequest, update
 - **主管唤醒**（`wakes` + `wake_attempts`）：声明一次后开始尝试（已投递/已替代则拒绝）；以 `waiting_permission | delivered | superseded | retryable_failed` 完成；按根会话（可选图过滤）替代；`recoverSupervisorWakes()` 刻意为空操作——中断的尝试是否真正完成属于运行时事实，协调器（P5）检查运行事实后完成之。本存储从不猜测。
 
 <a id="further-exploration"></a>
+## 运行时不变式
+
+未发布运行时不变式伴生包：graph-control 拥有图工具持久化与读取的持久行，伴生包会重新实现存储，而不是对比独立维护的观测。
+
 ## 进一步探索
 
 - Maka 设计说明：`~/Documents/workspace/port_maka.md` —— 移植设计说明与阶段清单。

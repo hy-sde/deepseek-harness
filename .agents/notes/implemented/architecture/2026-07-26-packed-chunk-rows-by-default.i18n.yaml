@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-26-packed-chunk-rows-by-default.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-26-packed-chunk-rows-by-default.md
-2026-07-26-packed-chunk-rows-by-default.md: f208927a45fc2ff62616804494c7767e2798f1da
-2026-07-26-packed-chunk-rows-by-default.zh.md: f76c1c50b74751e0462162f5399d2e3b80420f7e
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout:
+  en: 2dbde6802f9c599c
+  zh: fa12134744160c8e
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/problem:
+  en: a69c39f29a844202
+  zh: 90d37ad1af625b3b
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/decision:
+  en: 77d68f6b8fd04908
+  zh: d72ff815f962a128
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/decision/logical-events-and-physical-rows:
+  en: 3ef8f4c96021d580
+  zh: 47b7c0e07ed4be91
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/decision/canonical-snapshot-fixtures:
+  en: 2d76ec2af5a375c4
+  zh: 4ae05c004cc59e3d
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/decision/in-flight-branch-convergence:
+  en: 08272a7a303f00f8
+  zh: 0224388a2eb7ca11
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/decision/verification-contract:
+  en: 9ceec1eee4c827fe
+  zh: afda12bb1913c28e
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/alternatives-considered:
+  en: 756db9e68993371e
+  zh: 55672def82525f0f
+/agent-note-make-packed-chunk-rows-the-default-jsonl-layout/consequences:
+  en: 182ea58da1d5251d
+  zh: 1f082bcc6d937925

@@ -22,7 +22,7 @@ English | [中文](README.zh.md)
 
 ## Use this package
 
-```ts
+```ts ignore-check
 import Storage, { storageBackendServiceKey } from '@deepseek-ai/dsh-storage'
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 
@@ -42,6 +42,10 @@ Open the unit exactly once per process: the storage layer rejects double-open, a
 - **Intent claims** (`claims`): keyed `graphId:intentId`, with activation-identity uniqueness (`(targetSessionId, targetTurnId)` and `(targetSessionId, targetRunId)`) enforced against derived indexes; transitions `claimed → executing → cancelled` are revision-conditional; fresh claims are rejected after closure while existing claims stay dispatchable.
 - **Operator provisions** (`provisions`): deterministic `provisionId`/`operatorId` make retries adopt the same operator; revision-conditional and closure-blocked like claims.
 - **Supervisor wakes** (`wakes` + `wake_attempts`): claim once, begin attempts (refused once delivered/superseded), complete with `waiting_permission | delivered | superseded | retryable_failed`; supersede by root session (+ optional graph filter); `recoverSupervisorWakes()` is deliberately a no-op — whether an interrupted attempt really completed is a Runtime fact, so the coordinator (P5) inspects run facts and completes accordingly. The store never guesses.
+
+## Runtime invariants
+
+No runtime invariant companion is published: graph-control owns the durable rows the graph tools persist and read, so a companion would re-implement the store instead of comparing independently maintained observations.
 
 ## Further Exploration
 

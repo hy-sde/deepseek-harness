@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/git/git/README.md
-README.md: d8c8ec8a9b652caed61d49e1c98a7155b1df2b29
-README.zh.md: 0fbce018a30048941df927728683f59f07211cd2
+/:
+  en: bb636a171b063a18
+  zh: 19713c0008143505
+/deepseek-ai-dsh-git:
+  en: b453fff867f13c04
+  zh: 90c336f6cddedc22
+/deepseek-ai-dsh-git/summary:
+  en: 94f8ebdd9a0a3266
+  zh: be667a461ec08ccb
+/deepseek-ai-dsh-git/table-of-contents:
+  en: e879b32ffc58fe2c
+  zh: ffc15c91c02d39c8
+/deepseek-ai-dsh-git/what-it-does:
+  en: f928be57bf402f79
+  zh: 9c5983c827278939
+/deepseek-ai-dsh-git/execution-model:
+  en: d530a1d7a6850ba3
+  zh: 9fafcb54bafd2e17
+/deepseek-ai-dsh-git/partial-hunk-staging:
+  en: 53f3048ec1bfdf95
+  zh: 943f5b3d911442df
+/deepseek-ai-dsh-git/worktree-pool:
+  en: 5879fadaaa7f6953
+  zh: ed27c7ff518b8276
+/deepseek-ai-dsh-git/configuration:
+  en: e298c37868c1eb78
+  zh: 894f87f5cbbc5da7
+/deepseek-ai-dsh-git/model-experience:
+  en: 7e412a67d187959e
+  zh: ef9882494a3ed7ca
+/deepseek-ai-dsh-git/model-experience/kv-cache-effect:
+  en: e290ccc9b3c92c08
+  zh: efc5214067ef1584
+/deepseek-ai-dsh-git/known-limitations-and-deferred-work:
+  en: 426d3e3761fd4af4
+  zh: 2c0c6f51c4ed684b
+/deepseek-ai-dsh-git/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-07-default-model-follows-the-picker.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-07-default-model-follows-the-picker.md
-2026-08-07-default-model-follows-the-picker.md: b2d9c0fe58d9219fb33f749563d3d1fb10a20a8a
-2026-08-07-default-model-follows-the-picker.zh.md: 7d3e5bc924f20e47b4d6a5e609c0e3c984ed6921
+/agent-note-the-default-model-follows-the-picker:
+  en: 85faf9b2a3b35411
+  zh: 5413ba50b5587202
+/agent-note-the-default-model-follows-the-picker/problem:
+  en: 514256a94c43fb42
+  zh: fef1887e9650fcd3
+/agent-note-the-default-model-follows-the-picker/decision:
+  en: f5cc2a71e8eb0a38
+  zh: d1f8d8198eea0c9e
+/agent-note-the-default-model-follows-the-picker/consequences:
+  en: 4b2b5a917609d18e
+  zh: 74e2038d2a57be58
+/agent-note-the-default-model-follows-the-picker/a-session-that-cannot-send:
+  en: 83d577ccb0cf8b19
+  zh: 32f162e3218920c3
+/agent-note-the-default-model-follows-the-picker/alternatives-considered:
+  en: 3d917a5993dd5317
+  zh: 828bbc5af405c2e5

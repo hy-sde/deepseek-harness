@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-14-web-turn-process-folding.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-web-turn-process-folding.md
-2026-08-14-web-turn-process-folding.md: ae3c5948887c048496c7d2df610481862d4e1a88
-2026-08-14-web-turn-process-folding.zh.md: 140b251c0026bc2aaa7d0df8a525fd8b1cadde87
+/agent-note-web-turn-process-folding:
+  en: 6c26a9f331e8feb4
+  zh: 9b3f95de882b0168
+/agent-note-web-turn-process-folding/problem:
+  en: 56b5244c18d7ad7d
+  zh: 188b9d6931fff99d
+/agent-note-web-turn-process-folding/decision:
+  en: 0aa4aabefaf7afc9
+  zh: 115bb164dfbfa748
+/agent-note-web-turn-process-folding/alternatives-considered:
+  en: fef88aaaf69d75c6
+  zh: 59523e530ecc6051
+/agent-note-web-turn-process-folding/consequences:
+  en: 4f8e1b61866ef06d
+  zh: afc6c080abda3f50

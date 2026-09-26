@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-04-web-latency-throughput-metrics.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-04-web-latency-throughput-metrics.md
-2026-08-04-web-latency-throughput-metrics.md: 14ec765a7aadb8a54609c7d4e0e6af149c3c96ba
-2026-08-04-web-latency-throughput-metrics.zh.md: 52e6c33c52895f5a075f78019c5f353ecc8cc4b4
+/agent-note-web-turn-and-window-latency-throughput-metrics:
+  en: 96046957b1671c01
+  zh: 1f9736b5f48bcf8e
+/agent-note-web-turn-and-window-latency-throughput-metrics/problem:
+  en: c8446940aa1152fd
+  zh: 4d5be09ad4e0685e
+/agent-note-web-turn-and-window-latency-throughput-metrics/decision:
+  en: 9116bb1d27a2e055
+  zh: ccc305ec9e9449f4
+/agent-note-web-turn-and-window-latency-throughput-metrics/alternatives-considered:
+  en: 3245285e605d3fa1
+  zh: 0ea230fbf33488bb
+/agent-note-web-turn-and-window-latency-throughput-metrics/consequences:
+  en: b8d44597099bc38c
+  zh: 571abbafa0b673de

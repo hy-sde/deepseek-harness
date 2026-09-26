@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-gui-full-access-direct-switch.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-gui-full-access-direct-switch.md
-2026-08-18-gui-full-access-direct-switch.md: 3dd253fe99e7261c4ddf31eaef643138b32856cb
-2026-08-18-gui-full-access-direct-switch.zh.md: 32398857562975f2ea3b89a1233a48e4985157a5
+/agent-note-gui-full-access-switches-directly-no-risk-confirmation:
+  en: 246cc1e116bbad83
+  zh: 5932aaa3d9c62c65
+/agent-note-gui-full-access-switches-directly-no-risk-confirmation/problem:
+  en: 6f605dabc0d920a5
+  zh: 7a17962ba3b40b4f
+/agent-note-gui-full-access-switches-directly-no-risk-confirmation/decision:
+  en: 2d8cd1db8301a4f9
+  zh: 926dcfa492af64ae
+/agent-note-gui-full-access-switches-directly-no-risk-confirmation/consequences:
+  en: 34993d0eb394b0a9
+  zh: 9e02567f9677ed76
+/agent-note-gui-full-access-switches-directly-no-risk-confirmation/alternatives-considered:
+  en: 2599b9bdb8de9276
+  zh: 0ac2b623141c57e8

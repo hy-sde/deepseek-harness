@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-04-web-slash-command-fuzzy-discovery.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-04-web-slash-command-fuzzy-discovery.md
-2026-08-04-web-slash-command-fuzzy-discovery.md: 8d7fe88f8d19a6edc7b51e63578c468df085c238
-2026-08-04-web-slash-command-fuzzy-discovery.zh.md: a96f9c984e32dd777950b9f9d8594b3a9c8b7c17
+/agent-note-web-slash-command-fuzzy-discovery:
+  en: 617492c21dddf58c
+  zh: 3f028672049a87d5
+/agent-note-web-slash-command-fuzzy-discovery/problem:
+  en: 9c0d1333b433dacd
+  zh: 3b2d0d9cf8453ca9
+/agent-note-web-slash-command-fuzzy-discovery/decision:
+  en: e7e412c741ed5155
+  zh: d50514aaa1795162
+/agent-note-web-slash-command-fuzzy-discovery/alternatives-considered:
+  en: 65de5b2d1f9f9935
+  zh: fb6dfc5119abcf7f
+/agent-note-web-slash-command-fuzzy-discovery/consequences:
+  en: d6d327a961e0a129
+  zh: 53b5305f363a06ec

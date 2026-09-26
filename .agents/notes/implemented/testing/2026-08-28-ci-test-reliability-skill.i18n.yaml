@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-28-ci-test-reliability-skill.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-08-28-ci-test-reliability-skill.md
-2026-08-28-ci-test-reliability-skill.md: 1c8e0389dfa6e3eb3a6e04e994e6400d19a673ac
-2026-08-28-ci-test-reliability-skill.zh.md: ef36eab497bee874cd117488ddf4895c7edd0ed1
+/agent-note-ci-test-reliability-skill:
+  en: 342497656f092426
+  zh: 8c06d98b17a69d9b
+/agent-note-ci-test-reliability-skill/problem:
+  en: b363244c0545e416
+  zh: dbac5db301cad96e
+/agent-note-ci-test-reliability-skill/decision:
+  en: 7438f96395a010e4
+  zh: a85f7c1845268e2d
+/agent-note-ci-test-reliability-skill/alternatives-considered:
+  en: 68a10fdc89deb64b
+  zh: 165af8adfb40dc10
+/agent-note-ci-test-reliability-skill/consequences:
+  en: 0cc26c02e232356f
+  zh: 3b72a78bf9eb70bd

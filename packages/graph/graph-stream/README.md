@@ -22,7 +22,7 @@ English | [中文](README.zh.md)
 
 ## Use this package
 
-```ts
+```ts ignore-check
 import Storage, { storageBackendServiceKey } from '@deepseek-ai/dsh-storage'
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 import { AgentGraphCoordinator } from '@deepseek-ai/dsh-graph-stream'
@@ -64,7 +64,7 @@ const result = await coordinator.reconcileAndWait()             // runs one driv
 
 ### Executor seam
 
-```ts
+```ts ignore-check
 export interface AgentGraphExecutor {
   provisionOperator(request: AgentGraphOperatorProvisionRequest): Promise<AgentGraphOperatorProvisionResult | undefined>
   runClaimedAgentGraphIntent(input: AgentGraphRunClaimedIntentInput): Promise<void>
@@ -73,6 +73,10 @@ export interface AgentGraphExecutor {
 ```
 
 The coordinator never calls a provider directly — P3 supplies the subagent/worktree-backed implementation.
+
+## Runtime invariants
+
+No runtime invariant companion is published: graph-stream projects graph rows into stream-safe deltas that graph-control already validates at the write boundary.
 
 ## Further Exploration
 

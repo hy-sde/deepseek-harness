@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for memory-extraction.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/memory-extraction.md
-memory-extraction.md: f838c54c3142ca0dfa49000bf54245ca1aadf869
-memory-extraction.zh.md: aa196034e17b989f6d4ff27b92c0a74eb06599b4
+/automatic-memory-extraction:
+  en: 033e4edc7c9fcee1
+  zh: 0c4a9fefdea7e3ec
+/automatic-memory-extraction/why-host-plane:
+  en: 23719f4d9b449344
+  zh: 451847e2ad1d0ad0
+/automatic-memory-extraction/the-pipeline:
+  en: 8de4076d89a2248a
+  zh: 5ec73158d5da655a
+/automatic-memory-extraction/the-store:
+  en: c135598749527b39
+  zh: e56b28f2ff1637d7
+/automatic-memory-extraction/configuration:
+  en: c1a35b44fff7ea3e
+  zh: 0682d831568ecd9d

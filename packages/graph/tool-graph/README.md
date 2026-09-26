@@ -22,7 +22,7 @@ English | [中文](README.zh.md)
 
 ## Use this package
 
-```ts
+```ts ignore-check
 import toolGraph, { createAgentGraphController } from '@deepseek-ai/dsh-tool-graph'
 import { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 
@@ -47,6 +47,10 @@ Construct exactly one controller per graph root session. The plugin's `apply` re
 - **Preprocessors**: `cleanUpdateInput`/`cleanAddWorkInput` pick fields by discriminator — `targetKind` keeps exactly one of `agentId`/`subagentId`/`operatorId`, `replacementMode: 'none'` drops `replaces`, instructions are trimmed. Bounds match Maka: 32 addWork items, 64 input ids, 64 selected results, 60 000 instruction chars, 20 stop targets, 64 finish result ids, 4000 reason chars.
 - **View bounding**: live (requested) work pages through an opaque `work:<id>` cursor (64 per page); terminal work, stopped targets, records (truncated summaries), and readiness intents are tailed to 64 each with explicit `omitted` counts. `view_agent_graph` is total: an unknown graph returns an empty snapshot.
 - **Wake semantics**: the tools never poll — `yield_agent_graph` calls `claimSupervisorWake` when requested work, live claims, or readiness intents exist, and returns `nothing_to_yield` otherwise. The host drives reconciliation and wakes the root session from the durable wake row.
+
+## Runtime invariants
+
+No runtime invariant companion is published: the tool adapts graph-control calls, whose invariants the graph-control companion already owns.
 
 ## Further Exploration
 

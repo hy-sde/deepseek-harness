@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-13-shared-modal-product-onboarding.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-13-shared-modal-product-onboarding.md
-2026-08-13-shared-modal-product-onboarding.md: 9f72ee5b4e2abd8dd9ad70c819976be73f3f8116
-2026-08-13-shared-modal-product-onboarding.zh.md: 867b23202f2e15701d72dd5e11cbe6ff2346ef11
+/agent-note-shared-modal-product-onboarding:
+  en: ab885da1060cbd0f
+  zh: 4a22837460e22dce
+/agent-note-shared-modal-product-onboarding/problem:
+  en: 5cc68fd7bf994e11
+  zh: b04f5176411992be
+/agent-note-shared-modal-product-onboarding/decision:
+  en: c17e24eb24849781
+  zh: bfc05991f4a90d17
+/agent-note-shared-modal-product-onboarding/alternatives-considered:
+  en: b27944c503156aff
+  zh: 8b9fb8daf815f180
+/agent-note-shared-modal-product-onboarding/consequences:
+  en: c4cf27e9c0de8ac3
+  zh: 76f00233736abdd5

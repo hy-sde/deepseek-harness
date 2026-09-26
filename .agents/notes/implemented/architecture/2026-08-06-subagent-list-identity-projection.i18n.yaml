@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-06-subagent-list-identity-projection.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-06-subagent-list-identity-projection.md
-2026-08-06-subagent-list-identity-projection.md: cbb15696314930acfaf20ba8651699c53c5dbde2
-2026-08-06-subagent-list-identity-projection.zh.md: dbb62dbfc6bb6ca3ab63504de1ba8dd35327bbbf
+/agent-note-subagent-list-identity-via-the-projection-unit:
+  en: 545ff611d54f91b3
+  zh: 878d77d47958ec32
+/agent-note-subagent-list-identity-via-the-projection-unit/problem:
+  en: 49ed619842ddeb86
+  zh: d989c4719eb75290
+/agent-note-subagent-list-identity-via-the-projection-unit/decision:
+  en: c72421ab43ab3dbf
+  zh: 0a242970cad10f6e
+/agent-note-subagent-list-identity-via-the-projection-unit/decision/subagent-projection-unit:
+  en: 194cd5d08e6eb598
+  zh: a0f8b5fdcd3b9be6
+/agent-note-subagent-list-identity-via-the-projection-unit/decision/enumeration-query-corpus-with-live-preference:
+  en: 989d9a9300b62a92
+  zh: ca214501d391008e
+/agent-note-subagent-list-identity-via-the-projection-unit/decision/value-retrieval-the-three-rung-compute-and-discard-ladder:
+  en: a0cb5886427f63db
+  zh: 26369cd188aa125b
+/agent-note-subagent-list-identity-via-the-projection-unit/decision/authority-model:
+  en: 857e90ecb466395a
+  zh: 30e2aa45484acb70
+/agent-note-subagent-list-identity-via-the-projection-unit/decision/listchildren-row-shape-and-consuming-surfaces:
+  en: 944871842048cbfc
+  zh: a920e3a2546f9909
+/agent-note-subagent-list-identity-via-the-projection-unit/decision/change-footprint:
+  en: af25d6cd5e8b1fe3
+  zh: eac22f3360dc6162
+/agent-note-subagent-list-identity-via-the-projection-unit/alternatives-considered:
+  en: 1c6a344986c67afc
+  zh: e2ab4bac782b6954
+/agent-note-subagent-list-identity-via-the-projection-unit/verification:
+  en: d0b27edd79182438
+  zh: 9004d7cc17521fe6
+/agent-note-subagent-list-identity-via-the-projection-unit/consequences:
+  en: 5a51439936496814
+  zh: ac7c396ac4f06ea0
+/agent-note-subagent-list-identity-via-the-projection-unit/related:
+  en: 517e84a7c921c24b
+  zh: a2b31c3e45351a91

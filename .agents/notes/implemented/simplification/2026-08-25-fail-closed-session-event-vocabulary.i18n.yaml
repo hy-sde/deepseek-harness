@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-25-fail-closed-session-event-vocabulary.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-25-fail-closed-session-event-vocabulary.md
-2026-08-25-fail-closed-session-event-vocabulary.md: 4c7b2c34d9557f0eaa2b5660643be50cd9ae6222
-2026-08-25-fail-closed-session-event-vocabulary.zh.md: 0b57fe52d6fd92c83b1ae674664f25eb928115bc
+/agent-note-require-known-session-event-types-on-read:
+  en: fc61ce61d8f10f28
+  zh: a0468b19b930ba9f
+/agent-note-require-known-session-event-types-on-read/problem:
+  en: 18440de1e693cbb1
+  zh: a30e82813f2aec6e
+/agent-note-require-known-session-event-types-on-read/decision:
+  en: 3b9d9f6034c01e4a
+  zh: 9d7e530c32f9bf76
+/agent-note-require-known-session-event-types-on-read/alternatives-considered:
+  en: a144ac118ec42d6a
+  zh: 4000f0ed81d41b01
+/agent-note-require-known-session-event-types-on-read/consequences:
+  en: c5188cbde7ddc45b
+  zh: 25836b61e6a672ac

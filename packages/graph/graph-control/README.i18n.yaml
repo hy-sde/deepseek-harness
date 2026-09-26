@@ -1,6 +1,49 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/graph/graph-control/README.md
-README.md: 57e4c852b3ac4b0beeff39b4bfbe63b1f202a0fd
-README.zh.md: 1260f6c35ea80396aeb8f02b9faa024a8625ff59
+/:
+  en: 753b0c02cce0f6f5
+  zh: b71b662a18bc1d1e
+/deepseek-ai-dsh-graph-control:
+  en: be886ecdb31d479b
+  zh: 61c6f22eb7b63e49
+/deepseek-ai-dsh-graph-control/summary:
+  en: ab4de2f5f3570b2d
+  zh: ab35e3c5572e4293
+/deepseek-ai-dsh-graph-control/table-of-contents:
+  en: 65663b0d5dfa1600
+  zh: 55b2121ae6059425
+/deepseek-ai-dsh-graph-control/use-this-package:
+  en: 24238b784e3f4ee5
+  zh: 3255a172a22aec4d
+/deepseek-ai-dsh-graph-control/understand-the-implementation:
+  en: 0ee5a0fb6cc2d7ab
+  zh: f30511339ccea533
+/deepseek-ai-dsh-graph-control/runtime-invariants:
+  en: 3172bca40e966d3e
+  zh: 2410d13fa1b1dd08
+/deepseek-ai-dsh-graph-control/further-exploration:
+  en: a8fce682ee0cde98
+  zh: 6eeefa915ef42a59
+/deepseek-ai-dsh-graph-control/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-graph-control/model-experience/graph-schedule-records:
+  en: 6b4bc2d86b09ad4f
+  zh: 125f8dadb43e2ca8
+/deepseek-ai-dsh-graph-control/model-experience/graph-schedule-records/what-the-model-sees:
+  en: fd11a5a4bce0aaab
+  zh: 3dc831c2a244ced1
+/deepseek-ai-dsh-graph-control/model-experience/graph-schedule-records/token-effect:
+  en: d92673b4f0e27e42
+  zh: bbe9116c4951ce65
+/deepseek-ai-dsh-graph-control/model-experience/graph-schedule-records/kv-cache-effect:
+  en: 463a3a8e1c0b224d
+  zh: 0c30a5cafd27a1d6
+/deepseek-ai-dsh-graph-control/known-limitations-and-deferred-work:
+  en: 688aa6f8d34746f9
+  zh: a00ba38f377f853b
+/deepseek-ai-dsh-graph-control/known-limitations-and-deferred-work/dev-note:
+  en: 28f86c8678cdac84
+  zh: bb1a874321eab82b

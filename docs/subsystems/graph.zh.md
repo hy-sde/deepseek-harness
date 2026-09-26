@@ -10,7 +10,7 @@ agent-graph 子系统——面向受监督 fan-out 运行的持久化调度权�
 
 一个 `AgentGraphScheduledWork` 声明一个算子（「子智能体」）：绑定到一个算子 id、一段文本指令，以及其输入的 id（其他算子产生的记录或原始会话记录）；`replaces` 边把顺序步骤变成链，同时每个工作项保持由其确定性 `workId` 可寻址。调度更新是唯一写入面：`commitScheduleUpdate` 向调度日志追加；每次更新携带 `source` 三元组（sessionId + runId + toolCallId）并在重试下幂等，因此重发更新返回已提交的 `revision` 而非重复应用。
 
-```ts
+```ts ignore-check
 /** One schedule update: add/supervise/stop/finish in a single commit. */
 interface AgentGraphScheduleUpdateRequest {
   graphId: string
@@ -29,7 +29,7 @@ interface AgentGraphScheduleUpdateRequest {
 
 `AgentGraphExecutor` 是每个宿主实现的 seam：`provisionOperator` 返回持久化 provision 行——或返回 `undefined` 以延迟——而 `runClaimedAgentGraphIntent` 执行一个已 claim 的 intent，`stopSession` 取消它。随附执行器把 provision 映射为确定性 worktree 租约（`graph_operator_lease_<hash>`），在控制存储中持久化绑定，按算子串行化激活，并以终结记录收尾（`recordSink`）。唤醒是宿主的打断：`yield_agent_graph` 把监管者停驻在根会话的下一个空闲点；唤醒运行时最多投递 3 次（`pending → running → delivered | waiting_permission | retryable_failed | superseded`），绝不在回合中途投递。上下文溢出时，运行时压缩一次并允许一次有界部分投递。客户端可见的每次状态变化都以 `graph/change` 事件发布到根会话日志；`graph` 投影单元把它折叠为常驻快照。
 
-```ts
+```ts ignore-check
 /** The client-visible graph snapshot, published whole. */
 interface SessionGraphProjection {
   schemaVersion: 1

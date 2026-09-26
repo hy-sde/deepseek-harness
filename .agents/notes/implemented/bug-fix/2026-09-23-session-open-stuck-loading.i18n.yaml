@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-23-session-open-stuck-loading.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-23-session-open-stuck-loading.md
-2026-09-23-session-open-stuck-loading.md: e7b8c48510c7f44cf963b5db1e26ddccd281b34d
-2026-09-23-session-open-stuck-loading.zh.md: c75dcf7a573eb45851d2134bfa3ebd6e11b8dbd1
+/agent-note-a-session-open-can-hang-in-loading-history-forever:
+  en: af54b1e2cfa3ff47
+  zh: 8ee09364c869b715
+/agent-note-a-session-open-can-hang-in-loading-history-forever/problem:
+  en: d5ac6e3889d8b6cb
+  zh: 54f346ec8db23b1a
+/agent-note-a-session-open-can-hang-in-loading-history-forever/root-cause:
+  en: e1b07be639e592cb
+  zh: ce175a747ead0eba
+/agent-note-a-session-open-can-hang-in-loading-history-forever/decision:
+  en: bc7be0ff384c6f05
+  zh: 1ffd5cd065982a8c
+/agent-note-a-session-open-can-hang-in-loading-history-forever/alternatives-considered:
+  en: 25349f8fb876b91a
+  zh: 84f262121b55e5f9
+/agent-note-a-session-open-can-hang-in-loading-history-forever/consequences:
+  en: 12a3d69c91e22456
+  zh: 75ef486f5d552481
+/agent-note-a-session-open-can-hang-in-loading-history-forever/follow-up-2026-09-25-malformed-baselines-now-degrade-not-fail:
+  en: 5c27422d28fc0f2f
+  zh: debb13a8f7e15955
+/agent-note-a-session-open-can-hang-in-loading-history-forever/verification:
+  en: 3df7bf7657c7489a
+  zh: 068e35c40a894a8e

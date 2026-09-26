@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-inspector-execution-realms-and-protocol-planes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-26-inspector-execution-realms-and-protocol-planes.md
-2026-08-26-inspector-execution-realms-and-protocol-planes.md: 1c274bda4cb10458ddc9ecec846b6355fb811c2f
-2026-08-26-inspector-execution-realms-and-protocol-planes.zh.md: 49fde96a3b0acc5d9621b1ca4cfd1546ca970931
+/agent-note-inspector-execution-realms-and-protocol-planes:
+  en: cb80eb149abeadf3
+  zh: b3324b69c9a2c6e9
+/agent-note-inspector-execution-realms-and-protocol-planes/problem:
+  en: 6c46495f9764faca
+  zh: 5d25887de384c523
+/agent-note-inspector-execution-realms-and-protocol-planes/decision:
+  en: 0c347137df82deca
+  zh: 7803dd6e03600d76
+/agent-note-inspector-execution-realms-and-protocol-planes/execution-ownership:
+  en: 5582c99fd8898070
+  zh: d72e36e680b0215c
+/agent-note-inspector-execution-realms-and-protocol-planes/data-and-identifier-ownership:
+  en: a6c6ca3c1dc43d71
+  zh: 6737f0c7189a9572
+/agent-note-inspector-execution-realms-and-protocol-planes/dependency-rules:
+  en: 735ade04b9256e40
+  zh: a89547dd43fa3878
+/agent-note-inspector-execution-realms-and-protocol-planes/verification:
+  en: 9440e6309e0b2fb9
+  zh: dfc9792850532f03
+/agent-note-inspector-execution-realms-and-protocol-planes/alternatives-considered:
+  en: 946406e6cd107806
+  zh: b0347912d0552bf3
+/agent-note-inspector-execution-realms-and-protocol-planes/consequences:
+  en: 27401550bf347b39
+  zh: 2c291b5e649c6b13

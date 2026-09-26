@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-headless-reasoning-progress.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-21-headless-reasoning-progress.md
-2026-08-21-headless-reasoning-progress.md: 6c4a3574b63ef316fd456f24b473406054ed30f3
-2026-08-21-headless-reasoning-progress.zh.md: e19fffc33fb5a55432ba2b6cb50550a0cfbd00b8
+/agent-note-headless-streams-provider-reasoning-to-stderr:
+  en: cc6b62c6279f3a62
+  zh: bf507b888811031f
+/agent-note-headless-streams-provider-reasoning-to-stderr/problem:
+  en: 41c218615b625042
+  zh: 02453380d75b3367
+/agent-note-headless-streams-provider-reasoning-to-stderr/decision:
+  en: e154b38d7db54ee6
+  zh: af64b97ce4b2f8ae
+/agent-note-headless-streams-provider-reasoning-to-stderr/verification:
+  en: 1e6a5975fbac5296
+  zh: e729433a7f4358a6
+/agent-note-headless-streams-provider-reasoning-to-stderr/alternatives-considered:
+  en: e9870a910adacb42
+  zh: 74f0301a5d75a44d
+/agent-note-headless-streams-provider-reasoning-to-stderr/consequences:
+  en: 975f00d898c5e3b8
+  zh: 86157cdd0b36792a

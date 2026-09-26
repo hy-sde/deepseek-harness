@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { createUserMessage, ToolCallId , createMessage, createToolResultMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, ToolCallId, createMessage, createToolResultMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { CompactionId } from '@deepseek-ai/dsh-compaction'
 import SessionStore, {
   SESSION_FORMAT_VERSION,
@@ -22,6 +23,12 @@ import {
 } from '@deepseek-ai/dsh-session-query'
 import { TestSessionQueryEngine } from './test-service.ts'
 
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'test': { kind: 'test' } & ContextFormed
+  }
+}
+
 const id = SessionId('session')
 
 function header(value: string, extra: Partial<SessionHeader> = {}): SessionHeader {
@@ -39,33 +46,35 @@ describe('session-query semantic extraction', () => {
       { type: 'text', text: ' visible ' },
       { type: 'reasoning', text: 'thought' },
       { type: 'tool-call', id: callId, name: 'read', arguments: '{"path":"a"}' },
-      {
-        type: 'tool-result',
-        toolCallId: callId,
-        content: [{ type: 'text', text: 'nested' }],
-        isError: false,
-      },
+      { type: 'text', text: 'nested' },
+      { type: 'plugin:text', text: 'opaque hidden', content: [{ type: 'text', text: 'hidden child' }] } as never,
       { type: 'future-content', payload: 'hidden' } as never,
     ]
     const events: SessionEvent[] = [
-      { type: 'user/message', seq: SessionSeq(0), time: 1, data: createUserMessage({
-        content: messageContent, source: { kind: 'user' },
-      }), surfaceOp: 'append' },
-      { type: 'assistant/message', seq: SessionSeq(1), time: 2, data: {
-        stream: [],
-        turn: 1, step: 1,
-        message: createMessage({
-          role: 'assistant',
-          content: messageContent,
-          source: {
-            kind: 'model',
-            ...{ provider: 'mock', model: 'mock' },
-          },
-        }),
-      }, surfaceOp: 'append' },
-      { type: 'user/message', seq: SessionSeq(2), time: 3, data: createUserMessage({
-        content: messageContent, source: { kind: 'plugin', plugin: 'test' },
-      }), surfaceOp: 'append' },
+      {
+        type: 'user/message', seq: SessionSeq(0), time: 1, data: createUserMessage({
+          content: messageContent, source: { kind: 'user' },
+        }), surfaceOp: 'append'
+      },
+      {
+        type: 'assistant/message', seq: SessionSeq(1), time: 2, data: {
+          stream: [],
+          turn: 1, step: 1,
+          message: createMessage({
+            role: 'assistant',
+            content: messageContent,
+            source: {
+              kind: 'model',
+              ...{ provider: 'mock', model: 'mock' },
+            },
+          }),
+        }, surfaceOp: 'append'
+      },
+      {
+        type: 'user/message', seq: SessionSeq(2), time: 3, data: createUserMessage({
+          content: messageContent, source: { kind: 'test' },
+        }), surfaceOp: 'append'
+      },
       { type: 'tool/call', seq: SessionSeq(3), time: 5, data: { turn: 1, step: 1, callId, name: 'bash', arguments: '{"cmd":"pwd"}' } },
       {
         type: 'tool/result',
@@ -175,9 +184,11 @@ describe('session-query semantic extraction', () => {
 
 describe('session-query document and filter helpers', () => {
   const events: SessionEvent[] = [
-    { type: 'user/message', seq: SessionSeq(0), time: 10, data: createUserMessage({
-      content: [{ type: 'text', text: 'Hello\n(AI)+' }], source: { kind: 'user' },
-    }), surfaceOp: 'append' },
+    {
+      type: 'user/message', seq: SessionSeq(0), time: 10, data: createUserMessage({
+        content: [{ type: 'text', text: 'Hello\n(AI)+' }], source: { kind: 'user' },
+      }), surfaceOp: 'append'
+    },
     {
       type: 'assistant/attempt',
       seq: SessionSeq(1),
@@ -188,13 +199,15 @@ describe('session-query document and filter helpers', () => {
         stream: [{ type: 'text-chunks', time0: 11, index: 0, dt: [], texts: ['raw'] }],
       },
     },
-    { type: 'user/message', seq: SessionSeq(2), time: 12, data:
-      createUserMessage({
-        content: [{ type: 'text', text: 'replacement' }],
-        source: { kind: 'plugin', plugin: 'test' },
-      }),
-    surfaceOp: { op: 'replace', startSeq: SessionSeq(0), endSeq: SessionSeq(0) },
-    sourceEventSeqs: [SessionSeq(0)] },
+    {
+      type: 'user/message', seq: SessionSeq(2), time: 12, data:
+        createUserMessage({
+          content: [{ type: 'text', text: 'replacement' }],
+          source: { kind: 'test' },
+        }),
+      surfaceOp: { op: 'replace', startSeq: SessionSeq(0), endSeq: SessionSeq(0) },
+      sourceEventSeqs: [SessionSeq(0)]
+    },
     { type: 'turn/end', seq: SessionSeq(3), time: 13, data: { turn: 1, reason: { kind: 'interrupted' } } },
   ]
 
@@ -267,7 +280,7 @@ describe('session-query document and filter helpers', () => {
       time: 1,
       data: createUserMessage({
         content: [{ type: 'text', text: 'bad' }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'test' },
       }),
       surfaceOp: { op: 'replace', startSeq: SessionSeq(9), endSeq: SessionSeq(9) },
     }]

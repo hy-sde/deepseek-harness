@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-translation-pairing-merge-budget.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-08-27-translation-pairing-merge-budget.md
-2026-08-27-translation-pairing-merge-budget.md: 296e71fbbebf136602e02d2d8d64dbbfd8a336a3
-2026-08-27-translation-pairing-merge-budget.zh.md: 8bdac5902301d7105b7851e3c446a9a327b69819
+/agent-note-coverage-lane-budget-for-the-translation-pairing-merge-suite:
+  en: d6d648f605e7c3ba
+  zh: 484f66dc98ad8bc7
+/agent-note-coverage-lane-budget-for-the-translation-pairing-merge-suite/problem:
+  en: 278aab142bcaf571
+  zh: b9aade2c8bba2c1e
+/agent-note-coverage-lane-budget-for-the-translation-pairing-merge-suite/decision:
+  en: d2cba1d220a29206
+  zh: a1fee776e544f599
+/agent-note-coverage-lane-budget-for-the-translation-pairing-merge-suite/consequences:
+  en: 064ca7a4c9f8f4a2
+  zh: 35347f90f370705f
+/agent-note-coverage-lane-budget-for-the-translation-pairing-merge-suite/alternatives-considered:
+  en: fd0334085a21eb80
+  zh: 2b32980a59cec900

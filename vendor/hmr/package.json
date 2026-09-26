@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/cordis-plugin-hmr",
   "description": "Hot Module Replacement Plugin for Cordis",
-  "version": "1.0.17",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -37,19 +37,19 @@
     },
     "description": {
       "en": "Hot Module Replacement",
-      "zh": "模块热替换"
+      "zh": "\u6a21\u5757\u70ed\u66ff\u6362"
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis-plugin-timer": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis-plugin-timer": "workspace:~",
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "dependencies": {
     "@babel/code-frame": "^7.29.0",
     "chokidar": "^4.0.3",
-    "@deepseek-ai/cosmokit": "workspace:^",
+    "@deepseek-ai/cosmokit": "workspace:~",
     "picomatch": "^4.0.3",
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@deepseek-ai/schemastery": "workspace:~"
   },
   "devDependencies": {
     "@types/babel__code-frame": "^7.27.0",

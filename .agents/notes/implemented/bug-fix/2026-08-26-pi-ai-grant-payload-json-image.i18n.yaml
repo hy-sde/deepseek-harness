@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-pi-ai-grant-payload-json-image.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-26-pi-ai-grant-payload-json-image.md
-2026-08-26-pi-ai-grant-payload-json-image.md: 9eb5e5ffd9ccbc18d409bd50e05061006bdca094
-2026-08-26-pi-ai-grant-payload-json-image.zh.md: 8329b4acf062a073dfe78ec10fe03852e7a64fd9
+/agent-note-pi-ai-grant-payloads-store-their-json-image:
+  en: 6c56461bfd5849f6
+  zh: 1a17a6bf1273d0f2
+/agent-note-pi-ai-grant-payloads-store-their-json-image/problem:
+  en: e82234f5651b47cf
+  zh: ed12dae966a72b42
+/agent-note-pi-ai-grant-payloads-store-their-json-image/decision:
+  en: 2989c1477be79b44
+  zh: 418d4aad50bc094e
+/agent-note-pi-ai-grant-payloads-store-their-json-image/testing:
+  en: bc0f855b50a2dd7c
+  zh: be7631d20fa1064d
+/agent-note-pi-ai-grant-payloads-store-their-json-image/alternatives-considered:
+  en: dfcaaf140d8c28df
+  zh: d66d5533bdb18a16
+/agent-note-pi-ai-grant-payloads-store-their-json-image/consequences:
+  en: 173f95a5f2f2c759
+  zh: cf42690dee7c5c11

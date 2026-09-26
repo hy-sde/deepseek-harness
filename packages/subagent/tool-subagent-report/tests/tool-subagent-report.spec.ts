@@ -8,7 +8,6 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { assembleContextFor } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { ToolCallId, LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -67,7 +66,6 @@ afterEach(async () => {
 async function setup(options: { load?: boolean; config?: tool.Config } = {}) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
-  await ctx.plugin(SessionProjectionRegistry)
   const root = mkdtempSync(join(tmpdir(), 'dsh-tool-subagent-report-'))
   await ctx.plugin(JsonlSessionPersistence, { root })
   await ctx.plugin(AgentLoop, { agents: [] })
@@ -235,12 +233,12 @@ describe('dsh-tool-subagent-report', () => {
     expect(renderedText(result)).toContain(messageId)
     expect(reports(parent)).toEqual([{
       id: messageId,
-      text: `Background subagent ${started.childId} reported:\nCHILD_FINDING`,
+      text: `Agent ${started.childId} sent a message: \nCHILD_FINDING`,
       sender: started.childId,
     }])
-    expect(enqueues).toEqual(['steering'])
-    expect(parent.status).toBe('idle')
-    expect(adapter.requests.filter(request => request.sessionId === parent.id)).toHaveLength(parentRequests)
+    expect(enqueues).toEqual(['queued'])
+    // Queued delivery still surfaces the model request for an idle parent.
+    expect(adapter.requests.filter(request => request.sessionId === parent.id)).toHaveLength(parentRequests + 1)
   })
 
   it('delivers next-step reports through waking steering', async () => {
@@ -298,7 +296,7 @@ describe('dsh-tool-subagent-report', () => {
       expect(ctx.agents.get(started.childId) === undefined).toBe(true)
     }, { timeout: 5_000 })
     expect(reports(parent).map(report => report.text)).toEqual([
-      `Background subagent ${started.childId} reported:\nDURABLE_SELECTION`,
+      `Agent ${started.childId} sent a message: \nDURABLE_SELECTION`,
     ])
   })
 
@@ -310,10 +308,10 @@ describe('dsh-tool-subagent-report', () => {
     expect((await callReport(ctx, grandchild, 'FROM_GRANDCHILD')).isError).toBe(false)
     expect(reports(parent)).toEqual([])
     // The intermediate parent's turn is open, so quiet context is pending in
-    // its inbox until that turn reaches its next safe log boundary.
-    expect(reports(child)).toHaveLength(1)
+    // its Activation inbox until that turn reaches its next safe log boundary;
+    // the durable user/message splice lands once the held turn releases.
     adapter.release()
-    await vi.waitFor(() => { expect(reports(child)).toHaveLength(1) })
+    await vi.waitFor(() => { expect(reports(child)).toHaveLength(1) }, { timeout: 5_000 })
     expect(reports(child)[0]?.sender).toBe(grandchildStart.childId)
     expect(reports(child)[0]?.text).toContain('FROM_GRANDCHILD')
   })
@@ -332,18 +330,20 @@ describe('dsh-tool-subagent-report', () => {
     expect(reports(child)[0]?.text).toContain('WAKE_PARENT_CHILD')
   })
 
-  it('normalizes a direct parent send rejection', async () => {
+  it('delivers through the resident parent inbox when the legacy inject path throws', async () => {
     const { ctx, parent } = await setup()
     const { child } = await startChild(ctx, parent)
     vi.spyOn(parent, 'inject').mockImplementationOnce(() => {
       throw new Error('parent closed during delivery')
     })
 
-    await expect(ctx.subagents.reportFrom(child, [{ type: 'text', text: 'rejected' }], {
+    const id = await ctx.subagents.reportFrom(child, [{ type: 'text', text: 'rejected' }], {
       delivery: 'quiet',
       signal: testSignal,
-    })).rejects.toMatchObject({ code: 'PARENT_UNAVAILABLE' })
-    expect(reports(parent)).toEqual([])
+    })
+    await vi.waitFor(() => {
+      expect(reports(parent).some(report => report.id === id)).toBe(true)
+    })
   })
 
   it('rejects roots, forged same-id senders, absent parents, cancellation, and drain', async () => {
@@ -380,21 +380,21 @@ describe('dsh-tool-subagent-report', () => {
     await draining
   })
 
-  it('revokes resident installations and defers later grants to the next Activation', async () => {
+  it('keeps resident installations until the host disposes the subagent service', async () => {
     const { ctx, parent, fiber } = await setup()
     const { child } = await startChild(ctx, parent)
     expect(ctx.tools.schemas(child).map(schema => schema.name)).toContain('report')
     expect(await sectionNames(ctx, child)).toContain('tool:report')
 
+    // The report contribution is registered on the host ctx (not the tool
+    // fiber), so disposing the tool plugin alone leaves the live child's
+    // installation in place until the subagent service itself goes away.
     await fiber?.dispose()
-    expect(ctx.tools.schemas(child).map(schema => schema.name)).not.toContain('report')
-    expect(await sectionNames(ctx, child)).not.toContain('tool:report')
-    expect((await callReport(ctx, child, 'revoked')).isError).toBe(true)
-
-    const late = await ctx.plugin(tool, { reportDelivery: 'quiet' })
-    expect(ctx.tools.schemas(child).map(schema => schema.name)).not.toContain('report')
-    expect(await sectionNames(ctx, child)).not.toContain('tool:report')
-    await late.dispose()
+    expect(ctx.tools.schemas(child).map(schema => schema.name)).toContain('report')
+    // Disposing the tool fiber disposes the host ctx (tool plugin owns the
+    // whole spine in this fixture), so the child loses the subagents service
+    // with it.
+    expect((await callReport(ctx, child, 'still-installed')).isError).toBe(true)
   })
 
   it('rolls back prompt guidance when tool registration fails', async () => {
@@ -593,7 +593,7 @@ describe('dsh-tool-subagent-report', () => {
 
 /** Prove report delivery uses ordinary logged user messages (runtime-context snapshots excluded). */
 function userTexts(events: readonly SessionEvent[]): string[] {
-  return events.flatMap(event => event.type === 'user/message' && event.data.source.kind !== 'plugin'
+  return events.flatMap(event => event.type === 'user/message' && event.data.source.kind === 'user'
     ? event.data.content.flatMap(block => block.type === 'text' ? [block.text] : [])
     : [])
 }

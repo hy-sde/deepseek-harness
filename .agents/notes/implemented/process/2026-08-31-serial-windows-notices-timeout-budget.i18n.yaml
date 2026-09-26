@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-31-serial-windows-notices-timeout-budget.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-31-serial-windows-notices-timeout-budget.md
-2026-08-31-serial-windows-notices-timeout-budget.md: 184004122bf8050fa00038b7c57ae680748463f8
-2026-08-31-serial-windows-notices-timeout-budget.zh.md: 4fc00ed25cc24ef76e43a0099a362b8be0e59e3e
+/agent-note-serial-windows-notices-timeout-budget-and-generator-store-scan-cost:
+  en: a372674b6c09fe97
+  zh: ede6f7395df6abc7
+/agent-note-serial-windows-notices-timeout-budget-and-generator-store-scan-cost/problem:
+  en: 09bfdd438aef182f
+  zh: b38db911f0998157
+/agent-note-serial-windows-notices-timeout-budget-and-generator-store-scan-cost/decision:
+  en: 1e717b36a8a81d82
+  zh: 74650dc6ea86e83b
+/agent-note-serial-windows-notices-timeout-budget-and-generator-store-scan-cost/alternatives-considered:
+  en: d681eaeb01bf3a90
+  zh: 639e30565bd02f3c
+/agent-note-serial-windows-notices-timeout-budget-and-generator-store-scan-cost/consequences:
+  en: 19c922b491b53c70
+  zh: d440b600509dcbe0

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-17-web-system-prompt-opaque-body.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-web-system-prompt-opaque-body.md
-2026-08-17-web-system-prompt-opaque-body.md: 9b1992dd8eb1062a3b35666b332178985aa91653
-2026-08-17-web-system-prompt-opaque-body.zh.md: 6f2fbba9d3f286e8c3073197a144d347f732cbc1
+/agent-note-system-prompt-expands-into-the-opaque-context-body:
+  en: 731aeedfe90f7abc
+  zh: be9c4b0737f11606
+/agent-note-system-prompt-expands-into-the-opaque-context-body/problem:
+  en: 12d6d91d7ceeb9e8
+  zh: 84c76e3f29552912
+/agent-note-system-prompt-expands-into-the-opaque-context-body/decision:
+  en: 1b55771c1678f27b
+  zh: a0591a7f9e17821c
+/agent-note-system-prompt-expands-into-the-opaque-context-body/alternatives-considered:
+  en: 1b726b611d436b36
+  zh: 00dab3fae6a5defe
+/agent-note-system-prompt-expands-into-the-opaque-context-body/consequences:
+  en: 3795b0257925358e
+  zh: cf506f836e27e1f3
+/agent-note-system-prompt-expands-into-the-opaque-context-body/testing:
+  en: 12b1c9370aa12069
+  zh: 4fe153425743bb05

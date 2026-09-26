@@ -28,7 +28,15 @@
           },
           "justification": {
             "type": "string",
-            "description": "Reason this complete program needs wider access, shown to the user for approval."
+            "description": "Reason this complete program needs wider access, shown to the user for approval. Use the language of the user’s current request."
+          },
+          "session": {
+            "type": "string",
+            "description": "Optional persistent-kernel session id: runs sharing a session id keep kernel state (assignments, imports, top-level await results) across calls when the mounted backend supports persistence; one-shot backends ignore it entirely."
+          },
+          "reset": {
+            "type": "boolean",
+            "description": "Discard the session's prior kernel state (variables, imports) before this run. Costs one reset instead of many retries; requires `session` to be meaningful."
           }
         },
         "required": [

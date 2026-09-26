@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-17-local-spill-startup-cleanup.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-17-local-spill-startup-cleanup.md
-2026-07-17-local-spill-startup-cleanup.md: fc64938c1af07d9dd0d7ecec379115d22d1e2464
-2026-07-17-local-spill-startup-cleanup.zh.md: 583a33ead84f552c67e2e770a8b3fabc3ce88120
+/agent-note-one-shot-startup-cleanup-for-local-spill-files:
+  en: 738227f5c3ec37e1
+  zh: 626f5ce9ce139246
+/agent-note-one-shot-startup-cleanup-for-local-spill-files/problem:
+  en: de5a6424af09e9c8
+  zh: 6332cf3564bf8c63
+/agent-note-one-shot-startup-cleanup-for-local-spill-files/decision:
+  en: f9d8cd07b7b749d4
+  zh: 442ba0e2500bd42c
+/agent-note-one-shot-startup-cleanup-for-local-spill-files/alternatives-considered:
+  en: de0f9bf729799c77
+  zh: 588a124a25af696a
+/agent-note-one-shot-startup-cleanup-for-local-spill-files/consequences:
+  en: c73ca7c7c3a0eb7c
+  zh: 4104b55e48346136
+/agent-note-one-shot-startup-cleanup-for-local-spill-files/testing:
+  en: 57349e0df6f3f7fa
+  zh: a60622c4f418b2d0

@@ -1,6 +1,37 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-23-cross-realm-cdp-inspector.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-23-cross-realm-cdp-inspector.md
-2026-08-23-cross-realm-cdp-inspector.md: e6e1d48da4f7b2dfab2772e24cb49711e3e50f5a
-2026-08-23-cross-realm-cdp-inspector.zh.md: 9d67868caf9b4e5e0eb06583facd608b71468b22
+/agent-note-cross-realm-cdp-inspector:
+  en: 39ed7f020b441deb
+  zh: c72966b4680cb9eb
+/agent-note-cross-realm-cdp-inspector/problem:
+  en: e70f4f17f4160c1a
+  zh: ef50288d1ca8394e
+/agent-note-cross-realm-cdp-inspector/decision:
+  en: de2f6d4abe5cf6a9
+  zh: b71895acef666af0
+/agent-note-cross-realm-cdp-inspector/realm-ownership:
+  en: 87bb2c520a7d8f17
+  zh: 6385b1bd8254a99c
+/agent-note-cross-realm-cdp-inspector/source-protocol:
+  en: adead84c3e598d76
+  zh: 39b719d80c49b34a
+/agent-note-cross-realm-cdp-inspector/client-runtime-console-and-sources:
+  en: 6246438c0fc924c5
+  zh: 1618c7a3af6a298a
+/agent-note-cross-realm-cdp-inspector/host-debugging:
+  en: a880e323de715ff2
+  zh: 562d0fe776fab005
+/agent-note-cross-realm-cdp-inspector/fetch-capture:
+  en: f6b137ebe5ead1a3
+  zh: bec50e3448681854
+/agent-note-cross-realm-cdp-inspector/alternatives-considered:
+  en: c568b4d879284e6c
+  zh: 00253cfee266f056
+/agent-note-cross-realm-cdp-inspector/verification:
+  en: b17d10801145f2de
+  zh: 22a861c9567a25e5
+/agent-note-cross-realm-cdp-inspector/consequences:
+  en: 54cacbc9031f275f
+  zh: 252c87de2f23990e

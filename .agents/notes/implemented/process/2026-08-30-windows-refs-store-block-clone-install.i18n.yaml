@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-windows-refs-store-block-clone-install.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-30-windows-refs-store-block-clone-install.md
-2026-08-30-windows-refs-store-block-clone-install.md: 086c00453fffada7faef1631e7c270f3270b82d6
-2026-08-30-windows-refs-store-block-clone-install.zh.md: f813ae15a16c9f5cd61b1f7b98a66d74af2115e9
+/agent-note-windows-self-hosted-refs-store-and-block-clone-installs:
+  en: 5f4266ce9f1715ed
+  zh: 46b960f41bc44a44
+/agent-note-windows-self-hosted-refs-store-and-block-clone-installs/problem:
+  en: 356f2b9cb8df4f24
+  zh: 0b5967cdec0717cc
+/agent-note-windows-self-hosted-refs-store-and-block-clone-installs/decision:
+  en: 37a7508338506b76
+  zh: 3dc2e1eb1f57dfe1
+/agent-note-windows-self-hosted-refs-store-and-block-clone-installs/alternatives-considered:
+  en: 783dcc5dbc28db16
+  zh: 557560808f119830
+/agent-note-windows-self-hosted-refs-store-and-block-clone-installs/consequences:
+  en: ee1f4c20ee87e3fd
+  zh: 10054f22e988a92c

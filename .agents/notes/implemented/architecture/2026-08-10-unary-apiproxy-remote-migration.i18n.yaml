@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-10-unary-apiproxy-remote-migration.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-10-unary-apiproxy-remote-migration.md
-2026-08-10-unary-apiproxy-remote-migration.md: ee93276b08e204b8c10c22c9fbb890a73691c5a9
-2026-08-10-unary-apiproxy-remote-migration.zh.md: 63eb30a1c079c4f5beb3c6aa328ae31f9dbc51b2
+/agent-note-place-unary-browser-operations-on-owning-remote-services:
+  en: 15581742de7017f8
+  zh: d600dc6480875af2
+/agent-note-place-unary-browser-operations-on-owning-remote-services/problem:
+  en: cda97a6f8dd046c5
+  zh: 3a322c37ab7e9386
+/agent-note-place-unary-browser-operations-on-owning-remote-services/decision:
+  en: 539a7283b93c1fb7
+  zh: 4eb271406deeaf23
+/agent-note-place-unary-browser-operations-on-owning-remote-services/browser-authentication:
+  en: b6d359d1c7367755
+  zh: f2a1a32606ad56c5
+/agent-note-place-unary-browser-operations-on-owning-remote-services/verification:
+  en: a571cccc819b0f99
+  zh: 23bd85b51dcdde86
+/agent-note-place-unary-browser-operations-on-owning-remote-services/alternatives-considered:
+  en: 76041d97962090dd
+  zh: a4ab128827013722
+/agent-note-place-unary-browser-operations-on-owning-remote-services/consequences:
+  en: a438a721431d5968
+  zh: 9d7681d3d50ad2e7

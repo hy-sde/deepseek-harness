@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-deepseek-files-inline-fallback.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-21-deepseek-files-inline-fallback.md
-2026-08-21-deepseek-files-inline-fallback.md: 7442089038e2cf47f37661c0f098054d03f67aef
-2026-08-21-deepseek-files-inline-fallback.zh.md: 0534514f9bc52f7871f43c288466643cebc7d69c
+/agent-note-recover-deepseek-image-requests-from-files-resolution-failures:
+  en: 202d512fdb246dea
+  zh: b9950d02ae28c884
+/agent-note-recover-deepseek-image-requests-from-files-resolution-failures/problem:
+  en: ef90a1a1960926b2
+  zh: bf1498ad9b72e655
+/agent-note-recover-deepseek-image-requests-from-files-resolution-failures/decision:
+  en: 7db0d504350708ac
+  zh: c4e572dc53bb34a5
+/agent-note-recover-deepseek-image-requests-from-files-resolution-failures/alternatives-considered:
+  en: 2c9f345e36130d6a
+  zh: 51799a9ecfbf4600
+/agent-note-recover-deepseek-image-requests-from-files-resolution-failures/verification:
+  en: d71108197f5f82b4
+  zh: 6ef3d224681d75ae
+/agent-note-recover-deepseek-image-requests-from-files-resolution-failures/consequences:
+  en: afd65525adbace1a
+  zh: 34f14f2b00bac0f0

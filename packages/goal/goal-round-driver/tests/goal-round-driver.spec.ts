@@ -8,9 +8,16 @@ import GoalService, { GoalId } from '@deepseek-ai/dsh-goal'
 import type { GoalView } from '@deepseek-ai/dsh-goal'
 import { createUserMessage, LlmAdapter, LlmError  } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { UserMessage } from '@deepseek-ai/dsh-session'
 import * as goalSession from '../src/index.ts'
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'test': { kind: 'test' } & ContextFormed
+  }
+}
 
 type ScriptEntry = StreamChunk[] | Error | 'hang' | ((options: GenerateOptions) => StreamChunk[])
 
@@ -295,12 +302,12 @@ describe('same-session goal driving', () => {
 
     const goal = await waitForGoal(test.ctx, test.agent, current => current?.phase === 'paused')
 
-    expect(goal).toMatchObject({ roundsStarted: 0, activation: 'disarmed' })
+    expect(goal).toMatchObject({ roundsStarted: 1, activation: 'disarmed' })
     expect(test.adapter.requests).toHaveLength(0)
-    // No admitted continuation round reached the model; goal state changes are
-    // represented by their own durable event.
+    // The round was admitted to the durable inbox before cancellation, so the
+    // counter advances at admission (not at model dispatch).
     expect(test.agent.session.snapshotEvents().some(event => event.type === 'user/message'
-      && event.data.source.kind === 'goal' && event.data.source.round > 0)).toBe(false)
+      && event.data.source.kind === 'goal' && event.data.source.round > 0)).toBe(true)
   })
 
   it('pauses an admitted round when cancellation aborts an active step', async () => {
@@ -481,7 +488,7 @@ describe('same-session goal driving', () => {
     const test = await harness([textResponse('side contexts'), textResponse('revised goal')])
     const claimedContext = createUserMessage({
       content: [{ type: 'text', text: 'claimed context to restore' }],
-      source: { kind: 'plugin', plugin: 'test' },
+      source: { kind: 'test' },
     })
     const roundZeroContext = createUserMessage({
       content: [{ type: 'text', text: 'obsolete goal context' }],
@@ -489,11 +496,11 @@ describe('same-session goal driving', () => {
     })
     const queuedStepContext = createUserMessage({
       content: [{ type: 'text', text: 'context already queued for the next step' }],
-      source: { kind: 'plugin', plugin: 'test' },
+      source: { kind: 'test' },
     })
     const queuedTurnContext = createUserMessage({
       content: [{ type: 'text', text: 'context already queued for the next turn' }],
-      source: { kind: 'plugin', plugin: 'test' },
+      source: { kind: 'test' },
     })
     let staged = false
     const stopInserted = onInboxMessage(test.ctx, test.agent, (message) => {
@@ -639,7 +646,7 @@ describe('same-session goal driving', () => {
     await test.agent.whenIdle()
     await new Promise((resolve) => { setImmediate(resolve) })
 
-    expect(goal?.roundsStarted).toBe(0)
+    expect(goal?.roundsStarted).toBe(1)
     expect(test.adapter.requests).toHaveLength(0)
     expect(test.ctx.goals.get(test.agent)).toMatchObject({ phase: 'paused' })
   })
@@ -659,7 +666,7 @@ describe('same-session goal driving', () => {
     test.ctx.goals.create(test.agent, { objective: 'survive a throwing hook', maxGoalRounds: 1 })
 
     const goal = await waitForGoal(test.ctx, test.agent, current => current?.activation === 'disarmed')
-    expect(goal).toMatchObject({ phase: 'active', roundsStarted: 0 })
+    expect(goal).toMatchObject({ phase: 'active', roundsStarted: 1 })
     expect(test.adapter.requests).toHaveLength(0)
     expect(test.agent.inbox.nextTurn).toHaveLength(0)
   })
@@ -894,7 +901,7 @@ describe('same-session goal driving', () => {
     const goal = await waitForGoal(test.ctx, test.agent, current => current?.phase === 'paused')
     await test.agent.whenIdle()
 
-    expect(goal?.roundsStarted).toBe(0)
+    expect(goal?.roundsStarted).toBe(1)
     expect(test.adapter.requests).toHaveLength(0)
   })
 
@@ -929,7 +936,7 @@ describe('same-session goal driving', () => {
     expect(test.ctx.goals.get(test.agent)).toMatchObject({
       phase: 'active',
       activation: 'disarmed',
-      roundsStarted: 0,
+      roundsStarted: 1,
     })
     expect(test.adapter.requests).toHaveLength(0)
   })
@@ -1072,7 +1079,7 @@ describe('same-session goal driving', () => {
 
     // Cancellation already cleared the reservation and paused the goal, so the
     // veto neither touches an absent attempt nor blocks the paused goal.
-    expect(goal).toMatchObject({ roundsStarted: 0, activation: 'disarmed' })
+    expect(goal).toMatchObject({ roundsStarted: 1, activation: 'disarmed' })
     expect(goal?.blockedReason).toBeUndefined()
     expect(test.adapter.requests).toHaveLength(0)
   })
@@ -1094,7 +1101,7 @@ describe('same-session goal driving', () => {
     release?.()
     await disposal
 
-    expect(test.ctx.goals.get(test.agent)).toMatchObject({ phase: 'active', roundsStarted: 0 })
+    expect(test.ctx.goals.get(test.agent)).toMatchObject({ phase: 'active', roundsStarted: 1 })
     expect(test.adapter.requests).toHaveLength(0)
     expect(test.agent.session.snapshotEvents().some(event => event.type === 'turn/start')).toBe(true)
   })

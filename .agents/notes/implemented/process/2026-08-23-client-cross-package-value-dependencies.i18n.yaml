@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-23-client-cross-package-value-dependencies.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-23-client-cross-package-value-dependencies.md
-2026-08-23-client-cross-package-value-dependencies.md: b4db6c75e245db37848d0389631441a585c82188
-2026-08-23-client-cross-package-value-dependencies.zh.md: 9894f743112157017c7d675eeac8adcb3aacff82
+/agent-note-classifying-client-cross-package-value-dependencies:
+  en: 750f1084eb06761f
+  zh: d8b9675984b1f3f2
+/agent-note-classifying-client-cross-package-value-dependencies/problem:
+  en: ee9cbaa267ee0ec3
+  zh: f23d36eb5369883f
+/agent-note-classifying-client-cross-package-value-dependencies/decision:
+  en: 394c517a0f00904b
+  zh: e27971ed8825175b
+/agent-note-classifying-client-cross-package-value-dependencies/alternatives-considered:
+  en: 3239f095f80e5d6c
+  zh: 2b7053ad3dedfdfb
+/agent-note-classifying-client-cross-package-value-dependencies/consequences:
+  en: 41d14cf34f7f47a0
+  zh: 0f500708c1962bbb

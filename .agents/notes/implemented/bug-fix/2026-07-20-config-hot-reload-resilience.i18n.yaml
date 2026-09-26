@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-20-config-hot-reload-resilience.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-07-20-config-hot-reload-resilience.md
-2026-07-20-config-hot-reload-resilience.md: 6f8503c93bcbf55b1bd0543cf49e41cfe32fbe2f
-2026-07-20-config-hot-reload-resilience.zh.md: 359a34a2252b2999f896245a4bd07f7da32d98f5
+/agent-note-a-config-hot-reload-must-not-kill-or-degrade-a-live-app:
+  en: 2f9db5195fa5512b
+  zh: 356a720b813469c8
+/agent-note-a-config-hot-reload-must-not-kill-or-degrade-a-live-app/problem:
+  en: a3c5f11b119f4284
+  zh: 4c2e40a499b0322b
+/agent-note-a-config-hot-reload-must-not-kill-or-degrade-a-live-app/decision:
+  en: d744a3ce0d0d20f3
+  zh: 677c7204764001e6
+/agent-note-a-config-hot-reload-must-not-kill-or-degrade-a-live-app/alternatives-considered:
+  en: 26f375fb3d9244de
+  zh: 2314c666b8b30dbf
+/agent-note-a-config-hot-reload-must-not-kill-or-degrade-a-live-app/consequences:
+  en: c7378ede149a1f67
+  zh: 979b5b8e41f77c2b
+/agent-note-a-config-hot-reload-must-not-kill-or-degrade-a-live-app/testing:
+  en: 9188f5c96aa52dc0
+  zh: 0aed02565dabf161

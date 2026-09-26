@@ -1,6 +1,40 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-code-runtime-python-call-backlog-and-binding-metadata-snapshot.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-29-code-runtime-python-call-backlog-and-binding-metadata-snapshot.md
-2026-08-29-code-runtime-python-call-backlog-and-binding-metadata-snapshot.md: afdad301a4853754184b75668d167e71420c2480
-2026-08-29-code-runtime-python-call-backlog-and-binding-metadata-snapshot.zh.md: 48d6e0748979b09053aa51a94788fdd95d997179
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend:
+  en: 86be8880beb347f8
+  zh: 81515f1e8f07ed09
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/problem:
+  en: 17def075f3200dab
+  zh: 4dfaaadd97244060
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision:
+  en: a15c7c13f167e5ac
+  zh: a15c7c13f167e5ac
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision/in-flight-binding-calls-are-capped-at-1024-checked-once-per-macrotask-after-the-microtasks-drain:
+  en: cb7bd6d622d73035
+  zh: cbc8cb8d103eace7
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision/binding-metadata-is-snapshotted-into-plain-values-before-validation-and-the-boot-frame:
+  en: dd9c74971f14745b
+  zh: bafd0d8de41df619
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision/the-reply-queue-compacts-its-consumed-prefix-mid-drain:
+  en: 5b4ea11bc5ed0063
+  zh: e40bc8545e113082
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision/the-completion-meter-walks-wide-values-with-one-cursor-per-nesting-level:
+  en: 0cb0cbce9364f4bc
+  zh: 41af6e35740af475
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision/the-frame-parse-cap-is-bounded-by-the-host-s-heap:
+  en: aab81cbde2c1ebe7
+  zh: 0c338ebd5014c921
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/decision/dict-keys-that-fold-to-one-json-member-are-rejected-as-non-lossless:
+  en: bf27dc4846af8cb9
+  zh: 26477211c2780673
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/testing:
+  en: c0b61c7fdad345e5
+  zh: eeb60b37f81b7403
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/alternatives-considered:
+  en: 77dd1680c90afd62
+  zh: 0bec640ccdb5f280
+/agent-note-bound-in-flight-binding-calls-snapshot-binding-metadata-compact-the-reply-queue-and-meter-wide-completions-with-cursors-in-the-cpython-backend/consequences:
+  en: 7e26eea43ee11a23
+  zh: 50e5925134ae1039

@@ -13,6 +13,14 @@
           "description": {
             "type": "string",
             "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
+          },
+          "session": {
+            "type": "string",
+            "description": "Optional persistent-kernel session id: runs sharing a session id keep kernel state (assignments, imports, top-level await results) across calls when the mounted backend supports persistence; one-shot backends ignore it entirely."
+          },
+          "reset": {
+            "type": "boolean",
+            "description": "Discard the session's prior kernel state (variables, imports) before this run. Costs one reset instead of many retries; requires `session` to be meaningful."
           }
         },
         "required": [

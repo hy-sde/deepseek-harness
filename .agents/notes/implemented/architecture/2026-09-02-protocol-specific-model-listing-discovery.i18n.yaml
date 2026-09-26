@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-02-protocol-specific-model-listing-discovery.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-02-protocol-specific-model-listing-discovery.md
-2026-09-02-protocol-specific-model-listing-discovery.md: 69e684c284ff57da7ed61fd5dc417fd110d3e5b7
-2026-09-02-protocol-specific-model-listing-discovery.zh.md: 682806fb72c2cc24572e6e351d4d388cead84dc0
+/agent-note-reading-protocol-specific-model-listings:
+  en: 92caaf13e16b2125
+  zh: 330e16c6b894f40c
+/agent-note-reading-protocol-specific-model-listings/problem:
+  en: 8196913adf42e643
+  zh: 5413842be817a9e9
+/agent-note-reading-protocol-specific-model-listings/decision:
+  en: 02ccf08c76f2a12d
+  zh: d7afc79916a2a436
+/agent-note-reading-protocol-specific-model-listings/alternatives-considered:
+  en: f206f981ad65dfa0
+  zh: 0aa5c60c5b5594e8
+/agent-note-reading-protocol-specific-model-listings/consequences:
+  en: de21c4b982059a82
+  zh: 22036603ede24280
+/agent-note-reading-protocol-specific-model-listings/testing:
+  en: 2136408bcd31f4fa
+  zh: b3d90541611b6bf2

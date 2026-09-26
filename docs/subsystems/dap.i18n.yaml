@@ -1,6 +1,10 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for dap.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/dap.md
-dap.md: 266d6185ee0c66894003b7dc535dbe1ab7b7f90e
-dap.zh.md: b49b3a8c551e5806fcc00cae17f56ff26819e9ae
+/dap-debugging:
+  en: 170e0b541112758f
+  zh: a794a273a58a331e
+/dap-debugging/coordinates:
+  en: 713fa53ee9ea282f
+  zh: e28379bfd3ce8d4b

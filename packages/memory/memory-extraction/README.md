@@ -41,7 +41,7 @@ The row belongs in the **host composition** — it injects host services (`memor
 
 Its storage backend must expose a `kv` facet (the shipped `sqlite` backend does; `storage-json` does not) — see the [example patch](../../../apps/cli/config/examples/memory-extraction/cordis.yml). The engine itself is pure and testable without cordis:
 
-```ts
+```ts ignore-check
 import { MemoryExtractionEngine } from '@deepseek-ai/dsh-memory-extraction'
 
 const engine = new MemoryExtractionEngine(ports) // readGate/readEvents/read+write cursor+receipt+failure/commitItems/generate
@@ -69,6 +69,10 @@ The plugin boots asynchronously: an effect opens the control unit via `storage.b
 - `src/events.ts` — the lossy DSH event projection (user/assistant text only, turn tracking for localization grouping).
 - `src/memory-adapter.ts` — the commit surface over `ctx.memory`: a dedupe probe, then `save` with `source: 'memory_extract'`, plus the gate factory.
 - `src/runtime.ts` — host wiring: per-session sequential queue, generate adapter (`BlockAssembler`, `AbortSignal.timeout`, routed provider/model override), sync/async port implementations over live services.
+
+## Runtime invariants
+
+No runtime invariant companion is published: extraction is a best-effort LLM pipeline whose outputs are advisory source traces, not a durable schema surface a companion could observe.
 
 ## Further Exploration
 

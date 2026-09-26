@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-preview-cloudflare-pages-deploy.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-20-preview-cloudflare-pages-deploy.md
-2026-08-20-preview-cloudflare-pages-deploy.md: 38b2834d612153d235d3b0aaffead3bd2b33eec7
-2026-08-20-preview-cloudflare-pages-deploy.zh.md: 3ebb8eba95666729ee1021ffe2c958dad40aed1c
+/agent-note-per-pr-preview-deployments-on-cloudflare-pages:
+  en: 35bceace11f08ecf
+  zh: f84ccac534d75751
+/agent-note-per-pr-preview-deployments-on-cloudflare-pages/problem:
+  en: 2078855108bc3aab
+  zh: d55c7e63e8476026
+/agent-note-per-pr-preview-deployments-on-cloudflare-pages/decision:
+  en: f88865b9d9b2c5fe
+  zh: 5087592c8417241b
+/agent-note-per-pr-preview-deployments-on-cloudflare-pages/alternatives-considered:
+  en: 69eff8c05b97f669
+  zh: 2e26c62564fbbd0f
+/agent-note-per-pr-preview-deployments-on-cloudflare-pages/consequences:
+  en: 37b20b2942d99c4f
+  zh: 4f0f3987856ba079

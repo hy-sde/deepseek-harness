@@ -1,6 +1,94 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/subagent/tool-subagent-report/README.md
-README.md: b4527bb1fe2ef85fa22314b16b36a601cbc3981e
-README.zh.md: 0287bd79f65872ff6e253969ac22a3bba21041c0
+/:
+  en: 5146b1a957b90b2d
+  zh: c9fb9b965e49c047
+/deepseek-ai-dsh-tool-subagent-report:
+  en: 152d31c64298fc15
+  zh: aa3de3fbf77d00ab
+/deepseek-ai-dsh-tool-subagent-report/summary:
+  en: cc2be85c69cc5379
+  zh: 887ef992c3ca9be9
+/deepseek-ai-dsh-tool-subagent-report/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-tool-subagent-report/use-this-package:
+  en: 3587103aa3cd43d2
+  zh: 15acbf9a9f2dda6b
+/deepseek-ai-dsh-tool-subagent-report/use-this-package/minimal-configuration:
+  en: f1c4a779c137ccbb
+  zh: a7b1957aec65dc45
+/deepseek-ai-dsh-tool-subagent-report/use-this-package/what-the-child-gets:
+  en: 94468ad5160aa0a8
+  zh: c0732c0ba32b18fa
+/deepseek-ai-dsh-tool-subagent-report/use-this-package/what-the-parent-sees:
+  en: 1caccb0a9d563e05
+  zh: 71a824325df4cce8
+/deepseek-ai-dsh-tool-subagent-report/use-this-package/scope-and-direction:
+  en: b8342b349ee8d1b8
+  zh: 8c746f3ff6a8f1c1
+/deepseek-ai-dsh-tool-subagent-report/understand-the-implementation:
+  en: b338fba1a440fe4f
+  zh: dde99284ecc85532
+/deepseek-ai-dsh-tool-subagent-report/understand-the-implementation/design-concept:
+  en: 23ff7ae4b4c931f2
+  zh: ebf7017c86f64026
+/deepseek-ai-dsh-tool-subagent-report/understand-the-implementation/delivery-scheduling:
+  en: 79e6347ea5a0897f
+  zh: 097839779b4769bb
+/deepseek-ai-dsh-tool-subagent-report/understand-the-implementation/exported-contribution:
+  en: a7036008c6c6307e
+  zh: eca1b4faa3c11297
+/deepseek-ai-dsh-tool-subagent-report/understand-the-implementation/source-map:
+  en: 4f03dba177612cd3
+  zh: 4102f786a17e8ee6
+/deepseek-ai-dsh-tool-subagent-report/further-exploration:
+  en: 7080e9dd12c9e277
+  zh: 01cf4b819fff60b0
+/deepseek-ai-dsh-tool-subagent-report/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-subagent-report/model-experience/tool-schema:
+  en: e4c7376d4f29dbd5
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-tool-subagent-report/model-experience/tool-schema/what-the-model-sees:
+  en: c62f87f13da28d15
+  zh: 7760a9a0867ae93f
+/deepseek-ai-dsh-tool-subagent-report/model-experience/tool-schema/token-effect:
+  en: 3a17a0282b6c6b3c
+  zh: e2b10c36a3d68f1f
+/deepseek-ai-dsh-tool-subagent-report/model-experience/tool-schema/kv-cache-effect:
+  en: 85decd3b44c81a76
+  zh: c4cee21e569ad6ef
+/deepseek-ai-dsh-tool-subagent-report/model-experience/report-result:
+  en: f04f0b69613fd947
+  zh: 8d188266fc4de8c3
+/deepseek-ai-dsh-tool-subagent-report/model-experience/report-result/what-the-model-sees:
+  en: d47c674ef20b445f
+  zh: 8c4cd8f0829b1bfa
+/deepseek-ai-dsh-tool-subagent-report/model-experience/report-result/token-effect:
+  en: 1c96a700f2a2e225
+  zh: a22cf4d1bbc7b402
+/deepseek-ai-dsh-tool-subagent-report/model-experience/report-result/kv-cache-effect:
+  en: 16b23ad02247b90e
+  zh: 8abed0aef52c711f
+/deepseek-ai-dsh-tool-subagent-report/model-experience/parent-visible-report:
+  en: 44714eb55e7c0f82
+  zh: c716ed9cf47085f1
+/deepseek-ai-dsh-tool-subagent-report/model-experience/parent-visible-report/what-the-model-sees:
+  en: c1738fe978d815e0
+  zh: c2b7e6e207f2cba7
+/deepseek-ai-dsh-tool-subagent-report/model-experience/parent-visible-report/token-effect:
+  en: 17146f434b0c16dc
+  zh: 965de34e5fc31221
+/deepseek-ai-dsh-tool-subagent-report/model-experience/parent-visible-report/kv-cache-effect:
+  en: 0265416b8710077e
+  zh: 57ba5d33e695586d
+/deepseek-ai-dsh-tool-subagent-report/known-limitations-and-deferred-work:
+  en: 67351a312c4cbba1
+  zh: bca0e497ae3ebd7b
+/deepseek-ai-dsh-tool-subagent-report/known-limitations-and-deferred-work/dev-note:
+  en: 21db3627dd67e6f0
+  zh: 3bb0c20c93f16f98

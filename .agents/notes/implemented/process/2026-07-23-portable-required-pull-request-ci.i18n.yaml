@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-23-portable-required-pull-request-ci.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-07-23-portable-required-pull-request-ci.md
-2026-07-23-portable-required-pull-request-ci.md: 00a58136b8e6d5a2f282bede9876d2f96e6ddf52
-2026-07-23-portable-required-pull-request-ci.zh.md: e367408850efe97457f4921150d39a1cfe34aed3
+/agent-note-portable-pull-request-ci-recovery-boundary:
+  en: d847bf6b9b2f7c1d
+  zh: 80be4693452e8b04
+/agent-note-portable-pull-request-ci-recovery-boundary/problem:
+  en: ea6362d091ec4d49
+  zh: ac4f6667a3c75f68
+/agent-note-portable-pull-request-ci-recovery-boundary/decision:
+  en: 26d58a3b2e37b2c7
+  zh: 51e2223fb25842ad
+/agent-note-portable-pull-request-ci-recovery-boundary/alternatives-considered:
+  en: 4250b5303e1c3ebb
+  zh: d607db922aa413b6
+/agent-note-portable-pull-request-ci-recovery-boundary/consequences:
+  en: ccb22e2a0e6ea7a2
+  zh: 3576b9875c18f2af

@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-23-webworker-vfs-watch-and-landlock.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-23-webworker-vfs-watch-and-landlock.md
-2026-08-23-webworker-vfs-watch-and-landlock.md: 2705c63aa6bf0f2e2de33d00029a4f41e1b1d4af
-2026-08-23-webworker-vfs-watch-and-landlock.zh.md: 4470720e1ff968aa06578b231b054c9053f27283
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement:
+  en: f8f40db344f24284
+  zh: 8e6963c4d08dbee2
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/problem:
+  en: 25bb00742b688ace
+  zh: 0b345c8899af07a4
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/decision:
+  en: a15c7c13f167e5ac
+  zh: a15c7c13f167e5ac
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/decision/vfs-mutation-source-and-filesystem-watchers:
+  en: 6e5b0afda16709ff
+  zh: 8ef12584e4b6229d
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/decision/streams-and-unchanged-npm-packages:
+  en: e7646ae00d0a5a80
+  zh: 7e1a0421f68bdf0d
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/decision/landlock-cli-over-per-process-vfs-grants:
+  en: 2fa8358f1c1a5a63
+  zh: 52c541450c19310c
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/decision/explicitly-deferred-behavior:
+  en: 4ba926acd2b23ed6
+  zh: f65a4bac5021e22d
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/alternatives-considered:
+  en: 8ee88bac59f9b09b
+  zh: 26a12b33823d2081
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/verification:
+  en: 74b34998aeea179a
+  zh: c8815a3074419700
+/agent-note-web-worker-vfs-watching-and-cli-compatible-confinement/consequences:
+  en: 1d51b65ea4007fbd
+  zh: a10e5643425db350

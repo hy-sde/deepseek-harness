@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-web-index-injection-table.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-19-web-index-injection-table.md
-2026-08-19-web-index-injection-table.md: 050690946a73ce453946f6d1152c9e86e1ba3aaf
-2026-08-19-web-index-injection-table.zh.md: 27d1cbce1dc39ebe22e0b79e52f9ce935279ee69
+/agent-note-structured-index-injection-table-webserver-index-inject:
+  en: 283b98b692aa1c2a
+  zh: aa721f2950110704
+/agent-note-structured-index-injection-table-webserver-index-inject/problem:
+  en: 0d0e63c99511d010
+  zh: 65947d3f1e2cde7c
+/agent-note-structured-index-injection-table-webserver-index-inject/decision:
+  en: 5dcf576dfeb3cb60
+  zh: 08b54c871ac9fec3
+/agent-note-structured-index-injection-table-webserver-index-inject/consequences:
+  en: 6405996f5394c6f3
+  zh: 17dd77e5eaedc2d1
+/agent-note-structured-index-injection-table-webserver-index-inject/alternatives-considered:
+  en: c4d6af15aada9cf1
+  zh: 0e70a990136dff84

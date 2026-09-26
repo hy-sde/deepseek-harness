@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-28-remove-hero-input-glow.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-28-remove-hero-input-glow.md
-2026-08-28-remove-hero-input-glow.md: 929fce91d38ed5436421e91666e91328389a1302
-2026-08-28-remove-hero-input-glow.zh.md: e8a32c8dc60feae344be587e4bcc4b8a4f8a2d87
+/agent-note-the-hero-input-glow-is-removed:
+  en: 4b2ef8f63ce58564
+  zh: 4d2393d611c47ef8
+/agent-note-the-hero-input-glow-is-removed/problem:
+  en: d16cd013a962d2dc
+  zh: dee5f3c83cc57e2d
+/agent-note-the-hero-input-glow-is-removed/decision:
+  en: 1ba16fb01a1e1a3e
+  zh: 8576f02a4c6b9131
+/agent-note-the-hero-input-glow-is-removed/alternatives-considered:
+  en: a28f3673d82b60c3
+  zh: 25068faf4f055cff
+/agent-note-the-hero-input-glow-is-removed/consequences:
+  en: d762cff907fb9769
+  zh: edfe82463c6948cb

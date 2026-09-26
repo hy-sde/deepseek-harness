@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write native/landlock-run/README.md
-README.md: bf9b163d42a9b7402dbf4c045d47e7b8d36e15ab
-README.zh.md: 7bd4765a73f0d5df2a4710ce06ff319f6c902db6
+/deepseek-ai-node-addon-landlock-run:
+  en: b45e0712bd40c45d
+  zh: 07bb7fd6aaa3de91
+/deepseek-ai-node-addon-landlock-run/install:
+  en: d5bd0a1e6d4e77ce
+  zh: dcf0ae15f9a3eea4
+/deepseek-ai-node-addon-landlock-run/usage:
+  en: 215e4dc2e94e0a25
+  zh: 88c1782b3468677e
+/deepseek-ai-node-addon-landlock-run/support:
+  en: 789de633eac90800
+  zh: 77854c07da59dc7d
+/deepseek-ai-node-addon-landlock-run/development:
+  en: 2a4b75ec07f1af6c
+  zh: 5ae2d894621e0617

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-12-web-image-intake-and-limits-alignment.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-12-web-image-intake-and-limits-alignment.md
-2026-08-12-web-image-intake-and-limits-alignment.md: 0bb8cadc8db4b4c28cf311bc9420c32744e173fb
-2026-08-12-web-image-intake-and-limits-alignment.zh.md: fafa7652756554a54a0a0952e843bf5f4b81b00d
+/agent-note-whole-page-image-drop-projected-intake-limits-and-thumbnail-tiling:
+  en: b3660ba0794647c0
+  zh: ad0c2cacda430a32
+/agent-note-whole-page-image-drop-projected-intake-limits-and-thumbnail-tiling/problem:
+  en: ea51ef78bec6a308
+  zh: a498a1b2d247f64a
+/agent-note-whole-page-image-drop-projected-intake-limits-and-thumbnail-tiling/decision:
+  en: a32dadef03381c72
+  zh: 02b5db488021ed4c
+/agent-note-whole-page-image-drop-projected-intake-limits-and-thumbnail-tiling/alternatives-considered:
+  en: 8cc7479afb15b82a
+  zh: 541db6ef68938287
+/agent-note-whole-page-image-drop-projected-intake-limits-and-thumbnail-tiling/consequences:
+  en: 3bf2c6fa65d81e2d
+  zh: 1d0646f0419fc1ad

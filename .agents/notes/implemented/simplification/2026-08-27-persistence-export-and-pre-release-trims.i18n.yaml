@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-persistence-export-and-pre-release-trims.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-27-persistence-export-and-pre-release-trims.md
-2026-08-27-persistence-export-and-pre-release-trims.md: ed01023023e9d7817b08e275492b7ec244b893a5
-2026-08-27-persistence-export-and-pre-release-trims.zh.md: 1e31a5836c2761c3d6fb5dbb68b30e8691c1fc69
+/agent-note-persistence-export-and-pre-release-read-path-trims:
+  en: 4da50de5904fe0e8
+  zh: c1a4b0a63146c6d4
+/agent-note-persistence-export-and-pre-release-read-path-trims/problem:
+  en: cda5b191af67c561
+  zh: f4cdd5fa52a38b33
+/agent-note-persistence-export-and-pre-release-read-path-trims/decision:
+  en: a5f326a84c7651c7
+  zh: 6d3de5962af8d1d3
+/agent-note-persistence-export-and-pre-release-read-path-trims/consolidated-record-of-the-deleted-same-version-imports:
+  en: 4d6e8c3fe9f44774
+  zh: 6bcd8a13ab5b2c78
+/agent-note-persistence-export-and-pre-release-read-path-trims/alternatives-considered:
+  en: 5471d9fbe82641b7
+  zh: 54556318abe0d3ff
+/agent-note-persistence-export-and-pre-release-read-path-trims/consequences:
+  en: ebfca731972c35e4
+  zh: a7adce3cb8a20826
+/agent-note-persistence-export-and-pre-release-read-path-trims/related:
+  en: 4d0a752cfaf0f8ab
+  zh: 3b130433c05dd5fc

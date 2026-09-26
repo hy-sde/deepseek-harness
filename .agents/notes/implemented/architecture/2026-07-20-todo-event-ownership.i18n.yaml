@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-20-todo-event-ownership.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-20-todo-event-ownership.md
-2026-07-20-todo-event-ownership.md: f3f7f872b24d8f20b6b9acb57710fae388c8b9d8
-2026-07-20-todo-event-ownership.zh.md: a05622dc39163c4f5b30a93190d9d56bb02cf29a
+/agent-note-todo-event-types-belong-to-their-producer:
+  en: 70be67e5f3d785be
+  zh: c88df8fbe8709a6e
+/agent-note-todo-event-types-belong-to-their-producer/problem:
+  en: ae9d12e1155854d4
+  zh: 89635962691424a3
+/agent-note-todo-event-types-belong-to-their-producer/decision:
+  en: 5bb7246476c75869
+  zh: c68f0417a1a06798
+/agent-note-todo-event-types-belong-to-their-producer/verification:
+  en: 6933cf98a02efe9c
+  zh: 8a16f68148c319b6
+/agent-note-todo-event-types-belong-to-their-producer/alternatives-considered:
+  en: 310753357213fa87
+  zh: a9420922ee204372
+/agent-note-todo-event-types-belong-to-their-producer/consequences:
+  en: 0cf1fb42ce581e94
+  zh: f449491405ff0a6c

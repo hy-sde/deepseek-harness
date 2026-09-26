@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-process-table-snapshots.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-27-process-table-snapshots.md
-2026-08-27-process-table-snapshots.md: 27c364607ca1e03a926c309f26007477a8785636
-2026-08-27-process-table-snapshots.zh.md: 9c5fe65bb83a0d04fe5639b3ffefcf377c3588ef
+/agent-note-process-table-snapshots-replace-per-question-inspector-reads:
+  en: 4fd39ab85ca29ec4
+  zh: a86676aae01bf265
+/agent-note-process-table-snapshots-replace-per-question-inspector-reads/problem:
+  en: eb0b0d85a00a4303
+  zh: fffd74111a3dbb4d
+/agent-note-process-table-snapshots-replace-per-question-inspector-reads/decision:
+  en: 344c63a0531928ee
+  zh: 09535510ce328242
+/agent-note-process-table-snapshots-replace-per-question-inspector-reads/testing:
+  en: 05ecece6c170715e
+  zh: 611e83eb2aefa623
+/agent-note-process-table-snapshots-replace-per-question-inspector-reads/alternatives-considered:
+  en: a17ef0d83f35abeb
+  zh: 09a0fc1d41f78963
+/agent-note-process-table-snapshots-replace-per-question-inspector-reads/consequences:
+  en: 6b4d923d9ffd8851
+  zh: b3ced4270d9714d9

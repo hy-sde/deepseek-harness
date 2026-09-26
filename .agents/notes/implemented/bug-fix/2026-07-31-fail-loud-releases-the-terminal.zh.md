@@ -29,6 +29,7 @@ Loader 并发挂载各个条目，因此条目失败的顺序并不等于启动�
 - 使用闩锁（latch）而非卸载监听器，来保证被报告的始终是第一个 rejection。若在拆卸期间移除监听器，第二个并发 rejection 就会变成未捕获错误，Node 会在拆卸中途杀死进程——恰好残留下本次要恢复的终端状态。后续 rejection（包括 release 自身的）都会落入已挂起的退出流程。
 - release 以 `FAIL_LOUD_RELEASE_TIMEOUT_MS`（2 秒）为上限，且其 rejection 被吞掉。卡住或失败的 disposer 只会延迟致命退出，绝不会取消它。该定时器保持 **referenced**：一旦 `unref()`，Node 就会在事件循环清空后、恰恰在报告这次失败时以 0 退出，因为 `unhandledRejection` 监听器抑制了默认的致命退出。
 - 不传 `release` 时行为与此前完全一致，因此 ACP（Agent Client Protocol）、JSON-RPC 和各 demo bin 均无变化。
+- 自[致命诊断与崩溃报告](../architecture/2026-09-22-fatal-diagnostics-and-crash-reports.zh.md)决定起，同一 handler、闩锁与 release 也对 `uncaughtException` 生效，诊断同时改为 `util.inspect`。
 
 `dsh` 的 TUI 启动器传入的 release 会释放根上下文，从而执行 TUI 已有的 `shutdown()` 并把终端交还。
 
@@ -54,6 +55,6 @@ Loader 并发挂载各个条目，因此条目失败的顺序并不等于启动�
 
 `packages/boot/app-boot/tests/app-boot.spec.ts` 覆盖 release 约定：退出提交前会等待该钩子；钩子 rejection 时仍退出 1；永不结算的钩子会在 `FAIL_LOUD_RELEASE_TIMEOUT_MS` 后退出；以及一连串 rejection 只报告第一个，同时 release 仍能跑完。
 
-这些基于假进程的测试无法观测到最关键的两种失败形态——真实事件循环下的进程退出码，以及退出之后的终端状态——因此回归用例放在 `apps/cli/tests/tui-keyless-smoke.e2e.ts`。它在真实 PTY 中以 `fixtures/tui-invalid-provider.cordis.yml`（`providers` 为列表形状，正是用户真实会犯的错误）启动出厂配置树，期望退出码为 1，并断言捕获到的字节流同时包含带标签的启动 rejection（`dsh: plugin tree failed to load:`）与 `ESC[?2004l`。同一用例端到端钉住了启动路径：正是它发现了以 13 静默退出、终端状态未被恢复的 [HMR（热模块替换）初始扫描启动死锁](../../archived/bug-fix/2026-08-03-hmr-initial-scan-boot-deadlock.md)。
+这些基于假进程的测试无法观测到最关键的两种失败形态——真实事件循环下的进程退出码，以及退出之后的终端状态——因此回归用例放在 `apps/cli/tests/built-bin.e2e.ts`。它在真实 PTY 中以 `fixtures/tui-invalid-provider.cordis.yml`（`providers` 为列表形状，正是用户真实会犯的错误）启动出厂配置树，期望退出码为 1，并断言捕获到的字节流同时包含带标签的启动 rejection（`dsh: plugin tree failed to load:`）与 `ESC[?2004l`。同一用例端到端钉住了启动路径：正是它发现了以 13 静默退出、终端状态未被恢复的 [HMR（热模块替换）初始扫描启动死锁](../../archived/bug-fix/2026-08-03-hmr-initial-scan-boot-deadlock.md)。
 
 `/exit` 路径保留其原有断言，确认正常退出时同样会出现该重置序列。

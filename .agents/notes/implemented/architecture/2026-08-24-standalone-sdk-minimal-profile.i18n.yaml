@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-standalone-sdk-minimal-profile.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-24-standalone-sdk-minimal-profile.md
-2026-08-24-standalone-sdk-minimal-profile.md: e88f3ffa0b03f2a631f3011281c689ee1c620cde
-2026-08-24-standalone-sdk-minimal-profile.zh.md: 50f392c80267c9c7ff30a124a1bc0833d3272831
+/agent-note-standalone-sdk-minimal-profile-under-dsh:
+  en: 9bb0c9da54cf7c2a
+  zh: 9c7538323ab52ab9
+/agent-note-standalone-sdk-minimal-profile-under-dsh/problem:
+  en: ef62c9c77817e8fb
+  zh: 3630d6450f2e147f
+/agent-note-standalone-sdk-minimal-profile-under-dsh/decision:
+  en: a15c7c13f167e5ac
+  zh: 63bcc2ef60c2f344
+/agent-note-standalone-sdk-minimal-profile-under-dsh/decision/launch-and-ownership:
+  en: b9554738aa88ee32
+  zh: 47ecc7313eba5936
+/agent-note-standalone-sdk-minimal-profile-under-dsh/decision/explicit-composition:
+  en: bd52096cf4a94ba1
+  zh: 0de060447d732cd7
+/agent-note-standalone-sdk-minimal-profile-under-dsh/decision/customization-and-web:
+  en: c53bbd4ebd737de4
+  zh: 0278f5d94f62024e
+/agent-note-standalone-sdk-minimal-profile-under-dsh/existing-decisions-and-supersession:
+  en: cc184562e0077c42
+  zh: a56ba63517291fff
+/agent-note-standalone-sdk-minimal-profile-under-dsh/verification:
+  en: 951c4bf75d09a20f
+  zh: 569500a9f4d28a17
+/agent-note-standalone-sdk-minimal-profile-under-dsh/alternatives-considered:
+  en: c30f820249515a78
+  zh: 9820c37ef0d4b2fb
+/agent-note-standalone-sdk-minimal-profile-under-dsh/consequences:
+  en: 0681c4c7eed700ca
+  zh: 6759553fe17daaa7

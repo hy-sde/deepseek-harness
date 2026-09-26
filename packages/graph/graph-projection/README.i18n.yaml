@@ -1,6 +1,67 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/graph/graph-projection/README.md
-README.md: 64ba35fc02f965d71f4ee81373d867b637c89d08
-README.zh.md: 0a6b901bb0f7154bb45fc8f799b04b4414274430
+/:
+  en: b34a8ee99e3276a7
+  zh: aaa25af2270a149e
+/deepseek-ai-dsh-graph-projection:
+  en: 4a65fcdb1f9545c5
+  zh: 583542198ae8b490
+/deepseek-ai-dsh-graph-projection/summary:
+  en: 4ca3f360ea611aa1
+  zh: b165ae3247c2e08c
+/deepseek-ai-dsh-graph-projection/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-graph-projection/use-this-package:
+  en: 8ea51a7dbd8d678d
+  zh: e89d4cbad36a7121
+/deepseek-ai-dsh-graph-projection/use-this-package/composition:
+  en: 1ff253c3946b4ebe
+  zh: 103f66630a01e5f8
+/deepseek-ai-dsh-graph-projection/use-this-package/what-the-value-means:
+  en: f5c58e43803a23a3
+  zh: 2d915bac83753f38
+/deepseek-ai-dsh-graph-projection/use-this-package/graph-chip:
+  en: 4937f0936fe4fd70
+  zh: d9b70ed00e541808
+/deepseek-ai-dsh-graph-projection/use-this-package/failures-and-recovery:
+  en: 0e5ea6c5b1955a0b
+  zh: 87898c708581812c
+/deepseek-ai-dsh-graph-projection/understand-the-implementation:
+  en: 3acb55c1d2560521
+  zh: f85e6f514a39cf99
+/deepseek-ai-dsh-graph-projection/understand-the-implementation/design-concept:
+  en: dd0d4da0f5394579
+  zh: 0cdceb447517cb8a
+/deepseek-ai-dsh-graph-projection/understand-the-implementation/source-map:
+  en: 1fcd8110d6a9e0c3
+  zh: ae65e676d8f8df29
+/deepseek-ai-dsh-graph-projection/understand-the-implementation/fold-rules:
+  en: cd55abe801a72806
+  zh: 7a122133c5098399
+/deepseek-ai-dsh-graph-projection/further-exploration:
+  en: 8fb5e45b28e8d12d
+  zh: 24aeadabda422268
+/deepseek-ai-dsh-graph-projection/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-graph-projection/model-experience/client-facing-graph-snapshots:
+  en: c86409ee43d6cd68
+  zh: 5388941508df8e91
+/deepseek-ai-dsh-graph-projection/model-experience/client-facing-graph-snapshots/what-the-model-sees:
+  en: 1a087f23e75a0e0d
+  zh: b79a8aa20abf8773
+/deepseek-ai-dsh-graph-projection/model-experience/client-facing-graph-snapshots/token-effect:
+  en: 2a979891ab9590f3
+  zh: 36a646fbebcb0c3e
+/deepseek-ai-dsh-graph-projection/model-experience/client-facing-graph-snapshots/kv-cache-effect:
+  en: 894ab893b7806ab3
+  zh: d68a0748bcd49d19
+/deepseek-ai-dsh-graph-projection/known-limitations-and-deferred-work:
+  en: ffee552aa52b9fc2
+  zh: 2bd7615b74ae16a4
+/deepseek-ai-dsh-graph-projection/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

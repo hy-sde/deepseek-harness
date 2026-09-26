@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-question-drafts-survive-session-switch.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-26-question-drafts-survive-session-switch.md
-2026-08-26-question-drafts-survive-session-switch.md: 2279c4efd5e79c51a0e2e2347f21fae4b0a47b7a
-2026-08-26-question-drafts-survive-session-switch.zh.md: af275a704bef723cb3ed6fde83138a2be5b5cb3f
+/agent-note-question-drafts-survive-session-switches:
+  en: b334d02dfa1dd236
+  zh: 220da36ec67d795f
+/agent-note-question-drafts-survive-session-switches/problem:
+  en: edfccd4396cad39b
+  zh: ff6d58416862e144
+/agent-note-question-drafts-survive-session-switches/decision:
+  en: ca05fcfd86c957a9
+  zh: 5c739c04176b20cf
+/agent-note-question-drafts-survive-session-switches/testing:
+  en: e81479328a478d7b
+  zh: 3b81b3cbf868166f
+/agent-note-question-drafts-survive-session-switches/alternatives-considered:
+  en: 7b8547171b0f5d15
+  zh: 912bb0fe8e94b7da
+/agent-note-question-drafts-survive-session-switches/consequences:
+  en: e80e17bca3585f42
+  zh: 41205489349c833d

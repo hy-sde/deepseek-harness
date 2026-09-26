@@ -1,6 +1,67 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/code-runtime/code-runtime-kernels/README.md
-README.md: 7c1b77605da26947784f29b21148c8479da45e0b
-README.zh.md: f608c573c9519f7c21501206c463c5a7403760d8
+/:
+  en: c0c963fb0b38890b
+  zh: f0de0cbe1cc5e153
+/deepseek-ai-dsh-code-runtime-kernels:
+  en: 49d399981fbce352
+  zh: fa89ac9cff6b9bc6
+/deepseek-ai-dsh-code-runtime-kernels/summary:
+  en: 7dfa667adb722f56
+  zh: 393f6695de3ddaed
+/deepseek-ai-dsh-code-runtime-kernels/table-of-contents:
+  en: 3a98a36db67111ef
+  zh: aeffafcd79b65d7f
+/deepseek-ai-dsh-code-runtime-kernels/mounting:
+  en: aabd3b9919518575
+  zh: b7ef7ca9ec119a9d
+/deepseek-ai-dsh-code-runtime-kernels/config:
+  en: c938ac8643049d1c
+  zh: c187352e9384c429
+/deepseek-ai-dsh-code-runtime-kernels/tool-surface:
+  en: f89c2dc526c6dc90
+  zh: ec2330650649bf80
+/deepseek-ai-dsh-code-runtime-kernels/semantics:
+  en: 33bd5712ea5fd54b
+  zh: 82b7d799f6869c24
+/deepseek-ai-dsh-code-runtime-kernels/development:
+  en: 507dfe60d869e084
+  zh: d80bbe6a7555fc87
+/deepseek-ai-dsh-code-runtime-kernels/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/system-prompt:
+  en: cf78b9dd5596495f
+  zh: 24ba47a0c5e02586
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/system-prompt/what-the-model-sees:
+  en: dbf778c1ce102f0f
+  zh: b42f33fcf5e3cb23
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/system-prompt/what-the-model-sees/run-kernel-code-guidance:
+  en: 34cf72b0600168bc
+  zh: 611f1f87474620d7
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/system-prompt/token-effect:
+  en: 5d738d577162b575
+  zh: 105a06f25ddd6a89
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/system-prompt/kv-cache-effect:
+  en: 06924f4bd0fe36e8
+  zh: 26798f1fab8d8666
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/tool-schemas:
+  en: 3039bc5e7a796b21
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/tool-schemas/what-the-model-sees:
+  en: fe91dfa47d89e575
+  zh: d6759093b766c25a
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/tool-schemas/token-effect:
+  en: 0003e7408a255806
+  zh: fed917629b696092
+/deepseek-ai-dsh-code-runtime-kernels/model-experience/tool-schemas/kv-cache-effect:
+  en: be3d1e39a5491de8
+  zh: 861b12f98265ec86
+/deepseek-ai-dsh-code-runtime-kernels/known-limitations-and-deferred-work:
+  en: a1e706a163ac49c1
+  zh: 14e556bae4e1307a
+/deepseek-ai-dsh-code-runtime-kernels/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/fs/fs-archive/README.md
-README.md: c6a8715a1865c98ff8be5e590b0834fa1a3b958f
-README.zh.md: a92899ac3f1e4b446e5c8a457910e3c1cabb9dd8
+/:
+  en: f7d1936a8011f3e9
+  zh: 43be61d89fb21259
+/deepseek-ai-dsh-fs-archive:
+  en: b6ac6a58b6d7da84
+  zh: 2c9bb3585672b603
+/deepseek-ai-dsh-fs-archive/summary:
+  en: 9ee4bb9c90009138
+  zh: e536622d9118df48
+/deepseek-ai-dsh-fs-archive/table-of-contents:
+  en: e5ef1d5501148444
+  zh: dbe8a98d25dd8bf3
+/deepseek-ai-dsh-fs-archive/port-differences:
+  en: 1170ddfdc131f76e
+  zh: 58274e5c8c1eb087
+/deepseek-ai-dsh-fs-archive/known-limitations-and-deferred-work:
+  en: b141a0d3169c4a79
+  zh: 04d4a957a35a67b4
+/deepseek-ai-dsh-fs-archive/license:
+  en: 6a7c1fcaff2b071e
+  zh: 7aadcabe00d0f01c
+/deepseek-ai-dsh-fs-archive/license/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

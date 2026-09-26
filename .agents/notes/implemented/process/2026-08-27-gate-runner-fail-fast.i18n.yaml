@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-gate-runner-fail-fast.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-27-gate-runner-fail-fast.md
-2026-08-27-gate-runner-fail-fast.md: b11e3336aad01d2d4bf57c132e1aeaddfac5c258
-2026-08-27-gate-runner-fail-fast.zh.md: 93e1b0314289afa17e89afea19c8b8c0563362f4
+/agent-note-gate-runner-fail-fast:
+  en: e8fc9c2e3de4a821
+  zh: 580fb7a1be044cb2
+/agent-note-gate-runner-fail-fast/problem:
+  en: dfa71e6e78c14475
+  zh: 34073cfb0756a9b4
+/agent-note-gate-runner-fail-fast/decision:
+  en: 9080a98b2f1ba84a
+  zh: 6c386aae02159ed6
+/agent-note-gate-runner-fail-fast/consequences:
+  en: e70568e7e66d8117
+  zh: 9d74b96ab1dd2ba9
+/agent-note-gate-runner-fail-fast/alternatives-considered:
+  en: 23fc36a441fc217f
+  zh: 1e246acb7835857a

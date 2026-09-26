@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-conversation-adaptive-content-width.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-conversation-adaptive-content-width.md
-2026-08-18-conversation-adaptive-content-width.md: 9b0e7afbded296b60b7c283030a537321b36684e
-2026-08-18-conversation-adaptive-content-width.zh.md: f1f424cf9d4ac087518e9f79a365d0052069b999
+/agent-note-adaptive-and-drag-resizable-conversation-content-width:
+  en: 09d4fe345fab9450
+  zh: 836a550c4bc70fd6
+/agent-note-adaptive-and-drag-resizable-conversation-content-width/problem:
+  en: 35b94a56ba5c7eab
+  zh: b4615936ff6e4c90
+/agent-note-adaptive-and-drag-resizable-conversation-content-width/decision:
+  en: 5bceffa04009e616
+  zh: f81b303ee772184f
+/agent-note-adaptive-and-drag-resizable-conversation-content-width/alternatives-considered:
+  en: 564760d62806bfe2
+  zh: 19f301301a17c298
+/agent-note-adaptive-and-drag-resizable-conversation-content-width/consequences:
+  en: 187ff0ecb3946543
+  zh: e9a78d20fa48ce00

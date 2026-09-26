@@ -1,6 +1,70 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/codebase-memory/tool-codebase-memory/README.md
-README.md: ba14287f20725409eb98dd803561194c3bf784f4
-README.zh.md: fcbe87ab55e87c6cb3aa7a163c7688d838848339
+/:
+  en: a4d9222e221cb337
+  zh: 2888ce1b401d0fa8
+/deepseek-ai-dsh-tool-codebase-memory:
+  en: 03b795280c50cb88
+  zh: 49705634c196b1a5
+/deepseek-ai-dsh-tool-codebase-memory/summary:
+  en: c5572a4d322876ca
+  zh: 2f12d8b18725506b
+/deepseek-ai-dsh-tool-codebase-memory/table-of-contents:
+  en: c0aae2f4c90f0a30
+  zh: 98d98eafa100124a
+/deepseek-ai-dsh-tool-codebase-memory/tool-surface:
+  en: afec731602eb44dc
+  zh: 0a2b08cf0bfae711
+/deepseek-ai-dsh-tool-codebase-memory/why-cli-over-mcp:
+  en: 2e4594ed91655a59
+  zh: 892d39aea9ff8175
+/deepseek-ai-dsh-tool-codebase-memory/configuration:
+  en: 36d5b234e15d2208
+  zh: b841b70db24d6351
+/deepseek-ai-dsh-tool-codebase-memory/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/tool-schemas:
+  en: 3039bc5e7a796b21
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/tool-schemas/what-the-model-sees:
+  en: db62750a7cb25075
+  zh: fd8fae638b20818b
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/tool-schemas/token-effect:
+  en: 04f7c6325b8262a1
+  zh: 546a29566eb62a6a
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/tool-schemas/kv-cache-effect:
+  en: 8ba649e0fd7cd51c
+  zh: 339720cad22e2876
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/result-values:
+  en: eb34aa59529de093
+  zh: d2d0088983f22ceb
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/result-values/what-the-model-sees:
+  en: 471057e698635eaa
+  zh: 650ae177a55fd152
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/result-values/token-effect:
+  en: 408b2d9ab1db06c8
+  zh: dc9cbf47d6a47ba6
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/result-values/kv-cache-effect:
+  en: 62eb651671512e8c
+  zh: 04c0de8c67cfc9d7
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/prompt-section:
+  en: ff23ee0a6ddaf713
+  zh: f2fbe6ab1a00a419
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/prompt-section/what-the-model-sees:
+  en: 6ea02d085c511916
+  zh: 9ec475f94b508c3f
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/prompt-section/token-effect:
+  en: 3ba3374fb82e2ecc
+  zh: 40f2f1e6a19ba0bc
+/deepseek-ai-dsh-tool-codebase-memory/model-experience/prompt-section/kv-cache-effect:
+  en: 6215b062bf5f144f
+  zh: 353484b949261ce3
+/deepseek-ai-dsh-tool-codebase-memory/known-limitations-and-deferred-work:
+  en: 1dfd6fcd67443746
+  zh: 1c98b9932019bc1f
+/deepseek-ai-dsh-tool-codebase-memory/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

@@ -7,7 +7,7 @@
 # `llm-deepseek:` section there overrides the adapter entry below without a
 # restart.
 - id: settings
-  name: '@deepseek-ai/dsh-settings-file'
+  name: '@deepseek-ai/dsh-settings'
 
 # Credential store: the live process environment over `$DSH_HOME/.credentials.yaml`
 # (owner-only file, hot-reloaded). The adapter resolves `DEEPSEEK_API_KEY`

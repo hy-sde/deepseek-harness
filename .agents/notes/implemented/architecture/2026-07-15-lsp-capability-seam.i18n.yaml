@@ -1,6 +1,40 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-15-lsp-capability-seam.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-15-lsp-capability-seam.md
-2026-07-15-lsp-capability-seam.md: e8b918bf0ecea3cd799ddd1fa65f463835f9d49c
-2026-07-15-lsp-capability-seam.zh.md: e70b9ab26b13370d50c53ec23c78ae045470cccc
+/agent-note-lsp-capability-seam-and-model-facing-query-tool:
+  en: bce19a7b7394ab3f
+  zh: 95f89e11c9399d0a
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/problem:
+  en: 5277b0c99564e622
+  zh: 4345805f7169b467
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/decision:
+  en: 35931939b2689416
+  zh: 9ee4e7777b9b5d27
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/package-and-ownership-boundaries:
+  en: 262d3ec122294086
+  zh: 69da6892330733ad
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/model-facing-contract:
+  en: 8c979868ddd33bc3
+  zh: 1c90952d779b935a
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/timeout-ownership:
+  en: f97e829d765d7c85
+  zh: 031a345ef8321b63
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/workspace-filesystem-and-document-synchronization:
+  en: 437152cd7cfbf0d0
+  zh: d9f965793c5fe3ed
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/local-server-lifecycle-and-protocol-behavior:
+  en: 843c64f8b943c254
+  zh: d1c6ec09816e9318
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/deliberately-deferred-api:
+  en: 65072c050ad61ae6
+  zh: 23dd4b926049ce31
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/alternatives-considered:
+  en: 8e71a7997367ee0c
+  zh: 86e7a34b503edcd0
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/testing:
+  en: 419f99de09a560f9
+  zh: d1f8853af85661ff
+/agent-note-lsp-capability-seam-and-model-facing-query-tool/consequences:
+  en: e4b4bc4fc3eac352
+  zh: 98accf90d4620485

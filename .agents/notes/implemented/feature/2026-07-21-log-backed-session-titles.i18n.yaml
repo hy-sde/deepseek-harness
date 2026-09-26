@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-21-log-backed-session-titles.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-21-log-backed-session-titles.md
-2026-07-21-log-backed-session-titles.md: 7bf9257813c154b674e4b4d632c9fa2b712a1fdd
-2026-07-21-log-backed-session-titles.zh.md: e09317b1c0e458b8278ee22d66c8afdb0386d071
+/agent-note-log-backed-session-titles:
+  en: b04a348ca633c170
+  zh: 5d6a97ea03e86102
+/agent-note-log-backed-session-titles/problem:
+  en: a8d2ab248591ef81
+  zh: 06e554fd5bcf6647
+/agent-note-log-backed-session-titles/decision:
+  en: a2ef5f4b6cb84b46
+  zh: 845e6e633d4696be
+/agent-note-log-backed-session-titles/decision/event-ownership-and-folding:
+  en: f9fb17cec3cb6c70
+  zh: 0910f6f2d389428e
+/agent-note-log-backed-session-titles/decision/input-and-asynchronous-timing:
+  en: b152ac615b96eb68
+  zh: 8e40071b99ad9621
+/agent-note-log-backed-session-titles/decision/registration-routing-and-failure-policy:
+  en: a69c2254b7972b73
+  zh: 83e1382c5a83a7ac
+/agent-note-log-backed-session-titles/decision/explicit-rename:
+  en: 9292a291c530fcf0
+  zh: 9fb05c234ef88baa
+/agent-note-log-backed-session-titles/decision/forks-and-consumers:
+  en: 0075d97093c93e06
+  zh: a43e5ea48bb0b93d
+/agent-note-log-backed-session-titles/alternatives-considered:
+  en: 932bf43ae91a03e9
+  zh: 0f308db0b922bbe1
+/agent-note-log-backed-session-titles/consequences:
+  en: 80e0ebc6b5d9de9b
+  zh: da8ede4a695bfd66

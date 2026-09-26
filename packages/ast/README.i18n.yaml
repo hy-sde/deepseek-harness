@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/ast/README.md
-README.md: 96b4d2dce03963aae8e4a072af8fd1560172eb0f
-README.zh.md: 098309cee8e0548577de269edd2c9a623474f640
+/:
+  en: a9a28fce79dcb9f2
+  zh: f6a31d52701ea414
+/ast-structural-code-capability-family:
+  en: 41e1f7e7eca84cfd
+  zh: b81073b3e09bc6f0
+/ast-structural-code-capability-family/summary:
+  en: 039a85846f8cca1e
+  zh: 579d886f5e80ba3b
+/ast-structural-code-capability-family/table-of-contents:
+  en: 20b57e98faba99e4
+  zh: 636e4b5b59c26325
+/ast-structural-code-capability-family/packages:
+  en: d5c9e051e7a6a515
+  zh: 1b7aed16a67bfaea
+/ast-structural-code-capability-family/related-documentation:
+  en: 41c71ee67aa55e6f
+  zh: b625608e438a5fd1

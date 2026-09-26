@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-09-25-fork-session-source-attributions.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-09-25-fork-session-source-attributions.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-09-25-fork-session-source-attributions:
+  en: b881a1aee15ee288
+  zh: c3a639d94b2def3a
+/2026-09-25-fork-session-source-attributions/summary:
+  en: c57c66ccd596cd31
+  zh: 4eba4cea9f0eb1fb
+/2026-09-25-fork-session-source-attributions/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-09-25-fork-session-source-attributions/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-09-25-fork-session-source-attributions/compatibility:
+  en: fea506e3679f372c
+  zh: 760ee3fc63fe36f7
+/2026-09-25-fork-session-source-attributions/verification:
+  en: f5ba88f791de9055
+  zh: 2a67aa4510f459b7
+/2026-09-25-fork-session-source-attributions/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

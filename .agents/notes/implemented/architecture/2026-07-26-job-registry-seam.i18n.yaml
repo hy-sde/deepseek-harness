@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-26-job-registry-seam.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-26-job-registry-seam.md
-2026-07-26-job-registry-seam.md: 2040b3a40debd181ebbdb0f1a9916b1a10ddcc4b
-2026-07-26-job-registry-seam.zh.md: 12785584f6cf9f121bcc6c6922994c06027fef58
+/agent-note-the-job-registry-is-a-capability-seam-dsh-jobs-dsh-jobs-local:
+  en: 5f43f8809dbcd99e
+  zh: dae14414abdf8ea8
+/agent-note-the-job-registry-is-a-capability-seam-dsh-jobs-dsh-jobs-local/problem:
+  en: a90e58caea0ea2f5
+  zh: f03eb383dfe93ce9
+/agent-note-the-job-registry-is-a-capability-seam-dsh-jobs-dsh-jobs-local/decision:
+  en: 85e7902dd0e88a3e
+  zh: 2e80f75e602a8829
+/agent-note-the-job-registry-is-a-capability-seam-dsh-jobs-dsh-jobs-local/alternatives-considered:
+  en: faee00e00286c997
+  zh: 5042754e3a1652d1
+/agent-note-the-job-registry-is-a-capability-seam-dsh-jobs-dsh-jobs-local/consequences:
+  en: 7d6a9fb8ddabee57
+  zh: b3e874ffadd9bd6f

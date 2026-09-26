@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-26-pnpm-action-setup-for-symmetric-ci-caching.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-07-26-pnpm-action-setup-for-symmetric-ci-caching.md
-2026-07-26-pnpm-action-setup-for-symmetric-ci-caching.md: 2519b9e8bc565790acbd02f0a01491fcc136bbe6
-2026-07-26-pnpm-action-setup-for-symmetric-ci-caching.zh.md: 2157541c4b503d4acd38073263b6b69050a239bc
+/agent-note-provision-ci-pnpm-via-pnpm-action-setup:
+  en: 6a830cf69f4badaf
+  zh: 9d29c8997361bb56
+/agent-note-provision-ci-pnpm-via-pnpm-action-setup/problem:
+  en: f39b509a20153497
+  zh: 638880d594bb759b
+/agent-note-provision-ci-pnpm-via-pnpm-action-setup/decision:
+  en: fcc7980bd78b2734
+  zh: 775010b3c77fca54
+/agent-note-provision-ci-pnpm-via-pnpm-action-setup/alternatives-considered:
+  en: d62bfda494e99bc0
+  zh: 8522cfaf768ea22a
+/agent-note-provision-ci-pnpm-via-pnpm-action-setup/consequences:
+  en: fa480cb4f32f487e
+  zh: 266acc6381aa98ec

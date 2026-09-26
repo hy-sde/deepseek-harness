@@ -1,9 +1,9 @@
 {
-  "compilerOptions": {
-    "outDir": "lib/types",
-    "rootDir": "src"
-  },
   "extends": "../../../tsconfig.base.client.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
   "include": [
     "src"
   ],
@@ -21,10 +21,10 @@
       "path": "../../api/session-controller/tsconfig.client.json"
     },
     {
-      "path": "../../client/locale"
+      "path": "../../client/locale/tsconfig.client.json"
     },
     {
-      "path": "../../client/ui-conversation"
+      "path": "../../client/ui-conversation/tsconfig.client.json"
     },
     {
       "path": "../../client/ui-primitives"
@@ -46,6 +46,15 @@
     },
     {
       "path": "../../client/ui-workspace"
+    },
+    {
+      "path": "../../client/locale/tsconfig.client.json"
+    },
+    {
+      "path": "../../client/store"
+    },
+    {
+      "path": "../../client/ui-conversation/tsconfig.client.json"
     }
   ]
 }

@@ -92,7 +92,7 @@ export interface Config {
   /** The agent-loop `agents` list (see dsh-agent-loop's `Config`). */
   agents?: AgentLoopConfig['agents']
   /** Agent-loop concurrency cap; `1` is serial. */
-  maxParallelToolCalls?: AgentLoopConfig['maxParallelToolCalls']
+  maxParallelToolCalls?: number
   /** Whether the system prompt includes the fixed Harness identity (default true). */
   includeHarnessIdentity?: SystemPromptConfig['includeHarnessIdentity']
   /** Whether model history includes dynamic runtime-context snapshots (default true). */
@@ -157,9 +157,28 @@ export const GoalConfigSchema: z<GoalConfig> = z.object({
   tool: toolGoal.Config,
 })
 
+/** The agent-loop spine fields this bundle owns (volatile fields cannot nest). */
+interface SpineAgentLoopShape {
+  agents?: Config['agents']
+  maxParallelToolCalls?: number
+}
+const SpineAgentLoopConfig = z.object({
+  maxParallelToolCalls: z.number().step(1).min(1),
+  agents: z.array(z.object({
+    id: z.string().required(),
+    sessionId: z.string().min(1),
+    provider: z.string(),
+    model: z.string(),
+    reasoningEffort: z.string().min(1),
+    maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER),
+    cwd: z.string(),
+    resumeSessionId: z.string(),
+  })).default([]),
+}) as z<SpineAgentLoopShape>
+
 /** Intersect the owners' schemas so validation + defaulting stay identical. */
 export const Config = z.intersect([
-  AgentLoop.Config,
+  SpineAgentLoopConfig,
   SystemPrompt.Config,
   z.object({
     tools: ToolRuntime.Config,

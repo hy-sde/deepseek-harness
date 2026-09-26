@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-24-empty-model-response-is-retryable.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-07-24-empty-model-response-is-retryable.md
-2026-07-24-empty-model-response-is-retryable.md: 62e45385fbcf1cdebd1b2c19abcbfe6888abdfe7
-2026-07-24-empty-model-response-is-retryable.zh.md: 459a5def0bbd5a82c83af67ea1c035259ec4f0a5
+/agent-note-empty-model-completions-are-retryable-empty-response-failures:
+  en: 4508351f97d7d0f9
+  zh: 6f27bbfe4fb805a8
+/agent-note-empty-model-completions-are-retryable-empty-response-failures/problem:
+  en: 7dd623d363a1c1cd
+  zh: d66e424af5e7e5d2
+/agent-note-empty-model-completions-are-retryable-empty-response-failures/decision:
+  en: 37ef316aac7a09d8
+  zh: 8e45b1081c95dbce
+/agent-note-empty-model-completions-are-retryable-empty-response-failures/alternatives-considered:
+  en: 1dde430ad26571db
+  zh: 5c4bf9be74a0c009
+/agent-note-empty-model-completions-are-retryable-empty-response-failures/consequences:
+  en: 414cd972f9d72a5e
+  zh: 09ca50199952bca4

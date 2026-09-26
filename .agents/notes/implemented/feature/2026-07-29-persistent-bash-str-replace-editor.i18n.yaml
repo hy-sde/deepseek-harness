@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-29-persistent-bash-str-replace-editor.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-29-persistent-bash-str-replace-editor.md
-2026-07-29-persistent-bash-str-replace-editor.md: e6265ca0f8eb5430ba490b9d046a726f152a2892
-2026-07-29-persistent-bash-str-replace-editor.zh.md: 2fb8a3b3cadefd101d90c52a5ed01e8244a58f07
+/agent-note-persistent-bash-and-string-replacement-editor-tools:
+  en: 9c0396557f44c63e
+  zh: 647981fbe3c75308
+/agent-note-persistent-bash-and-string-replacement-editor-tools/problem:
+  en: 6d244d3f768e3c4f
+  zh: 3d54de64c77eef0f
+/agent-note-persistent-bash-and-string-replacement-editor-tools/decision:
+  en: 589c5e25a18f321e
+  zh: 76a243667ae315f5
+/agent-note-persistent-bash-and-string-replacement-editor-tools/alternatives-considered:
+  en: 8d833607f2a1e44e
+  zh: 11a4a2ad1818bf76
+/agent-note-persistent-bash-and-string-replacement-editor-tools/consequences:
+  en: 5a41aec6ea73e2da
+  zh: 822041054eb19c7d

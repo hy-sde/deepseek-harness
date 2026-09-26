@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-13-python-minimal-model-visible-snapshot.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-08-13-python-minimal-model-visible-snapshot.md
-2026-08-13-python-minimal-model-visible-snapshot.md: 1cef57c440ddd2209628016ab550174b448587bc
-2026-08-13-python-minimal-model-visible-snapshot.zh.md: fbbb3bd6f4c3edadb61a02eebbae3dfaa97cb8e7
+/agent-note-python-minimal-composition-model-visible-snapshot:
+  en: 5d2ff80e6ae941d9
+  zh: 6370f71c9ef4b039
+/agent-note-python-minimal-composition-model-visible-snapshot/problem:
+  en: 38e1c38de2b20333
+  zh: bb4a9f6f2491e395
+/agent-note-python-minimal-composition-model-visible-snapshot/decision:
+  en: 45156e1e755656e7
+  zh: 7b98f391959727ff
+/agent-note-python-minimal-composition-model-visible-snapshot/alternatives-considered:
+  en: 36c6bdf062eddd74
+  zh: b7c49177b8d1b151
+/agent-note-python-minimal-composition-model-visible-snapshot/consequences:
+  en: 208800341e284e1a
+  zh: 4994aaa5109bc4a7

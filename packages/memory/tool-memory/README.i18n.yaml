@@ -1,6 +1,49 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/memory/tool-memory/README.md
-README.md: 050056f9463ab31496f485e2bb1953827f992cc0
-README.zh.md: b3b7c45a47c92cf17b012e7672f8d7bd3e9af731
+/:
+  en: 901d77f628026b5e
+  zh: 6bb411a750d8ac19
+/deepseek-ai-dsh-tool-memory:
+  en: fd232e28c2effa41
+  zh: 01ae094a31d03f79
+/deepseek-ai-dsh-tool-memory/summary:
+  en: f9e2101b47de2438
+  zh: b09dd155b3708278
+/deepseek-ai-dsh-tool-memory/table-of-contents:
+  en: 610349bc2befbbcf
+  zh: 2ef61745a7fa0726
+/deepseek-ai-dsh-tool-memory/the-five-tools:
+  en: ee87e8f9c0125ca8
+  zh: 4e96bf66c655c43e
+/deepseek-ai-dsh-tool-memory/prompt-injection:
+  en: 77411c52fee8e5ed
+  zh: bdecb33ec5ccdb00
+/deepseek-ai-dsh-tool-memory/config:
+  en: 0a5be4ef67073580
+  zh: 16812ef96f94533d
+/deepseek-ai-dsh-tool-memory/tests:
+  en: fef21a8020af2522
+  zh: 862c2eda4024fcb5
+/deepseek-ai-dsh-tool-memory/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-memory/model-experience/tool-schema:
+  en: e4c7376d4f29dbd5
+  zh: d06e64e8cc4865d1
+/deepseek-ai-dsh-tool-memory/model-experience/tool-schema/what-the-model-sees:
+  en: 7ea5a517af572cdc
+  zh: 27db89ff963a1125
+/deepseek-ai-dsh-tool-memory/model-experience/tool-schema/token-effect:
+  en: 8e501c135325f00e
+  zh: 811a1990ce854d6e
+/deepseek-ai-dsh-tool-memory/model-experience/tool-schema/kv-cache-effect:
+  en: 8e842f8c3f34d616
+  zh: 15242416caa2380f
+/deepseek-ai-dsh-tool-memory/known-limitations-and-deferred-work:
+  en: 3bb4e04f153a4294
+  zh: 02408151925d1b23
+/deepseek-ai-dsh-tool-memory/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

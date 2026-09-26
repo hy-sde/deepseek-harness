@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-03-web-turn-run-time.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-03-web-turn-run-time.md
-2026-08-03-web-turn-run-time.md: c77a365d66ea03b50275be21754f38ee449be14f
-2026-08-03-web-turn-run-time.zh.md: ca7fdc6ef12def71efaa3b4267d8833e78cdc548
+/agent-note-web-turn-run-time-and-hover-revealed-time-chrome:
+  en: dea6c7b9e474c13e
+  zh: bd3b9724c46ea76c
+/agent-note-web-turn-run-time-and-hover-revealed-time-chrome/problem:
+  en: 7ed24e7815dd3efd
+  zh: a70571e487030207
+/agent-note-web-turn-run-time-and-hover-revealed-time-chrome/decision:
+  en: 6e98c87dc79b94e1
+  zh: 99e1bc844382b068
+/agent-note-web-turn-run-time-and-hover-revealed-time-chrome/alternatives-considered:
+  en: e64c0c1d8c997e17
+  zh: eb6bf79037ed2549
+/agent-note-web-turn-run-time-and-hover-revealed-time-chrome/consequences:
+  en: a15f40c27d841882
+  zh: 848d7b10c44369b6

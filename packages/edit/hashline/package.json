@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-hashline",
   "description": "Hashline: a compact, line-anchored patch language and applier, ported from @oh-my-pi/hashline (MIT)",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -27,10 +27,10 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:~",
     "vitest": "^4.1.8"
   }
 }

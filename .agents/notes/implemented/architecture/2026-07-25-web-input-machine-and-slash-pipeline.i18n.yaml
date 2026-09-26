@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-25-web-input-machine-and-slash-pipeline.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-25-web-input-machine-and-slash-pipeline.md
-2026-07-25-web-input-machine-and-slash-pipeline.md: 200761cc9e648eea80bdae9d7b363246c816e5d1
-2026-07-25-web-input-machine-and-slash-pipeline.zh.md: 673d0ee4bd0916b20ee74226f50240e3904fe06c
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger:
+  en: 4a6b40241d66dc70
+  zh: 65aa90bc046ec090
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/problem:
+  en: 8c6239e7dc9b21c8
+  zh: e41f41d37aebee9b
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision:
+  en: a15c7c13f167e5ac
+  zh: 63bcc2ef60c2f344
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/the-input-state-machine-now-submitmachine:
+  en: 91ecb33b3a60d83d
+  zh: d36143a70d5a65fb
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/cross-plugin-input-rewrites-three-scoped-bail-events:
+  en: 9e37d0f31e902846
+  zh: 1567879397846bda
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/the-slash-pipeline-ui-input-trigger-a-root-inputtriggerservice-a-per-session-inputtriggercontroller:
+  en: 6e86aa14f92d232a
+  zh: 03354ed2ebd38aeb
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/hub-facade-the-resident-shell-and-the-strict-session-input-body:
+  en: 28aca9bd8e51719a
+  zh: 9e909078659ab187
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/plain-text-references-text-outcomes-and-lexicon-decoration:
+  en: ac05e89ffca99293
+  zh: 65fb249eb2378a66
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/per-session-provide-contributions-and-the-private-keyboard-surface:
+  en: cad36d0794c87c4c
+  zh: efb25081e524a514
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/the-slot-system:
+  en: 216cc9300982968d
+  zh: 9d6c1219f0c78b99
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/decision/testing-discipline:
+  en: 22500c9d684a483f
+  zh: a90cdb14991d9a89
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/alternatives-considered:
+  en: 8157b06f9efcc542
+  zh: fbdf3e936977a64c
+/agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/consequences:
+  en: aadef5919a96041f
+  zh: cc4b45196e201db5

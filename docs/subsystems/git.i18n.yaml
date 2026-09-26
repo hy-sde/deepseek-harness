@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for git.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/git.md
-git.md: acd558e11f62e2296219f3f7e34d6336c00a17fc
-git.zh.md: 1648545cdb95421b8d226db338045c4a1980e3d6
+/git-commit-review:
+  en: c6d1158646f3c938
+  zh: 27991c023d728b89
+/git-commit-review/service-surface:
+  en: 35bf4b2b40d4961f
+  zh: 663eaf2d0fc70a59
+/git-commit-review/model-driven-two-phase-commit:
+  en: c53feea5582d3946
+  zh: 97dbcb7eb5b0968a
+/git-commit-review/model-driven-two-phase-commit/lock-file-autoplacement:
+  en: 86762da1fe33d60d
+  zh: ac4d7d933da0a0da
+/git-commit-review/model-driven-two-phase-commit/hunk-staging-semantics:
+  en: 8de6c940b278ba3a
+  zh: 98a62399f843cef6
+/git-commit-review/review-fan-out:
+  en: 9ecda6f30ae86df3
+  zh: 03b4a00f0f4182ff
+/git-commit-review/configuration:
+  en: 0e7511db7b261d6f
+  zh: a0e91c8272980be7

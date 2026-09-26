@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-windows-atomic-replace-retry.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-29-windows-atomic-replace-retry.md
-2026-08-29-windows-atomic-replace-retry.md: 4db5de6403be7ec39a1568a11d8877cba1ed5838
-2026-08-29-windows-atomic-replace-retry.zh.md: 0138727ac0fe12af51b5a383b60859977300353c
+/agent-note-retry-transient-windows-atomic-replacements:
+  en: b9738421a789aade
+  zh: 7469f1d75a42e062
+/agent-note-retry-transient-windows-atomic-replacements/problem:
+  en: 09f87a16b3a6b107
+  zh: 01405d17e05c628d
+/agent-note-retry-transient-windows-atomic-replacements/decision:
+  en: 5c6d785948300558
+  zh: e3c5b8e67ec1ecab
+/agent-note-retry-transient-windows-atomic-replacements/alternatives-considered:
+  en: d7385513a7f06d7d
+  zh: edabbb0e2f68b060
+/agent-note-retry-transient-windows-atomic-replacements/consequences:
+  en: 12bfff1347cad5cb
+  zh: 898b0bd4002e002c

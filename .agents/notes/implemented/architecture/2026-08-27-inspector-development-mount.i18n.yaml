@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-inspector-development-mount.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-27-inspector-development-mount.md
-2026-08-27-inspector-development-mount.md: a8660c664f6fba49369af075bc998171a454a842
-2026-08-27-inspector-development-mount.zh.md: 3dd82cc89e4c172c3ff9a4f8dc4cafd47c9fd847
+/agent-note-inspector-development-mount:
+  en: c1056c5687f9f8d2
+  zh: 10bae9ee8b2c138b
+/agent-note-inspector-development-mount/problem:
+  en: 58b1cb3ebd4c36a2
+  zh: ddaee0f413ae77a3
+/agent-note-inspector-development-mount/decision:
+  en: fe284d2eca31b3bd
+  zh: b3b93341b8a24145
+/agent-note-inspector-development-mount/consequences:
+  en: dee3c462d96c0b45
+  zh: 92fef4ad11436e0a
+/agent-note-inspector-development-mount/alternatives-considered:
+  en: a87627365bef222b
+  zh: e2208364cc15f135

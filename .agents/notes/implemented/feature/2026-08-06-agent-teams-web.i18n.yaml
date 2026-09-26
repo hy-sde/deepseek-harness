@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-06-agent-teams-web.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-06-agent-teams-web.md
-2026-08-06-agent-teams-web.md: 5002146f7db67f7199102b286a85da0148864fa9
-2026-08-06-agent-teams-web.zh.md: d05f22141811f35ba52a92a02c8153b024ef8d8d
+/agent-note-experimental-agent-teams-web-controls:
+  en: 97b10caff565e07d
+  zh: 6c2159bc8ded3fab
+/agent-note-experimental-agent-teams-web-controls/problem:
+  en: 54569736b47da6a4
+  zh: 1b8cf2f575b6214b
+/agent-note-experimental-agent-teams-web-controls/decision:
+  en: 250e0f6074b190de
+  zh: c804b86aeb6f2675
+/agent-note-experimental-agent-teams-web-controls/boundaries:
+  en: 8525608bfdbe92fb
+  zh: a3005da0e9266681
+/agent-note-experimental-agent-teams-web-controls/alternatives-considered:
+  en: 07af6a113603afb8
+  zh: f50d6e267f21b89e
+/agent-note-experimental-agent-teams-web-controls/testing:
+  en: e24868da1b5f2b4a
+  zh: 658e8db141a2eea4
+/agent-note-experimental-agent-teams-web-controls/consequences:
+  en: 1b7f184cbc9362d2
+  zh: df0053c325875167

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-07-31-ptc-language-dispatch.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-31-ptc-language-dispatch.md
-2026-07-31-ptc-language-dispatch.md: d9744685050ca4797470ff30425eaec45dd5af29
-2026-07-31-ptc-language-dispatch.zh.md: ad9b456c18a1a9a817c4985d6773d425ea5819ff
+/agent-note-ptc-mode-language-dispatch-and-the-python-sdk-renderer:
+  en: e4349463999370a4
+  zh: f3c1ddb9efef6b5b
+/agent-note-ptc-mode-language-dispatch-and-the-python-sdk-renderer/problem:
+  en: fa6cbb6dc4230917
+  zh: 606c97cedff41276
+/agent-note-ptc-mode-language-dispatch-and-the-python-sdk-renderer/decision:
+  en: 99b262cd7a5bd648
+  zh: 67602dce3d542878
+/agent-note-ptc-mode-language-dispatch-and-the-python-sdk-renderer/decision/the-python-sdk-renderer:
+  en: 75c4be6cbf914a68
+  zh: 4517a373fff06608
+/agent-note-ptc-mode-language-dispatch-and-the-python-sdk-renderer/alternatives-considered:
+  en: cd54a081b29383af
+  zh: a8b880c06855fa01
+/agent-note-ptc-mode-language-dispatch-and-the-python-sdk-renderer/consequences:
+  en: 2219f2067eb5ba5f
+  zh: 80b71b93a25221b5

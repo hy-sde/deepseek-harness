@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-06-continuable-child-report-obligation.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-06-continuable-child-report-obligation.md
-2026-08-06-continuable-child-report-obligation.md: 422d3ab74389e084becb75a145a82139dda38ac7
-2026-08-06-continuable-child-report-obligation.zh.md: ec7e19885204ddc99b2640407c605288f1e9c045
+/agent-note-the-continuable-child-return-channel-is-an-obligation:
+  en: 472fc47087c3fdef
+  zh: 4dac6c0bb1706f79
+/agent-note-the-continuable-child-return-channel-is-an-obligation/problem:
+  en: be4476386979e63c
+  zh: 4b47520a10673275
+/agent-note-the-continuable-child-return-channel-is-an-obligation/decision:
+  en: 6f4856bb769bbd9e
+  zh: 0796c6db8cc19e08
+/agent-note-the-continuable-child-return-channel-is-an-obligation/decision/why-the-section-and-the-description-both-exist:
+  en: e7added37af85d1e
+  zh: 4aad32cf8bf8e745
+/agent-note-the-continuable-child-return-channel-is-an-obligation/decision/instruction-not-enforcement:
+  en: 77875022914b90b3
+  zh: bd2e10376f6bca0b
+/agent-note-the-continuable-child-return-channel-is-an-obligation/decision/snapshot-coverage:
+  en: f258d2b7c2a5fc01
+  zh: bcd05c57b0c8a81d
+/agent-note-the-continuable-child-return-channel-is-an-obligation/alternatives-considered:
+  en: d283af5163ee410a
+  zh: ebb511760b07279c
+/agent-note-the-continuable-child-return-channel-is-an-obligation/consequences:
+  en: 6248d3b06941e532
+  zh: 73f00bd6c415c430
+/agent-note-the-continuable-child-return-channel-is-an-obligation/consequences/accepted-risks:
+  en: 5a71053431b3b6ac
+  zh: afa16603939fc173
