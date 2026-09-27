@@ -28,6 +28,9 @@ serde_json = "1"
 thiserror = "1"
 libc = "0.2"
 
+[dev-dependencies]
+tempfile = "3"
+
 [profile.release]
 lto = true
 strip = true
