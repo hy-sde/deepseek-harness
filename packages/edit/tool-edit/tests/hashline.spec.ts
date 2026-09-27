@@ -205,6 +205,93 @@ describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => 
   })
 })
 
+describe('tool-edit (hashline mode) × edit-result line provenance', () => {
+  /** Full composition with seen-line enforcement: real backend + policy + read tool + rich editor. */
+  async function provenanceStack() {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-provenance-'))
+    roots.push(root)
+    const ctx = new Context()
+    contexts.push(ctx)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(FsPolicy)
+    // read/write only from tool-fs; the literal `edit` slot is owned by tool-edit.
+    await ctx.plugin(ToolFs, { enableEdit: false })
+    const fiber = await ctx.plugin(ToolEdit, { enforceSeenLines: true })
+    return { ctx, root, fiber, owner: agent(ctx, root) }
+  }
+
+  async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
+    return ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: ToolCallId(`tool-edit-provenance-${++callNumber}`),
+      name,
+      arguments: args,
+      agent: owner,
+    })
+  }
+
+  function modelText(result: { content: { type: string; text?: string }[] }): string {
+    return result.content.filter(b => b.type === 'text').map(b => b.text).join('')
+  }
+
+  /** Hashline header `[path#TAG]` tag from a rendered read/edit result. */
+  function tagFrom(text: string): string | undefined {
+    return /\[[^\]#]+#([0-9A-F]{4})\]/.exec(text)?.[1]
+  }
+
+  it('registers displayed edit-result rows as post-edit snapshot provenance: rejects hidden lines, accepts displayed lines', async () => {
+    const { ctx, root, owner } = await provenanceStack()
+    const sample = join(root, 'a.txt')
+    const source = 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\n'
+    // Post-edit content: `NEWLINE` inserted after line 2 (13 lines).
+    const edited = 'line1\nline2\nNEWLINE\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\n'
+    await writeFile(sample, source)
+
+    // Partial read: only lines 1-2 are displayed (and recorded as seen) under
+    // the minted tag — the projection the upstream test starts from. The tag
+    // hashes the WHOLE file, so follow-up edits anchor against the full text.
+    const readResult = await run(ctx, owner, 'read', { file_path: 'a.txt', offset: 1, limit: 2 })
+    expect(readResult.isError).toBe(false)
+    const originalTag = tagFrom(modelText(readResult))
+    expect(originalTag).toBe(computeFileHash(source))
+
+    // First edit anchors the seen line 2 (PUT >2 = insert after). The rendered
+    // rows are `1:line1`, `2:line2`, `3:NEWLINE` — row 3 was NEVER displayed by
+    // the read, so registering it as seen provenance on the post-edit tag is
+    // the fix under test (omp cea3caf71f). Without it the follow-up edit at
+    // line 3 would be rejected as anchored on a never-displayed line.
+    const first = await run(ctx, owner, 'edit', {
+      input: `[${sample}#${originalTag}]\nPUT >2:\n+NEWLINE\n`,
+    })
+    expect(first.isError).toBe(false)
+    const firstText = modelText(first)
+    expect(firstText).toContain('3:NEWLINE')
+    const editedTag = tagFrom(firstText)
+    expect(editedTag).toBe(computeFileHash(edited))
+
+    // (a) A line the edit result did NOT display stays rejected under the
+    // post-edit tag: line 13 (the tail) was hidden under the rendered rows.
+    const hidden = await run(ctx, owner, 'edit', {
+      input: `[${sample}#${editedTag}]\nPUT 13.=13:\n+LINE13\n`,
+    })
+    expect(hidden.isError).toBe(true)
+    expect(modelText(hidden)).toContain('lines 13')
+
+    // (b) A line the edit result DID display is accepted under the same tag:
+    // line 3 is anchorable because the edit result rendered it as `3:NEWLINE`
+    // and registered it as seen provenance on the post-edit snapshot.
+    const seen = await run(ctx, owner, 'edit', {
+      input: `[${sample}#${editedTag}]\nPUT 3.=3:\n+LINE3\n`,
+    })
+    expect(seen.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe(
+      'line1\nline2\nLINE3\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\n',
+    )
+  })
+})
 describe('tool-edit (hashline mode) × LSP writethrough', () => {
   it('persists the formatter output and reports the persisted bytes as the snapshot text', async () => {
     const { ctx, root, owner } = await setup(
