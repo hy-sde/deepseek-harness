@@ -10,7 +10,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
-import { computeFileHash } from '@deepseek-ai/dsh-hashline'
+import { computeFileHash, getSessionSnapshotStore } from '@deepseek-ai/dsh-hashline'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
@@ -27,7 +27,7 @@ afterEach(async () => {
 
 function agent(ctx: Context, cwd: string): Agent {
   const id = SessionId(`tool-edit-hashline-${callNumber}`)
-  const scope = ctx.plugin(() => {})
+  const scope = ctx.plugin(() => { })
   const session = Session.create(id, [], { version: 4, id, createdAt: 0, cwd, isSeeded: false })
   const value: Agent = {
     id,
@@ -36,11 +36,11 @@ function agent(ctx: Context, cwd: string): Agent {
     inbox: createInboxStub(),
     status: 'idle',
     ctx: scope.ctx,
-    send: () => {},
-    followup: () => {},
+    send: () => { },
+    followup: () => { },
     steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),
-    inject: () => {},
-    cancel() {},
+    inject: () => { },
+    cancel() { },
     runMaintenance: task => task(new AbortController().signal),
     whenIdle: () => Promise.resolve(),
   }
@@ -320,5 +320,73 @@ describe('tool-edit (hashline mode) × LSP writethrough', () => {
     // `WriteResult.text` is the formatted bytes, so the patcher's recorded
     // snapshot hashes the same content that now exists on disk.
     expect(await readFile(sample, 'utf8')).toBe('# formatted\none\ninserted\ntwo\nthree\n')
+  })
+})
+
+describe('tool-edit (hashline mode) × default seen-line enforcement', () => {
+  /** Default settings (no explicit enforceSeenLines): regression for omp 760d5dfdee. */
+  async function defaultStack() {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-seenlines-'))
+    roots.push(root)
+    const ctx = new Context()
+    contexts.push(ctx)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(FsPolicy)
+    await ctx.plugin(ToolFs, { enableEdit: false })
+    // No config — the flip under test is the DEFAULT.
+    const fiber = await ctx.plugin(ToolEdit)
+    return { ctx, root, fiber, owner: agent(ctx, root) }
+  }
+
+  const DRAW_SOURCE = [
+    'def draw(sheet, anchor, alpha, beta):',
+    '    add_native_hole_callout(sheet=sheet,',
+    '        nested=nested(alpha,',
+    '            beta),',
+    '        point=model_point_in_view(',
+    '            anchor),',
+    '        callout_xy=(0.230, 0.258))',
+    '',
+  ].join('\n')
+
+  function modelText(result: { content: { type: string; text?: string }[] }): string {
+    return result.content.filter(b => b.type === 'text').map(b => b.text).join('')
+  }
+
+  it('rejects a hunk anchored on a line the read elided (default settings)', async () => {
+    const { ctx, root, owner } = await defaultStack()
+    const sample = join(root, 'draw.py')
+    await writeFile(sample, DRAW_SOURCE)
+
+    // Simulate a ranged read displaying lines 1,2,5,6,7 while eliding 3-4:
+    // the same seen-set the harness read tool records for `draw.py:7-7`.
+    const store = getSessionSnapshotStore(owner.session)
+    const tag = store.record(sample, DRAW_SOURCE, [1, 2, 5, 6, 7])
+
+    const result = await call(ctx, owner, {
+      input: `[${sample}#${tag}]\nPUT 4.=4:\n+            beta, gamma),\n`,
+    })
+    expect(result.isError).toBe(true)
+    expect(modelText(result)).toContain('never displayed')
+    expect(await readFile(sample, 'utf8')).toBe(DRAW_SOURCE)
+  })
+
+  it('applies a hunk anchored on a line the read displayed (default settings)', async () => {
+    const { ctx, root, owner } = await defaultStack()
+    const sample = join(root, 'draw.py')
+    await writeFile(sample, DRAW_SOURCE)
+
+    // Read displayed lines 1,2,5,6,7; line 7 is seen, so its edit applies.
+    const store = getSessionSnapshotStore(owner.session)
+    const tag = store.record(sample, DRAW_SOURCE, [1, 2, 5, 6, 7])
+
+    const result = await call(ctx, owner, {
+      input: `[${sample}#${tag}]\nPUT 7.=7:\n+        callout_xy=(0.240, 0.258))\n`,
+    })
+    expect(result.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe(DRAW_SOURCE.replace('0.230', '0.240'))
   })
 })
