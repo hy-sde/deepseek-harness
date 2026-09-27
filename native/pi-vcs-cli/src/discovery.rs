@@ -90,6 +90,16 @@ fn resolve_info(
 		},
 	};
 	let common_dir = resolve_common_dir(&git_dir);
+	// A `.git` entry only counts when its resolved git dir contains `HEAD`
+	// (omp PR #11389): an unpopulated `.git` was never initialized by git, so
+	// discovery must skip it and keep walking to the enclosing repository
+	// instead of adopting the fence and failing later on the missing HEAD.
+	// Linked worktrees and submodules stay valid: their `HEAD` lives in the
+	// resolved git dir. A fresh `git init` has an unborn HEAD file, so it is
+	// still accepted.
+	if !git_dir.join("HEAD").is_file() {
+		return Ok(None);
+	}
 	let is_reftable =
 		read_optional(&common_dir.join("config")).is_some_and(|config| config_has_reftable(&config));
 	Ok(Some(GitRepoInfo {
@@ -217,6 +227,7 @@ pub fn require_info(dir: &Path) -> Result<GitRepoInfo> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use tempfile::TempDir;
 
 	#[test]
 	fn reftable_detection_honors_quotes_and_comments() {
@@ -236,5 +247,81 @@ mod tests {
 		assert_eq!(parse_gitdir_pointer("gitdir:../relative"), Some("../relative"));
 		assert_eq!(parse_gitdir_pointer("not a pointer"), None);
 		assert_eq!(parse_gitdir_pointer("gitdir:   "), None);
+	}
+
+	#[test]
+	fn discovery_ignores_an_empty_dot_git_directory() {
+		let tmp = TempDir::new().unwrap();
+		let fence = tmp.path().join("fence");
+		std::fs::create_dir_all(fence.join("project")).unwrap();
+		std::fs::create_dir(fence.join(".git")).unwrap();
+		assert_eq!(discover_info(&fence.join("project")).unwrap(), None);
+	}
+
+	#[test]
+	fn discovery_walks_past_an_empty_dot_git_to_the_enclosing_repository() {
+		let tmp = TempDir::new().unwrap();
+		run_git(tmp.path(), &["init", "-q", "-b", "main"]);
+		let fence = tmp.path().join("fence");
+		std::fs::create_dir_all(fence.join("project")).unwrap();
+		std::fs::create_dir(fence.join(".git")).unwrap();
+		let info = discover_info(&fence.join("project")).unwrap().unwrap();
+		assert_eq!(info.repo_root, std::path::absolute(tmp.path()).unwrap());
+	}
+
+	#[test]
+	fn discovery_ignores_a_gitfile_whose_target_has_no_head() {
+		let tmp = TempDir::new().unwrap();
+		let fence = tmp.path().join("fence");
+		std::fs::create_dir_all(fence.join("project")).unwrap();
+		std::fs::create_dir(fence.join("store")).unwrap();
+		std::fs::write(fence.join(".git"), "gitdir: store\n").unwrap();
+		assert_eq!(discover_info(&fence.join("project")).unwrap(), None);
+	}
+
+	#[test]
+	fn discovery_accepts_a_fresh_repository_with_an_unborn_head() {
+		let tmp = TempDir::new().unwrap();
+		run_git(tmp.path(), &["init", "-q", "-b", "main"]);
+		let src = tmp.path().join("src");
+		std::fs::create_dir(&src).unwrap();
+		let info = discover_info(&src).unwrap().unwrap();
+		assert_eq!(info.repo_root, std::path::absolute(tmp.path()).unwrap());
+	}
+
+	#[test]
+	fn discovery_accepts_a_committed_repository() {
+		let tmp = TempDir::new().unwrap();
+		run_git(tmp.path(), &["init", "-q", "-b", "main"]);
+		run_git(
+			tmp.path(),
+			&[
+				"-c",
+				"user.name=test",
+				"-c",
+				"user.email=test@example.com",
+				"commit",
+				"--allow-empty",
+				"-q",
+				"-m",
+				"init",
+			],
+		);
+		let info = discover_info(tmp.path()).unwrap().unwrap();
+		assert!(info.head_path.is_file());
+	}
+
+	fn run_git(dir: &Path, args: &[&str]) {
+		let output = std::process::Command::new("git")
+			.args(args)
+			.current_dir(dir)
+			.output()
+			.expect("git must be installed");
+		assert!(
+			output.status.success(),
+			"git {:?} failed: {}",
+			args,
+			String::from_utf8_lossy(&output.stderr)
+		);
 	}
 }
