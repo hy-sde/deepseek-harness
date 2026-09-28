@@ -48,7 +48,7 @@
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~",
     "zod": "^4.4.3",
-    "effect": "4.0.0-rc.112"
+    "effect": "4.0.0-rc.118"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-brand": "workspace:*",

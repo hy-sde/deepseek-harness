@@ -37,7 +37,7 @@
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "effect": "4.0.0-rc.112"
+    "effect": "4.0.0-rc.118"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",

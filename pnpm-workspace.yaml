@@ -47,10 +47,11 @@ allowBuilds:
   # postinstall hard-links the matching platform optional package's binary into
   # the package root (the sole reason the dependency exists).
   '@ast-grep/cli': true
-  # Optional native accelerator of msgpackr (a runtime dependency of
-  # effect@4.0.0-rc.112, the llm-retry Effect pilot); its build script is a
-  # no-op without the binary, so deny and use msgpackr's JS implementation.
-  # Store-index rewriting only needs msgpackr's portable JavaScript codec.
+  # Optional native accelerator of msgpackr (a dependency of
+  # effect@4.0.0-rc.112, the llm-retry Effect pilot; effect@4.0.0-rc.118
+  # no longer bundles msgpackr); its build script is a no-op without the
+  # binary, so deny and use msgpackr's JS implementation. Store-index
+  # rewriting only needs msgpackr's portable JavaScript codec.
   msgpackr-extract: false
   # The Python runtime deploy includes the reviewed workspace postinstall that
   # restores the executable bit on node-pty's macOS spawn helper.
