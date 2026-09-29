@@ -83,6 +83,10 @@ const EXCEEDS_MODEL_CONTEXT = new RegExp(
 export function isContextWindowExceededError(detail: string): boolean {
   return STRUCTURED_CONTEXT_OVERFLOW.test(detail)
     || /\b(?:maximum|max)(?:\s+(?:allowed|supported))?\s+context\s+(?:length|window)\b/i.test(detail)
+    // Kimi For Coding wording (Maka baseline): `exceeded model token limit`
+    || /exceeded model token limit/i.test(detail)
+    // Kimi model-qualified limit (Maka #5780): `exceeded kimi-k2 model token limit: 131072`
+    || /exceeded [\w.-]+ model token limit:\s*[\d,]+/i.test(detail)
     || TOO_LARGE_FOR_CONTEXT.test(detail)
     || /\b(?:input|prompt|request)\s+(?:is\s+)?too\s+(?:long|large)\s+for\s+(?:this|the)\s+model\b/i.test(detail)
     || EXCEEDS_MODEL_CONTEXT.test(detail)

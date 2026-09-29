@@ -27,8 +27,8 @@
   en: 231fd6420feea66a
   zh: 5c6eaf6b8c855433
 /deepseek-ai-dsh-graph-wakes/understand-the-implementation/retries-backoff-and-terminal-failure:
-  en: 6945ba09f0be981e
-  zh: bfeae1d64b9f7685
+  en: 841db0e1c5cc189e
+  zh: 8a37954469318da0
 /deepseek-ai-dsh-graph-wakes/understand-the-implementation/context-overflow-recovery:
   en: 32bba983f5050086
   zh: b9891e3c04c5ca96
@@ -39,8 +39,8 @@
   en: 152a89da3741a7da
   zh: 940793ceb8308f3d
 /deepseek-ai-dsh-graph-wakes/understand-the-implementation/restart-durability:
-  en: 9aa69a640bc4923c
-  zh: b3f80ecaf870c49e
+  en: 1bc2af63ed66b19c
+  zh: 3f02027ed11740da
 /deepseek-ai-dsh-graph-wakes/runtime-invariants:
   en: 20a10787321b78ff
   zh: c61312aa43d94867
@@ -63,8 +63,8 @@
   en: 3a44aa1a687906b4
   zh: 549ab4bd42766195
 /deepseek-ai-dsh-graph-wakes/known-limitations-and-deferred-work:
-  en: 8069cd3ae85980d3
-  zh: 8dd8fad5fade5949
+  en: 8496ce13223bde74
+  zh: 56e1c31aa0bf56b3
 /deepseek-ai-dsh-graph-wakes/known-limitations-and-deferred-work/dev-note:
   en: 28f86c8678cdac84
   zh: bb1a874321eab82b

@@ -121,6 +121,13 @@ describe('LlmRuntime', () => {
     expect(isContextWindowExceededError('input is too long for this model')).toBe(true)
     expect(isContextWindowExceededError('request too large for model context')).toBe(true)
     expect(isContextWindowExceededError('input exceeds the model context window limit')).toBe(true)
+    // Maka #5780: Kimi model-qualified token-limit wording (e.g. `exceeded kimi-k2 model token limit: 131072`).
+    expect(isContextWindowExceededError('exceeded kimi-k2 model token limit: 131072')).toBe(true)
+    expect(isContextWindowExceededError('exceeded moonshot-v1-128k model token limit: 128,000')).toBe(true)
+    // The model-qualified pattern is specific: it requires a limit value; the
+    // baseline wording matches even without one.
+    expect(isContextWindowExceededError('exceeded kimi-k2 model token limit without value')).toBe(false)
+    expect(isContextWindowExceededError('exceeded model token limit: not a number')).toBe(true)
   })
 
   it('does not mistake unrelated input validation for context-window overflow', () => {

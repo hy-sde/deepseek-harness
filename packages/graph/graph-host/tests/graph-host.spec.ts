@@ -31,6 +31,7 @@ import {
 import type { AgentGraphRunClaimedIntentInput } from '@deepseek-ai/dsh-graph-stream'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Session } from '@deepseek-ai/dsh-session'
+import { CONTEXT_WINDOW_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type {
   SubagentResult,
@@ -44,6 +45,7 @@ import {
   createGraphHostServices,
   GraphHostContextOverflowError,
   GraphHostWorktreePool,
+  isContextOverflow,
   SERVICE_AGENT_GRAPH_CONTROLLER,
   SERVICE_GRAPH_HOST,
 } from '../src/index.ts'
@@ -705,6 +707,24 @@ function stubAgent(): Agent {
     session: { append: () => undefined },
   } as unknown as Agent
 }
+
+describe('context-overflow classification', () => {
+  it('recognizes the owned marker and the conventional overflow property', () => {
+    expect(isContextOverflow(new GraphHostContextOverflowError('boom'))).toBe(true)
+    expect(isContextOverflow({ overflow: true, message: 'boom' })).toBe(true)
+    expect(isContextOverflow(new Error('boom'))).toBe(false)
+  })
+
+  it('recognizes the harness LLM overflow code and Kimi model-qualified wording (Maka #5780)', () => {
+    const coded = Object.assign(new Error('agent context overflowed'), {
+      code: CONTEXT_WINDOW_EXCEEDED_CODE,
+    })
+    expect(isContextOverflow(coded)).toBe(true)
+    expect(isContextOverflow(new Error('exceeded kimi-k2 model token limit: 131072'))).toBe(true)
+    expect(isContextOverflow(new Error('exceeded moonshot-v1-128k model token limit: 128,000'))).toBe(true)
+    expect(isContextOverflow(new Error('exceeded kimi-k2 model token limit without value'))).toBe(false)
+  })
+})
 
 describe('graph-host plugin', () => {
   it('provides the controller + services when the root agent is already live', async () => {
