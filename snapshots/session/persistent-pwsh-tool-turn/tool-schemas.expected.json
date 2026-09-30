@@ -1,6 +1,95 @@
 {
   "initial": [
     {
+      "name": "ast_edit",
+      "description": "Structurally rewrite source files by AST pattern. By default it PREVIEWS the proposed hunks without writing anything; set apply: true to write the files. Supports ast-grep pattern syntax: `$NAME` captures one node referenced in the rewrite as `$NAME`. Every matched node is rewritten; there is no interactive selection.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pat": {
+            "type": "string",
+            "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+          },
+          "rewrite": {
+            "type": "string",
+            "description": "Replacement template. Captured metavariables from pat substitute here (e.g. `$NAME`). Empty rewrite deletes the matched node."
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+          },
+          "include": {
+            "type": "string",
+            "description": "One glob filter for which files to rewrite (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+          },
+          "strictness": {
+            "type": "string",
+            "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia.",
+            "enum": [
+              "cst",
+              "smart",
+              "ast",
+              "relaxed",
+              "signature",
+              "template"
+            ]
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "true to write the rewrites to disk; false (default) previews only."
+          }
+        },
+        "required": [
+          "pat",
+          "rewrite"
+        ]
+      }
+    },
+    {
+      "name": "ast_grep",
+      "description": "Structurally search source files by AST pattern. Returns matching nodes with line numbers, grouped by file. Returns the first 100 matches inline; a capped result reports the total. Supports ast-grep pattern syntax: `$NAME` captures one node, `$_` matches any single node, `$$$NAME` captures zero+ nodes. Use read on a matched file for surrounding context.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pat": {
+            "type": "string",
+            "description": "AST pattern to match, in ast-grep syntax. Must be non-empty."
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory to search (or several roots separated by \";\"). Defaults to the session workspace; a relative path resolves against it."
+          },
+          "include": {
+            "type": "string",
+            "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Force the language for pattern + targets (e.g. \"Python\", \"Rust\", \"TypeScript\"). Normally inferred from file extensions."
+          },
+          "strictness": {
+            "type": "string",
+            "description": "How strictly the pattern node kinds must match. \"smart\" is the default; \"ast\" ignores comments and trivia; \"signature\" matches node kinds without text.",
+            "enum": [
+              "cst",
+              "smart",
+              "ast",
+              "relaxed",
+              "signature",
+              "template"
+            ]
+          }
+        },
+        "required": [
+          "pat"
+        ]
+      }
+    },
+    {
       "name": "edit",
       "description": "Edit an existing UTF-8 text file by replacing literal text.",
       "parameters": {
@@ -80,7 +169,7 @@
     },
     {
       "name": "grep",
-      "description": "Search file contents with a ripgrep regular expression. Returns matching lines with line numbers, grouped by file. Returns up to 250 matches; a larger result reports where the complete match list was saved.",
+      "description": "Search file contents with a ripgrep regular expression. Returns matching lines with line numbers, grouped by file, ranked so git-modified files come first. Returns the first 50 matches inline; a capped result returns a continuation cursor — pass it back unchanged (same pattern/path/include) to fetch the next page, or follow the spill locator for the complete result. Use read on a matched file for surrounding context.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -90,11 +179,15 @@
           },
           "path": {
             "type": "string",
-            "description": "File or directory to search. Defaults to the session workspace; a relative path resolves against it."
+            "description": "File, directory, or internal URL (e.g. conflict://3, pr://owner/repo/123/diff) to search. Defaults to the session workspace; a relative path resolves against it."
           },
           "include": {
             "type": "string",
             "description": "One glob filter for which files to search (e.g. \"*.ts\", \"*.{js,jsx}\"). Not a list; negation is not supported."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque continuation token returned by a capped previous result. Pass it back unchanged with the same pattern, path, and include to fetch the next page."
           }
         },
         "required": [
@@ -153,7 +246,7 @@
     },
     {
       "name": "read",
-      "description": "Read a UTF-8 text file and return line-numbered content.",
+      "description": "Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool's hashline sections so edits anchor on the exact content you saw.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -229,6 +322,10 @@
           "run_in_background": {
             "type": "boolean",
             "description": "Defaults to true. Set false only when your next action depends on the result."
+          },
+          "workspace": {
+            "type": "string",
+            "description": "Absolute path of an existing directory the child works in — typically the `path` from a `worktree` acquire so one task owns one isolated git worktree. The child session workspace and its file tools resolve against this directory (which must be inside the deployment file-policy scope)."
           }
         },
         "required": [
@@ -250,6 +347,10 @@
           "prompt": {
             "type": "string",
             "description": "The task for the subagent. It already sees this conversation's completed turns, so build on them freely and state only what is new."
+          },
+          "workspace": {
+            "type": "string",
+            "description": "Absolute path of an existing directory the child works in — typically the `path` from a `worktree` acquire so one task owns one isolated git worktree. The child session workspace and its file tools resolve against this directory (which must be inside the deployment file-policy scope)."
           }
         },
         "required": [

@@ -30,3 +30,6 @@ Examples:
   dsh tui --resume <session>                arguments after the launcher flags reach the app
   dsh web --help                            the web app's own flags and help
   dsh plugin --profile tui add <package>    install a plugin into the tui profile
+  dsh sessions ls                            list stored sessions and their on-disk sizes
+  dsh sessions prune --older-than 30 --archive  archive sessions older than 30 days
+  dsh sessions recompress --level 19 --exec  losslessly pack old session logs into few frames

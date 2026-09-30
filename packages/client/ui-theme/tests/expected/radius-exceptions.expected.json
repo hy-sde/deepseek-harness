@@ -1,14 +1,9 @@
 {
-  "ui-chat/src/client/chat/ChatView.module.css": [
-    ".openRetry button: border-radius: 14px"
+  "ui-deliverables/src/client/ChangedFiles.module.css": [
+    ".tile: border-radius: 10px"
   ],
-  "ui-countdown/src/client/CountdownCell.module.css": [
-    ".cell: border-radius: 10px",
-    ".btn: border-radius: 6px",
-    ".railPrimary: border-radius: 8px",
-    ".railGear: border-radius: 6px",
-    ".popover: border-radius: 10px",
-    ".popover input[type='number']: border-radius: 6px"
+  "ui-deliverables/src/client/Deliverables.module.css": [
+    ".fileIcon: border-radius: 10px"
   ],
   "ui-schedule/src/client/ClockPicker.module.css": [
     ".option: border-radius: 10px"
@@ -68,6 +63,17 @@
     ".keyBadge: border-radius: 10px",
     ".unbound: border-radius: 10px",
     ".recorder: border-radius: 10px"
+  ],
+  "ui-chat/src/client/chat/ChatView.module.css": [
+    ".openRetry button: border-radius: 14px"
+  ],
+  "ui-countdown/src/client/CountdownCell.module.css": [
+    ".cell: border-radius: 10px",
+    ".btn: border-radius: 6px",
+    ".railPrimary: border-radius: 8px",
+    ".railGear: border-radius: 6px",
+    ".popover: border-radius: 10px",
+    ".popover input[type='number']: border-radius: 6px"
   ],
   "ui-wiki/src/client/BlockTree.module.css": [
     ".line: border-radius: 6px",

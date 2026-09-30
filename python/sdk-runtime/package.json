@@ -172,7 +172,8 @@
     "@deepseek-ai/dsh-tool-session-query": "workspace:*",
     "@deepseek-ai/dsh-vcs": "workspace:*",
     "@deepseek-ai/dsh-web-search-public": "workspace:*",
-    "@deepseek-ai/dsh-zstd-frame": "workspace:*"
+    "@deepseek-ai/dsh-zstd-frame": "workspace:*",
+    "@deepseek-ai/dsh-otel": "workspace:*"
   },
   "devDependencies": {},
   "optionalDependencies": {},
