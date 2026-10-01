@@ -126,6 +126,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     const outputSchema = valueSchemaSpecToJsonSchema(def.outputSchema)
     ctx.tools.register({
       name: def.name,
+      device: true,
       description: def.description,
       parameters: parameters as unknown as Record<string, unknown>,
       output: {

@@ -409,6 +409,7 @@ export function apply(ctx: Context, config: Config): void {
   })
   ctx.tools.register(defineTool({
     name: 'ralph',
+    device: true,
     description: DESCRIPTION,
     parameters: {
       objective: {

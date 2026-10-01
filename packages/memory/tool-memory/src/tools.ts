@@ -223,6 +223,7 @@ function formatReflect(result: MemorySearchResult): string {
 export function applyReflectTool(ctx: Context, history: SessionHistoryConfig = DEFAULT_SESSION_HISTORY): void {
   ctx.tools.register(defineTool({
     name: 'reflect',
+    device: true,
     description:
       'Synthesize a coherent response from relevant long-term project memories; unlike recall it blends them. '
       + 'Use for open-ended questions spanning many stored facts: "What do you know about this user?", "Summarize project '
@@ -368,6 +369,7 @@ export function applyMineSessionsTool(
 ): void {
   ctx.tools.register(defineTool({
     name: 'mine_sessions',
+    device: true,
     description:
       'Harvest reusable lessons from your own past sessions of this project (needs the harness '
       + '`sessionQuery` service; degrades to an unavailable notice without it). Reads the most recent '

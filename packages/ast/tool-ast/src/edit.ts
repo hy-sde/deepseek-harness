@@ -201,6 +201,7 @@ export function applyAstEditTool(ctx: Context, caps: AstEditToolCaps, policy: Mu
 
   const tool = defineTool({
     name: 'ast_edit',
+    device: true,
     description: 'Structurally rewrite source files by AST pattern. By default it PREVIEWS the proposed hunks without writing anything; set apply: true to write the files. '
       + 'Supports ast-grep pattern syntax: `$NAME` captures one node referenced in the rewrite as `$NAME`. Every matched node is rewritten; there is no interactive selection.',
     parameters: {

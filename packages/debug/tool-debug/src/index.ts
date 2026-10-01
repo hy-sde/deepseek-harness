@@ -102,6 +102,7 @@ export function apply(ctx: Context, config: Config): void {
 
   ctx.tools.register(defineTool({
     name: 'debug',
+    device: true,
     description:
       'Attach a real debugger to a running or launched process through the Debug Adapter Protocol (DAP). 28 operations: launch, attach, set/remove_breakpoint (source or function), set/remove_instruction_breakpoint, data_breakpoint_info, set/remove_data_breakpoint, continue, step_over, step_in, step_out, pause, evaluate, stack_trace, threads, scopes, variables, disassemble, read_memory, write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. One active session at a time — terminate before launching another.',
     parameters: {

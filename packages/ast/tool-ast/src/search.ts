@@ -240,6 +240,7 @@ export function applyAstGrepTool(ctx: Context, caps: AstGrepToolCaps): void {
 
   const tool = defineTool({
     name: 'ast_grep',
+    device: true,
     description: 'Structurally search source files by AST pattern. Returns matching nodes with line numbers, grouped by file. '
       + `Returns the first ${caps.maxMatches} matches inline; a capped result reports the total. `
       + 'Supports ast-grep pattern syntax: `$NAME` captures one node, `$_` matches any single node, `$$$NAME` captures zero+ nodes. Use read on a matched file for surrounding context.',

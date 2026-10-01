@@ -108,6 +108,7 @@ export function applyBrowserTool(ctx: Context, config: BrowserToolConfig = {}): 
 
   ctx.tools.register(defineTool({
     name: 'browser',
+    device: true,
     description:
       'Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a tab, snapshot the page as an ARIA '
       + 'ref tree, and close tabs. Four backends: launch a stealth-patched browser binary (app.path), use the CloakBrowser '
