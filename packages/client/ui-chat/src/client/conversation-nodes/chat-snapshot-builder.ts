@@ -778,11 +778,11 @@ export class SkillNameProjector {
   private assignRun(start: number, end: number, names: Map<string, readonly string[]>): void {
     const list: string[] = []
     for (let index = start; index <= end; index++) {
-      const entry = this.sorted[index]
+      const entry = this.sorted.at(index)
       if (entry?.kind === 'skill' && entry.name !== null && !list.includes(entry.name)) list.push(entry.name)
     }
     for (let index = start; index <= end; index++) {
-      const entry = this.sorted[index]
+      const entry = this.sorted.at(index)
       if (entry?.kind === 'message') names.set(entry.key, list)
     }
   }
@@ -794,7 +794,7 @@ export class SkillNameProjector {
    */
   private collectAround(seq: number, names: Map<string, readonly string[]>): void {
     const at = this.lowerBound(seq)
-    const here = this.sorted[at]
+    const here = this.sorted.at(at)
     if (here !== undefined && here.seq === seq && here.kind !== 'boundary') {
       this.assignRun(this.runStart(at), this.runEnd(at), names)
       return

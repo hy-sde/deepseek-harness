@@ -73,7 +73,7 @@ export const retryDefinition: ConversationNodeDefinition<RetryState> = {
   },
   buildViewNode: (context) => {
     if (context.state === undefined || context.state.attempts.length === 0) return null
-    const location = context.start?.location ?? context.matches[0]?.location ?? { kind: 'unresolved' as const }
+    const location = context.start?.location ?? context.matches.at(0)?.location ?? { kind: 'unresolved' as const }
     const stateAttempts = context.state.attempts
     const attempts = stateAttempts.map((attempt, index) =>
       index === stateAttempts.length - 1

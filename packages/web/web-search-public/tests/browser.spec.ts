@@ -87,7 +87,7 @@ describe('browserFetch', () => {
       browser: { scrape: challengeScraper, shouldFallback: () => true },
     })
     expect(page.html).toBe(SERP)
-    const [, init] = fetch.mock.calls[0]!
+    const [, init] = fetch.mock.calls[0]! as [unknown, { headers: Record<string, string> }]
     expect(init.headers.Referer).toBe('https://www.google.com/')
     expect(init.headers['Sec-Fetch-Site']).toBe('same-origin')
   })

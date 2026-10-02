@@ -135,7 +135,7 @@ class TurnGroups {
       roots.set(key, [...roots.get(key) ?? [], entry])
     }
     const flush = (closed: boolean): void => {
-      const first = pending[0]
+      const first = pending.at(0)
       if (first === undefined) return
       const retained = this.extendedGroup(pending, added)
       const key = retained?.key ?? brandString<GroupKey>(JSON.stringify(['process', first.key, first.groupPart ?? null]))
@@ -187,18 +187,20 @@ class TurnGroups {
   private extendedGroup(members: readonly NodeReference[], added: ReadonlySet<NodeKey>): ProcessGroup | undefined {
     // Reuse identity only while the complete old group remains between newly visible members.
     const offset = members.findIndex(member => !added.has(member.key))
-    const first = members[offset]
+    const first = offset === -1 ? undefined : members[offset]
     if (first === undefined) return undefined
     const key = this.membership.get(first.key)
     const previous = key === undefined ? undefined : this.groups.get(key)
     if (previous === undefined || offset + previous.members.length > members.length) return undefined
     for (let index = 0; index < previous.members.length; index++) {
-      const before = previous.members[index] as NodeReference
-      const after = members[offset + index] as NodeReference
+      const before = previous.members.at(index)
+      const after = members.at(offset + index)
+      if (before === undefined || after === undefined) return undefined
       if (before.key !== after.key || before.groupPart !== after.groupPart) return undefined
     }
     for (let index = offset + previous.members.length; index < members.length; index++) {
-      if (!added.has((members[index] as NodeReference).key)) return undefined
+      const member = members.at(index)
+      if (member === undefined || !added.has(member.key)) return undefined
     }
     return previous
   }

@@ -25,7 +25,7 @@ export const CHAT_SYNTHETIC_SEQ_OFFSETS = {
  * @returns start or first-match Location, otherwise unresolved.
  */
 export function contextLocation(context: ConversationNodeContext): ConversationLocation {
-  return context.start?.location ?? context.matches[0]?.location ?? { kind: 'unresolved' }
+  return context.start?.location ?? context.matches.at(0)?.location ?? { kind: 'unresolved' }
 }
 
 /**

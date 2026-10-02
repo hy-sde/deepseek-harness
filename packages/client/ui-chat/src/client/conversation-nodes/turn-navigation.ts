@@ -85,7 +85,7 @@ export function turnNavigationItem(
     .map(key => nodes.get(key))
     .filter((node): node is ChatNode => node !== undefined && isVisibleChatNode(node as ChatNode))
   const user = loaded.find(node => node.kind === 'user')
-  const anchor = user ?? loaded[0]
+  const anchor = user ?? loaded.at(0)
   if (anchor === undefined) return undefined
   const response = loaded.findLast(node => responseText(node) !== '')
   return {

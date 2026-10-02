@@ -138,7 +138,7 @@ describe('kind + wait resolution (pure)', () => {
       // explicit patch:false overrides the config
       expect(patchService.resolveKind({ patch: false }).kind).not.toBe('patch')
     } finally {
-      patchCtx.fiber.dispose()
+      void patchCtx.fiber.dispose()
     }
   })
 

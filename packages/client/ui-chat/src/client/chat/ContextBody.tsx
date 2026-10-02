@@ -46,7 +46,7 @@ function contentRuns(content: ContextMessageNode['content']): ContentRun[] {
       runs.push({ block })
       continue
     }
-    const last = runs[runs.length - 1]
+    const last = runs.at(runs.length - 1)
     if (last !== undefined && 'text' in last) last.text += block.text
     else runs.push({ text: block.text })
   }

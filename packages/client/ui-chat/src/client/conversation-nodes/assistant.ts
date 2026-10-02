@@ -260,8 +260,8 @@ function projectAssistant(context: ConversationNodeContext<AssistantState>): Ass
     ? 'interrupted'
     : settled === undefined ? 'running' : 'settled'
   const anchorSeq = (settled?.interrupted === true ? settled.seq : state.firstVisibleSeq ?? settled?.seq)
-    ?? context.matches[0]?.event.seq ?? 0
-  const time = settled?.time ?? state.firstVisibleTime ?? context.matches[0]?.event.time ?? 0
+    ?? context.matches.at(0)?.event.seq ?? 0
+  const time = settled?.time ?? state.firstVisibleTime ?? context.matches.at(0)?.event.time ?? 0
   return {
     anchorSeq,
     visible,
@@ -344,7 +344,7 @@ export const assistantDefinition: ConversationNodeDefinition<AssistantState> = {
     if (settled === undefined && !visible && current == null) return null
     // A successful message retains its live anchor alongside pending Tool calls.
     const anchorSeq = (settled?.interrupted === true ? settled.seq : state.firstVisibleSeq ?? settled?.seq)
-      ?? context.matches[0]?.event.seq ?? 0
+      ?? context.matches.at(0)?.event.seq ?? 0
     return chatNode(context, 'assistant-step', anchorSeq, data, {
       visibility: settled?.interrupted === true || visible ? 'visible' : 'hidden',
     })

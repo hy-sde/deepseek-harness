@@ -196,11 +196,12 @@ export class ChatViewport {
         if (rows.item(middle).getBoundingClientRect().bottom > viewport.top) high = middle
         else low = middle + 1
       }
-      const row = rows[low]
-      anchor = row !== undefined && row.getBoundingClientRect().top < bottom ? row : rows[0] ?? null
+      const row = low < rows.length ? rows[low] : undefined
+      anchor = row !== undefined && row.getBoundingClientRect().top < bottom
+        ? row : rows.length > 0 ? rows[0] : null
     }
-    const key = anchor?.dataset.chatAnchorKey
-    return anchor === null || key === undefined ? null : {
+    const key = anchor?.getAttribute('data-chat-anchor-key')
+    return anchor === null || key === null ? null : {
       anchorKey: key,
       anchorTop: anchor.getBoundingClientRect().top - viewport.top,
       scrollTop: scroller.scrollTop,
@@ -218,7 +219,7 @@ export class ChatViewport {
     const knownTurn = this.observation.landing?.turn
     if (knownTurn != null && metrics?.top === this.observation.top) return knownTurn
     const elements = this.elements
-    const first = this.turns[0]
+    const first = this.turns.at(0)
     if (elements === null || metrics === null || first === undefined) return null
     const line = elements.scroller.getBoundingClientRect().top + Math.min(96, metrics.height * 0.2)
     const rows = elements.column.children
@@ -227,7 +228,8 @@ export class ChatViewport {
     let reading = first.turn
     while (low < high) {
       const middle = (low + high) >>> 1
-      const row = rows[middle] as Element
+      const row = rows.item(middle)
+      if (row === null) break
       if (row.getBoundingClientRect().top > line) high = middle
       else {
         const value = row.getAttribute('data-chat-turn')

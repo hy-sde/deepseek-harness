@@ -20,7 +20,7 @@ import {
   normalizeSessionSnapshot,
   normalizeStdout,
   refreshFixtureReplacements,
-  scrubRequestHeaders,
+  scrubModelRequestBulk,
   scrubSessionSnapshot,
   stabilizeFixtureMessageIds,
   stabilizeRefreshLog,
@@ -239,7 +239,7 @@ function normalizeNotifications(notifications: readonly HarnessNotification[], c
     .map(n => n.params.event as Record<string, unknown>)
   const normalizedEvents = events.length === 0
     ? []
-    : scrubRequestHeaders(normalizeSessionLog(
+    : scrubModelRequestBulk(normalizeSessionLog(
       `${events.map(event => JSON.stringify(event)).join('\n')}\n`,
       ctx,
     )).trimEnd().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
@@ -400,7 +400,7 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
       }
 
       for (const [index, expected] of expectedContents.entries()) {
-        expect(scrubRequestHeaders(expected), `${scenario.name} session fixture ${index} carries request-header bulk`)
+        expect(scrubModelRequestBulk(expected), `${scenario.name} session fixture ${index} carries request-header bulk`)
           .toBe(expected)
       }
 

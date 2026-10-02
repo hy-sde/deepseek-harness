@@ -525,11 +525,15 @@ describe('dsh-agent-spine-demo bundle', () => {
             callId: event.data.message.source.callId,
             isError: 'isError' in result ? result.isError : false,
             text: Array.isArray(result.content)
-              ? result.content.map(block => 'text' in block && (block as { type?: string }).type === 'text'
-                ? String((block as { text?: unknown }).text ?? '') : '').join('\n')
+              ? result.content.map((block) => {
+                const text = (block as { type?: string; text?: unknown }).text
+                return 'text' in block && (block as { type?: string }).type === 'text' && typeof text === 'string'
+                  ? text
+                  : ''
+              }).join('\n')
               : ''
-              .replaceAll(root, '{{cwd}}')
-              .replaceAll(sep, '/'),
+                .replaceAll(root, '{{cwd}}')
+                .replaceAll(sep, '/'),
           }]
         }
         return []

@@ -52,14 +52,14 @@ function questionDetail(value: unknown): string {
 
 function liveReasoningDetail(nodes: readonly ChatNode[]): string {
   for (let nodeIndex = nodes.length - 1; nodeIndex >= 0; nodeIndex--) {
-    const node = nodes[nodeIndex]
+    const node = nodes.at(nodeIndex)
     if (node?.kind !== 'assistant-step' || node.data.status !== 'running') continue
     for (let blockIndex = node.data.blocks.length - 1; blockIndex >= 0; blockIndex--) {
-      const block = node.data.blocks[blockIndex]
+      const block = node.data.blocks.at(blockIndex)
       if (block?.kind !== 'reasoning') continue
       const paragraphs = block.text.split(/\r?\n[\t ]*\r?\n/)
       for (let paragraphIndex = paragraphs.length - 1; paragraphIndex >= 0; paragraphIndex--) {
-        const detail = normalizeLiveToolDetail(paragraphs[paragraphIndex]?.replaceAll('**', ''))
+        const detail = normalizeLiveToolDetail(paragraphs.at(paragraphIndex)?.replaceAll('**', ''))
         if (detail !== '') return detail
       }
     }

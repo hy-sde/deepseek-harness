@@ -23,7 +23,7 @@ interface TurnErrorState {
 }
 
 function lastStep(context: ConversationNodeContext<TurnErrorState>): number {
-  const location = context.start?.location ?? context.matches[0]?.location
+  const location = context.start?.location ?? context.matches.at(0)?.location
   if (location?.kind !== 'turn' && location?.kind !== 'step') return 0
   return location.turn.steps.at(-1)?.step ?? 0
 }

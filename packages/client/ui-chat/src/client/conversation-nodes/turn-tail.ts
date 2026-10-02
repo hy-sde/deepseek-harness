@@ -51,7 +51,7 @@ function turnCoordinates(event: Parameters<ConversationNodeDefinition['match']>[
 }
 
 function turnLocation(context: ConversationNodeContext<TurnTailState>): TurnLocation | undefined {
-  const location = context.start?.location ?? context.matches[0]?.location
+  const location = context.start?.location ?? context.matches.at(0)?.location
   return location?.kind === 'turn' || location?.kind === 'step' ? location.turn : undefined
 }
 

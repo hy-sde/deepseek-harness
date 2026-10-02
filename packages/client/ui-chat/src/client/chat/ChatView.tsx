@@ -214,7 +214,7 @@ export function ChatView({
     [loadImage, renderSlot],
   )
 
-  const firstKey = order[0]
+  const firstKey = order.at(0)
   const firstSeq = firstKey === undefined ? null : nodeStore.get(firstKey)?.anchorSeq ?? null
   const lastKey = order.at(-1) ?? null
   const latestSteering = pendingInputs.findLast(item => 'source' in item)

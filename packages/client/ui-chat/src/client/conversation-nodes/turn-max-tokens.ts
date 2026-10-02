@@ -18,7 +18,7 @@ interface TurnMaxTokensState {
 }
 
 function lastStep(context: ConversationNodeContext<TurnMaxTokensState>): number {
-  const location = context.start?.location ?? context.matches[0]?.location
+  const location = context.start?.location ?? context.matches.at(0)?.location
   if (location?.kind !== 'turn' && location?.kind !== 'step') return 0
   return location.turn.steps.at(-1)?.step ?? 0
 }
@@ -30,7 +30,7 @@ function lastStep(context: ConversationNodeContext<TurnMaxTokensState>): number 
  * the turn/end seq keeps the notice at the truncation point.
  */
 function noticeAnchor(context: ConversationNodeContext<TurnMaxTokensState>, seq: number): number {
-  const location = context.start?.location ?? context.matches[0]?.location
+  const location = context.start?.location ?? context.matches.at(0)?.location
   if (location?.kind !== 'turn' && location?.kind !== 'step') return seq
   const closing = location.turn.data.get('turn-tail')?.closing
   return closing === null || closing === undefined

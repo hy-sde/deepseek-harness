@@ -305,7 +305,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     })
   })
 
-it('keeps each earlier root complete before considering a later root', async () => {
+  it('keeps each earlier root complete before considering a later root', async () => {
     const f = fixture('installation-bridge')
     const installedBridge = f.installed
     const installationChoice = join(installedBridge, 'node_modules', 'ordered-choice')

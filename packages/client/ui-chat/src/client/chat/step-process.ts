@@ -13,10 +13,10 @@ export function processTitle(
   t: ChatViewSlotProps['t'],
 ): string {
   const labels = summary.counts.slice(0, 3).map(({ kind }) => t(`message.stepProcess.done.${kind}`))
-  const first = labels[0]
+  const first = labels.at(0)
   if (first === undefined) return t('message.stepProcess.done.thinking')
   const continuation = (label: string): string => label.charAt(0).toLowerCase() + label.slice(1)
-  const second = labels[1]
+  const second = labels.at(1)
   if (second === undefined) return first
   if (labels.length === 2) {
     const prefix = t('message.stepProcess.sharedPrefix')

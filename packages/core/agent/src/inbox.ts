@@ -29,6 +29,7 @@ export class Inbox {
     private readonly session: Session,
     private readonly notifications: InboxNotifications,
   ) {
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     for (const event of session.ownEvents()) {
       if (event.type !== 'agent/inbox/spliced') continue
       try {

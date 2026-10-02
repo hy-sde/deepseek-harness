@@ -193,6 +193,7 @@ export function createActivationObserver(
     : { stopReason: 'error' }
   return {
     start: (child: Agent): void => {
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       boundary = SessionLogOffset(child.session.snapshotEvents().length)
       emit('subagent/start', identity, parent)
     },

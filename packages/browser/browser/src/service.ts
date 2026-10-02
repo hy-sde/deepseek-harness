@@ -162,7 +162,7 @@ export class BrowserService extends Service {
       // JS-level stealth scripts and UA override are deliberately NOT applied
       // on this backend (they would fight the per-session randomization).
       const browser = await launchCloakBrowser({ headless: this.headless, ...this.patchOptions })
-      return { kind, browser: browser as unknown as PlaywrightBrowser, headless: this.headless, cwd }
+      return { kind, browser: browser as PlaywrightBrowser, headless: this.headless, cwd }
     }
 
     // attach + relay both speak Chrome CDP discovery; the relay impersonates it.

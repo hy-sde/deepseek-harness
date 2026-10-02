@@ -54,7 +54,7 @@ describe('session-query semantic extraction', () => {
       {
         type: 'user/message', seq: SessionSeq(0), time: 1, data: createUserMessage({
           content: messageContent, source: { kind: 'user' },
-        }), surfaceOp: 'append'
+        }), surfaceOp: 'append',
       },
       {
         type: 'assistant/message', seq: SessionSeq(1), time: 2, data: {
@@ -68,12 +68,12 @@ describe('session-query semantic extraction', () => {
               ...{ provider: 'mock', model: 'mock' },
             },
           }),
-        }, surfaceOp: 'append'
+        }, surfaceOp: 'append',
       },
       {
         type: 'user/message', seq: SessionSeq(2), time: 3, data: createUserMessage({
           content: messageContent, source: { kind: 'test' },
-        }), surfaceOp: 'append'
+        }), surfaceOp: 'append',
       },
       { type: 'tool/call', seq: SessionSeq(3), time: 5, data: { turn: 1, step: 1, callId, name: 'bash', arguments: '{"cmd":"pwd"}' } },
       {
@@ -187,7 +187,7 @@ describe('session-query document and filter helpers', () => {
     {
       type: 'user/message', seq: SessionSeq(0), time: 10, data: createUserMessage({
         content: [{ type: 'text', text: 'Hello\n(AI)+' }], source: { kind: 'user' },
-      }), surfaceOp: 'append'
+      }), surfaceOp: 'append',
     },
     {
       type: 'assistant/attempt',
@@ -206,7 +206,7 @@ describe('session-query document and filter helpers', () => {
           source: { kind: 'test' },
         }),
       surfaceOp: { op: 'replace', startSeq: SessionSeq(0), endSeq: SessionSeq(0) },
-      sourceEventSeqs: [SessionSeq(0)]
+      sourceEventSeqs: [SessionSeq(0)],
     },
     { type: 'turn/end', seq: SessionSeq(3), time: 13, data: { turn: 1, reason: { kind: 'interrupted' } } },
   ]

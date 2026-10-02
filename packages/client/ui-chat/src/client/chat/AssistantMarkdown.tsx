@@ -72,7 +72,7 @@ export const AssistantMarkdown = memo(function AssistantMarkdown({
   if (!hasVisible) return null
   const rendered: ReactNode[] = []
   for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i]
+    const block = blocks.at(i)
     if (block === undefined) continue
     if (groupPart === 'reasoning' && block.kind !== 'reasoning') continue
     if (groupPart === 'response' && block.kind === 'reasoning') continue
@@ -110,7 +110,7 @@ export const AssistantMarkdown = memo(function AssistantMarkdown({
         const start = i
         const group = [block]
         while (i + 1 < blocks.length) {
-          const next = blocks[i + 1]
+          const next = blocks.at(i + 1)
           if (next === undefined || next.kind !== 'image') break
           group.push(next)
           i += 1

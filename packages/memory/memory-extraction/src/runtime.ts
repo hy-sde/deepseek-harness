@@ -130,6 +130,7 @@ export class MemoryExtractionRuntime {
     return {
       readGate: gate,
       readEvents: (_sessionId, fromSeq, throughSeq) => {
+        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
         const events = session.snapshotEvents(
           SessionLogOffset(fromSeq + 1),
           SessionLogOffset(throughSeq + 1),

@@ -256,6 +256,7 @@ export class SubagentContinuationManager {
    * @param options - scheduling policy, caller cancellation, and structured arm.
    * @returns the accepted durable message id.
    */
+  // oxlint-disable-next-line typescript/require-await -- async keeps the public Promise contract; delivery is a synchronous inbox splice.
   async reportFrom(
     child: Agent,
     content: ContentBlock[],

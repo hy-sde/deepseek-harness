@@ -136,9 +136,10 @@ function TurnNavigatorRail(
       const element = instance.scrollElement
       const Observer = instance.targetWindow?.ResizeObserver
       if (element === null || Observer === undefined) return
-      const observer = new Observer(([entry]) => {
+      const observer = new Observer((entries) => {
+        const entry = entries.at(0)
         if (entry === undefined) return
-        const box = entry.borderBoxSize[0]
+        const box = entry.borderBoxSize.at(0)
         const rect = {
           width: Math.round(box?.inlineSize ?? entry.contentRect.width),
           height: Math.round(box?.blockSize ?? entry.contentRect.height),
@@ -182,7 +183,7 @@ function TurnNavigatorRail(
   const scrollToIndex = useCallback((
     index: number, reveal: 'if-needed' | 'always', behavior: 'auto' | 'smooth' | 'instant' = preferredScrollBehavior(),
   ): void => {
-    const item = virtualizer.measurementsCache[index]
+    const item = virtualizer.measurementsCache.at(index)
     const height = virtualizer.scrollRect?.height ?? 0
     if (item === undefined || height <= 0) return
     const current = virtualizer.scrollOffset ?? 0
@@ -244,7 +245,7 @@ function TurnNavigatorRail(
         <div ref={scrollerRef} className={fadeClasses.join(' ')}>
           <div ref={virtualizer.containerRef} className={css.marks}>
             {virtualItems.map(({ index, key }) => {
-              const item = items[index]
+              const item = items.at(index)
               if (item === undefined) return null
               return (
                 <TurnMark
