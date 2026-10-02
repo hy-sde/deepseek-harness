@@ -8,7 +8,6 @@
 
 import { graphWakeAttemptId } from '@deepseek-ai/dsh-graph-control'
 import type {
-  AgentGraphScheduleUpdate,
   AgentGraphSupervisorWakeRecord,
   CompleteAgentGraphSupervisorWakeAttemptRequest,
 } from '@deepseek-ai/dsh-graph-control'
@@ -79,6 +78,22 @@ function completeStatus(kind: GraphWakeDeliveryOutcome['kind']): CompleteAgentGr
  * CAS is `beginSupervisorWakeAttempt` with a deterministic attempt id, so
  * overlapping sweep invocations deliver at most once per attempt row.
  */
+/**
+ * Whether the error carries the conventional overflow marker
+ * (`overflow === true`), which includes the host's owned
+ * `GraphHostContextOverflowError`. The wording-based harness classifier
+ * deliberately stays host-side: a stop-check read fails on store errors,
+ * which are never provider wordings.
+ */
+function isOverflowSignal(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'overflow' in error &&
+    (error as { overflow?: unknown }).overflow === true
+  )
+}
+
 export class GraphWakeRuntime {
   private readonly store: GraphWakeStore
   private readonly deliver: GraphWakeDeliver
@@ -273,7 +288,21 @@ export class GraphWakeRuntime {
       await this.exhaust(wake, { kind: 'retryable_failed', ...(wake.failureReason !== undefined ? { failureReason: wake.failureReason } : {}) })
       return
     }
-    if (await this.isGraphStopped(wake)) {
+    let stopped: boolean
+    try {
+      stopped = await this.isGraphStopped(wake)
+    } catch (error: unknown) {
+      if (!isOverflowSignal(error)) throw error
+      // An overflow-marked failure is the harness's in-band signal, not a
+      // store failure: proceed so the delivery attempt surfaces it through
+      // the classified outcome path (one-compaction recovery). Any other
+      // read failure fails CLOSED — rethrow to the sweep's per-wake catch,
+      // which reports it and leaves the wake unsettled rather than
+      // delivering against unknown graph state.
+      this.report(wake.rootSessionId, error)
+      stopped = false
+    }
+    if (stopped) {
       await this.store.supersedeSupervisorWakes({
         rootSessionIds: [wake.rootSessionId],
         graphIds: [wake.graphId],
@@ -404,13 +433,10 @@ export class GraphWakeRuntime {
    * lifecycle stays host wiring; the durable log is the shared authority.
    */
   private async isGraphStopped(wake: AgentGraphSupervisorWakeRecord): Promise<boolean> {
-    let updates: AgentGraphScheduleUpdate[]
-    try {
-      updates = await this.store.listScheduleUpdates(wake.graphId)
-    } catch (error: unknown) {
-      this.report(wake.rootSessionId, error)
-      return false
-    }
+    // A failed read propagates to deliverWake: overflow-marked failures
+    // proceed into the classified delivery funnel, anything else fails
+    // closed at the sweep's per-wake catch (wake stays unsettled).
+    const updates = await this.store.listScheduleUpdates(wake.graphId)
     if (updates.some(update => update.finish !== undefined)) return true
     return updates.some(update =>
       update.stop.some(stopped =>

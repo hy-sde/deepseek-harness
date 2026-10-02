@@ -55,6 +55,8 @@ import { GraphHostWorktreePool } from './worktree-pool.ts'
  * claims, so the host provides the guard here (process-local — the durable
  * claim row stays the restart authority, like every other record fold).
  */
+const FINISHED_CLAIM_MEMO_CAP = 1024
+
 class OncePerClaimGraphExecutor implements AgentGraphExecutor {
   private readonly finished = new Map<string, readonly AgentGraphRecord[]>()
   private readonly running = new Map<string, Promise<readonly AgentGraphRecord[]>>()
@@ -73,8 +75,17 @@ class OncePerClaimGraphExecutor implements AgentGraphExecutor {
     if (inFlight !== undefined) return inFlight.then(records => [...records])
     const run = this.inner.runClaimedAgentGraphIntent(input).then(
       (records) => {
+        // FIFO-evict the oldest memo entries past the cap: eviction is
+        // equivalent to the process-restart case the durable claim row already
+        // covers, so a re-drive of an evicted claim re-runs the inner executor
+        // rather than growing this map without bound.
         this.finished.set(claimId, records)
         this.running.delete(claimId)
+        while (this.finished.size > FINISHED_CLAIM_MEMO_CAP) {
+          const oldest = this.finished.keys().next()
+          if (oldest.done === true) break
+          this.finished.delete(oldest.value)
+        }
         return records
       },
       (error: unknown) => {

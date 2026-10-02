@@ -23,6 +23,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import {
   AGENT_GRAPH_INTENT_CLAIM_SCHEMA_VERSION,
   AGENT_GRAPH_SCHEDULE_SCHEMA_VERSION,
+  type AgentGraphIntentClaim,
   type AgentGraphIntentClaimRequest,
   type AgentGraphOperatorProvisionRequest,
   type AgentGraphScheduleUpdateRequest,
@@ -245,6 +246,43 @@ function scheduleRequest(input: {
 }
 scheduleRequest.seq = 0
 
+function makeClaimRequest(intentId: string, runId: string): AgentGraphIntentClaimRequest {
+  return {
+    schemaVersion: AGENT_GRAPH_INTENT_CLAIM_SCHEMA_VERSION,
+    claimId: `claim-${intentId}`,
+    graphId: GRAPH,
+    intentId,
+    intentFingerprint: `intent-fp-${intentId}`,
+    readinessContextFingerprint: 'rc-1',
+    targetOperatorId: 'op-x',
+    targetSessionId: 'graph_session_x',
+    targetTurnId: `turn-${runId}`,
+    targetRunId: runId,
+  }
+}
+
+function makeClaimedIntentInput(claim: AgentGraphIntentClaim): AgentGraphRunClaimedIntentInput {
+  return {
+    intent: {
+      schemaVersion: 1,
+      intentId: claim.intentId,
+      graphId: GRAPH,
+      readinessContextFingerprint: 'rc-1',
+      policyFingerprint: 'pf-1',
+      readinessId: 'w1',
+      operatorId: 'op-x',
+      targetSessionId: 'graph_session_x',
+      inputIds: [],
+      selectedResultInputs: [],
+      policyKind: 'supervisor',
+      triggerRouteIds: [],
+      triggerRecordIds: [],
+    },
+    claim,
+    prompt: 'run one intent',
+  }
+}
+
 function work(
   workId: string,
   overrides: Partial<{
@@ -463,48 +501,16 @@ describe('graph host assembly', () => {
     }
     await store.provisionOperator(provision)
 
-    const claimRequest = (intentId: string, runId: string): AgentGraphIntentClaimRequest => ({
-      schemaVersion: AGENT_GRAPH_INTENT_CLAIM_SCHEMA_VERSION,
-      claimId: `claim-${intentId}`,
-      graphId: GRAPH,
-      intentId,
-      intentFingerprint: `intent-fp-${intentId}`,
-      readinessContextFingerprint: 'rc-1',
-      targetOperatorId: 'op-x',
-      targetSessionId: 'graph_session_x',
-      targetTurnId: `turn-${runId}`,
-      targetRunId: runId,
-    })
-    const claimOne = (await store.claimIntent(claimRequest('intent-a', 'run-a'))).claim
-    const claimTwo = (await store.claimIntent(claimRequest('intent-b', 'run-b'))).claim
-
-    const inputFor = (claim: typeof claimOne): AgentGraphRunClaimedIntentInput => ({
-      intent: {
-        schemaVersion: 1,
-        intentId: claim.intentId,
-        graphId: GRAPH,
-        readinessContextFingerprint: 'rc-1',
-        policyFingerprint: 'pf-1',
-        readinessId: 'w1',
-        operatorId: 'op-x',
-        targetSessionId: 'graph_session_x',
-        inputIds: [],
-        selectedResultInputs: [],
-        policyKind: 'supervisor',
-        triggerRouteIds: [],
-        triggerRecordIds: [],
-      },
-      claim,
-      prompt: 'run one intent',
-    })
+    const claimOne = (await store.claimIntent(makeClaimRequest('intent-a', 'run-a'))).claim
+    const claimTwo = (await store.claimIntent(makeClaimRequest('intent-b', 'run-b'))).claim
 
     const executor = harness.services.executor
     const provisioned = await executor.provisionOperator(provision)
     expect(provisioned).toBeDefined()
-    const first = executor.runClaimedAgentGraphIntent(inputFor(claimOne))
+    const first = executor.runClaimedAgentGraphIntent(makeClaimedIntentInput(claimOne))
     await waitUntil(() => harness.subagents.runs.length === 1)
     expect(harness.subagents.runs).toHaveLength(1)
-    const second = executor.runClaimedAgentGraphIntent(inputFor(claimTwo))
+    const second = executor.runClaimedAgentGraphIntent(makeClaimedIntentInput(claimTwo))
     await new Promise(resolve => setTimeout(resolve, 50))
     expect(harness.subagents.runs).toHaveLength(1)
 
@@ -519,6 +525,41 @@ describe('graph host assembly', () => {
       .snapshot()
       .then(() => harness.services.controller.snapshot(GRAPH))
     expect(events.records).toHaveLength(2)
+
+    await harness.services.dispose()
+    await harness.backend.close()
+    cleanup(harness.path)
+  })
+
+  it('returns the memoized terminal records for a re-drive of a finished claim', async () => {
+    const harness = await makeHarness({ attach: false })
+    const store = harness.services.store
+    const provision: AgentGraphOperatorProvisionRequest = {
+      provisionId: 'graph_provision_1',
+      graphId: GRAPH,
+      workId: 'w1',
+      operatorId: 'op-x',
+      targetSessionId: 'graph_session_x',
+      initialTurnId: 'turn-1',
+      initialRunId: 'run-1',
+      provisionFingerprint: 'fp-1',
+      edges: [],
+      expectedScheduleRevision: 0,
+    }
+    await store.provisionOperator(provision)
+
+    const claimOne = (await store.claimIntent(makeClaimRequest('intent-a', 'run-a'))).claim
+
+    const executor = harness.services.executor
+    expect(await executor.provisionOperator(provision)).toBeDefined()
+    const first = executor.runClaimedAgentGraphIntent(makeClaimedIntentInput(claimOne))
+    await waitUntil(() => harness.subagents.runs.length === 1)
+    must(harness.subagents.runs[0]).settle('completed', [{ type: 'text', text: 'first done' }])
+    const firstRecords = await first
+
+    const redrive = await executor.runClaimedAgentGraphIntent(makeClaimedIntentInput(claimOne))
+    expect(redrive).toEqual(firstRecords)
+    expect(harness.subagents.starts).toHaveLength(1)
 
     await harness.services.dispose()
     await harness.backend.close()

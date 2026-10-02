@@ -9,6 +9,7 @@ import type {
   GraphWakeDue,
   GraphWakeIdleCallback,
   GraphWakeRuntimeOptions,
+  GraphWakeStore,
 } from '../src/types.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -116,7 +117,7 @@ function makeProbe(): {
 }
 
 function makeRuntime(
-  store: GraphControlStore,
+  store: GraphWakeStore,
   deliver: GraphWakeDeliver,
   overrides: Partial<GraphWakeRuntimeOptions> = {},
 ): GraphWakeRuntime {
@@ -381,6 +382,39 @@ describe('GraphWakeRuntime', () => {
     await runtime.handleIdle(ROOT)
     expect(calls).toHaveLength(0)
     expect(must(await store.readSupervisorWake(GRAPH, WAKE_ID)).status).toBe('superseded')
+  })
+
+  it('leaves the wake unsettled when the schedule-log read fails', async () => {
+    const store = await openStore(tmpPath())
+    await claimWake(store)
+    const failure = new Error('schedule log unavailable')
+    let failReads = true
+    const failing: GraphWakeStore = {
+      listUnsettledSupervisorWakes: () => store.listUnsettledSupervisorWakes(),
+      readSupervisorWake: (graphId, wakeId) => store.readSupervisorWake(graphId, wakeId),
+      beginSupervisorWakeAttempt: request => store.beginSupervisorWakeAttempt(request),
+      completeSupervisorWakeAttempt: request => store.completeSupervisorWakeAttempt(request),
+      exhaustSupervisorWake: (graphId, wakeId, reason) => store.exhaustSupervisorWake(graphId, wakeId, reason),
+      supersedeSupervisorWakes: request => store.supersedeSupervisorWakes(request),
+      listScheduleUpdates: graphId => (failReads ? Promise.reject(failure) : store.listScheduleUpdates(graphId)),
+      snapshot: () => store.snapshot(),
+    }
+    const errors: Array<{ sessionId: string; error: unknown }> = []
+    const { deliver, calls } = makeDeliver()
+    const runtime = makeRuntime(failing, deliver, {
+      now: () => 0,
+      onError: (sessionId, error) => errors.push({ sessionId, error }),
+    })
+
+    await runtime.handleIdle(ROOT)
+    expect(calls).toHaveLength(0)
+    expect(must(await store.readSupervisorWake(GRAPH, WAKE_ID)).status).toBe('pending')
+    expect(errors).toEqual([{ sessionId: ROOT, error: failure }])
+
+    failReads = false
+    await runtime.handleIdle(ROOT)
+    expect(calls).toHaveLength(1)
+    expect(must(await store.readSupervisorWake(GRAPH, WAKE_ID)).status).toBe('delivered')
   })
 
   it('does not suppress wakes for work-item stops', async () => {
