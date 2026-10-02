@@ -4,7 +4,7 @@
  * exercised against actual `git` through the subprocess seam.
  */
 
-import { mkdtemp, writeFile, readFile } from 'node:fs/promises'
+import { mkdtemp, writeFile, readFile, chmod, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { realpathSync } from 'node:fs'
@@ -121,5 +121,24 @@ describe('ctx.git over a real repository', () => {
 
   it('reports a failed command with stderr detail', async () => {
     await expect(git.diffText(join(dir, 'nope'), { cached: true, binary: true })).rejects.toThrow(/git diff/)
+  })
+
+  it('times out a hanging git invocation', async () => {
+    const hangDir = await mkdtemp(join(tmpdir(), 'dsh-git-hang-'))
+    const shim = join(hangDir, 'git')
+    await writeFile(shim, '#!/bin/bash\nsleep 30\n', 'utf8')
+    await chmod(shim, 0o755)
+    // A fresh context: a second `git` registration would clobber the shared
+    // fixture's service on the module-level context.
+    const ctx = new Context()
+    await ctx.plugin(LocalSubprocessRuntime)
+    const hanging = new GitService(ctx, { gitPath: shim, timeoutMs: 300 })
+    const timedOutError: Record<string, unknown> = { message: expect.stringContaining('timed out') }
+    try {
+      await expect(hanging.status(hangDir)).rejects.toMatchObject(timedOutError)
+    } finally {
+      await ctx.fiber.dispose()
+      await rm(hangDir, { recursive: true, force: true })
+    }
   })
 })
