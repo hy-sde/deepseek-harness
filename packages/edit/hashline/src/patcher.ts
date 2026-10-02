@@ -75,22 +75,22 @@ export interface PatcherOptions {
    */
   snapshots?: SnapshotStore
   /**
-	 * Resolves `replace_block N:` anchors to concrete line spans via tree-sitter.
-	 * Optional: when omitted, any `replace_block N:` edit throws on apply (the
-	 * host did not wire a resolver). Plain line-range ops never need it.
-	 */
+   * Resolves `replace_block N:` anchors to concrete line spans via tree-sitter.
+   * Optional: when omitted, any `replace_block N:` edit throws on apply (the
+   * host did not wire a resolver). Plain line-range ops never need it.
+   */
   blockResolver?: BlockResolver
   /**
-	 * Enforce the seen-line guard: reject anchored edits on lines the read/search
-	 * that minted the tag never displayed. Defaults to `true`. When `false`, tags
-	 * validate on content hash alone and any anchor into the tagged content applies.
-	 */
+   * Enforce the seen-line guard: reject anchored edits on lines the read/search
+   * that minted the tag never displayed. Defaults to `true`. When `false`, tags
+   * validate on content hash alone and any anchor into the tagged content applies.
+   */
   enforceSeenLines?: boolean
   /**
-	 * Host-owned clipboard register shared across batches, so `CUT` content
-	 * can be `PASTE`d by a later {@link Patcher.apply} call. Each batch works
-	 * on a fork and publishes it back only after writes land.
-	 */
+   * Host-owned clipboard register shared across batches, so `CUT` content
+   * can be `PASTE`d by a later {@link Patcher.apply} call. Each batch works
+   * on a fork and publishes it back only after writes land.
+   */
   clipboard?: Clipboard
 }
 
@@ -111,12 +111,12 @@ export interface PatchSectionResult {
   /** Final text that the {@link Filesystem} actually wrote (may differ if the FS transformed it). */
   written: string
   /**
-	 * 4-hex content-hash tag. Hashes the content the {@link Filesystem}
-	 * reports actually landed on disk (see `written`), which normally equals
-	 * `after` but can diverge when the write path transforms content (e.g. an
-	 * ACP-bridge write reformatted by the client's format-on-save). Use to
-	 * anchor follow-up edits.
-	 */
+   * 4-hex content-hash tag. Hashes the content the {@link Filesystem}
+   * reports actually landed on disk (see `written`), which normally equals
+   * `after` but can diverge when the write path transforms content (e.g. an
+   * ACP-bridge write reformatted by the client's format-on-save). Use to
+   * anchor follow-up edits.
+   */
   fileHash: string
   /** Hashline section header (`[path#tag]`) of the post-edit content. */
   header: string
@@ -127,9 +127,9 @@ export interface PatchSectionResult {
   /** Destination path when this section includes `MV DEST`. */
   moveDest?: string
   /**
-	 * Resolved spans for block ops, present when the apply matched the tagged
-	 * content. Undefined for patches with no block ops and for drift recovery.
-	 */
+   * Resolved spans for block ops, present when the apply matched the tagged
+   * content. Undefined for patches with no block ops and for drift recovery.
+   */
   blockResolutions?: BlockResolution[]
 }
 
@@ -155,7 +155,7 @@ export class PreparedSection {
     readonly applyResult: ApplyResult,
     readonly parseWarnings: readonly string[],
     readonly fileOp: FileOp | undefined,
-  ) {}
+  ) { }
 
   /** Convenience: returns true when the apply produced no change and no file op. */
   get isNoop(): boolean {
@@ -239,11 +239,11 @@ export class Patcher {
   }
 
   /**
-	 * Apply every section in `patch`. `prepare` runs the full apply for each
-	 * section in memory before any write hits the filesystem, so a
-	 * multi-section batch is naturally all-or-nothing. Returns one
-	 * {@link PatchSectionResult} per section in the original patch order.
-	 */
+   * Apply every section in `patch`. `prepare` runs the full apply for each
+   * section in memory before any write hits the filesystem, so a
+   * multi-section batch is naturally all-or-nothing. Returns one
+   * {@link PatchSectionResult} per section in the original patch order.
+   */
   async apply(patch: Patch): Promise<PatcherApplyResult> {
     // One register per batch: `CUT` in one section feeds `PASTE` in a later
     // one, so content can move across files. A host-owned register
@@ -297,8 +297,8 @@ export class Patcher {
         const message = error instanceof Error ? error.message : String(error)
         throw new Error(
           `Failed to write ${entry.section.path}: ${message}` +
-						(written.length > 0 ? ` Sections already written: ${written.join(', ')}.` : '') +
-						(notWritten.length > 0 ? ` Sections not written: ${notWritten.join(', ')}.` : ''),
+          (written.length > 0 ? ` Sections already written: ${written.join(', ')}.` : '') +
+          (notWritten.length > 0 ? ` Sections not written: ${notWritten.join(', ')}.` : ''),
           { cause: error },
         )
       }
@@ -312,9 +312,9 @@ export class Patcher {
   }
 
   /**
-	 * Run the preflight pass only: read, parse, validate, apply-in-memory.
-	 * No writes hit the filesystem. Use for CI checks and dry runs.
-	 */
+   * Run the preflight pass only: read, parse, validate, apply-in-memory.
+   * No writes hit the filesystem. Use for CI checks and dry runs.
+   */
   async preflight(patch: Patch): Promise<void> {
     // Dry run: fork the register and never publish it back.
     const clipboard = startClipboardBatch(this.clipboard)
@@ -348,17 +348,17 @@ export class Patcher {
   }
 
   /**
-	 * Read a section's target file, parse the section, validate the snapshot
-	 * tag (with recovery), and apply the edits in memory. Returns a
-	 * {@link PreparedSection} which can be fed to {@link commit} to land
-	 * the result on the filesystem.
-	 *
-	 * `clipboard` is the register shared by `CUT`/`PASTE` ops. Pass the batch
-	 * register when preparing several sections so content can move across files.
-	 *
-	 * Throws on parse error, missing-file-for-anchored-edit, or unrecovered
-	 * tag mismatch ({@link MismatchError}).
-	 */
+   * Read a section's target file, parse the section, validate the snapshot
+   * tag (with recovery), and apply the edits in memory. Returns a
+   * {@link PreparedSection} which can be fed to {@link commit} to land
+   * the result on the filesystem.
+   *
+   * `clipboard` is the register shared by `CUT`/`PASTE` ops. Pass the batch
+   * register when preparing several sections so content can move across files.
+   *
+   * Throws on parse error, missing-file-for-anchored-edit, or unrecovered
+   * tag mismatch ({@link MismatchError}).
+   */
   async prepare(section: PatchSection, clipboard?: Clipboard): Promise<PreparedSection> {
     const parsed = await this.#parseWithRangeDiagnostics(section)
     const parseWarnings = [...parsed.warnings]
@@ -441,18 +441,18 @@ export class Patcher {
   }
 
   /**
-	 * Resolve a missing authored path to a file read this session by matching
-	 * its filename and snapshot tag. Returns the section rebound to that file's
-	 * canonical path, or `null` when no unique filename+tag match exists.
-	 *
-	 * Resolution requires BOTH the bare filename (basename) and the section tag
-	 * to match a single retained file: a whole-file content hash plus an exact
-	 * filename is a strong identity signal, so the model almost certainly meant
-	 * that file but gave the wrong directory (or only the filename). A tie — two
-	 * retained files sharing the filename and tag — declines recovery. The
-	 * recorded path of the authored file itself is excluded so a deleted file
-	 * does not "recover" onto its own stale snapshot.
-	 */
+   * Resolve a missing authored path to a file read this session by matching
+   * its filename and snapshot tag. Returns the section rebound to that file's
+   * canonical path, or `null` when no unique filename+tag match exists.
+   *
+   * Resolution requires BOTH the bare filename (basename) and the section tag
+   * to match a single retained file: a whole-file content hash plus an exact
+   * filename is a strong identity signal, so the model almost certainly meant
+   * that file but gave the wrong directory (or only the filename). A tie — two
+   * retained files sharing the filename and tag — declines recovery. The
+   * recorded path of the authored file itself is excluded so a deleted file
+   * does not "recover" onto its own stale snapshot.
+   */
   #recoverSectionPathFromTag(
     section: PatchSection,
     originalCanonicalPath: string,
@@ -474,11 +474,11 @@ export class Patcher {
   }
 
   /**
-	 * Commit a previously {@link prepare}d section to the filesystem.
-	 * Restores line endings and BOM, writes via the {@link Filesystem}, and
-	 * records a fresh snapshot in the {@link SnapshotStore} keyed by the
-	 * filesystem-canonical path.
-	 */
+   * Commit a previously {@link prepare}d section to the filesystem.
+   * Restores line endings and BOM, writes via the {@link Filesystem}, and
+   * records a fresh snapshot in the {@link SnapshotStore} keyed by the
+   * filesystem-canonical path.
+   */
   async commit(prepared: PreparedSection): Promise<PatchSectionResult> {
     const { section, normalized, bom, lineEnding, parseWarnings, exists, applyResult, canonicalPath, fileOp } =
       prepared
@@ -608,30 +608,30 @@ export class Patcher {
   }
 
   /**
-	 * Reject an anchored edit that references a line the read which minted
-	 * `expected` never displayed. `matchedSnapshot` is the store version whose
-	 * text equals the live normalized content — the exact snapshot the model
-	 * anchored against. Absent means no origin was recorded (the tag was
-	 * externally minted or aged out), so the edit applies as before. Only runs
-	 * on the no-drift path, where anchor line numbers index the tagged content
-	 * 1:1.
-	 *
-	 * The rejection inlines the actual file content at the unseen anchor lines
-	 * (from `matchedSnapshot.text`, which by definition equals the live
-	 * normalized content) so the model can verify what it was about to touch.
-	 * When the reveal covers EVERY unseen anchor line in full width
-	 * (`truncated === false`) those lines also merge into the snapshot's
-	 * seen-line set, so a straight retry with the same `[path#tag]` header
-	 * succeeds without a follow-up range read — the content the model
-	 * received in the error IS proof it has now seen those lines. When the
-	 * anchor range exceeds {@link SEEN_LINE_REVEAL_CAP} lines OR any
-	 * revealed line exceeds {@link SEEN_LINE_REVEAL_MAX_COLUMNS} characters
-	 * (`truncated === true`), NO lines merge: the message keeps the
-	 * range-re-read guidance intact and the model cannot piecewise-reveal
-	 * its way past the guard across multiple retries
-	 * (over-cap retry → tail reveal → next retry applies), nor coax the tool
-	 * into dumping a minified megabyte-wide line into the error preview.
-	 */
+   * Reject an anchored edit that references a line the read which minted
+   * Reject an anchored edit that references a line the read which minted
+   * `expected` never displayed. `snapshot` is the store version whose line
+   * numbers the anchors index 1:1 — on the no-drift path that is the
+   * version matching live content; on a drift path it is the tagged
+   * snapshot the anchors remap through. Absent means no origin was
+   * recorded (the tag was externally minted or aged out), so the edit
+   * applies as before.
+   *
+   * The rejection inlines the actual file content at the unseen anchor lines
+   * (from `snapshot.text`) so the model can verify what it was about to touch.
+   * When the reveal covers EVERY unseen anchor line in full width
+   * (`truncated === false`) those lines also merge into the snapshot's
+   * seen-line set, so a straight retry with the same `[path#tag]` header
+   * succeeds without a follow-up range read — the content the model
+   * received in the error IS proof it has now seen those lines. When the
+   * anchor range exceeds {@link SEEN_LINE_REVEAL_CAP} lines OR any
+   * revealed line exceeds {@link SEEN_LINE_REVEAL_MAX_COLUMNS} characters
+   * (`truncated === true`), NO lines merge: the message keeps the
+   * range-re-read guidance intact and the model cannot piecewise-reveal
+   * its way past the guard across multiple retries
+   * (over-cap retry → tail reveal → next retry applies), nor coax the tool
+   * into dumping a minified megabyte-wide line into the error preview.
+   */
   #assertSeenLines(section: PatchSection, expected: string, matchedSnapshot: Snapshot | null): void {
     const seen = matchedSnapshot?.seenLines
     if (!seen || seen.size === 0) return
@@ -748,6 +748,14 @@ export class Patcher {
       }
       const result = applyEdits(normalized, resolved, { clipboard, path: canonicalPath })
       return withResolveWarnings(blockResolutions.length > 0 ? { ...result, blockResolutions } : result)
+    }
+    // The drift paths below remap anchors through unchanged lines from the
+    // tagged snapshot, so the same seen-line contract applies there — judged
+    // against the snapshot the tag names, whose line numbers index exactly
+    // the text the anchors move through. Without this, a drifted file would
+    // let recovery relocate an anchor the read never displayed.
+    if (this.#enforceSeenLines) {
+      this.#assertSeenLines(section, expected, storedSnapshotForTag)
     }
     // Head/tail-only inserts are position-stable: "start"/"end" cannot move
     // with content drift, so a stale tag is non-fatal. Apply onto the live

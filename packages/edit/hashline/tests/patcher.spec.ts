@@ -343,6 +343,40 @@ describe('Patcher seen-line origin', () => {
     expect(fs.get(PATH)).toBe('l1\nl2\nl3\nL4\nl5\n')
   })
 
+  it('applies the seen-line contract to drift recovery — no blind remap of unseen anchors', async () => {
+    const v0 = 'l1\nl2\nl3\nl4\nl5\n'
+    const v1 = 'l1\nl2\ninserted\nl3\nl4\nl5\n'
+    const fs = new InMemoryFilesystem([[PATH, v1]])
+    const snapshots = new InMemorySnapshotStore()
+    // Read only surfaced lines 1-2 of v0; anchor 5 is unseen. The file then
+    // drifted, so a naive recovery would remap 5→6 and apply anyway.
+    const tag = snapshots.record(PATH, v0, [1, 2])
+    const patcher = new Patcher({ fs, snapshots })
+
+    let message: string | undefined
+    try {
+      await patcher.apply(Patch.parse(`[${PATH}#${tag}]\nPUT 5-5:\n+L5-MODEL`))
+    } catch (err) {
+      message = (err as Error).message
+    }
+    expect(message).toMatch(/never displayed/)
+    // Disk untouched — refusal must never leave a partial write.
+    expect(fs.get(PATH)).toBe(v1)
+  })
+
+  it('still recovers drifted anchors the read displayed', async () => {
+    const v0 = 'l1\nl2\nl3\nl4\nl5\n'
+    const v1 = 'l1\nl2\ninserted\nl3\nl4\nl5\n'
+    const fs = new InMemoryFilesystem([[PATH, v1]])
+    const snapshots = new InMemorySnapshotStore()
+    const tag = snapshots.record(PATH, v0, [1, 2, 3, 4, 5])
+    const patcher = new Patcher({ fs, snapshots })
+
+    const result = await patcher.apply(Patch.parse(`[${PATH}#${tag}]\nPUT 5-5:\n+L5-MODEL`))
+    expect(result.sections[0]?.op).toBe('update')
+    expect(fs.get(PATH)).toBe('l1\nl2\ninserted\nl3\nl4\nL5-MODEL\n')
+  })
+
   it('truncates the reveal at the cap and directs the tail back to a range re-read', async () => {
     const bigContent = `${Array.from({ length: 200 }, (_, i) => `l${i + 1}`).join('\n')}\n`
     const fs = new InMemoryFilesystem([[PATH, bigContent]])
