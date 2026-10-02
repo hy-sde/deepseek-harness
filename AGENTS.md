@@ -26,18 +26,30 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   ssh/                  SSH execution providers
   terminal/             persistent terminals
   ptc-runtime/          PTC execution
+  code-runtime/         persistent code kernels
   sandbox/              process confinement
+  av/                   Automic Vault audit and hardening tools
   deliverables/         turn deliverables
+  git/                  agentic git service + tools
+  vcs/                  native VCS service
   fs/                   filesystem access
+  edit/                 file-edit tools (hashline)
   lsp/                  language servers
+  ast/                  ast-grep search/edit tools
+  debug/                DAP debug seam + tool
+  codebase-memory/      codebase knowledge-graph tools
   skill/                skill loading
   web/                  search/fetch tools
   computer-use/         computer interaction
   browser-use/          browser interaction
+  browser/              browser service + tool
   compaction/           context compaction
   context/              request context
+  memory/               long-horizon agent memory
   subagent/             delegated agents
   jobs/                 background jobs
+  graph/                Agent Graph supervision
+  orchestration/        fan-out orchestration policy
   bundle/               profile bundles
   workflow/             workflow execution
   webhook/              webhook ingress
@@ -51,11 +63,13 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   hooks/                Claude Code/Codex bridges
   session/              durable sessions
   session-query/        browsing/search/export
+  agentsview/           session-intelligence queries
   attachment/           binary attachments
   spill/                output spill
   storage/              non-session storage
   workspace/            workspace entities
   feedback/             human feedback
+  telemetry/            shared Cordis OTel channels
   identity/             anonymous identity
   settings/             user settings
   credentials/          credentials/authorization
@@ -65,8 +79,12 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   sdk/                  JSON-RPC SDK
   host/                 GUI host
   client/               GUI client
+  document/             Host Office-to-PDF conversion
   mcp/                  external tools
+  logseq/               Logseq CLI + wiki-graph tools
+  openwiki/             OpenWiki generation tools
   experimental/         pre-stable prototypes; public by default with explicit private exceptions
+  examples/             demo assemblies
   test-support/         test infrastructure
   runtime-diagnostics/  runtime invariants
   util/                 zero-dependency utilities

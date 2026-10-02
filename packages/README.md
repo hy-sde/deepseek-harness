@@ -42,17 +42,29 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`shell/`](shell/README.md) | Bash capability family: executor seam, local impl, model-facing tools |
 | [`terminal/`](terminal/README.md) | Persistent PTY capability family: owner-scoped sessions, local implementation, model-facing tools |
 | [`ptc-runtime/`](ptc-runtime/README.md) | PTC execution capability family: Service Definition + sandboxed Node provider + PTC mode Consumer |
+| [`code-runtime/`](code-runtime/README.md) | Persistent Python and JavaScript code kernels behind the model-facing `run_kernel_code` tool |
 | [`computer-use/`](computer-use/README.md) | Exclusive named desktop-provider registration |
 | [`browser-use/`](browser-use/README.md) | Exclusive named browser-provider registration |
+| [`browser/`](browser/README.md) | Browser capability family: host `ctx.browser` service (launch/CDP-attach/relay) + the model-facing `browser` tool |
 | [`sandbox/`](sandbox/README.md) | Process-confinement seam; bwrap/Landlock/Seatbelt backends |
+| [`av/`](av/README.md) | Automic Vault family: host `ctx.av` service + read-only vault audit and hardening tools |
 | [`deliverables/`](deliverables/README.md) | Turn deliverables: explicit file delivery and recorded workspace changes |
+| [`git/`](git/README.md) | Agentic git capability family: host `ctx.git` service + the model-facing commit and review tools |
+| [`vcs/`](vcs/README.md) | Native VCS plumbing: host `ctx.vcs` service over the pi-vcs CLI; the git service stays the default path |
 | [`fs/`](fs/README.md) | Filesystem capability family: seam, local impl, model-facing file tools, discovery tools |
+| [`edit/`](edit/README.md) | File-edit capability family: hashline patch language + the model-facing rich `edit` tool over `ctx.fs` |
 | [`lsp/`](lsp/README.md) | LSP capability family: seam, generic stdio provider, and the `lsp` tool |
+| [`ast/`](ast/README.md) | Model-facing AST search and edit (`ast_grep`, `ast_edit`) over the packaged ast-grep CLI |
+| [`debug/`](debug/README.md) | DAP capability family: `ctx.dap` seam + the model-facing `debug` tool (breakpoints, stepping, evaluation) |
+| [`codebase-memory/`](codebase-memory/README.md) | Model-facing codebase-memory CLI tools: indexed knowledge-graph queries, traces, and ADRs over the local daemon |
 | [`skill/`](skill/README.md) | Skill capability family: provider registry, local provider, model-facing catalog/loader |
 | [`compaction/`](compaction/README.md) | Compaction capability family: Service Definition + basic provider + command Consumer |
 | [`context/`](context/README.md) | Model-visible request context: workspace instructions, time context, references |
+| [`memory/`](memory/README.md) | Long-horizon memory family: `ctx.memory` bank, compaction-time extraction, and retain/recall tools |
 | [`subagent/`](subagent/README.md) | Subagent capability family: provider-registry contract and model-facing delegation tools |
 | [`jobs/`](jobs/README.md) | Generic background-job runtime and model-facing job control tools |
+| [`graph/`](graph/README.md) | Agent Graph (Maka port): durable control plane, operator executor, host assembly, projection, stream, wakes, and supervisor tools |
+| [`orchestration/`](orchestration/README.md) | Parallelize-by-default orchestration policy: config-driven fan-out rules, fail-closed task isolation, prompt section |
 | [`experimental/`](experimental/README.md) | Pre-stable prototypes with explicit private exceptions |
 | [`workflow/`](workflow/README.md) | Workflow seam, PTC process engine, and model-facing `workflow`/`ralph` tools |
 | [`webhook/`](webhook/README.md) | Verified external events, trusted rules, and fire-and-forget Workspace Sessions |
@@ -67,9 +79,12 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`bundle/`](bundle/README.md) | Installable `dsh --profile` patch layers |
 | [`extensions/`](extensions/README.md) | Agent runtime self-modification: live plugin/service inspection and model-written mount/unmount |
 | [`mcp/`](mcp/README.md) | External Model Context Protocol servers exposed as native tools |
+| [`logseq/`](logseq/README.md) | Logseq capability family: host wiki-graph service + model-facing Logseq CLI tools |
+| [`openwiki/`](openwiki/README.md) | OpenWiki capability family: deterministic wiki-engine core + resumable repository wiki-generation tools |
 | [`hooks/`](hooks/README.md) | Hook bridges + the shared Claude Code / Codex wire-protocol library |
 | [`session/`](session/README.md) | Durable session data plane: persistence seam + backends, projection seam, log-backed titles, session reporting |
 | [`session-query/`](session-query/README.md) | Session retrieval family: logical corpus, bounded reads, lineage, semantic filtering, SQLite full-text search |
+| [`agentsview/`](agentsview/README.md) | Session-intelligence queries (health grades, analytics, token cost, semantic search) over the local agentsview archive |
 | [`settings/`](settings/README.md) | User-settings seam + file-backed provider |
 | [`credentials/`](credentials/README.md) | Credential-reference and credential-record seam + env-over-`.env` provider + authorization flows that ask a human |
 | [`storage/`](storage/README.md) | Non-session storage hub + backends + domain form |
@@ -80,6 +95,7 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`boot/`](boot/README.md) | Shared app-bin boot glue |
 | [`host/`](host/README.md) | Web GUI host services, directory picking, application launch, plugin inventory, and product telemetry |
 | [`client/`](client/README.md) | Web-GUI browser half: shell, wire, object services, slots, `ui-*` plugins |
+| [`examples/`](examples/README.md) | Demo assemblies: the executor-less/UI-less agent spine and the logseq diary example |
 | [`test-support/`](test-support/README.md) | Test infrastructure (testkits, replay, Loader smokes) |
 | [`runtime-diagnostics/`](runtime-diagnostics/README.md) | Runtime diagnostics: package-owned invariant checks and reports |
 | [`util/`](util/README.md) | Low-level zero-dependency utilities shared across groups (`Branded<B>`, home/path helpers, timeout, retention) |

@@ -42,17 +42,29 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`shell/`](shell/README.zh.md) | Bash 能力系列：执行器 seam、本地实现、面向模型的工具 |
 | [`terminal/`](terminal/README.zh.md) | 持久 PTY 能力系列：限定所有者范围的会话、本地实现、面向模型的工具 |
 | [`ptc-runtime/`](ptc-runtime/README.zh.md) | PTC 执行能力族：Service Definition + 沙箱 Node 提供方 + PTC mode Consumer |
+| [`code-runtime/`](code-runtime/README.zh.md) | 面向模型的 `run_kernel_code` 工具背后的持久化 Python 与 JavaScript 代码内核 |
 | [`computer-use/`](computer-use/README.zh.md) | 按名称独占注册桌面提供方 |
 | [`browser-use/`](browser-use/README.zh.md) | 按名称独占注册浏览器提供方 |
+| [`browser/`](browser/README.zh.md) | 浏览器能力系列：宿主 `ctx.browser` 服务（launch/CDP-attach/relay）+ 面向模型的 `browser` 工具 |
 | [`sandbox/`](sandbox/README.zh.md) | 进程限制 seam；bwrap、Landlock、Seatbelt 后端 |
+| [`av/`](av/README.zh.md) | Automic Vault 能力族：宿主 `ctx.av` 服务 + 只读金库审计与加固工具 |
 | [`deliverables/`](deliverables/README.zh.md) | 轮次交付物：显式文件交付与记录的工作区改动 |
+| [`git/`](git/README.zh.md) | Agentic git 能力族：宿主 `ctx.git` 服务 + 面向模型的提交与评审工具 |
+| [`vcs/`](vcs/README.zh.md) | 原生 VCS 管道：宿主 `ctx.vcs` 服务基于 pi-vcs CLI；git 服务仍是默认路径 |
 | [`fs/`](fs/README.zh.md) | 文件系统能力系列：seam、本地实现、面向模型的文件工具、发现工具 |
+| [`edit/`](edit/README.zh.md) | 文件编辑能力族：hashline 补丁语言 + 基于 `ctx.fs` 的面向模型富 `edit` 工具 |
 | [`lsp/`](lsp/README.zh.md) | LSP 能力系列：seam、通用 stdio 提供方和 `lsp` 工具 |
+| [`ast/`](ast/README.zh.md) | 基于打包的 ast-grep CLI 的面向模型 AST 搜索与编辑（`ast_grep`、`ast_edit`） |
+| [`debug/`](debug/README.zh.md) | DAP 能力族：`ctx.dap` seam + 面向模型的 `debug` 工具（断点、单步、求值） |
+| [`codebase-memory/`](codebase-memory/README.zh.md) | 面向模型的 codebase-memory CLI 工具：基于本地守护进程的索引知识图谱查询、追踪与 ADR |
 | [`skill/`](skill/README.zh.md) | skill（技能）能力系列：提供方注册表、本地提供方、面向模型的目录／loader |
 | [`compaction/`](compaction/README.zh.md) | 压缩（compaction）能力系列：Service Definition + 基础提供方 + 命令 Consumer |
 | [`context/`](context/README.zh.md) | 模型可见请求上下文：workspace 指令、时间上下文、引用 |
+| [`memory/`](memory/README.zh.md) | 长期记忆能力族：`ctx.memory` 记忆库、压缩期抽取与 retain/recall 工具 |
 | [`subagent/`](subagent/README.zh.md) | subagent 能力系列：提供方注册表约定和面向模型的委托工具 |
 | [`jobs/`](jobs/README.zh.md) | 通用后台任务运行时和面向模型的作业控制工具 |
+| [`graph/`](graph/README.zh.md) | Agent Graph（Maka 移植）：持久控制平面、operator 执行器、宿主装配、投影、stream、wakes 与 supervisor 工具 |
+| [`orchestration/`](orchestration/README.zh.md) | 默认并行的编排策略：配置驱动 fan-out 规则、fail-closed 任务隔离、提示词小节 |
 | [`experimental/`](experimental/README.zh.md) | 预稳定原型，包含显式私有例外 |
 | [`workflow/`](workflow/README.zh.md) | 工作流 seam、PTC 进程引擎、面向模型的 `workflow`／`ralph` 工具 |
 | [`webhook/`](webhook/README.zh.md) | 已验证外部事件、受信规则与即发即弃 Workspace 会话 |
@@ -67,9 +79,12 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`bundle/`](bundle/README.zh.md) | 可安装的 `dsh --profile` 补丁层 |
 | [`extensions/`](extensions/README.zh.md) | agent 运行时自修改：实时插件／服务检查与模型所写挂载／卸载 |
 | [`mcp/`](mcp/README.zh.md) | 将外部 Model Context Protocol 服务器的工具接入为原生工具 |
+| [`logseq/`](logseq/README.zh.md) | Logseq 能力族：宿主 wiki-graph 服务 + 面向模型的 Logseq CLI 工具 |
+| [`openwiki/`](openwiki/README.zh.md) | OpenWiki 能力族：确定性 wiki 引擎核心 + 可断点续跑的仓库 wiki 生成工具 |
 | [`hooks/`](hooks/README.zh.md) | 钩子桥接 + 共享的 Claude Code／Codex 线协议库 |
 | [`session/`](session/README.zh.md) | 持久会话数据平面：持久化 seam + 后端、投影 seam、基于日志的标题、会话上报 |
 | [`session-query/`](session-query/README.zh.md) | 会话检索系列：逻辑语料库、有界读取、血缘、语义过滤、SQLite 全文搜索 |
+| [`agentsview/`](agentsview/README.zh.md) | 基于本地 agentsview 归档的会话智能查询（健康等级、分析、token 成本、语义搜索） |
 | [`settings/`](settings/README.zh.md) | 用户设置 seam + 基于文件的提供方 |
 | [`credentials/`](credentials/README.zh.md) | 凭据引用与凭据记录 seam + 环境变量优先于 `.env` 的提供方 + 需要向人询问的授权流程 |
 | [`storage/`](storage/README.zh.md) | 非会话存储中枢 + 后端 + 领域形式 |
@@ -80,6 +95,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`boot/`](boot/README.zh.md) | 共享的 app bin 启动粘合层 |
 | [`host/`](host/README.zh.md) | Web GUI 宿主服务、目录选择、应用启动、插件清单和产品遥测 |
 | [`client/`](client/README.zh.md) | web GUI 浏览器半侧：shell、协议层、对象服务、slot、`ui-*` 插件 |
+| [`examples/`](examples/README.zh.md) | 演示装配：无执行器/无 UI 的 agent spine 与 logseq 日记示例 |
 | [`test-support/`](test-support/README.zh.md) | 测试基础设施（testkit、回放、Loader 冒烟测试） |
 | [`runtime-diagnostics/`](runtime-diagnostics/README.zh.md) | 运行时诊断：按包归属的运行时不变式检查与报告 |
 | [`util/`](util/README.zh.md) | 组间共享的低层零依赖工具（`Branded<B>`、home／路径辅助函数、超时、留存） |
