@@ -198,10 +198,10 @@ export class ChatViewport {
       }
       const row = low < rows.length ? rows[low] : undefined
       anchor = row !== undefined && row.getBoundingClientRect().top < bottom
-        ? row : rows.length > 0 ? rows[0] : null
+        ? row : rows.length > 0 ? rows.item(0) : null
     }
     const key = anchor?.getAttribute('data-chat-anchor-key')
-    return anchor === null || key === null ? null : {
+    return anchor === null || key == null ? null : {
       anchorKey: key,
       anchorTop: anchor.getBoundingClientRect().top - viewport.top,
       scrollTop: scroller.scrollTop,

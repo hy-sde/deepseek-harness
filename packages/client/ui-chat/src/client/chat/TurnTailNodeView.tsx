@@ -18,7 +18,8 @@ function lastContent(snapshot: ChatSnapshot, turn: number, skipWarning: boolean)
   for (let index = keys.length - 1; index >= 0; index--) {
     const key = keys.at(index)
     if (key === undefined) continue
-    const node = snapshot.nodes.get(key)
+    // The map stores bare view nodes; ChatNode members add the kind/data intersection.
+    const node = snapshot.nodes.get(key) as ChatNode | undefined
     if (node === undefined || node.kind === 'turn-tail' || node.kind === 'turn-process'
       || (skipWarning && node.kind === 'turn-max-tokens')) continue
     return node
