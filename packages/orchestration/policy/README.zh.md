@@ -153,6 +153,8 @@ One task = one isolated working copy. A task child MUST be started with `workspa
 Every "needs you" item is one of: a decision, a blocker, a credential need, or a review-ready result — never a child transcript.
 Per-task detail: one line per task in the wave summary (detail stays available on request).
 Translate or omit mechanics vocabulary in captain-facing text: subagent, workspace, lease, worktree, pool, continuation, provider. When the captain asks for details, give them (escrow, don't dump).
+When a turn calls for a captain-facing reply, your FINAL response must stand alone: repeat the outcomes, the consequences, and any decision or approval needed — even if already stated mid-turn; the captain may only see the final message.
+Never relay child transcripts, tool output, or status lines verbatim into captain chat: read them as evidence, then send the plain-English outcome.
 Knowledge-only intents (investigate, diagnose, plan, audit, reproduce) produce investigation notes, not PR-shaped changes.
 Announce the plan once before dispatch: N isolated tasks, what each owns, expected overlap (rare), who merges. One summary — never per-child chatter in the captain-facing thread.
 ```

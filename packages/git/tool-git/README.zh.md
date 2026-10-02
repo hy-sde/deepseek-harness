@@ -41,7 +41,7 @@ kind: "package-reference"
 - **`commit`（分析，只读）** — 快照已暂存 diff（在无暂存内容且 `stagedOnly: false` 时自动暂存工作区），报告按文件的增删计数、有界 diff、`trivial` 分类、`lockFilesPending` 与 `suggestedPlan` 骨架。它从不写入仓库。
 - **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。`push: true` 把当前分支推送到 `origin` 并记录上游（`git push --set-upstream origin <branch>`），供 PR 工具取用；detached HEAD（默认工作树槽位）会被拒绝并给出指向 `worktree acquire --branch` 的指引——该命名分支组合就是发布路径。当挂载了 [`@deepseek-ai/dsh-orchestration-policy`](../../orchestration/policy/README.zh.md) 且其 `reviewGate` 生效时，推送还需要 `review --target staged` 对**完全相同**的暂存范围返回当前 `ship` 结论（身份 = 提交前 HEAD + 索引树）——否则 `commit_apply --push` 被拒绝并给出修复方法；结论由 `review` 工具按仓库记录，且只存在于宿主进程内。
 - **`review`** — 按权重把已暂存 diff 切成至多 `maxReviewers` 份子代理运行，采用结构化评审者契约，按评审者置信度的最小值聚合 `ship`／`reject` 结论，按严重度排序 findings，并把传输失败报告为 errors（绝不静默批准未受评审的变更）。
-- **`worktree`** — 池管理器：`acquire` 切出或复用隔离的 git 工作树（`--branch` 得到命名分支 HEAD，供 `commit_apply --push`／PR 流程使用），并返回持久 `leaseId`；`release` 归还槽位（以精确租约 id 为条件；非 `force` 时拒绝脏工作）；`list` 显示池的实时状态；`prune` 与 `destroy` 在 `yes` 前都是 dry-run，绝不自动触碰租借或脏槽位。见 [Worktree 工具](#worktree-tool)。
+- **`worktree`** — 池管理器：`acquire` 切出或复用隔离的 git 工作树（`--branch` 得到命名分支 HEAD，供 `commit_apply --push`／PR 流程使用），并返回持久 `leaseId`；`release` 归还槽位（以精确租约 id 为条件；非 `force` 时拒绝脏工作）；`list` 显示池的实时状态；`prune` 与 `destroy` 在 `yes` 前都是 dry-run，绝不自动触碰租借或脏槽位。切勿管理你不拥有的槽位——池是共享基础设施，清除或销毁兄弟槽位会毁掉另一任务的进行中工作。见 [Worktree 工具](#worktree-tool)。
 
 <a id="two-phase-contract"></a>
 ## 两阶段契约
