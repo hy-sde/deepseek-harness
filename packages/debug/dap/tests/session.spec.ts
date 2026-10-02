@@ -16,9 +16,11 @@ import {
 
 /**
  * A tiny scripted DAP adapter subprocess. It accepts framing on stdin, answers
- * every request the manager sends, and fires the events that drive the
- * stop-state machine (initialized, stopped after configurationDone and after
- * every continue/step/pause, output on launch).
+ * every request the manager sends except `hang`, which acknowledges receipt
+ * via an output event but never responds (exercising the client request
+ * timeout and dispose paths), and fires the events that drive the stop-state
+ * machine (initialized, stopped after configurationDone and after every
+ * continue/step/pause, output on launch).
  */
 const ADAPTER_SCRIPT = `
 const path = require('node:path')
@@ -141,6 +143,11 @@ function handle(req) {
       respond(req, {})
       setTimeout(() => process.exit(0), 5)
       return
+    case 'hang':
+      // Acknowledge receipt via an output event but never respond; the
+      // caller's timeout (or dispose) rejects the request.
+      process.stdout.write(encode({ seq: ++seq, type: 'event', event: 'output', body: { category: 'console', output: 'hang received\\n' } }))
+      return
     default:
       body = { error: { id: -32601, message: 'not implemented: ' + req.command } }
   }
@@ -203,8 +210,12 @@ function spawnHandle(spec: SubprocessSpawnSpec, scriptPath: string): SubprocessH
   }
 }
 
-function makeManager(scriptPath: string): DapSessionManager {
-  const spawner: DapSpawner = spec => spawnHandle(spec, scriptPath)
+function makeManager(scriptPath: string, handles?: SubprocessHandle[]): DapSessionManager {
+  const spawner: DapSpawner = (spec) => {
+    const handle = spawnHandle(spec, scriptPath)
+    handles?.push(handle)
+    return handle
+  }
   return new DapSessionManager({
     spawn: spawner,
     idleTimeoutMs: 60_000,
@@ -347,5 +358,44 @@ describe('DapSessionManager with a scripted adapter', () => {
       () => scriptManager.listSessions().every(s => s.status === 'terminated'),
       'sessions settled after terminate',
     )
+  })
+
+  it('times out a hanging adapter request', async () => {
+    const adapter = adapterFor(scriptFile)
+    await scriptManager.launch({ adapter, program: programPath, cwd: dir }, undefined, 10_000)
+    const started = Date.now()
+    const timedOutError: Record<string, unknown> = {
+      message: expect.stringContaining('DAP request hang timed out after 150ms'),
+    }
+    await expect(scriptManager.customRequest('hang', {}, undefined, 150)).rejects.toMatchObject(timedOutError)
+    // The rejection rode the full 150ms budget, not an earlier failure path.
+    expect(Date.now() - started).toBeGreaterThanOrEqual(150)
+    await scriptManager.terminate(undefined, 10_000)
+    await waitFor(
+      () => scriptManager.listSessions().every(s => s.status === 'terminated'),
+      'sessions settled after the timeout-test terminate',
+    )
+  })
+
+  it('rejects an in-flight request on dispose instead of waiting out its timeout', async () => {
+    const handles: SubprocessHandle[] = []
+    const manager = makeManager(scriptFile, handles)
+    const adapter = adapterFor(scriptFile)
+    await manager.launch({ adapter, program: programPath, cwd: dir }, undefined, 10_000)
+    const pending = manager.customRequest('hang', {}, undefined, 30_000)
+    // The adapter acknowledges `hang` via an output event; once seen, the
+    // request is provably in flight, so dispose must reject it instead of
+    // letting the 30s budget elapse.
+    await waitFor(() => manager.getOutput(0).output.includes('hang received'), 'hang request to reach the adapter')
+    // Attach the expectation before dispose so the rejected promise is
+    // observed rather than dangling between rejection and assertion.
+    const disposedError: Record<string, unknown> = {
+      message: expect.stringContaining('DAP adapter test-node disposed'),
+    }
+    const rejection = expect(pending).rejects.toMatchObject(disposedError)
+    manager.dispose()
+    await rejection
+    // Dispose kills the adapter without awaiting its exit; prove the child is gone.
+    await Promise.all(handles.map(handle => handle.done))
   })
 })

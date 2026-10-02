@@ -481,7 +481,7 @@ export class DapClient {
     })
   }
 
-  /** Spawn the adapter for connectMode `stdio`. */
+  /** Reject in-flight requests, close the transport, kill the adapter process (if one is owned), and wait for its exit. */
   async dispose(): Promise<void> {
     if (this.#disposed) return
     this.#disposed = true
@@ -496,7 +496,7 @@ export class DapClient {
     } catch {
       /* already exited */
     }
-    await this.proc.exited.catch(() => {})
+    await this.proc.exited.catch(() => { })
   }
 
   #startMessageReader(): void {
@@ -898,7 +898,7 @@ function stdioTransport(proc: {
     for (const handler of closeHandlers) handler(error)
     closeHandlers = []
   }
-  void proc.exited.then(() => { fire(new Error('DAP adapter process exited')) }).catch(() => {})
+  void proc.exited.then(() => { fire(new Error('DAP adapter process exited')) }).catch(() => { })
   const transport: DapTransport = {
     onData(handler) {
       proc.stdout?.on('data', handler)
