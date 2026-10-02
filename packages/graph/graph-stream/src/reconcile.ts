@@ -418,15 +418,7 @@ export async function applyScheduleStops(
   stops: AgentGraphScheduleStopResult[]
   failures: { phase: string; targetId: string; error: unknown }[]
 }> {
-  const requests = new Map<string, string>()
-  for (const stopped of snapshot.schedule.stoppedTargets) {
-    requests.set(stopped.targetId, stopped.reason)
-  }
-  for (const work of snapshot.schedule.work) {
-    if (work.replaces !== undefined && !requests.has(work.replaces)) {
-      requests.set(work.replaces, `Superseded by graph work ${work.workId}`)
-    }
-  }
+  const requests = collectScheduleStopRequests(snapshot)
   const workById = new Map(
     snapshot.schedule.work.map(work => [work.workId, work]),
   )
@@ -436,15 +428,7 @@ export async function applyScheduleStops(
   const sortedTargets = [...requests.keys()].sort(compareAgentGraphIdentity)
   const stops: AgentGraphScheduleStopResult[] = []
   const failures: { phase: string; targetId: string; error: unknown }[] = []
-  const pendingBySession = new Map<
-    string,
-    {
-      targetId: string
-      reason: string
-      sessionId: string
-      activationId?: string
-    }[]
-  >()
+  const pendingBySession = new Map<string, PendingScheduleStopTarget[]>()
 
   for (const targetId of sortedTargets) {
     const reason = requests.get(targetId) as string
@@ -514,6 +498,46 @@ export async function applyScheduleStops(
     pendingBySession.set(sessionId, pending)
   }
 
+  const pendingStops = await stopPendingSessionTargets(seams, pendingBySession)
+  stops.push(...pendingStops.stops)
+  failures.push(...pendingStops.failures)
+  return { stops, failures }
+}
+
+/** One stop request grouped under the session that owns its activation. */
+interface PendingScheduleStopTarget {
+  readonly targetId: string
+  readonly reason: string
+  readonly sessionId: string
+  readonly activationId?: string
+}
+
+/** Explicit stop targets plus the supersessions implied by work replacements. */
+function collectScheduleStopRequests(
+  snapshot: AgentGraphScheduleSnapshot,
+): Map<string, string> {
+  const requests = new Map<string, string>()
+  for (const stopped of snapshot.schedule.stoppedTargets) {
+    requests.set(stopped.targetId, stopped.reason)
+  }
+  for (const work of snapshot.schedule.work) {
+    if (work.replaces !== undefined && !requests.has(work.replaces)) {
+      requests.set(work.replaces, `Superseded by graph work ${work.workId}`)
+    }
+  }
+  return requests
+}
+
+/** Applies one batched session stop per pending session and records per-target outcomes. */
+async function stopPendingSessionTargets(
+  seams: AgentGraphReconcileSeams,
+  pendingBySession: ReadonlyMap<string, PendingScheduleStopTarget[]>,
+): Promise<{
+  stops: AgentGraphScheduleStopResult[]
+  failures: { phase: string; targetId: string; error: unknown }[]
+}> {
+  const stops: AgentGraphScheduleStopResult[] = []
+  const failures: { phase: string; targetId: string; error: unknown }[] = []
   for (const [sessionId, targets] of pendingBySession) {
     try {
       await seams.executor.stopSession(sessionId, {
@@ -625,303 +649,83 @@ export async function reconcileAgentGraphSchedule(
     )
   }
   let snapshot = await readAgentGraphScheduleSnapshot(input, input.graphId)
-  const stops: AgentGraphScheduleStopResult[] = []
-  const failures: { phase: string; workId?: string; error: unknown }[] = []
-  const deferredWork: AgentGraphScheduleDeferredWork[] = []
-  const dispatches: {
-    intentId: string
-    workId: string
-    claimCreated: boolean
-  }[] = []
-  let newActivationCount = 0
-  let observedExistingActivationCount = 0
+  const acc: ReconcileAccumulators = {
+    stops: [],
+    failures: [],
+    deferredWork: [],
+    dispatches: [],
+    newActivationCount: 0,
+    observedExistingActivationCount: 0,
+  }
+  const finish = (status: AgentGraphReconciliationResult['status']) =>
+    buildResult(
+      input.graphId,
+      snapshot,
+      status,
+      acc.stops,
+      acc.dispatches,
+      acc.deferredWork,
+      acc.failures,
+      acc.newActivationCount,
+      acc.observedExistingActivationCount,
+    )
 
   for (let attempt = 0; attempt < MAX_RECONCILIATION_ATTEMPTS; attempt += 1) {
-    if (input.abortSignal?.aborted === true) {
-      return buildResult(
-        input.graphId,
-        snapshot,
-        'cancelled',
-        stops,
-        dispatches,
-        deferredWork,
-        failures,
-        newActivationCount,
-        observedExistingActivationCount,
-      )
-    }
+    if (input.abortSignal?.aborted === true) return finish('cancelled')
     const stopWave = await applyScheduleStops(snapshot, input)
-    stops.push(...stopWave.stops)
-    failures.push(...stopWave.failures)
-    if (stopWave.failures.length > 0) {
-      return buildResult(
-        input.graphId,
-        snapshot,
-        'failed',
-        stops,
-        dispatches,
-        deferredWork,
-        failures,
-        newActivationCount,
-        observedExistingActivationCount,
-      )
-    }
+    acc.stops.push(...stopWave.stops)
+    acc.failures.push(...stopWave.failures)
+    if (stopWave.failures.length > 0) return finish('failed')
 
     // (A) provisions — only work that needs a dynamic operator and has none yet.
-    const provisionsByWork = new Map<string, AgentGraphOperatorProvision>()
-    for (const provision of snapshot.provisions)
-      provisionsByWork.set(provision.workId, provision)
-    const workByWorkId = new Map<string, AgentGraphScheduledWork>()
-    for (const work of snapshot.schedule.work)
-      workByWorkId.set(work.workId, work)
-
-    let topologyStale = false
-    let topologyChanged = false
-    for (const work of orderedRequestedWork(snapshot.schedule)) {
-      if (snapshot.schedule.closed) {
-        deferredWork.push({ workId: work.workId, reason: 'graph_closed' })
-        continue
-      }
-      if (work.target.kind === 'operator') continue
-      if (provisionsByWork.has(work.workId)) continue
-      const missing = missingWorkInputIds(work, snapshot)
-      if (missing.length > 0) {
-        deferredWork.push({
-          workId: work.workId,
-          reason: 'input_not_committed',
-          missingInputIds: missing,
-        })
-        continue
-      }
-      const request = buildOperatorProvisionRequest(
-        {
-          graphId: input.graphId,
-          work: work,
-          source: workSourceOf(work, snapshot.updates),
-          expectedScheduleRevision: snapshot.schedule.revision,
-          sourceOperatorIds: sourceOperatorIdsFor(work, snapshot),
-        },
-        input.newId,
-      )
-      try {
-        const result = await input.executor.provisionOperator(request)
-        if (result === undefined) {
-          deferredWork.push({ workId: work.workId, reason: 'operator_provision_unavailable' })
-          continue
-        }
-        provisionsByWork.set(work.workId, result.provision)
-        topologyChanged = true
-      } catch (error) {
-        if (error instanceof AgentGraphScheduleRevisionConflictError) {
-          topologyStale = true
-          break
-        }
-        failures.push({ phase: 'topology', workId: work.workId, error })
-      }
-    }
-    if (topologyChanged || topologyStale) {
+    const provisionOutcome = await provisionMissingOperators(
+      input,
+      snapshot,
+      acc,
+    )
+    if (provisionOutcome.reSnapshot) {
       snapshot = await readAgentGraphScheduleSnapshot(input, input.graphId)
-      if (failures.length === 0 && !topologyStale) continue
-      if (failures.length > 0) {
-        return buildResult(
-          input.graphId,
-          snapshot,
-          'failed',
-          stops,
-          dispatches,
-          deferredWork,
-          failures,
-          newActivationCount,
-          observedExistingActivationCount,
-        )
-      }
+      if (acc.failures.length === 0 && !provisionOutcome.stale) continue
+      if (acc.failures.length > 0) return finish('failed')
       // topologyStale: fresh snapshot, retry the loop without returning.
       continue
     }
 
     // (B) supervisor intents for every requested work.
-    const claimsByIntent = new Map<string, AgentGraphIntentClaimRecord>()
-    for (const claim of snapshot.claims)
-      claimsByIntent.set(claim.intentId, claim)
-    const processedIntentIds = new Set<string>()
-    const candidates: {
-      work: AgentGraphScheduledWork
-      intent: AgentGraphRunnableIntent
-      existing: boolean
-    }[] = []
-    for (const work of orderedRequestedWork(snapshot.schedule)) {
-      // Topologically pending: operator-targeted work runs on an existing
-      // operator; everything else needs a provision (input_not_committed was
-      // already recorded for it in phase A).
-      if (work.target.kind !== 'operator' && !provisionsByWork.has(work.workId))
-        continue
-      let intent: AgentGraphRunnableIntent
-      const provisionForWork = provisionsByWork.get(work.workId)
-      try {
-        intent = scheduledWorkIntent({
-          graphId: input.graphId,
-          observation: snapshot.observation,
-          topology: snapshot.topology,
-          work,
-          ...(provisionForWork !== undefined
-            ? { provision: provisionForWork }
-            : {}),
-        })
-      } catch (error) {
-        failures.push({ phase: 'schedule', workId: work.workId, error })
-        continue
-      }
-      if (processedIntentIds.has(intent.intentId)) continue
-      const existing = claimsByIntent.has(intent.intentId)
-      if (snapshot.schedule.closed && !existing) {
-        deferredWork.push({ workId: work.workId, reason: 'graph_closed' })
-        continue
-      }
-      const missing = missingWorkInputIds(work, snapshot)
-      if (missing.length > 0) {
-        deferredWork.push({
-          workId: work.workId,
-          reason: 'input_not_committed',
-          missingInputIds: missing,
-        })
-        continue
-      }
-      candidates.push({ work, intent, existing })
-    }
-    if (failures.length > 0) {
-      return buildResult(
-        input.graphId,
+    const { candidates, processedIntentIds } =
+      buildSupervisorIntentCandidates(
+        input,
         snapshot,
-        'failed',
-        stops,
-        dispatches,
-        deferredWork,
-        failures,
-        newActivationCount,
-        observedExistingActivationCount,
+        provisionOutcome.provisionsByWork,
+        acc,
       )
-    }
+    if (acc.failures.length > 0) return finish('failed')
 
     // (C) select — existing claims always selected; new activations capped.
-    const selected: {
-      work: AgentGraphScheduledWork
-      intent: AgentGraphRunnableIntent
-      existing: boolean
-      provision?: AgentGraphOperatorProvision
-    }[] = []
-    let budget = input.maxNewActivations - newActivationCount
-    for (const candidate of candidates) {
-      const provisionForCandidate = provisionsByWork.get(candidate.work.workId)
-      const provisioned = {
-        ...candidate,
-        ...(provisionForCandidate !== undefined
-          ? { provision: provisionForCandidate }
-          : {}),
-      }
-      if (candidate.existing) {
-        selected.push(provisioned)
-        continue
-      }
-      if (budget <= 0) {
-        deferredWork.push({
-          workId: candidate.work.workId,
-          reason: 'activation_limit',
-        })
-        continue
-      }
-      budget -= 1
-      selected.push(provisioned)
-    }
+    const selected = selectWithinActivationBudget(
+      candidates,
+      provisionOutcome.provisionsByWork,
+      acc,
+      input.maxNewActivations - acc.newActivationCount,
+    )
 
     // (D) render — any failure fails the wave.
     if (selected.length > 0) {
-      const rendered: {
-        work: AgentGraphScheduledWork
-        intent: AgentGraphRunnableIntent
-        prompt: string
-        provision?: AgentGraphOperatorProvision
-      }[] = []
-      for (const entry of selected) {
-        try {
-          const inputRecords = resolveInputRecords(entry.work, snapshot)
-          const inputHandoffs =
-            input.hydrateInputHandoffs === undefined
-              ? []
-              : await input.hydrateInputHandoffs(inputRecords)
-          const prompt = await input.renderPrompt({
-            work: entry.work,
-            inputRecords,
-            inputHandoffs,
-          })
-          if (prompt.trim().length === 0)
-            throw new Error(
-              `agent graph ${input.graphId}: rendered empty prompt for work ${entry.work.workId}`,
-            )
-          rendered.push({
-            work: entry.work,
-            intent: entry.intent,
-            prompt,
-            ...(entry.provision !== undefined
-              ? { provision: entry.provision }
-              : {}),
-          })
-        } catch (error) {
-          failures.push({ phase: 'render', workId: entry.work.workId, error })
-        }
-      }
-      if (failures.length > 0) {
-        return buildResult(
-          input.graphId,
-          snapshot,
-          'failed',
-          stops,
-          dispatches,
-          deferredWork,
-          failures,
-          newActivationCount,
-          observedExistingActivationCount,
-        )
-      }
+      const rendered = await renderSelectedPrompts(
+        input,
+        snapshot,
+        selected,
+        acc,
+      )
+      if (acc.failures.length > 0) return finish('failed')
       // (E) execute — all-or-per-outcome; revision conflicts are stale.
-      for (const entry of rendered) {
-        const outcome = await dispatchScheduledWork(
-          {
-            graphId: input.graphId,
-            intent: entry.intent,
-            executionInput: { prompt: entry.prompt },
-            expectedScheduleRevision: snapshot.schedule.revision,
-            ...(entry.provision !== undefined
-              ? { provision: entry.provision }
-              : {}),
-            ...(input.abortSignal !== undefined
-              ? { abortSignal: input.abortSignal }
-              : {}),
-          },
-          input,
-        )
-        if (outcome.status === 'stale') break
-        if (outcome.status === 'rejected') {
-          failures.push({
-            phase: 'dispatch',
-            workId: entry.work.workId,
-            error: outcome.error,
-          })
-          if (outcome.claim !== undefined) {
-            processedIntentIds.add(entry.intent.intentId)
-            if (outcome.claim.created) newActivationCount += 1
-            else observedExistingActivationCount += 1
-          }
-          continue
-        }
-        dispatches.push({
-          intentId: entry.intent.intentId,
-          workId: entry.work.workId,
-          claimCreated: outcome.claim.created,
-        })
-        processedIntentIds.add(entry.intent.intentId)
-        if (outcome.claim.created) newActivationCount += 1
-        else observedExistingActivationCount += 1
-      }
+      await dispatchRenderedWork(
+        input,
+        snapshot,
+        rendered,
+        processedIntentIds,
+        acc,
+      )
     }
 
     const nextSnapshot = await readAgentGraphScheduleSnapshot(
@@ -933,45 +737,315 @@ export async function reconcileAgentGraphSchedule(
       continue
     }
     snapshot = nextSnapshot
-    const hasLimit = deferredWork.some(
-      item => item.reason === 'activation_limit',
-    )
-    const hasWaiting = deferredWork.some(
-      item =>
-        item.reason === 'agent_topology_required' ||
-        item.reason === 'input_not_committed',
-    )
-    const status = hasLimit
-      ? 'limit_reached'
-      : hasWaiting
-        ? 'waiting'
-        : 'reconciled'
-    return buildResult(
-      input.graphId,
-      snapshot,
-      status,
-      stops,
-      dispatches,
-      deferredWork,
-      failures,
-      newActivationCount,
-      observedExistingActivationCount,
-    )
+    return finish(reconciledStatusFromDeferredWork(acc.deferredWork))
   }
 
   // Exhausted attempts.
   snapshot = await readAgentGraphScheduleSnapshot(input, input.graphId)
-  return buildResult(
-    input.graphId,
-    snapshot,
-    'stale',
-    stops,
-    dispatches,
-    deferredWork,
-    failures,
-    newActivationCount,
-    observedExistingActivationCount,
+  return finish('stale')
+}
+
+/* --------------------------- reconcile phases -------------------------- */
+
+/** Mutable results threaded through every phase of one reconciliation call. */
+interface ReconcileAccumulators {
+  readonly stops: AgentGraphScheduleStopResult[]
+  readonly failures: { phase: string; workId?: string; error: unknown }[]
+  readonly deferredWork: AgentGraphScheduleDeferredWork[]
+  readonly dispatches: {
+    intentId: string
+    workId: string
+    claimCreated: boolean
+  }[]
+  newActivationCount: number
+  observedExistingActivationCount: number
+}
+
+/** A requested work item whose supervisor intent was built and not yet dispatched. */
+interface SupervisorIntentCandidate {
+  readonly work: AgentGraphScheduledWork
+  readonly intent: AgentGraphRunnableIntent
+  readonly existing: boolean
+}
+
+/** A candidate admitted into the wave: existing claims always, new activations within budget. */
+interface SelectedSupervisorIntent extends SupervisorIntentCandidate {
+  readonly provision?: AgentGraphOperatorProvision
+}
+
+/** A selected candidate with its rendered prompt, ready to dispatch. */
+interface RenderedSupervisorIntent {
+  readonly work: AgentGraphScheduledWork
+  readonly intent: AgentGraphRunnableIntent
+  readonly prompt: string
+  readonly provision?: AgentGraphOperatorProvision
+}
+
+interface ProvisionOutcome {
+  /** Provisions visible to later phases, seeded from the snapshot and extended inline. */
+  readonly provisionsByWork: Map<string, AgentGraphOperatorProvision>
+  /** A provision landed or a revision conflict occurred; the wave must re-snapshot. */
+  readonly reSnapshot: boolean
+  /** The wave hit a schedule-revision conflict and retries without failing. */
+  readonly stale: boolean
+}
+
+/** Built intents for one attempt plus the set dispatch results are recorded in. */
+interface SupervisorIntentBatch {
+  readonly candidates: SupervisorIntentCandidate[]
+  readonly processedIntentIds: Set<string>
+}
+
+/** Provisions a dynamic operator for every requested work item that has none. */
+async function provisionMissingOperators(
+  input: ReconcileAgentGraphScheduleInput,
+  snapshot: AgentGraphScheduleSnapshot,
+  acc: ReconcileAccumulators,
+): Promise<ProvisionOutcome> {
+  const provisionsByWork = new Map<string, AgentGraphOperatorProvision>()
+  for (const provision of snapshot.provisions)
+    provisionsByWork.set(provision.workId, provision)
+  const workByWorkId = new Map<string, AgentGraphScheduledWork>()
+  for (const work of snapshot.schedule.work)
+    workByWorkId.set(work.workId, work)
+
+  let topologyStale = false
+  let topologyChanged = false
+  for (const work of orderedRequestedWork(snapshot.schedule)) {
+    if (snapshot.schedule.closed) {
+      acc.deferredWork.push({ workId: work.workId, reason: 'graph_closed' })
+      continue
+    }
+    if (work.target.kind === 'operator') continue
+    if (provisionsByWork.has(work.workId)) continue
+    const missing = missingWorkInputIds(work, snapshot)
+    if (missing.length > 0) {
+      acc.deferredWork.push({
+        workId: work.workId,
+        reason: 'input_not_committed',
+        missingInputIds: missing,
+      })
+      continue
+    }
+    const request = buildOperatorProvisionRequest(
+      {
+        graphId: input.graphId,
+        work: work,
+        source: workSourceOf(work, snapshot.updates),
+        expectedScheduleRevision: snapshot.schedule.revision,
+        sourceOperatorIds: sourceOperatorIdsFor(work, snapshot),
+      },
+      input.newId,
+    )
+    try {
+      const result = await input.executor.provisionOperator(request)
+      if (result === undefined) {
+        acc.deferredWork.push({ workId: work.workId, reason: 'operator_provision_unavailable' })
+        continue
+      }
+      provisionsByWork.set(work.workId, result.provision)
+      topologyChanged = true
+    } catch (error) {
+      if (error instanceof AgentGraphScheduleRevisionConflictError) {
+        topologyStale = true
+        break
+      }
+      acc.failures.push({ phase: 'topology', workId: work.workId, error })
+    }
+  }
+  return {
+    provisionsByWork,
+    reSnapshot: topologyChanged || topologyStale,
+    stale: topologyStale,
+  }
+}
+
+/** Builds the supervisor intent for every dispatchable requested work item. */
+function buildSupervisorIntentCandidates(
+  input: ReconcileAgentGraphScheduleInput,
+  snapshot: AgentGraphScheduleSnapshot,
+  provisionsByWork: ReadonlyMap<string, AgentGraphOperatorProvision>,
+  acc: ReconcileAccumulators,
+): SupervisorIntentBatch {
+  const claimsByIntent = new Map<string, AgentGraphIntentClaimRecord>()
+  for (const claim of snapshot.claims)
+    claimsByIntent.set(claim.intentId, claim)
+  const processedIntentIds = new Set<string>()
+  const candidates: SupervisorIntentCandidate[] = []
+  for (const work of orderedRequestedWork(snapshot.schedule)) {
+    // Topologically pending: operator-targeted work runs on an existing
+    // operator; everything else needs a provision (input_not_committed was
+    // already recorded for it in phase A).
+    if (work.target.kind !== 'operator' && !provisionsByWork.has(work.workId))
+      continue
+    let intent: AgentGraphRunnableIntent
+    const provisionForWork = provisionsByWork.get(work.workId)
+    try {
+      intent = scheduledWorkIntent({
+        graphId: input.graphId,
+        observation: snapshot.observation,
+        topology: snapshot.topology,
+        work,
+        ...(provisionForWork !== undefined
+          ? { provision: provisionForWork }
+          : {}),
+      })
+    } catch (error) {
+      acc.failures.push({ phase: 'schedule', workId: work.workId, error })
+      continue
+    }
+    if (processedIntentIds.has(intent.intentId)) continue
+    const existing = claimsByIntent.has(intent.intentId)
+    if (snapshot.schedule.closed && !existing) {
+      acc.deferredWork.push({ workId: work.workId, reason: 'graph_closed' })
+      continue
+    }
+    const missing = missingWorkInputIds(work, snapshot)
+    if (missing.length > 0) {
+      acc.deferredWork.push({
+        workId: work.workId,
+        reason: 'input_not_committed',
+        missingInputIds: missing,
+      })
+      continue
+    }
+    candidates.push({ work, intent, existing })
+  }
+  return { candidates, processedIntentIds }
+}
+
+/** Selects existing claims outright and caps new activations at the remaining budget. */
+function selectWithinActivationBudget(
+  candidates: readonly SupervisorIntentCandidate[],
+  provisionsByWork: ReadonlyMap<string, AgentGraphOperatorProvision>,
+  acc: ReconcileAccumulators,
+  budget: number,
+): SelectedSupervisorIntent[] {
+  const selected: SelectedSupervisorIntent[] = []
+  for (const candidate of candidates) {
+    const provisionForCandidate = provisionsByWork.get(candidate.work.workId)
+    const provisioned = {
+      ...candidate,
+      ...(provisionForCandidate !== undefined
+        ? { provision: provisionForCandidate }
+        : {}),
+    }
+    if (candidate.existing) {
+      selected.push(provisioned)
+      continue
+    }
+    if (budget <= 0) {
+      acc.deferredWork.push({
+        workId: candidate.work.workId,
+        reason: 'activation_limit',
+      })
+      continue
+    }
+    budget -= 1
+    selected.push(provisioned)
+  }
+  return selected
+}
+
+/** Renders the prompt for every selected candidate; a render failure is recorded, not thrown. */
+async function renderSelectedPrompts(
+  input: ReconcileAgentGraphScheduleInput,
+  snapshot: AgentGraphScheduleSnapshot,
+  selected: readonly SelectedSupervisorIntent[],
+  acc: ReconcileAccumulators,
+): Promise<RenderedSupervisorIntent[]> {
+  const rendered: RenderedSupervisorIntent[] = []
+  for (const entry of selected) {
+    try {
+      const inputRecords = resolveInputRecords(entry.work, snapshot)
+      const inputHandoffs =
+        input.hydrateInputHandoffs === undefined
+          ? []
+          : await input.hydrateInputHandoffs(inputRecords)
+      const prompt = await input.renderPrompt({
+        work: entry.work,
+        inputRecords,
+        inputHandoffs,
+      })
+      if (prompt.trim().length === 0)
+        throw new Error(
+          `agent graph ${input.graphId}: rendered empty prompt for work ${entry.work.workId}`,
+        )
+      rendered.push({
+        work: entry.work,
+        intent: entry.intent,
+        prompt,
+        ...(entry.provision !== undefined
+          ? { provision: entry.provision }
+          : {}),
+      })
+    } catch (error) {
+      acc.failures.push({ phase: 'render', workId: entry.work.workId, error })
+    }
+  }
+  return rendered
+}
+
+/** Dispatches rendered work sequentially; a stale revision aborts the remaining entries. */
+async function dispatchRenderedWork(
+  input: ReconcileAgentGraphScheduleInput,
+  snapshot: AgentGraphScheduleSnapshot,
+  rendered: readonly RenderedSupervisorIntent[],
+  processedIntentIds: Set<string>,
+  acc: ReconcileAccumulators,
+): Promise<void> {
+  for (const entry of rendered) {
+    const outcome = await dispatchScheduledWork(
+      {
+        graphId: input.graphId,
+        intent: entry.intent,
+        executionInput: { prompt: entry.prompt },
+        expectedScheduleRevision: snapshot.schedule.revision,
+        ...(entry.provision !== undefined
+          ? { provision: entry.provision }
+          : {}),
+        ...(input.abortSignal !== undefined
+          ? { abortSignal: input.abortSignal }
+          : {}),
+      },
+      input,
+    )
+    if (outcome.status === 'stale') break
+    if (outcome.status === 'rejected') {
+      acc.failures.push({
+        phase: 'dispatch',
+        workId: entry.work.workId,
+        error: outcome.error,
+      })
+      if (outcome.claim !== undefined) {
+        processedIntentIds.add(entry.intent.intentId)
+        if (outcome.claim.created) acc.newActivationCount += 1
+        else acc.observedExistingActivationCount += 1
+      }
+      continue
+    }
+    acc.dispatches.push({
+      intentId: entry.intent.intentId,
+      workId: entry.work.workId,
+      claimCreated: outcome.claim.created,
+    })
+    processedIntentIds.add(entry.intent.intentId)
+    if (outcome.claim.created) acc.newActivationCount += 1
+    else acc.observedExistingActivationCount += 1
+  }
+}
+
+/** Terminal wave status implied by the deferred work recorded across attempts. */
+function reconciledStatusFromDeferredWork(
+  deferredWork: readonly AgentGraphScheduleDeferredWork[],
+): AgentGraphReconciliationResult['status'] {
+  const hasLimit = deferredWork.some(item => item.reason === 'activation_limit')
+  const hasWaiting = deferredWork.some(
+    item =>
+      item.reason === 'agent_topology_required' ||
+      item.reason === 'input_not_committed',
   )
+  return hasLimit ? 'limit_reached' : hasWaiting ? 'waiting' : 'reconciled'
 }
 
 /* ------------------------------- helpers ------------------------------ */
