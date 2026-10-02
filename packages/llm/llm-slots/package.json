@@ -41,7 +41,7 @@
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/cordis-plugin-timer": "workspace:~",
     "@deepseek-ai/schemastery": "workspace:~",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.8",
     "@deepseek-ai/dsh-invariants": "workspace:*"
   },
   "dependencies": {

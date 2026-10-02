@@ -35,7 +35,7 @@
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/schemastery": "workspace:~",
     "@types/node": "^22.0.0",
-    "typescript": "^5.9.0",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.8",
     "@deepseek-ai/dsh-invariants": "workspace:*"
   },
