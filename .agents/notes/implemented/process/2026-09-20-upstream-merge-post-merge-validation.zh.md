@@ -1,4 +1,4 @@
-# Agent Note: 合并后验证清单（源自 0.1.5 与 0.1.6-alpha.2 同步的经验）
+# Agent Note: 合并后验证清单（源自 0.1.5、0.1.6-alpha.2 与 0.2.0-rc.2 同步的经验）
 
 Status: implemented
 
@@ -26,7 +26,7 @@ Status: implemented
 ### 1. 合并机制
 
 3. 合并后先跑翻译配对校验（自动合并驱动只在 Git 文本合并成功时合成记录）： `pnpm run verify-translation-pairing`，再用 `pnpm run verify-translation-pairing --write <pair>` 修复任何失同步对的配对。
-4. 审计 fork 专有修复提交是否存活：对区间内每个 `fix` 类 fork 提交，确认其本质存在于 合并后的 HEAD（`git diff --name-only <commit> HEAD -- <其文件>` 加针对标记的语义 grep）。0.1.5 审计正是这样找到唯一一个丢失的修复（空数组兼容检查，后已恢复）。 [0.1.5]
+4. 审计 fork 专有行为提交（`fix`、`feat`、`perf`）是否存活：对区间内每个这类 fork 提交，确认其本质存在于 合并后的 HEAD（`git diff --name-only <commit> HEAD -- <其文件>` 加针对标记的语义 grep）。0.1.5 审计正是这样找到唯一一个丢失的修复（空数组兼容检查，后已恢复）— 但最初只扫 `fix` 类提交的写法也漏掉了第二个丢失：fork 在 `session-persistence-jsonl` 里的字节感知 live-write 批处理被 0.1.5-rc.1 合并静默丢弃，直到 0.2.0-rc.2 评审才浮出水面并重新移植（9248da21c0d），因为它以 `feat` 提交落地。 [0.1.5, 0.2.0]
 
 ### 2. 静态门禁（必要但永不充分）
 
@@ -59,7 +59,7 @@ Status: implemented
 
 ## 测试
 
-本笔记是三次合并的累积结果。0.1.6 的证据链：0.1.6-alpha.2 合并在所有静态门禁上全绿 → 用户会话以 `UNKNOWN` 失败 → 会话日志显示 `Cannot read properties of undefined (reading 'prepare')`（位于 `agent-loop/lib/index.js:586`）→ 实机 inspector 证明存在 两个 `dsh-tools` 模块实例且 `Object.is(srcSymbol, libSymbol) === false` → 源码启动加载树修复让源码启动单一平面，同一个恢复回合随后正常执行了它的工具调用。按顺序 执行清单正是抓住各类问题的方式；未来合并必须运行它并把结果记入合并描述，这也是 0.1.2 清单笔记已有的要求。
+本笔记是四次合并的累积结果；0.2.0-rc.2 的经验来自合并后的分层评审而非运行时故障，但收紧的是同一个存活审计。0.1.6 的证据链：0.1.6-alpha.2 合并在所有静态门禁上全绿 → 用户会话以 `UNKNOWN` 失败 → 会话日志显示 `Cannot read properties of undefined (reading 'prepare')`（位于 `agent-loop/lib/index.js:586`）→ 实机 inspector 证明存在 两个 `dsh-tools` 模块实例且 `Object.is(srcSymbol, libSymbol) === false` → 源码启动加载树修复让源码启动单一平面，同一个恢复回合随后正常执行了它的工具调用。按顺序 执行清单正是抓住各类问题的方式；未来合并必须运行它并把结果记入合并描述，这也是 0.1.2 清单笔记已有的要求。
 
 ## 后果
 

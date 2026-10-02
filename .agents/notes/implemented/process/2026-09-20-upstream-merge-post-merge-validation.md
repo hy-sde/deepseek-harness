@@ -1,4 +1,4 @@
-# Agent Note: Post-merge validation checklist (learned from the 0.1.5 and 0.1.6-alpha.2 syncs)
+# Agent Note: Post-merge validation checklist (learned from the 0.1.5, 0.1.6-alpha.2, and 0.2.0-rc.2 syncs)
 
 Status: implemented
 
@@ -26,7 +26,7 @@ Every upstream sync is a runtime release. After the merge commit is prepared, ru
 ### 1. Merge mechanics
 
 3. After the merge, run the translation-pairing verification (the automatic merge driver composes records only when Git's text merge succeeds): `pnpm run verify-translation-pairing`, then fix any out-of-sync pair with `pnpm run verify-translation-pairing --write <pair>`.
-4. Audit fork-only fix commits for survival: for each `fix`-type fork commit in the range, verify its essence exists at the merged HEAD (`git diff --name-only <commit> HEAD -- <its files>` plus a semantic grep for the marker). The 0.1.5 audit found exactly one lost fix this way (the empty-array compat check, later restored). [0.1.5]
+4. Audit fork-only behavioral commits (`fix`, `feat`, `perf`) for survival: for each such fork commit in the range, verify its essence exists at the merged HEAD (`git diff --name-only <commit> HEAD -- <its files>` plus a semantic grep for the marker). The 0.1.5 audit found exactly one lost fix this way (the empty-array compat check, later restored) — but the original `fix`-only scan also missed a second loss: the fork's byte-aware live-write batching in `session-persistence-jsonl`, dropped by the 0.1.5-rc.1 merge and re-ported only after the 0.2.0-rc.2 review surfaced it (9248da21c0d), because it had landed as a `feat` commit. [0.1.5, 0.2.0]
 
 ### 2. Static gates (necessary, never sufficient)
 
@@ -59,7 +59,7 @@ Every upstream sync is a runtime release. After the merge commit is prepared, ru
 
 ## Testing
 
-This note is the accumulated result of three merges. The 0.1.6 evidence chain: the 0.1.6-alpha.2 merge green on all static gates → user session failed with `UNKNOWN` → session log showed `Cannot read properties of undefined (reading 'prepare')` at `agent-loop/lib/index.js:586` → live inspector proved two module instances of `dsh-tools` and `Object.is(srcSymbol, libSymbol) === false` → the source-launch loader-tree fix made the source launch single-plane and the same resumed turn then ran its tool call normally. Applying the checklist in order is what catches each class; future merges must run it and record the result in the merge description, as the 0.1.2 checklist note already requires.
+This note is the accumulated result of four merges; the 0.2.0-rc.2 contribution came from a post-merge tier review rather than a runtime failure, but it tightens the same survival audit. The 0.1.6 evidence chain: the 0.1.6-alpha.2 merge green on all static gates → user session failed with `UNKNOWN` → session log showed `Cannot read properties of undefined (reading 'prepare')` at `agent-loop/lib/index.js:586` → live inspector proved two module instances of `dsh-tools` and `Object.is(srcSymbol, libSymbol) === false` → the source-launch loader-tree fix made the source launch single-plane and the same resumed turn then ran its tool call normally. Applying the checklist in order is what catches each class; future merges must run it and record the result in the merge description, as the 0.1.2 checklist note already requires.
 
 ## Consequences
 

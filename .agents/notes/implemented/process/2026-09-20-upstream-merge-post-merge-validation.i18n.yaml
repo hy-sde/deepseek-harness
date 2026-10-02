@@ -2,39 +2,39 @@
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-20-upstream-merge-post-merge-validation.md
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs:
-  en: 2a283b0a3e729f57
-  zh: fc2185900cca8d8f
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/problem:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs:
+  en: 52e369797257127d
+  zh: 233a7eb5e10e7b74
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/problem:
   en: d2fd8d154113a155
   zh: ae81713f6e39dea2
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision:
   en: ffb8d3c4a20500ff
   zh: 29c6a215a0acb824
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision/0-workspace-hygiene-before-starting:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision/0-workspace-hygiene-before-starting:
   en: dad0503a123b4868
   zh: 2ec7efb7cbb96147
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision/1-merge-mechanics:
-  en: 54af87ba7d389fc5
-  zh: e9da28dd99bdf1be
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision/2-static-gates-necessary-never-sufficient:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision/1-merge-mechanics:
+  en: e91ff7797f075204
+  zh: 35992a86b695317e
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision/2-static-gates-necessary-never-sufficient:
   en: da1b5ad581d211c9
   zh: 85d11b4293898991
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision/3-config-and-preset-surfaces-user-files-are-part-of-the-product:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision/3-config-and-preset-surfaces-user-files-are-part-of-the-product:
   en: e7c092e6be81d9cf
   zh: 18022ad60f6e4bc4
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision/4-runtime-validation-the-expensive-mandatory-part:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision/4-runtime-validation-the-expensive-mandatory-part:
   en: 3a3825c67b399927
   zh: f8ccb82b0ac2d847
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/decision/5-release-follow-through:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/decision/5-release-follow-through:
   en: fced190a261661e6
   zh: 2e4c97f0e947d914
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/testing:
-  en: ffcce800a6773559
-  zh: c9f57192c42f25aa
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/consequences:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/testing:
+  en: bb20493994bdeed4
+  zh: e337d849721e8bca
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/consequences:
   en: 467706bb4e93ead4
   zh: 35fcf449e1f6266e
-/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-and-0-1-6-alpha-2-syncs/alternatives-considered:
+/agent-note-post-merge-validation-checklist-learned-from-the-0-1-5-0-1-6-alpha-2-and-0-2-0-rc-2-syncs/alternatives-considered:
   en: af5a372e0ad8157e
   zh: fcce4185d0fccce4
