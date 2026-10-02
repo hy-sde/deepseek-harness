@@ -18,7 +18,7 @@ import { scheduler } from 'node:timers/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { JsonlGenerationSourceChangedError } from '../src/generation.ts'
 import { generationLogPath, type JsonlCompression } from '../src/format.ts'
-import { compressZstdFrame, decompressZstdFrame, scanZstdFrames } from '../src/zstd.ts'
+import { compressZstdFrame, decompressZstdFrame, scanZstdFrames } from '@deepseek-ai/dsh-zstd-frame'
 
 const id = SessionId('multi-edge-seeded')
 const config = { provider: 'mock', model: 'mock' }

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  compressZstdFrame, createZstdFrameDecoder, decompressZstdFrame, scanZstdFrames,
-} from '../src/zstd.ts'
-import { NodePrivateZstdFrameDecoder } from '../src/zstd-private-decoder.ts'
-import { PublicZstdFrameDecoder } from '../src/zstd-public-decoder.ts'
+  NodePrivateZstdFrameDecoder,
+  PublicZstdFrameDecoder,
+  compressZstdFrame,
+  createZstdFrameDecoder,
+  decompressZstdFrame,
+  scanZstdFrames,
+} from '@deepseek-ai/dsh-zstd-frame'
 
 describe('JSONL Zstandard compatibility', () => {
   it('round-trips concatenated checksummed frames through the built-in Node API', async () => {

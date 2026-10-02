@@ -29,7 +29,7 @@ import {
   type PrepareJsonlMigrationOptions,
 } from '../src/generation.ts'
 import { createJsonlGenerationTestRuntime } from '../src/testing/generation.ts'
-import { compressZstdFrame, decompressZstdFrame, scanZstdFrames } from '../src/zstd.ts'
+import { compressZstdFrame, decompressZstdFrame, scanZstdFrames } from '@deepseek-ai/dsh-zstd-frame'
 import type { JsonlCompression } from '../src/format.ts'
 import { createSessionFormatCatalogWithChildren, sessionFormatCatalog } from '@deepseek-ai/dsh-session-format-catalog'
 import type {

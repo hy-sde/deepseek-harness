@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { generationLogPath } from '../src/format.ts'
 import { prepareCatalogFacts } from '../src/catalog-migration.ts'
-import { compressZstdFrame } from '../src/zstd.ts'
+import { compressZstdFrame } from '@deepseek-ai/dsh-zstd-frame'
 
 const roots: string[] = []
 const contexts: Context[] = []

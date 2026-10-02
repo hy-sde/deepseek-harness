@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { generationLogPath, type JsonlCompression } from '../src/format.ts'
-import { compressZstdFrame } from '../src/zstd.ts'
+import { compressZstdFrame } from '@deepseek-ai/dsh-zstd-frame'
 
 const id = SessionId('migration-refusal')
 const config = { provider: 'historical', model: 'historical-model' }

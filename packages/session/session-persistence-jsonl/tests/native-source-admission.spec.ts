@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { generationLogPath } from '../src/format.ts'
-import { compressZstdFrame } from '../src/zstd.ts'
+import { compressZstdFrame } from '@deepseek-ai/dsh-zstd-frame'
 
 const id = SessionId('native-source-admission')
 const modes = (['none', 'zstd'] as const).flatMap(compression => (['read', 'write'] as const).map(access => ({ compression, access })))

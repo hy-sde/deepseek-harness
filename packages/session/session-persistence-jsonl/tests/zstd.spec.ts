@@ -13,11 +13,15 @@ import {
   generationLogPath, logPath, scanLog, sessionDir, toHeaderLine, type JsonlCompression,
 } from '../src/format.ts'
 import {
-  compressZstdFrame, createZstdFrameDecoder, decompressZstdFrame, decompressZstdPrefix, scanZstdFrames,
+  NodePrivateZstdFrameDecoder,
+  PublicZstdFrameDecoder,
+  compressZstdFrame,
+  createZstdFrameDecoder,
+  decompressZstdFrame,
+  decompressZstdPrefix,
+  scanZstdFrames,
   type ZstdFrameDecoder,
-} from '../src/zstd.ts'
-import { NodePrivateZstdFrameDecoder } from '../src/zstd-private-decoder.ts'
-import { PublicZstdFrameDecoder } from '../src/zstd-public-decoder.ts'
+} from '@deepseek-ai/dsh-zstd-frame'
 import {
   runPersistenceContract, meta, oneTurnLog, releasedV1OneTurnLog,
 } from '../../session-persistence/tests/contract.ts'

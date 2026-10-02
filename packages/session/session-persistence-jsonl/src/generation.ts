@@ -43,7 +43,7 @@ import {
   createZstdFrameDecoder,
   decompressZstdPrefix,
   scanZstdFrames,
-} from './zstd.ts'
+} from '@deepseek-ai/dsh-zstd-frame'
 
 /** Internal scheduling bounds: preserve old decode cadence and cap each synchronous encode slice. */
 const MIGRATION_DECODE_YIELD_INTERVAL_MS = 500

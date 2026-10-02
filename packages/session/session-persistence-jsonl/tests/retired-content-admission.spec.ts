@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { generationLogPath } from '../src/format.ts'
-import { compressZstdFrame } from '../src/zstd.ts'
+import { compressZstdFrame } from '@deepseek-ai/dsh-zstd-frame'
 
 const id = SessionId('retired-content-admission')
 const wrapper = { type: 'tool-result', toolCallId: 'retired-call', content: [{ type: 'text', text: 'result' }] }
