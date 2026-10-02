@@ -9,8 +9,10 @@
  * @module @deepseek-ai/dsh-code-runtime-kernels/src/core/session
  */
 
+import { rmSync } from 'node:fs'
 import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import type { KernelExecResult, KernelHost } from './kernel.ts'
+import type { SnapshotSpec } from './protocol.ts'
 
 /** One live session: its kernel (spawned lazily) and the serialized run tail. */
 interface KernelSession {
@@ -29,6 +31,12 @@ export interface SessionRegistryConfig {
   start: () => Promise<KernelHost>
   /** Reap a session whose kernel sits unused for this long; 0 disables. */
   sessionIdleMs: number
+  /**
+   * Namespace persistence for one session: returns the spec every exec of the
+   * session carries, or `undefined` when snapshots are disabled. A missing
+   * function also disables snapshots.
+   */
+  snapshot?: (sessionId: string) => SnapshotSpec | undefined
 }
 
 /** Options for one registered-session run. */
@@ -94,7 +102,7 @@ export class SessionRegistry {
     clearTimeout(session.idleTimer)
     const kernel = session.kernel
     session.kernel = null
-    if (kernel !== null) await kernel.shutdown().catch(() => {})
+    if (kernel !== null) await kernel.shutdown().catch(() => { })
   }
 
   /** Terminate every kernel and drop every session (runtime disposal). */
@@ -138,7 +146,7 @@ export class SessionRegistry {
     if (session.kernel !== null && session.kernel.isAlive()) return session.kernel
     const previous = session.kernel
     if (previous !== null) {
-      await previous.shutdown().catch(() => {})
+      await previous.shutdown().catch(() => { })
       session.kernel = null
     }
     this.#assertNotDisposed()
@@ -147,11 +155,11 @@ export class SessionRegistry {
     }
     const kernel = await this.#config.start()
     if (this.#disposed) {
-      await kernel.shutdown().catch(() => {})
+      await kernel.shutdown().catch(() => { })
       this.#assertNotDisposed()
     }
     if (this.#sessions.get(sessionId) !== session) {
-      await kernel.shutdown().catch(() => {})
+      await kernel.shutdown().catch(() => { })
       throw new Error(`${this.#config.label} session invalidated while acquiring kernel`)
     }
     session.kernel = kernel
@@ -167,13 +175,16 @@ export class SessionRegistry {
   ): Promise<KernelExecResult> {
     if (options.reset === true) {
       // Reset first, then acquire: prior kernel state is discarded and its
-      // shutdown completes before the fresh kernel answers this run.
+      // shutdown completes before the fresh kernel answers this run. The
+      // snapshot is deleted between the two, so the fresh kernel must not
+      // restore the state the reset just discarded.
       const previous = session.kernel
       if (previous !== null) {
         session.kernel = null
         clearTimeout(session.idleTimer)
-        await previous.shutdown().catch(() => {})
+        await previous.shutdown().catch(() => { })
       }
+      this.#deleteSnapshot(sessionId)
     }
     let kernel = await this.#acquireKernel(sessionId, session)
     const first = await this.#executeOnce(kernel, sessionId, code, bindings, options)
@@ -187,7 +198,7 @@ export class SessionRegistry {
     const dead = !kernel.isAlive()
     const cancelledButAlive = first.cancelled && !(options.signal?.aborted === true) && dead
     if (!first.killed && !cancelledButAlive) return first
-    await kernel.shutdown().catch(() => {})
+    await kernel.shutdown().catch(() => { })
     if (session !== this.#sessions.get(sessionId)) return first
     kernel = await this.#acquireKernel(sessionId, session)
     const second = await this.#executeOnce(kernel, sessionId, code, bindings, options)
@@ -206,10 +217,26 @@ export class SessionRegistry {
     bindings: PtcBindingNamespace[],
     options: SessionRunOptions,
   ): Promise<KernelExecResult> {
+    const snapshot = this.#config.snapshot?.(sessionId)
     return kernel.execute(sessionId, code, bindings, {
       ...options.signal !== undefined ? { signal: options.signal } : {},
       ...options.cwd !== undefined ? { cwd: options.cwd } : {},
       ...options.env !== undefined ? { env: options.env } : {},
+      ...snapshot !== undefined ? { snapshot } : {},
     })
+  }
+
+  /** Best-effort delete of one session's snapshot file (ignore missing/denied). */
+  #deleteSnapshot(sessionId: string): void {
+    const spec = this.#config.snapshot?.(sessionId)
+    if (spec === undefined) return
+    try {
+      rmSync(spec.path, { force: true })
+    } catch {
+      // A failed delete leaves a stale snapshot: the kernel will restore it,
+      // which is exactly the surprising outcome reset must prevent. Report by
+      // name instead of certifying state was discarded.
+      console.warn(`dsh-code-runtime-kernels: could not remove snapshot ${JSON.stringify(spec.path)} for session ${JSON.stringify(sessionId)}`)
+    }
   }
 }

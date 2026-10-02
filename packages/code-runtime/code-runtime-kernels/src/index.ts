@@ -11,7 +11,9 @@
  * @module @deepseek-ai/dsh-code-runtime-kernels
  */
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import { homedir } from 'node:os'
+import { join, resolve, sep } from 'node:path'
 import { inspect } from 'node:util'
 import { Context } from '@deepseek-ai/cordis'
 import type { SaveTextSpill } from '@deepseek-ai/dsh-spill'
@@ -32,7 +34,8 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { TerminalCallView, TerminalResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { KernelHost, nodejsKernelProfile } from './core/kernel.ts'
-import type { KernelExecResult } from './core/kernel.ts'
+import type { KernelExecResult, KernelSandboxProvider } from './core/kernel.ts'
+import type { SnapshotSpec } from './core/protocol.ts'
 import { SessionRegistry } from './core/session.ts'
 import { PYTHON_RUNNER } from './python/runner.ts'
 
@@ -67,6 +70,28 @@ export interface Config {
   startupTimeoutMs?: number
   /** Grace period for the kernel to exit after an `exit` frame. */
   shutdownGraceMs?: number
+  /**
+   * Namespace persistence: each successful run snapshots the session's kernel
+   * namespace to disk, and a fresh kernel for that session restores it once
+   * (so state survives kernel death and a full plugin restart). `false`
+   * disables; `snapshotDir` sets the root (default `~/.dsh/code-runtime-kernels/state`,
+   * language + session-hash subdirectories).
+   */
+  snapshot?: boolean
+  /** Root directory for session snapshots (ignored when `snapshot` is false). */
+  snapshotDir?: string
+  /** Combined byte cap for one snapshot file; entries past it are skipped by name. */
+  snapshotMaxBytes?: number
+  /** Per-entry byte cap; an entry larger than this is skipped and named. */
+  snapshotMaxEntryBytes?: number
+  /** Confine kernel subprocesses through the sandbox seam (default false = unconfined). */
+  sandboxConfinement?: boolean
+  /** The confine capability (see `SandboxProvider` in `@deepseek-ai/dsh-sandbox`); required when `sandboxConfinement` is true. */
+  sandboxProvider?: KernelSandboxProvider
+  /** Writable root under `workspace-write` confinement (defaults to the process cwd). */
+  sandboxWorkspaceRoot?: string
+  /** File-effect mode for kernels under confinement (default `workspace-write`). */
+  sandboxMode?: 'read-only' | 'workspace-write'
 }
 
 /**
@@ -75,7 +100,7 @@ export interface Config {
  * discovery). Used by {@link KernelManager} and typed as the validated shape
  * in `apply`.
  */
-type ResolvedConfig = Required<Omit<Config, 'pythonPath' | 'nodePath'>> & Pick<Config, 'pythonPath' | 'nodePath'>
+type ResolvedConfig = Required<Omit<Config, 'pythonPath' | 'nodePath' | 'sandboxProvider'>> & Pick<Config, 'pythonPath' | 'nodePath' | 'sandboxProvider'>
 
 /** Schemastery schema for {@link Config}: defaults filled at load time. */
 export const Config: z<Config> = z.object({
@@ -89,10 +114,23 @@ export const Config: z<Config> = z.object({
   interruptEscalationMs: z.number().default(5_000),
   startupTimeoutMs: z.number().default(15_000),
   shutdownGraceMs: z.number().default(1_000),
+  snapshot: z.boolean().default(true),
+  snapshotDir: z.string(),
+  snapshotMaxBytes: z.number().default(134_217_728),
+  snapshotMaxEntryBytes: z.number().default(8_388_608),
+  sandboxConfinement: z.boolean().default(false),
+  sandboxProvider: z.any<KernelSandboxProvider>(),
+  sandboxWorkspaceRoot: z.string(),
+  sandboxMode: z.union(['read-only', 'workspace-write'] as const).default('workspace-write'),
 })
 
 /** Smallest cap that can represent the counted payloads: an empty logs array plus an empty JSON failure message. */
 const MIN_OUTPUT_BYTES = 4
+
+/** Default snapshot root: inside the harness user dir, keyed per language + session. */
+function defaultSnapshotDir(): string {
+  return join(homedir(), '.dsh', 'code-runtime-kernels', 'state')
+}
 
 /** Whether a configured language names one of the two kernels this plugin spawns. */
 function isKernelLanguage(language: string): language is 'python' | 'typescript' {
@@ -217,6 +255,7 @@ export class KernelManager {
   readonly #config: ResolvedConfig
   readonly #registries = new Map<'python' | 'typescript', SessionRegistry>()
   readonly #ledgerFactory: () => OutputLedger
+  readonly #confine: ((argv: readonly string[]) => { argv: string[] }) | undefined
   #disposed = false
 
   constructor(config: Config) {
@@ -234,9 +273,18 @@ export class KernelManager {
       interruptEscalationMs: config.interruptEscalationMs ?? 5_000,
       startupTimeoutMs: config.startupTimeoutMs ?? 15_000,
       shutdownGraceMs: config.shutdownGraceMs ?? 1_000,
+      snapshot: config.snapshot ?? true,
+      snapshotDir: config.snapshotDir ?? defaultSnapshotDir(),
+      snapshotMaxBytes: config.snapshotMaxBytes ?? 134_217_728,
+      snapshotMaxEntryBytes: config.snapshotMaxEntryBytes ?? 8_388_608,
+      sandboxConfinement: config.sandboxConfinement ?? false,
+      ...config.sandboxProvider !== undefined ? { sandboxProvider: config.sandboxProvider } : {},
+      sandboxWorkspaceRoot: config.sandboxWorkspaceRoot ?? process.cwd(),
+      sandboxMode: config.sandboxMode ?? 'workspace-write',
     }
     const numericKeys = ['maxWallMs', 'maxOutputBytes', 'sessionIdleMs',
-      'interruptEscalationMs', 'startupTimeoutMs', 'shutdownGraceMs'] as const
+      'interruptEscalationMs', 'startupTimeoutMs', 'shutdownGraceMs',
+      'snapshotMaxBytes', 'snapshotMaxEntryBytes'] as const
     for (const key of numericKeys) {
       const value = resolved[key]
       if (!(Number.isFinite(value) && value >= 0)) {
@@ -245,6 +293,10 @@ export class KernelManager {
     }
     if (!Number.isSafeInteger(resolved.maxOutputBytes) || resolved.maxOutputBytes < MIN_OUTPUT_BYTES) {
       throw new Error(`dsh-code-runtime-kernels: config.maxOutputBytes must be a safe integer of at least ${MIN_OUTPUT_BYTES}`)
+    }
+    if (!Number.isSafeInteger(resolved.snapshotMaxBytes) || resolved.snapshotMaxBytes < 1
+      || !Number.isSafeInteger(resolved.snapshotMaxEntryBytes) || resolved.snapshotMaxEntryBytes < 1) {
+      throw new Error('dsh-code-runtime-kernels: config.snapshotMaxBytes and config.snapshotMaxEntryBytes must be positive safe integers')
     }
     if (resolved.maxWallMs > MAX_TIMER_DELAY_MS) {
       throw new Error(`dsh-code-runtime-kernels: config.maxWallMs must be at most ${MAX_TIMER_DELAY_MS} (Node clamps a longer setTimeout delay to 1ms)`)
@@ -257,6 +309,24 @@ export class KernelManager {
         throw new Error(`dsh-code-runtime-kernels: unknown language ${JSON.stringify(language)}`)
       }
     }
+    if (resolved.sandboxConfinement && resolved.sandboxProvider === undefined) {
+      throw new Error('dsh-code-runtime-kernels: config.sandboxConfinement requires config.sandboxProvider (the confine capability)')
+    }
+    if (resolved.sandboxConfinement && resolved.snapshot) {
+      const root = resolve(resolved.sandboxWorkspaceRoot)
+      const snapDir = resolve(resolved.snapshotDir)
+      if (snapDir !== root && !snapDir.startsWith(`${root}${sep}`)) {
+        throw new Error(
+          `dsh-code-runtime-kernels: config.snapshotDir must be inside config.sandboxWorkspaceRoot (${resolved.sandboxWorkspaceRoot}) when sandboxConfinement is on,`
+          + ' because the confined kernel cannot write outside it — or disable snapshots; the confined kernel keeps its namespace only while alive',
+        )
+      }
+    }
+    if (resolved.sandboxConfinement && resolved.sandboxProvider !== undefined) {
+      const provider = resolved.sandboxProvider
+      const root = resolve(resolved.sandboxWorkspaceRoot)
+      this.#confine = argv => provider.confine(argv, { mode: resolved.sandboxMode, workspaceRoot: root })
+    }
     this.#config = resolved
     this.#ledgerFactory = () => new OutputLedger(resolved.maxOutputBytes)
     for (const language of resolved.languages) {
@@ -264,7 +334,24 @@ export class KernelManager {
         label: language === 'python' ? 'python kernel' : 'nodejs kernel',
         start: () => this.#startKernel(language === 'python' ? 'python' : 'typescript'),
         sessionIdleMs: resolved.sessionIdleMs,
+        snapshot: sessionId => this.#snapshotSpecFor(language === 'python' ? 'python' : 'typescript', sessionId),
       }))
+    }
+  }
+
+  /**
+   * One session's persistence spec. Paths are derived from a hash, never from
+   * the session id directly (model-supplied ids are untrusted); the language
+   * is part of the hash so a python and a typescript session sharing an id
+   * never read each other's (format-incompatible) snapshot.
+   */
+  #snapshotSpecFor(language: 'python' | 'typescript', sessionId: string): SnapshotSpec | undefined {
+    if (!this.#config.snapshot) return undefined
+    const digest = createHash('sha256').update(`${language}:${sessionId}`).digest('hex').slice(0, 32)
+    return {
+      path: join(this.#config.snapshotDir, language, `${digest}.snapshot`),
+      maxBytes: this.#config.snapshotMaxBytes,
+      maxEntryBytes: this.#config.snapshotMaxEntryBytes,
     }
   }
 
@@ -371,6 +458,7 @@ export class KernelManager {
       startupTimeoutMs: this.#config.startupTimeoutMs,
       interruptEscalationMs: this.#config.interruptEscalationMs,
       shutdownGraceMs: this.#config.shutdownGraceMs,
+      ...this.#confine !== undefined ? { confine: this.#confine } : {},
     }
   }
 
@@ -502,11 +590,13 @@ export class KernelManager {
 /** Model-facing guide for when and how to use `run_kernel_code`. */
 const TOOL_GUIDE = [
   'Prefer run_kernel_code to reading/writing scratch files when the work is computation with intermediate results',
-  '— sessions keep kernel state (variables, imports, working data) across calls. Omit `session` for one-off',
-  'computations; give related calls the same `session` id to carry state forward, and pass `reset: true` when',
-  'the session\'s state is corrupted or unwanted. Python programs persist module-level variables; JavaScript',
-  'programs persist via `state` and top-level assignments. A session reaps idle kernels after the configured',
-  'timeout, so long-lived work should resume promptly or persist to disk.',
+  '— sessions keep kernel state (variables, imports, working data) across calls, AND snapshot it to disk after',
+  'every successful run, so state survives a kernel crash or restart (the first run after a restore reports what',
+  'was restored and what could not be). Omit `session` for one-off computations; give related calls the same',
+  '`session` id to carry state forward, and pass `reset: true` when the session\'s state is corrupted or unwanted.',
+  'Python programs persist module-level variables and functions; JavaScript programs persist via `state` and',
+  'top-level assignments. A session reaps idle kernels after the configured timeout; a reaped session resumes',
+  'from its snapshot on the next call with the same id.',
 ].join(' ')
 
 /** Tool argument records and output value types for `run_kernel_code`. */

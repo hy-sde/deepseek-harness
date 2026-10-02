@@ -68,8 +68,16 @@ All row ids carry the `code-runtime-kernels-` prefix so they never clash with sh
 | `maxOutputBytes` | `67108864` | Combined serialized log-, completion-, and failure-message byte cap (an `'output-limit'` failure). |
 | `sessionIdleMs` | `0` | Reap a session whose kernel sits unused for this long (`0` disables; state loss is the explicit cost). |
 | `interruptEscalationMs` | `5000` | Wait after SIGINT before SIGTERM, then the same again before SIGKILL. |
-| `startupTimeoutMs` | `15000` | Wait for the bootstrap `ready` handshake before failing the kernel. |
+| `startupTimeoutMs` | `15000` | Wait for the bootstrap `ready` handshake before failing the kernel; a subprocess that exits before the handshake fails the start immediately with its exit code. |
 | `shutdownGraceMs` | `1000` | Grace for the kernel to exit after an `exit` frame. |
+| `snapshot` | `true` | Namespace persistence: snapshot after each successful run, restore once on a fresh kernel. `false` disables. |
+| `snapshotDir` | `~/.dsh/code-runtime-kernels/state` | Snapshot root; files live under `<language>/<session-id-hash>.snapshot`. |
+| `snapshotMaxBytes` | `134217728` | Combined byte cap for one snapshot file; entries past it are skipped by name. |
+| `snapshotMaxEntryBytes` | `8388608` | Per-entry byte cap; an entry larger than this is skipped and named. |
+| `sandboxConfinement` | `false` | Route kernel subprocess spawns through the sandbox seam (structural `confine` capability, see `SandboxProvider` in `@deepseek-ai/dsh-sandbox`) instead of `spawn`ing the interpreter directly. |
+| `sandboxProvider` | — | The confinement capability; required when `sandboxConfinement` is `true` (fail closed). |
+| `sandboxWorkspaceRoot` | `process.cwd()` | Writable root under `workspace-write` confinement. |
+| `sandboxMode` | `'workspace-write'` | File-effect mode for confined kernels (`'read-only'` or `'workspace-write'`). |
 
 ## Tool surface
 
@@ -89,12 +97,14 @@ It resolves the seam's result envelope — `value` (JSON completion), `logs`, `e
 - **Sessions.** A call with a non-empty `session` runs in that session's kernel; `executionCount` reports the running count. `reset: true` shuts the old kernel down before a fresh one answers.
 - **One-shot.** Without `session`, a fresh kernel is spawned, exactly one program runs, and the kernel is shut down.
 - **Persistence.** Python: module-level variables and loop state survive across cells. JavaScript: `state` (a long-lived shared object) and sloppy-mode global assignments survive; `const`/`let`/`function`/`class` at cell top level are per-cell (async body), so persistent definitions go on `state`. A cell completes `return <json>` for a completion value, or with no `return` for a no-value run; non-lossless completions (cycles, `BigInt`, sets) are `'invalid-output'`.
+- **Snapshots.** After each successful run the namespace is saved (Python: `pickle` + `marshal` for bytecode, per-name loss reporting; JavaScript: V8 binary serialization, so `Map`/`Set`/`Date`/cyclic values survive but function-valued keys are named as lost). A fresh kernel for the session restores the last snapshot once — the restoring run's logs carry `[dsh-kernels] restored N names from snapshot (could not restore: …)`. `reset: true` deletes the snapshot first, so it never resurrects discarded state. Python bytecode is `marshal`-format-dependent: restoring across a Python minor-version upgrade should be expected to lose function/class entries (named in the notice), not data.
 - **Budgets and failure kinds.** Wall-clock expiry → `'timeout'`; cancellation or a kernel that had to die → `'abort'`; thrown exceptions → `'exception'`; non-JSON completions → `'invalid-output'`; combined output overflow → `'output-limit'`; kernel death → the session registry replaces the kernel and retries once. All are result FIELDS, never rejections of the tool.
 - **Output overflow recovery.** When a run overflows `maxOutputBytes` (an `'output-limit'` failure), the tool calls `ctx.spillStore.saveText()` with the FULL captured output (logs plus the overflowing completion value) and, on success (a `spillStore` backend is loaded and there is a session owner), appends `full program output preserved at <retrieval-hint>` to the failure message so the tail becomes recoverable instead of dropped. Spill failure is best-effort: it never fails the call or alters the truncated result.
+- **Confinement.** With `sandboxConfinement: true`, every kernel spawn's fully-assembled argv (interpreter + flags + staged runner) is wrapped through `sandboxProvider.confine(argv, { mode, workspaceRoot })` — the structural confine capability of the sandbox seam — and the wrapped argv becomes the process-group leader, so the interrupt escalation ladder unwinds through it. Confinement is process-level file-effect enforcement, not a security boundary. A confined kernel cannot write outside `sandboxWorkspaceRoot`, so `snapshotDir` must live under it (validated at construction; disable `snapshot` if the namespace is ephemeral).
 
 ## Development
 
-`pnpm check` (tsc), `pnpm test` (vitest; real `python3`/`node` subprocesses), and the root `tsdown` export (lib/). Layout: shared host driver in [`src/core/`](./src/core/) (protocol, kernel host, session registry, ledger), languages in [`src/python/runner.ts`](./src/python/runner.ts) (embedded source, staged per spawn) and [`src/nodejs/runner.ts`](./src/nodejs/runner.ts) (compiled file, spawned with `node --no-warnings`), the plugin/tool in [`src/index.ts`](./src/index.ts). Tests: [`tests/kernels.spec.ts`](./tests/kernels.spec.ts) drives both kernels through `KernelManager`; [`tests/tool.spec.ts`](./tests/tool.spec.ts) mounts the plugin on a real Cordis context and executes `run_kernel_code` through `ctx.tools.execute`.
+`pnpm check` (tsc), `pnpm test` (vitest; real `python3`/`node` subprocesses), and the root `tsdown` export (lib/). Layout: shared host driver in [`src/core/`](./src/core/) (protocol, kernel host, session registry, ledger), languages in [`src/python/runner.ts`](./src/python/runner.ts) (embedded source, staged per spawn) and [`src/nodejs/runner.ts`](./src/nodejs/runner.ts) (compiled file, spawned with `node --no-warnings`), the plugin/tool in [`src/index.ts`](./src/index.ts). Tests: [`tests/kernels.spec.ts`](./tests/kernels.spec.ts) drives both kernels through `KernelManager`; [`tests/snapshot.spec.ts`](./tests/snapshot.spec.ts) pins namespace persistence; [`tests/confinement.spec.ts`](./tests/confinement.spec.ts) pins the sandbox seam's confine wrapping and its fail-closed config; [`tests/startup.spec.ts`](./tests/startup.spec.ts) pins fail-fast on early kernel exit; [`tests/tool.spec.ts`](./tests/tool.spec.ts) mounts the plugin on a real Cordis context and executes `run_kernel_code` through `ctx.tools.execute`.
 
 ## Model Experience
 
@@ -107,7 +117,7 @@ One system-prompt section registered by this plugin — `tool:code-runtime-kerne
 ##### run_kernel_code guidance
 
 ```markdown
-Prefer run_kernel_code to reading/writing scratch files when the work is computation with intermediate results — sessions keep kernel state (variables, imports, working data) across calls. Omit `session` for one-off computations; give related calls the same `session` id to carry state forward, and pass `reset: true` when the session's state is corrupted or unwanted. Python programs persist module-level variables; JavaScript programs persist via `state` and top-level assignments. A session reaps idle kernels after the configured timeout, so long-lived work should resume promptly or persist to disk.
+Prefer run_kernel_code to reading/writing scratch files when the work is computation with intermediate results — sessions keep kernel state (variables, imports, working data) across calls, AND snapshot it to disk after every successful run, so state survives a kernel crash or restart (the first run after a restore reports what was restored and what could not be). Omit `session` for one-off computations; give related calls the same `session` id to carry state forward, and pass `reset: true` when the session's state is corrupted or unwanted. Python programs persist module-level variables and functions; JavaScript programs persist via `state` and top-level assignments. A session reaps idle kernels after the configured timeout; a reaped session resumes from its snapshot on the next call with the same id.
 ```
 
 #### Token effect
@@ -135,9 +145,12 @@ Prefix-stable while the visible tool definition and order are unchanged; registr
 ## Known Limitations and Deferred Work
 
 - **A busy synchronous cell resists SIGINT.** A `while (true) {}`/`while True:` loop never yields to the event loop, so the interrupt handler cannot run and the escalation ladder (SIGTERM then SIGKILL) is what actually stops it — costing the kernel's state, hence the session. Cells that yield (async `await` on timers/I/O/tool calls) cancel cleanly and the kernel survives (the wall-clock/timeout tests cover this split).
-- **State can be poisoned.** A buggy program can corrupt the session's state at any time; `reset: true` is the intended recovery primitive.
-- **No security boundary.** Kernel code has bash-equivalent trust, matching the harness's own process backends.
-- **Idle kernels hold a process.** With `sessionIdleMs: 0` (default), session kernels stay alive until reset or plugin teardown, so long-lived work should resume promptly or persist to disk.
+- **State can be poisoned.** A buggy program can corrupt the session's state at any time; `reset: true` is the intended recovery primitive (it also deletes the snapshot, so the corruption cannot come back).
+- **No security boundary.** Kernel code has bash-equivalent trust, matching the harness's own process backends — and so do snapshot files (`pickle`/`marshal` are not safe to read from untrusted input). Keep `snapshotDir` user-private; a planted snapshot executes as the host.
+- **Snapshot granularity is per-name.** Python: data, modules, importable callables, and `__main__`-defined functions/classes are saved by value; user-class instances, closures over non-picklables, and entries past the caps are named as lost on the next restore. JavaScript: `state` and sloppy-mode global assignments are saved per key; a function anywhere inside a key's value discards that whole key (named).
+- **Snapshots are not free.** Each successful run pickles/serializes and writes the namespace. Large namespaces mean larger latencies; tune the caps (`snapshotMaxBytes`, `snapshotMaxEntryBytes`) or disable with `snapshot: false` if state is ephemeral.
+- **Idle kernels hold a process.** With `sessionIdleMs: 0` (default), session kernels stay alive until reset or plugin teardown; a reaped session resumes from its snapshot on the next call with the same id.
+- **Confinement binds snapshots to the workspace.** A confined kernel cannot write outside `sandboxWorkspaceRoot`, so `snapshotDir` must live under it (validated at construction; disable `snapshot` if the namespace is ephemeral). Confinement is process-level file-effect enforcement, not a security boundary — model code still runs as your user.
 
 **Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
 

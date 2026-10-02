@@ -12,6 +12,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { cleanTempSnapshotDirs, tempSnapshotDir } from './test-util.ts'
 import {
   doneFailure,
   parseKernelFrame,
@@ -102,7 +103,7 @@ describe('run_kernel_code over the real tool runtime', () => {
     ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime, {})
-    kernelsFiber = ctx.plugin(Kernels, { languages: ['python', 'typescript'] })
+    kernelsFiber = ctx.plugin(Kernels, { languages: ['python', 'typescript'], snapshotDir: tempSnapshotDir() })
     await kernelsFiber
   })
 
@@ -110,6 +111,7 @@ describe('run_kernel_code over the real tool runtime', () => {
     // Disposing the plugin fiber runs our ctx.effect disposer: every session
     // kernel is shut down to quiescence before the next test mounts a fresh set.
     await kernelsFiber.dispose()
+    cleanTempSnapshotDirs()
   })
 
   it('runs a one-shot program and renders its completion value', async () => {
@@ -149,7 +151,7 @@ describe('run_kernel_code over the real tool runtime', () => {
 
 describe('contract misuse', () => {
   it('rejects an invalid binding global at run time', async () => {
-    const manager = new Kernels.KernelManager({ languages: ['python'] })
+    const manager = new Kernels.KernelManager({ languages: ['python'], snapshotDir: tempSnapshotDir() })
     try {
       await expect(manager.run({
         language: 'python',

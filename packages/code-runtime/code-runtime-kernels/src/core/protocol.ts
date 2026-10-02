@@ -21,6 +21,22 @@ export interface KernelNamespaceDescriptor {
   errorClass?: PtcBindingErrorClass
 }
 
+/**
+ * Per-session namespace persistence. The kernel owns the file: it restores
+ * once per process (on the first exec that carries a spec) and writes an
+ * atomic snapshot after every successfully settled run, so state survives
+ * kernel death, `reset`-adjacent crashes, and a full plugin restart. The host
+ * may unlink the file (e.g. `reset`) — a missing file simply skips restore.
+ */
+export interface SnapshotSpec {
+  /** Snapshot file path (kernel-owned temp-file+rename writes; host-owned delete). */
+  path: string
+  /** Combined serialized snapshot byte cap; entries beyond it are skipped by name. */
+  maxBytes: number
+  /** Per-entry byte cap; an entry larger than this is skipped and named. */
+  maxEntryBytes: number
+}
+
 /** Host -> kernel: execute one program against this run's namespaces. */
 export interface KernelExecMessage {
   type: 'exec'
@@ -34,6 +50,8 @@ export interface KernelExecMessage {
   cwd?: string
   /** Optional environment overrides applied before execution. */
   env?: Record<string, string>
+  /** Optional namespace persistence for this session's kernel. */
+  snapshot?: SnapshotSpec
 }
 
 /** Host -> kernel: the answer to one {@link KernelCallFrame}. */

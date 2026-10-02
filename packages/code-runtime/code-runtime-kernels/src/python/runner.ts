@@ -36,13 +36,19 @@ import ast
 import asyncio
 import builtins
 import contextvars
+import importlib
 import io
 import json
+import marshal
 import os
+import pickle
 import signal
 import sys
 import threading
+import time
 import traceback
+import types
+import zlib
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -195,6 +201,12 @@ class _RunnerState:
         self.capture_rid: str | None = None
         # (run_id, seq) -> Future awaiting the host's reply to a binding call.
         self.pending_calls: dict[tuple[str, int], asyncio.Future] = {}
+        # Namespace persistence (session snapshots): the spec of the CURRENT
+        # exec, whether this process already restored once, and how the last
+        # run settled (a snapshot is written only after a successful run).
+        self.snapshot_spec: dict | None = None
+        self.restored_once: bool = False
+        self.last_status: str = "ok"
 
 
 _CURRENT_RID: contextvars.ContextVar[str | None] = contextvars.ContextVar("dsh_rid", default=None)
@@ -381,6 +393,7 @@ def _finish_run(
     invalid_output: bool = False,
     message: str = "",
 ) -> None:
+    _STATE.last_status = "ok" if (status == "ok" and not cancelled) else "error"
     _STATE.execution_count += 1
     frame: dict = {
         "type": "done",
@@ -478,6 +491,224 @@ async def _run_cell(code: str, run_id: str, namespaces: list[dict]) -> None:
                 ns[name] = previous
 
 
+# ---------------------------------------------------------------------------
+# Namespace persistence: session snapshots (stdlib pickle + zlib, atomic)
+# ---------------------------------------------------------------------------
+#
+# The kernel owns the file. After every successfully settled run the user
+# namespace is packed entry by entry and written to spec["path"] via
+# temp-file-and-rename; a fresh process restores it once, on its first exec.
+# Entries that cannot be represented (user-defined class instances, lambdas in
+# containers, closures over non-picklables) are named, never silently dropped.
+# Pickle is NOT a security boundary — a snapshot file grants code execution to
+# whoever reads it, but the kernel already runs model code (bash-equivalent
+# trust), so the file stays inside the user's own state directory.
+
+
+_SNAPSHOT_VERSION = 1
+_RESTORE_NOTICE_LIMIT = 12
+
+
+def _is_snapshot_spec(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    path = value.get("path")
+    max_bytes = value.get("maxBytes")
+    max_entry = value.get("maxEntryBytes")
+    return (
+        isinstance(path, str)
+        and bool(path)
+        and isinstance(max_bytes, int)
+        and max_bytes > 0
+        and isinstance(max_entry, int)
+        and max_entry > 0
+    )
+
+
+def _pack_class(cls: type) -> dict:
+    base_payloads = []
+    for base in cls.__bases__:
+        base_payloads.append(pickle.dumps(base, protocol=pickle.HIGHEST_PROTOCOL))
+    members: dict[str, dict] = {}
+    skip = {"__dict__", "__weakref__", "__module__", "__qualname__", "__doc__", "__slots__"}
+    for key, value in list(cls.__dict__.items()):
+        if key in skip:
+            continue
+        if isinstance(value, staticmethod):
+            members[key] = {"kind": "staticmethod", "func": _pack_value(value.__func__)}
+        elif isinstance(value, classmethod):
+            members[key] = {"kind": "classmethod", "func": _pack_value(value.__func__)}
+        elif isinstance(value, property):
+            raise TypeError("property members are not snapshot-supported")
+        else:
+            members[key] = _pack_value(value)
+    return {"kind": "class", "name": cls.__name__, "bases": base_payloads, "members": members}
+
+
+def _pack_value(value: Any) -> dict:
+    """One namespace entry as a snapshot record. Raises when it cannot be saved."""
+    if isinstance(value, types.ModuleType):
+        return {"kind": "module", "name": value.__name__}
+    if isinstance(value, (types.BuiltinFunctionType, types.BuiltinMethodType)):
+        module_name = getattr(value, "__module__", None)
+        qualname = getattr(value, "__qualname__", getattr(value, "__name__", None))
+        if isinstance(module_name, str) and isinstance(qualname, str):
+            return {"kind": "builtin", "module": module_name, "qualname": qualname}
+        raise TypeError("builtin without importable identity cannot be snapshotted")
+    if isinstance(value, type):
+        return _pack_class(value)
+    if isinstance(value, types.FunctionType):
+        # Imported functions/classes pickle by reference; __main__-defined
+        # callables do not, so fall back to by-value (code + defaults + cells).
+        try:
+            return {"kind": "ref", "payload": pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)}
+        except Exception:
+            pass
+        closure = value.__closure__ or ()
+        # Code objects are not picklable, so the bytecode travels as marshal
+        # bytes (same-interpreter restarts guarantee a compatible marshal
+        # format; a cross-version restore fails per-name and is reported).
+        return {
+            "kind": "function",
+            "name": value.__name__,
+            "qualname": getattr(value, "__qualname__", value.__name__),
+            "code": marshal.dumps(value.__code__),
+            "defaults": value.__defaults__,
+            "kwdefaults": value.__kwdefaults__,
+            "closure": [cell.cell_contents for cell in closure],
+        }
+    return {"kind": "data", "payload": pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)}
+
+
+def _rebuild_function(record: dict) -> Any:
+    code = marshal.loads(record["code"])
+    defaults = record.get("defaults")
+    closure_values = record.get("closure")
+    cells = None
+    if isinstance(closure_values, list):
+        cells = tuple(types.CellType(value) for value in closure_values)
+    fn = types.FunctionType(code, _STATE.user_ns, record.get("name") or "<lambda>", defaults, cells)
+    kwdefaults = record.get("kwdefaults")
+    if kwdefaults is not None:
+        fn.__kwdefaults__ = kwdefaults
+    qualname = record.get("qualname")
+    if isinstance(qualname, str):
+        fn.__qualname__ = qualname
+    fn.__module__ = "__main__"
+    return fn
+
+
+def _rebuild_class(record: dict) -> Any:
+    bases = tuple(pickle.loads(payload) for payload in record["bases"])
+    members: dict[str, Any] = {}
+    for key, member in record["members"].items():
+        kind = member.get("kind")
+        if kind == "staticmethod":
+            members[key] = staticmethod(_unpack_value(member["func"]))
+        elif kind == "classmethod":
+            members[key] = classmethod(_unpack_value(member["func"]))
+        else:
+            members[key] = _unpack_value(member)
+    cls = type(record["name"], bases, members)
+    cls.__module__ = "__main__"
+    return cls
+
+
+def _unpack_value(record: dict) -> Any:
+    kind = record.get("kind")
+    if kind == "module":
+        return importlib.import_module(record["name"])
+    if kind == "builtin":
+        target = importlib.import_module(record["module"])
+        for part in record["qualname"].split("."):
+            target = getattr(target, part)
+        return target
+    if kind in ("data", "ref"):
+        return pickle.loads(record["payload"])
+    if kind == "function":
+        return _rebuild_function(record)
+    if kind == "class":
+        return _rebuild_class(record)
+    raise ValueError(f"unknown snapshot record kind {kind!r}")
+
+
+def _collect_entries(spec: dict) -> tuple[dict, list[str]]:
+    max_bytes = spec["maxBytes"]
+    max_entry = spec["maxEntryBytes"]
+    entries: dict[str, dict] = {}
+    skipped: list[str] = []
+    total = 0
+    for name, value in list(_STATE.user_ns.items()):
+        if name.startswith("__"):
+            continue
+        try:
+            record = _pack_value(value)
+            size = len(pickle.dumps(record, protocol=pickle.HIGHEST_PROTOCOL))
+        except Exception:
+            skipped.append(name)
+            continue
+        if size > max_entry or total + size > max_bytes:
+            skipped.append(name)
+            continue
+        entries[name] = record
+        total += size
+    return entries, skipped
+
+
+def _save_snapshot(spec: dict) -> None:
+    """Write the current namespace atomically; a failure never fails the run."""
+    path = spec["path"]
+    tmp = ""
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        entries, skipped = _collect_entries(spec)
+        doc = {"version": _SNAPSHOT_VERSION, "savedAt": time.time(), "entries": entries, "lost": skipped}
+        payload = zlib.compress(pickle.dumps(doc, protocol=pickle.HIGHEST_PROTOCOL))
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as handle:
+            handle.write(payload)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            if tmp:
+                os.unlink(tmp)
+        except OSError:
+            pass
+
+
+def _restore_snapshot(spec: dict, rid: str) -> None:
+    """Restore the last saved namespace once; report revived and lost names."""
+    path = spec["path"]
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "rb") as handle:
+            doc = pickle.loads(zlib.decompress(handle.read()))
+        if not isinstance(doc, dict) or doc.get("version") != _SNAPSHOT_VERSION:
+            raise ValueError("unsupported snapshot version")
+        entries = doc.get("entries")
+        if not isinstance(entries, dict):
+            raise ValueError("snapshot entries missing")
+    except BaseException as exc:  # noqa: BLE001 - a bad snapshot must not wedge the kernel
+        _emit({"type": "log", "id": rid, "text": f"[dsh-kernels] snapshot unreadable (restore skipped): {exc}"})
+        return
+    restored: list[str] = []
+    lost = [name for name in doc.get("lost", []) if isinstance(name, str)]
+    for name, record in entries.items():
+        try:
+            _STATE.user_ns[name] = _unpack_value(record)
+            restored.append(name)
+        except BaseException:
+            lost.append(name)
+    notice = f"[dsh-kernels] restored {len(restored)} names from snapshot"
+    if lost:
+        shown = ", ".join(lost[:_RESTORE_NOTICE_LIMIT])
+        if len(lost) > _RESTORE_NOTICE_LIMIT:
+            shown += ", ..."
+        notice += f" (could not restore: {shown})"
+    _emit({"type": "log", "id": rid, "text": notice})
+
+
 def _install_idle_sigint() -> None:
     """SIGINT (host interrupt/escalation) interrupts the active run.
 
@@ -546,12 +777,22 @@ async def _handle_request_async(req: dict) -> None:
     namespaces = req.get("namespaces")
     if not isinstance(namespaces, list):
         namespaces = []
+    # Namespace persistence: restore once per process (on the first exec that
+    # carries a spec), then remember the spec so the run's success can persist.
+    snapshot = req.get("snapshot")
+    _STATE.snapshot_spec = snapshot if _is_snapshot_spec(snapshot) else None
+    if _STATE.snapshot_spec is not None and not _STATE.restored_once:
+        _STATE.restored_once = True
+        _restore_snapshot(_STATE.snapshot_spec, rid)
     _STATE.cancel_requested = False
     try:
         await _run_cell(code, rid, namespaces)
     except asyncio.CancelledError:
         _STATE.cancel_requested = False
         _finish_run(rid, status="error", cancelled=True)
+    finally:
+        if _STATE.snapshot_spec is not None and _STATE.last_status == "ok":
+            _save_snapshot(_STATE.snapshot_spec)
 
 
 async def _main_async() -> None:

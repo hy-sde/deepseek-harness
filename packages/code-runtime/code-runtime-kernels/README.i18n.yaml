@@ -18,17 +18,17 @@
   en: aabd3b9919518575
   zh: b7ef7ca9ec119a9d
 /deepseek-ai-dsh-code-runtime-kernels/config:
-  en: c938ac8643049d1c
-  zh: c187352e9384c429
+  en: c982ce2364103877
+  zh: 66ba9bd6310ec328
 /deepseek-ai-dsh-code-runtime-kernels/tool-surface:
   en: f89c2dc526c6dc90
   zh: ec2330650649bf80
 /deepseek-ai-dsh-code-runtime-kernels/semantics:
-  en: 33bd5712ea5fd54b
-  zh: 82b7d799f6869c24
+  en: b9bf1beb61b07271
+  zh: eec6dc7b6fd0bb99
 /deepseek-ai-dsh-code-runtime-kernels/development:
-  en: 507dfe60d869e084
-  zh: d80bbe6a7555fc87
+  en: 8d7053466bece129
+  zh: 3ff6d9599c9b7c6f
 /deepseek-ai-dsh-code-runtime-kernels/model-experience:
   en: 215e7ba838619b7b
   zh: a311da3843709f90
@@ -60,8 +60,8 @@
   en: be3d1e39a5491de8
   zh: 861b12f98265ec86
 /deepseek-ai-dsh-code-runtime-kernels/known-limitations-and-deferred-work:
-  en: a1e706a163ac49c1
-  zh: 14e556bae4e1307a
+  en: c86d1c00c62fb842
+  zh: 0ef467336eec1982
 /deepseek-ai-dsh-code-runtime-kernels/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 8ec3e73528ddb1a6

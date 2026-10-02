@@ -36,6 +36,7 @@ interface ExecMessage {
   namespaces: ExecNamespaceDescriptor[]
   cwd?: string
   env?: Record<string, string>
+  snapshot?: SnapshotSpec
 }
 interface ReplyMessage {
   type: 'reply'
@@ -46,11 +47,21 @@ interface ReplyMessage {
   message?: string
   name?: string
 }
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { format } from 'node:util'
+import { deserialize, serialize } from 'node:v8'
 import { compileFunction } from 'node:vm'
 
 /** Global-object accessor for program-scope globals keyed by identifier. */
 const g: Record<string, unknown> = globalThis
+
+/** Snapshot spec carried by an exec frame (see protocol.ts host-side). */
+interface SnapshotSpec {
+  path: string
+  maxBytes: number
+  maxEntryBytes: number
+}
 
 /** The original stdout sink, captured before suppression of program writes. */
 const rawStdout: NodeJS.WriteStream = process.stdout
@@ -66,6 +77,151 @@ function emit(frame: object): void {
 /** Program-visible persistent state (survives every run in this kernel). */
 const state: Record<string, unknown> = {}
 let executionCount = 0
+
+// --- namespace persistence (session snapshots) --------------------------------
+
+/** The spec of the CURRENT exec's session (null when snapshots are off). */
+let snapshotSpec: SnapshotSpec | null = null
+/** Restore happens once per process, on the first exec carrying a spec. */
+let snapshotRestored = false
+/** How the last run settled: only a successful run writes a snapshot. */
+let lastRunSettledOk: boolean = false
+/**
+ * Global keys present at boot: anything else on the process global is a
+ * program-created binding and participates in the snapshot (sloppy-mode
+ * `x = 41` assignments). Captured after `state` is installed (boot section).
+ */
+let bootGlobals: ReadonlySet<string> = new Set()
+
+const SNAPSHOT_VERSION = 1
+const RESTORE_NOTICE_LIMIT = 12
+
+function isSnapshotSpec(value: unknown): value is SnapshotSpec {
+  if (typeof value !== 'object' || value === null) return false
+  const spec = value as Record<string, unknown>
+  return typeof spec.path === 'string' && spec.path.length > 0
+    && typeof spec.maxBytes === 'number' && spec.maxBytes > 0
+    && typeof spec.maxEntryBytes === 'number' && spec.maxEntryBytes > 0
+}
+
+/**
+ * Serialize one entry with V8's binary serializer (cycles, Map/Set/Date/BigInt
+ * survive; functions and symbols anywhere inside do NOT, so an entry hosting
+ * them is reported as lost by name rather than dropped silently).
+ */
+function snapshotSerialize(value: unknown): Buffer | undefined {
+  try {
+    return serialize(value)
+  } catch {
+    return undefined
+  }
+}
+
+/** Reserve per-key payloads up to the caps; over-cap keys are named, never half-saved. */
+function serializeRecord(
+  source: Record<string, unknown>,
+  maxEntryBytes: number,
+  maxBytes: number,
+): { saved: Record<string, string>; lost: string[] } {
+  const saved: Record<string, string> = {}
+  const lost: string[] = []
+  let total = 0
+  for (const key of Object.keys(source)) {
+    if (key.startsWith('__')) continue
+    const payload = snapshotSerialize(source[key])
+    if (payload === undefined) {
+      lost.push(key)
+      continue
+    }
+    if (payload.length > maxEntryBytes || total + payload.length > maxBytes) {
+      lost.push(key)
+      continue
+    }
+    saved[key] = payload.toString('base64')
+    total += payload.length
+  }
+  return { saved, lost }
+}
+
+/** Atomically write the snapshot; a failure must never fail the run. */
+function saveSnapshot(): void {
+  if (snapshotSpec === null) return
+  const { path, maxBytes, maxEntryBytes } = snapshotSpec
+  let tmp = ''
+  try {
+    mkdirSync(dirname(path), { recursive: true })
+    const stateRecord = serializeRecord(state, maxEntryBytes, maxBytes)
+    const globals: Record<string, unknown> = {}
+    for (const key of Object.keys(g)) {
+      if (key === 'state' || bootGlobals.has(key)) continue
+      globals[key] = g[key]
+    }
+    const globalRecord = serializeRecord(globals, maxEntryBytes, maxBytes)
+    const doc = {
+      version: SNAPSHOT_VERSION,
+      savedAt: Date.now(),
+      state: stateRecord,
+      globals: globalRecord,
+      lost: [...stateRecord.lost, ...globalRecord.lost],
+    }
+    tmp = path + '.tmp'
+    writeFileSync(tmp, JSON.stringify(doc), 'utf8')
+    renameSync(tmp, path)
+  } catch {
+    try {
+      if (tmp !== '') rmSync(tmp, { force: true })
+    } catch { /* best-effort */ }
+  }
+}
+
+/** Restore the last saved namespace once; report revived and lost names. */
+function restoreSnapshot(): void {
+  if (snapshotSpec === null) return
+  const { path } = snapshotSpec
+  if (!existsSync(path)) return
+  let doc: unknown
+  try {
+    doc = JSON.parse(readFileSync(path, 'utf8')) as unknown
+  } catch (error) {
+    logFrame(`[dsh-kernels] snapshot unreadable (restore skipped): ${messageOf(error)}`, 'stdout')
+    return
+  }
+  if (typeof doc !== 'object' || doc === null || (doc as { version?: unknown }).version !== SNAPSHOT_VERSION) {
+    logFrame('[dsh-kernels] snapshot unreadable (restore skipped): unsupported snapshot format', 'stdout')
+    return
+  }
+  const snapshot = doc as {
+    state?: { saved?: Record<string, string>; lost?: unknown }
+    globals?: { saved?: Record<string, string>; lost?: unknown }
+  }
+  const lost: string[] = Array.isArray(snapshot.state?.lost) ? snapshot.state.lost.filter(n => typeof n === 'string') : []
+  let restored = 0
+  const stateSaved = snapshot.state?.saved ?? {}
+  for (const [key, base64] of Object.entries(stateSaved)) {
+    try {
+      state[key] = deserialize(Buffer.from(base64, 'base64'))
+      restored++
+    } catch {
+      lost.push(key)
+    }
+  }
+  for (const [key, base64] of Object.entries(snapshot.globals?.saved ?? {})) {
+    try {
+      g[key] = deserialize(Buffer.from(base64, 'base64'))
+      restored++
+    } catch {
+      lost.push(key)
+    }
+  }
+  const globalLost = Array.isArray(snapshot.globals?.lost) ? snapshot.globals.lost.filter(n => typeof n === 'string') : []
+  lost.push(...globalLost)
+  let notice = `[dsh-kernels] restored ${restored} names from snapshot`
+  if (lost.length > 0) {
+    const shown = lost.slice(0, RESTORE_NOTICE_LIMIT).join(', ')
+    notice += ` (could not restore: ${shown}${lost.length > RESTORE_NOTICE_LIMIT ? ', ...' : ''})`
+  }
+  logFrame(notice, 'stdout')
+}
 
 // --- per-run bookkeeping -----------------------------------------------------
 
@@ -210,6 +366,9 @@ async function runCell(code: string, run: ActiveRun, namespaces: ExecNamespaceDe
     if (done) return
     done = true
     emit(frame)
+    if ((frame as { status?: unknown }).status === 'ok' && (frame as { cancelled?: unknown }).cancelled !== true) {
+      lastRunSettledOk = true
+    }
   }
   let program: (...args: unknown[]) => unknown
   try {
@@ -259,7 +418,7 @@ let readBuffer = ''
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', (chunk: string) => {
   readBuffer += chunk
-  for (;;) {
+  for (; ;) {
     const nl = readBuffer.indexOf('\n')
     if (nl < 0) break
     const line = readBuffer.slice(0, nl)
@@ -319,6 +478,10 @@ async function handleExec(message: ExecMessage): Promise<void> {
     }
   }
   const namespaces = Array.isArray(message.namespaces) ? message.namespaces : []
+  // Namespace persistence: swap in the session's spec (restore once per
+  // process), then persist after a successfully settled run.
+  snapshotSpec = isSnapshotSpec(message.snapshot) ? message.snapshot : null
+  lastRunSettledOk = false
   const run: ActiveRun = {
     id: message.id,
     calls: new Map(),
@@ -327,7 +490,13 @@ async function handleExec(message: ExecMessage): Promise<void> {
   }
   active = run
   emit({ type: 'started', id: run.id })
+  if (snapshotSpec !== null && !snapshotRestored) {
+    snapshotRestored = true
+    restoreSnapshot()
+  }
   await runCell(message.code, run, namespaces)
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- runCell's finish closure sets the flag between these lines.
+  if (snapshotSpec !== null && lastRunSettledOk) saveSnapshot()
   // The run settled (normally, failed, or interrupted); a cancelled cell's
   // ghost keeps evaluating in the background, so later runs must not see it.
   if (active === run) active = null
@@ -348,4 +517,7 @@ process.on('SIGINT', () => {
 // scope; the persistent `state` object is exposed there so runs can share it.
 g.state = state
 installOutputCapture()
+// Baseline for the snapshot's "program-created globals" set: everything on
+// the global object at this instant is runner/builtin and stays out of files.
+bootGlobals = new Set(Object.keys(g))
 emit({ type: 'ready', pid: process.pid })

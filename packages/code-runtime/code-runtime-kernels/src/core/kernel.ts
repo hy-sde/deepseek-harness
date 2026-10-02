@@ -18,8 +18,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { PtcBindingNamespace, PtcJsonValue } from '@deepseek-ai/dsh-ptc-runtime'
 import { snapshotJsonValue } from '@deepseek-ai/dsh-util-values'
-import type { DoneFrame, KernelFrame, KernelHostMessage } from './protocol.ts'
-export type { DoneFrame, KernelFrame, KernelHostMessage }
+import type { DoneFrame, KernelFrame, KernelHostMessage, SnapshotSpec } from './protocol.ts'
+export type { DoneFrame, KernelFrame, KernelHostMessage, SnapshotSpec }
 
 /** How to spawn and label one language's kernel. */
 export interface KernelRuntimeProfile {
@@ -57,6 +57,28 @@ export interface KernelStartConfig {
   interruptEscalationMs: number
   /** Grace period for the kernel to exit after an `exit` frame before SIGTERM/SIGKILL. */
   shutdownGraceMs: number
+  /**
+   * Confinement wrapper applied to the fully-assembled argv (command +
+   * argvPrefix + runner) just before spawn — e.g. the output of
+   * {@link KernelSandboxProvider.confine} so the kernel launches under real
+   * filesystem confinement (bwrap / landlock-run / seatbelt). Must fail
+   * closed: a non-enforcing return is the provider's bug, not a fallback.
+   * The wrapper becomes the process-group leader; the escalation ladder
+   * unwinds through it.
+   */
+  confine?: (argv: readonly string[]) => { argv: string[] }
+}
+
+/**
+ * The sandbox seam's confine capability, structurally typed (no runtime
+ * dependency on `@deepseek-ai/dsh-sandbox`): wrap exact argv under a
+ * file-effect policy, or fail closed. See the published seam for the contract.
+ */
+export interface KernelSandboxProvider {
+  confine(
+    argv: readonly string[],
+    policy: { mode: 'read-only' | 'workspace-write'; workspaceRoot: string },
+  ): { argv: string[] }
 }
 
 /** One in-flight run's host-side state. */
@@ -283,6 +305,8 @@ export class KernelHost {
     }
     const runnerArg = stagedPath ?? profile.runnerPath
     if (runnerArg !== undefined) argv.push(runnerArg)
+    const fullArgv = [...argv]
+    fullArgv.unshift(profile.command)
 
     // `--no-warnings` for the Node runner is statically safe: a development
     // spawn of the .ts kernel would otherwise leak the type-stripping
@@ -292,7 +316,8 @@ export class KernelHost {
     // leader: anything it spawns stays in ITS process group, so a shutdown can
     // sweep the whole tree via killProcessGroup (the #7714 orphan fix) instead
     // of leaving grandchildren holding the kernel's pipes open.
-    const proc = spawn(profile.command, argv, {
+    const wrapped: readonly string[] = config.confine !== undefined ? config.confine(fullArgv).argv : fullArgv
+    const proc = spawn(wrapped[0] ?? profile.command, wrapped.slice(1), {
       cwd: config.cwd,
       env: { ...(config.env ?? process.env), ...profile.env },
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -306,10 +331,18 @@ export class KernelHost {
     try {
       await Promise.race([
         kernel.#ready,
+        // An early exit before the handshake must fail the start FAST (a
+        // runner that cannot even boot — missing interpreter feature, syntax
+        // error in a staged script — otherwise costs the full startup budget).
+        kernel.#exited.then((code: number) => {
+          throw new Error(`${profile.prefix}: kernel exited with code ${code} before becoming ready`)
+        }),
         new Promise<never>((_resolve, reject) => {
-          const timer = setTimeout(() => { reject(new Error(
-            `${profile.prefix}: kernel did not become ready within ${config.startupTimeoutMs}ms`,
-          )) }, config.startupTimeoutMs)
+          const timer = setTimeout(() => {
+            reject(new Error(
+              `${profile.prefix}: kernel did not become ready within ${config.startupTimeoutMs}ms`,
+            ))
+          }, config.startupTimeoutMs)
           timer.unref()
         }),
       ])
@@ -361,7 +394,7 @@ export class KernelHost {
     id: string,
     code: string,
     namespaces: PtcBindingNamespace[],
-    options: { signal?: AbortSignal; cwd?: string; env?: Record<string, string> } = {},
+    options: { signal?: AbortSignal; cwd?: string; env?: Record<string, string>; snapshot?: SnapshotSpec } = {},
   ): Promise<KernelExecResult> {
     if (!this.isAlive()) {
       return {
@@ -381,7 +414,7 @@ export class KernelHost {
       message: '',
       killed: false,
       done: Promise.resolve(),
-      finalize: () => {},
+      finalize: () => { },
     }
     run.done = new Promise<void>((resolve) => { run.finalize = () => { resolve() } })
     this.#runs.set(id, run)
@@ -401,6 +434,7 @@ export class KernelHost {
         })),
         ...options.cwd !== undefined ? { cwd: options.cwd } : {},
         ...options.env !== undefined ? { env: options.env } : {},
+        ...options.snapshot !== undefined ? { snapshot: options.snapshot } : {},
       }
       await this.#write(frame)
       await run.done
@@ -473,7 +507,7 @@ export class KernelHost {
    * group (a leader exit does not prove its descendants exited); waits for exit.
    */
   async shutdown(): Promise<{ confirmed: boolean }> {
-    if (this.#disposed) { await this.#whenExited() ; return { confirmed: true } }
+    if (this.#disposed) { await this.#whenExited(); return { confirmed: true } }
     this.#alive = false
     this.#disposed = true
     for (const run of [...this.#runs.values()]) {
@@ -483,7 +517,7 @@ export class KernelHost {
       run.finalize()
     }
     const exited = this.#exited
-    await this.#write({ type: 'exit' }).catch(() => {})
+    await this.#write({ type: 'exit' }).catch(() => { })
     const grace = (): Promise<'timeout'> => new Promise<'timeout'>((resolve) => {
       const timer = setTimeout(() => { resolve('timeout') }, this.#shutdownGraceMs)
       timer.unref()
@@ -504,7 +538,7 @@ export class KernelHost {
     // finishes with a SIGKILL sweep of the leader's group (omp c5aa69d322).
     killProcessGroup(this.#proc.pid, 'SIGKILL')
     if (outcome !== 'exited') outcome = await Promise.race([exited.then(() => 'exited' as const), grace()])
-    await exited.catch(() => {})
+    await exited.catch(() => { })
     return { confirmed: outcome === 'exited' }
   }
   /** Termination path for a startup that never completed. */
@@ -518,7 +552,7 @@ export class KernelHost {
       killProcessGroup(this.#proc.pid, 'SIGKILL')
     }, this.#shutdownGraceMs)
     timer.unref()
-    await this.#exited.catch(() => {})
+    await this.#exited.catch(() => { })
     clearTimeout(timer)
   }
 
@@ -544,7 +578,7 @@ export class KernelHost {
   }
 
   async #whenExited(): Promise<void> {
-    await this.#exited.catch(() => {})
+    await this.#exited.catch(() => { })
   }
 
   #ingestStray(text: string): void {
@@ -556,7 +590,7 @@ export class KernelHost {
 
   #ingest(chunk: string): void {
     this.#readBuffer += chunk
-    for (;;) {
+    for (; ;) {
       const nl = this.#readBuffer.indexOf('\n')
       if (nl < 0) break
       const line = this.#readBuffer.slice(0, nl)
@@ -686,7 +720,7 @@ export class KernelHost {
       })
     }))
     // Keep the chain from stalling forever on a single rejected write.
-    this.#writeChain = next.catch(() => {})
+    this.#writeChain = next.catch(() => { })
     return next
   }
 }

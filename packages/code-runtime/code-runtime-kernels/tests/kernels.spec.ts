@@ -8,15 +8,24 @@
  * output bytes), abort, and the failure taxonomy.
  */
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import { KernelManager } from '../src/index.ts'
+import { cleanTempSnapshotDirs, tempSnapshotDir } from './test-util.ts'
 
 const LANGUAGES = ['python', 'typescript'] as const
 
 function makeManager(overrides: Record<string, unknown> = {}): KernelManager {
-  return new KernelManager({ languages: [...LANGUAGES], ...overrides })
+  return new KernelManager({
+    languages: [...LANGUAGES],
+    snapshotDir: tempSnapshotDir(),
+    ...overrides,
+  })
 }
+
+afterEach(() => {
+  cleanTempSnapshotDirs()
+})
 
 /** Host functions bridged into every kernel as the `tools` namespace (one args bundle per call, per the seam). */
 const TOOLS_NAMESPACE: PtcBindingNamespace = {

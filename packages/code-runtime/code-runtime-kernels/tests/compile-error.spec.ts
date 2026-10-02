@@ -5,17 +5,26 @@
  * because the runner emitted a ProtocolError frame with an empty id that the
  * host dropped, leaving the run pending (an indefinitely-blocked tool call).
  */
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { KernelManager } from '../src/index.ts'
+import { cleanTempSnapshotDirs, tempSnapshotDir } from './test-util.ts'
 
 async function withManager<T>(fn: (manager: KernelManager) => Promise<T>): Promise<T> {
-  const manager = new KernelManager({ languages: ['python'], toolTimeoutMs: 15000 })
+  const manager = new KernelManager({
+    languages: ['python'],
+    toolTimeoutMs: 15000,
+    snapshotDir: tempSnapshotDir(),
+  })
   try {
     return await fn(manager)
   } finally {
     await manager.teardown()
   }
 }
+
+afterAll(() => {
+  cleanTempSnapshotDirs()
+})
 
 describe('python compile-time errors settle the run (no hang)', () => {
   const cases: Array<[string, string]> = [
