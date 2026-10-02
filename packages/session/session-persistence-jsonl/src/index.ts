@@ -918,19 +918,21 @@ class JsonlSessionPersistence extends SessionPersistence {
    * @param events - the validated contiguous batch, in seq order.
    * @param isMaterialized - whether the session already has a durable artifact.
    * @param inheritedEventCount - the exact fork-inherited prefix length written into a materializing header line.
+   * @param lines - pre-encoded per-event JSONL lines matching `events` positionally; omitted encodes from `events`.
    */
   async persistBatch(
     header: SessionHeader,
     events: readonly SessionEvent[],
     isMaterialized: boolean,
     inheritedEventCount: SessionLogOffsetType,
+    lines?: readonly string[],
   ): Promise<void> {
     this.coldLogMemo.delete(header.id)
     await this.ensureRootEncoding()
     if (isMaterialized) {
-      await this.appendLines(header, events)
+      await this.appendLines(header, events, lines)
     } else {
-      await this.materialize(header, inheritedEventCount, events)
+      await this.materialize(header, inheritedEventCount, events, lines)
       this.tracker.materialized(header.id)
     }
   }
@@ -1243,12 +1245,13 @@ class JsonlSessionPersistence extends SessionPersistence {
     meta: SessionHeader,
     inheritedEventCount: SessionLogOffsetType,
     events: readonly SessionEvent[],
+    lines?: readonly string[],
   ): Promise<void> {
     const project = projectDir(this.root, meta.cwd)
     const dir = sessionDir(this.root, meta.cwd, meta.id)
     const finalPath = logPath(this.root, meta.cwd, meta.id, this.compression)
     await this.rejectOppositeArtifact(meta.cwd, meta.id)
-    const content = await this.encodeMaterialization(meta, inheritedEventCount, events)
+    const content = await this.encodeMaterialization(meta, inheritedEventCount, events, lines)
     /* v8 ignore next -- native Windows coverage exercises this platform dispatch; Linux covers the POSIX peer */
     if (process.platform === 'win32') {
       await this.materializeWin32(project, dir, finalPath, meta.id, content)
@@ -1352,12 +1355,13 @@ class JsonlSessionPersistence extends SessionPersistence {
     meta: SessionHeader,
     inheritedEventCount: SessionLogOffsetType,
     events: readonly SessionEvent[],
+    lines?: readonly string[],
   ): Promise<Buffer | string> {
     const header = JSON.stringify(toHeaderLine(meta, meta.isSeeded ? inheritedEventCount : undefined)) + '\n'
     if (events.length === 0) {
       return this.compression === 'none' ? header : compressZstdFrame(header, this.frameOptions)
     }
-    const body = eventLines(events) + '\n'
+    const body = this.eventBatchBody(events, lines)
     if (this.compression === 'none') return header + body
     const headerFrame = await compressZstdFrame(header, this.frameOptions)
     const eventFrame = await compressZstdFrame(body, this.frameOptions)
@@ -1365,9 +1369,14 @@ class JsonlSessionPersistence extends SessionPersistence {
   }
 
   /** Encode one durable append batch in the configured physical representation. */
-  private async encodeEventBatch(events: readonly SessionEvent[]): Promise<Buffer | string> {
-    const body = eventLines(events) + '\n'
+  private async encodeEventBatch(events: readonly SessionEvent[], lines?: readonly string[]): Promise<Buffer | string> {
+    const body = this.eventBatchBody(events, lines)
     return this.compression === 'zstd' ? compressZstdFrame(body, this.frameOptions) : body
+  }
+
+  /** The plaintext body for one event batch: per-event lines, pre-encoded when supplied, plus the final newline. */
+  private eventBatchBody(events: readonly SessionEvent[], lines?: readonly string[]): string {
+    return (lines === undefined ? eventLines(events) : lines.join('\n')) + '\n'
   }
 
   /** Frame-encoding policy derived from the configured compression level. */
@@ -1392,8 +1401,8 @@ class JsonlSessionPersistence extends SessionPersistence {
    * previous size before rethrowing because the unchanged cursor will retry the
    * batch; leaving partial bytes would create duplicate sequence numbers.
    */
-  private async appendLines(meta: SessionHeader, events: readonly SessionEvent[]): Promise<void> {
-    const content = await this.encodeEventBatch(events)
+  private async appendLines(meta: SessionHeader, events: readonly SessionEvent[], lines?: readonly string[]): Promise<void> {
+    const content = await this.encodeEventBatch(events, lines)
     const path = logPath(this.root, meta.cwd, meta.id, this.compression)
     const handle = await open(path, 'a')
     let closed = false

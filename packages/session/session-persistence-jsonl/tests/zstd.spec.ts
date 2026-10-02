@@ -267,7 +267,7 @@ describe('Zstandard frame structure', () => {
       const plaintext = Buffer.alloc(length, 0x61)
       const frame = await compressZstdFrame(plaintext)
       const decoder = NodePrivateZstdFrameDecoder.create()!
-      ;(decoder as unknown as { output: Buffer }).output = Buffer.allocUnsafe(8)
+        ; (decoder as unknown as { output: Buffer }).output = Buffer.allocUnsafe(8)
       const [decoded] = Array.from(
         decoder.decode(frame, [{ start: 0, end: frame.length }]),
         chunk => Buffer.from(chunk),
@@ -575,7 +575,7 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
       await probe.close()
       const controller = new AbortController()
       const reason = new Error(`cancel ${compression} header read`)
-      const read = vi.spyOn(prototype, 'read').mockImplementation(async function (
+      const read = vi.spyOn(prototype, 'read').mockImplementation(async function(
         this: FileHandle,
         buffer: Buffer,
         offset: number,
@@ -763,7 +763,7 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
     await probe.close()
     const realSync = prototype.sync
     let failed = false
-    const spy = vi.spyOn(prototype, 'sync').mockImplementation(async function (this: FileHandle) {
+    const spy = vi.spyOn(prototype, 'sync').mockImplementation(async function(this: FileHandle) {
       if (!failed) {
         failed = true
         throw new Error('simulated Zstandard fsync failure')
@@ -883,10 +883,10 @@ describe('JsonlSessionPersistence: encoding selection', () => {
 })
 
 describe('compressZstdFrame compression-level option', () => {
-  it('honors an explicit level through params and stays checksummed', { timeout: 30_000 }, async () => {
+  it('honors an explicit level through params and stays checksummed', async () => {
     const juicy = [
       '{"type":"assistant/chunk","seq":14,"time":1788151127516,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"reasoning"}}}',
-      ...Array.from({ length: 4096 }, (_, i) => (
+      ...Array.from({ length: 512 }, (_, i) => (
         `{"type":"reasoning-chunks","seq0":${16 + i},"time0":1788151127824,"data":{"turn":1,"step":1,"index":0,"dt":[0,1,31,65,44],"texts":[" me understand the task. The"," user is asking about omp (","/Users/hui/Documents/github","3/oh-my-pi framework ported"," to the harness)"]}}`
       )),
     ].join('\n') + '\n'

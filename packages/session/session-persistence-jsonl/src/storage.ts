@@ -30,6 +30,7 @@ import type {
   SessionHandleReadOptions,
   SessionHandleReadResult,
 } from '@deepseek-ai/dsh-session-persistence'
+import { eventLine } from './format.ts'
 import type { SessionWriteLease } from './lease.ts'
 
 /**
@@ -44,7 +45,7 @@ import type { SessionWriteLease } from './lease.ts'
 export const LIVE_WRITE_BATCH_MAX_DELAY_MS = 1000
 
 /**
- * Default raw-byte threshold that forces a live batch to write early. A batch
+  * Default encoded-line byte threshold that forces a live batch to write
  * reaching this many buffered bytes drains on the next tick instead of waiting
  * out the delay window, so a bursting stream cannot pile an unbounded buffer.
  */
@@ -54,23 +55,25 @@ export const LIVE_WRITE_BATCH_MAX_BYTES = 256 * 1024
 export interface LiveFlushPolicy {
   /** Maximum wait (ms) from the first buffered event to an automatic drain. */
   readonly maxDelayMs: number
-  /** Raw-byte threshold that forces an immediate drain when crossed. */
+  /** Encoded-line byte threshold that forces an immediate drain when crossed. */
   readonly maxBytes: number
 }
 
-/** Approximate contribution of one buffered event to the live batch's raw size. */
-function jsonEventBytes(event: SessionEvent): number {
-  return JSON.stringify(event).length + 1
+/** Persisted byte contribution of one buffered live event: its encoded line's UTF-8 length plus the record newline. */
+function lineBytes(line: string): number {
+  return Buffer.byteLength(line) + 1
 }
 
 /** The file-storage primitives the handle drives on its owning service. */
 export interface JsonlHandleStorage {
-  /** Append encoded lines; `isMaterialized` selects create-vs-extend publication. */
+  /** Append encoded lines; `isMaterialized` selects create-vs-extend publication.
+   * `lines`, when supplied, are pre-encoded per-event lines matching `events` positionally. */
   persistBatch(
     header: SessionHeader,
     events: readonly SessionEvent[],
     isMaterialized: boolean,
     inheritedEventCount: SessionLogOffset,
+    lines?: readonly string[],
   ): Promise<void>
   /** Materialize the header-only artifact for an explicitly flushed empty session. */
   persistHeader(header: SessionHeader, inheritedEventCount: SessionLogOffset): Promise<void>
@@ -104,6 +107,14 @@ export interface StorageHandleState {
   primed?: SessionHandleReadResult | undefined
 }
 
+/** One routed live event awaiting its batching deadline: the published event and the exact line it persists. */
+interface BufferedLiveEvent {
+  /** The published event, retained for contiguity and drain-time validation. */
+  event: SessionEvent
+  /** The encoded JSONL line captured at enqueue; the drain writes it without re-serializing. */
+  line: string
+}
+
 /**
  * The JSONL session handle. Mutations serialize on a per-handle promise
  * chain; reads re-scan the artifact on demand and never observe a shorter log
@@ -114,9 +125,9 @@ export class JsonlSessionHandle implements SessionHandle {
   private chain: Promise<unknown> = Promise.resolve()
   private closing: Promise<void> | undefined
   private observedLength = 0
-  /** Routed live events awaiting their batching deadline (persistence-owned copies). */
-  private buffered: SessionEvent[] = []
-  /** Approximate raw bytes of `buffered` (JSON serialization lengths + newlines). */
+  /** Routed live events awaiting their batching deadline, each with the exact line it persists. */
+  private buffered: BufferedLiveEvent[] = []
+  /** Exact UTF-8 bytes of the lines `buffered` persists, including their record newlines. */
   private bufferedBytes = 0
   private batchTimer: ReturnType<typeof setTimeout> | undefined
   /** Set when a drain failed; the automatic timer stays quiet until the next drain. */
@@ -135,7 +146,7 @@ export class JsonlSessionHandle implements SessionHandle {
       maxDelayMs: LIVE_WRITE_BATCH_MAX_DELAY_MS,
       maxBytes: LIVE_WRITE_BATCH_MAX_BYTES,
     },
-  ) {}
+  ) { }
 
   /** Exact fork-inherited prefix length stored with this session's log. */
   get inheritedEventCount(): SessionLogOffset {
@@ -262,7 +273,7 @@ export class JsonlSessionHandle implements SessionHandle {
       // until a full pass leaves the routed buffer empty. The chain never
       // rejects because run() swallows each operation's rejection after its
       // caller observed it.
-      for (;;) {
+      for (; ;) {
         try {
           await this.drainLive()
         } catch (error: unknown) {
@@ -301,13 +312,19 @@ export class JsonlSessionHandle implements SessionHandle {
   /**
    * Buffer one published live session event and arm the bounded batching
    * window when it is idle. The routing installer is the only caller.
-   * @param event - the live event, retained as a persistence-owned copy.
+   * @param event - the live event as published; retained with the encoded line it persists.
    * @param reportBackgroundFailure - observes a deadline-driven drain failure
    *   (the events stay buffered; the next {@link drainLive} retries loudly).
    */
   enqueueLive(event: SessionEvent, reportBackgroundFailure: (error: unknown) => void): void {
-    this.buffered.push(structuredClone(event))
-    this.bufferedBytes += jsonEventBytes(event)
+    // The line is captured now, at publish time: it is the exact string this
+    // batch persists, its UTF-8 length feeds the byte cap, and the drain
+    // writes it without re-serializing. The routed event needs no defensive
+    // copy — publications on session/event are deep-frozen at the session's
+    // append boundary, so nothing can change them before the drain.
+    const line = eventLine(event)
+    this.buffered.push({ event, line })
+    this.bufferedBytes += lineBytes(line)
     if (this.batchTimer !== undefined || this.drainPaused) return
     // A batch over the byte threshold drains on the next tick instead of
     // waiting out the delay window; otherwise the window is the deadline.
@@ -344,10 +361,13 @@ export class JsonlSessionHandle implements SessionHandle {
         const batch = this.buffered.splice(0)
         this.bufferedBytes = 0
         try {
-          await this.persistContiguous(materializeAppendBatch(batch))
+          await this.persistContiguous(
+            materializeAppendBatch(batch.map(entry => entry.event)),
+            batch.map(entry => entry.line),
+          )
         } catch (error: unknown) {
           this.buffered = batch.concat(this.buffered)
-          this.bufferedBytes = batch.reduce((total, event) => total + jsonEventBytes(event), 0)
+          this.bufferedBytes = batch.reduce((total, entry) => total + lineBytes(entry.line), 0)
           this.drainPaused = true
           throw error
         }
@@ -355,8 +375,11 @@ export class JsonlSessionHandle implements SessionHandle {
     }
   }
 
-  /** The shared durable-append body: contiguity, ownership, torn-tail repair, storage write, state advance. */
-  private async persistContiguous(batch: readonly SessionEvent[]): Promise<void> {
+  /**
+   * The shared durable-append body: contiguity, ownership, torn-tail repair, storage write, state advance.
+   * `lines`, when supplied, are the live drain's pre-encoded lines matching `batch` positionally.
+   */
+  private async persistContiguous(batch: readonly SessionEvent[], lines?: readonly string[]): Promise<void> {
     if (this.access !== 'write') throw new SessionReadOnlyError(this.id, 'append')
     if (batch.length === 0) return
     await this.ensureLease()
@@ -375,7 +398,7 @@ export class JsonlSessionHandle implements SessionHandle {
       }
       this.state.recoveredTail = undefined
     }
-    await this.storage.persistBatch(this.header, batch, this.state.materialized, this.state.inheritedEventCount)
+    await this.storage.persistBatch(this.header, batch, this.state.materialized, this.state.inheritedEventCount, lines)
     this.state.materialized = true
     this.state.cursor += batch.length
     this.state.primed = undefined
@@ -437,7 +460,7 @@ export class JsonlBackendTracker {
   private counter = 0
 
   /** @param name - backend label used in in-memory revision tokens and teardown errors. */
-  constructor(private readonly name: string) {}
+  constructor(private readonly name: string) { }
 
   /**
    * Claim write ownership and record the created session as pending, making
