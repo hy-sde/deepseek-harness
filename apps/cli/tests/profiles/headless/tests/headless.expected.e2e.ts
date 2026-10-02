@@ -16,7 +16,7 @@ import { LOADER_SMOKE_TEST_TIMEOUT_MS, runLoaderSmoke } from '@deepseek-ai/dsh-l
 import {
   decompressZstdFrame,
   scanZstdFrames,
-} from '@deepseek-ai/dsh-session-persistence-jsonl/src/zstd.ts'
+} from '@deepseek-ai/dsh-zstd-frame'
 import { describe, expect, it } from 'vitest'
 
 const goldensDir = fileURLToPath(new URL('./expected/', import.meta.url))

@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
 import { generationLogFilename } from '../../packages/session/session-persistence-jsonl/src/format.ts'
-import { compressZstdFrame } from '../../packages/session/session-persistence-jsonl/src/zstd.ts'
+import { compressZstdFrame } from '@deepseek-ai/dsh-zstd-frame'
 import {
   SYNTHETIC_SESSION_CWD,
   SYNTHETIC_SESSION_DIRECTORY,

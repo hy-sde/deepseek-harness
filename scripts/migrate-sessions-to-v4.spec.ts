@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { execa } from 'execa'
 import type { SessionFormatJsonObject } from '@deepseek-ai/dsh-session-format'
 import { encodeSegment, generationLogFilename, type JsonlCompression } from '../packages/session/session-persistence-jsonl/src/format.ts'
-import { compressZstdFrame, decompressZstdFrame, scanZstdFrames } from '../packages/session/session-persistence-jsonl/src/zstd.ts'
+import { compressZstdFrame, decompressZstdFrame, scanZstdFrames } from '@deepseek-ai/dsh-zstd-frame'
 import { runMigrationJobs } from './migrate-sessions-to-v4.ts'
 import { removeFixtureSafely } from './test-fixture-cleanup.ts'
 
