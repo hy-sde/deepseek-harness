@@ -112,6 +112,8 @@ minimumReleaseAgeExclude:
   - '@hy-sde-org/dsh-code-runtime-kernels@0.1.5-rc.1'
   - '@hy-sde-org/dsh-zstd-frame@0.1.5-rc.1'
   - '@hy-sde-org/dsh-*'
+  # pi-durable stack (Route A engine + tools) published 2026-10-01
+  - '@earendil-works/*'
 patchedDependencies:
   '@earendil-works/pi-ai@0.87.1': patches/@earendil-works__pi-ai@0.87.1.patch
   '@electron/osx-sign@1.3.3': patches/@electron__osx-sign@1.3.3.patch

@@ -131,6 +131,8 @@
     "@deepseek-ai/dsh-tool-openwiki": "workspace:*",
     "@deepseek-ai/dsh-tool-session-query": "workspace:*",
     "@hy-sde-org/dsh-code-runtime-kernels": "^0.2.0-rc.2",
+    "@hy-sde-org/dsh-pi-durable": "file:../../../dsh-plugins/dsh-pi-durable/packages/pi-durable",
+    "@hy-sde-org/dsh-tool-pi-durable": "file:../../../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable",
     "@hy-sde-org/dsh-session-intelligence": "^0.2.0-rc.2"
   },
   "devDependencies": {

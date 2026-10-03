@@ -43,7 +43,9 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`@fortune-sheet/core`](https://github.com/ruilisi/fortune-sheet) | MIT |
 | [`@fortune-sheet/react`](https://github.com/ruilisi/fortune-sheet) | MIT |
 | [`@hy-sde-org/dsh-code-runtime-kernels`](https://github.com/hy-sde/dsh-plugins) | MIT |
+| [`@hy-sde-org/dsh-pi-durable`](https://github.com/hy-sde/dsh-plugins) | MIT |
 | [`@hy-sde-org/dsh-session-intelligence`](https://github.com/hy-sde/dsh-plugins) | MIT |
+| [`@hy-sde-org/dsh-tool-pi-durable`](https://github.com/hy-sde/dsh-plugins) | MIT |
 | [`@joplin/turndown-plugin-gfm`](https://github.com/laurent22/joplin-turndown-plugin-gfm) | MIT |
 | [`@jridgewell/gen-mapping`](https://github.com/jridgewell/sourcemaps) | MIT |
 | [`@js-temporal/polyfill`](https://github.com/js-temporal/temporal-polyfill) | ISC |
