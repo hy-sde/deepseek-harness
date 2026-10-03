@@ -6,9 +6,6 @@ importers:
   .:
     configDependencies: {}
     packageManagerDependencies:
-      '@pnpm/exe':
-        specifier: 12.8.1
-        version: 12.8.1
       pnpm:
         specifier: 12.8.1
         version: 12.8.1
@@ -92,11 +89,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@pnpm/exe@12.8.1':
-    resolution: {integrity: sha512-ju5MeefhEEXI7NO3u6oj54uGBOkN0pVhI+tcmuZDkTTqVdRZvEVEo+zhjwAoe8vEXguQCvsa6cTDhmFPxpOXeQ==}
-    engines: {node: '>=18.*'}
-    hasBin: true
-
   pnpm@12.8.1:
     resolution: {integrity: sha512-9kupB1B/XOr+BsjTjmBS0BeURFgOwSed3Vv8EctIqoomRLZlmOB+dh2oSHKp/FfV+QK4f6SdAkGY1VhhKqu+RQ==}
     engines: {node: '>=18.*'}
@@ -145,23 +137,6 @@ snapshots:
 
   '@pnpm/exe.win32-x64@12.8.1':
     optional: true
-
-  '@pnpm/exe@12.8.1':
-    optionalDependencies:
-      '@pnpm/exe.android-arm64': 12.8.1
-      '@pnpm/exe.android-x64': 12.8.1
-      '@pnpm/exe.darwin-arm64': 12.8.1
-      '@pnpm/exe.darwin-x64': 12.8.1
-      '@pnpm/exe.freebsd-x64': 12.8.1
-      '@pnpm/exe.linux-arm64': 12.8.1
-      '@pnpm/exe.linux-arm64-musl': 12.8.1
-      '@pnpm/exe.linux-ppc64': 12.8.1
-      '@pnpm/exe.linux-riscv64': 12.8.1
-      '@pnpm/exe.linux-s390x': 12.8.1
-      '@pnpm/exe.linux-x64': 12.8.1
-      '@pnpm/exe.linux-x64-musl': 12.8.1
-      '@pnpm/exe.win32-arm64': 12.8.1
-      '@pnpm/exe.win32-x64': 12.8.1
 
   pnpm@12.8.1:
     optionalDependencies:
@@ -695,17 +670,17 @@ importers:
         specifier: link:../../vendor/schemastery
         version: link:../../vendor/schemastery
       '@hy-sde-org/dsh-code-runtime-kernels':
-        specifier: ^0.2.0-rc.2
-        version: 0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-ptc-runtime@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-sandbox@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session)))(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-brand@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session))(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))
+        specifier: ^0.2.0-rc.2.1
+        version: 0.2.0-rc.2.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-ptc-runtime@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-sandbox@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session)))(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-brand@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session))(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))
       '@hy-sde-org/dsh-pi-durable':
-        specifier: file:../../../dsh-plugins/dsh-pi-durable/packages/pi-durable
-        version: file:../dsh-plugins/dsh-pi-durable/packages/pi-durable(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)
       '@hy-sde-org/dsh-session-intelligence':
         specifier: ^0.2.0-rc.2
         version: 0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session-query@packages+session-query+session-query)(@deepseek-ai/dsh-system-prompt@packages+core+system-prompt)(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)
       '@hy-sde-org/dsh-tool-pi-durable':
-        specifier: file:../../../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable
-        version: file:../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-tools@packages+core+tools)(@earendil-works/pi-durable@1.0.0(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))(@hy-sde-org/dsh-pi-durable@file:../dsh-plugins/dsh-pi-durable/packages/pi-durable(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))
+        specifier: ^0.2.0-rc.2
+        version: 0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-tools@packages+core+tools)(@earendil-works/pi-durable@1.0.0(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))(@hy-sde-org/dsh-pi-durable@0.2.0-rc.2(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -17736,8 +17711,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@hy-sde-org/dsh-code-runtime-kernels@0.2.0-rc.2':
-    resolution: {integrity: sha512-POmkSF0V8aFdODOT+9c0FkK1ym9Y+6TcBT0WFktamOCaF/5PqJ8tBJUewtAfCOW5INh3Cn06Ljuivd1H0A4smg==}
+  '@hy-sde-org/dsh-code-runtime-kernels@0.2.0-rc.2.1':
+    resolution: {integrity: sha512-Em7FYWrWZO8WXnvYdYhIhbG2KHvKO9hZ1rvbBI0fwWv8obg3u+py5eoIirYHQ47SOjXlxd5FdCu41pGF4JEPHw==}
     engines: {node: ^22.19.0 || >=24.0.0}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.4
@@ -17749,8 +17724,8 @@ packages:
       '@deepseek-ai/dsh-tools': ^0.2.0-rc.2
       '@deepseek-ai/dsh-util-values': ^0.2.0-rc.2
 
-  '@hy-sde-org/dsh-pi-durable@file:../dsh-plugins/dsh-pi-durable/packages/pi-durable':
-    resolution: {directory: ../dsh-plugins/dsh-pi-durable/packages/pi-durable, type: directory}
+  '@hy-sde-org/dsh-pi-durable@0.2.0-rc.2':
+    resolution: {integrity: sha512-mY6FHYS9zJbxmWKyJMl0VDtIq0Iust8rPJcpQpIXSZT4KKjj+MLZYZ53HmEVrIOJzRWhbUfmbjH20hOhoK5daQ==}
     engines: {node: ^22.19.0 || >=24.0.0}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.4
@@ -17767,14 +17742,14 @@ packages:
       '@deepseek-ai/dsh-timeout': ^0.2.0-rc.2
       '@deepseek-ai/dsh-tools': ^0.2.0-rc.2
 
-  '@hy-sde-org/dsh-tool-pi-durable@file:../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable':
-    resolution: {directory: ../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable, type: directory}
+  '@hy-sde-org/dsh-tool-pi-durable@0.2.0-rc.2':
+    resolution: {integrity: sha512-qj8/6RHDxe+3pLv+IG73PPSXhDP51i4BOisJF6hfm1/0QS+wJzUhe2tUfNKR9VqhACW5gWfSB9emX5JTrsbLqg==}
     engines: {node: ^22.19.0 || >=24.0.0}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.4
       '@deepseek-ai/dsh-tools': ^0.2.0-rc.2
       '@earendil-works/pi-durable': ^1.0.0
-      '@hy-sde-org/dsh-pi-durable': workspace:^
+      '@hy-sde-org/dsh-pi-durable': ^0.2.0-rc.2
 
   '@hy-sde-org/dsh-zstd-frame@0.2.0-rc.2':
     resolution: {integrity: sha512-GimpRZ6Td3XQ76QIYX7eAD8GKjRNFLNsM8YbeEPeFIayfScOGr+888zVAvX/Mmd2mXLo+EGZdZ/SWgY8l9bjeA==}
@@ -25501,7 +25476,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@hy-sde-org/dsh-code-runtime-kernels@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-ptc-runtime@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-sandbox@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session)))(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-brand@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session))(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))':
+  '@hy-sde-org/dsh-code-runtime-kernels@0.2.0-rc.2.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-ptc-runtime@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-sandbox@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session)))(@deepseek-ai/dsh-session@packages+core+session)(@deepseek-ai/dsh-spill@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-brand@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))(@deepseek-ai/dsh-llm@packages+llm+llm)(@deepseek-ai/dsh-session@packages+core+session))(@deepseek-ai/dsh-timeout@packages+util+timeout)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-util-values@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/dsh-invariants': 0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)
@@ -25513,7 +25488,7 @@ snapshots:
       '@deepseek-ai/dsh-util-values': 0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)
       '@deepseek-ai/schemastery': link:vendor/schemastery
 
-  '@hy-sde-org/dsh-pi-durable@file:../dsh-plugins/dsh-pi-durable/packages/pi-durable(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)':
+  '@hy-sde-org/dsh-pi-durable@0.2.0-rc.2(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/schemastery': link:vendor/schemastery
@@ -25546,12 +25521,12 @@ snapshots:
     transitivePeerDependencies:
       - '@deepseek-ai/dsh-invariants'
 
-  '@hy-sde-org/dsh-tool-pi-durable@file:../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-tools@packages+core+tools)(@earendil-works/pi-durable@1.0.0(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))(@hy-sde-org/dsh-pi-durable@file:../dsh-plugins/dsh-pi-durable/packages/pi-durable(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))':
+  '@hy-sde-org/dsh-tool-pi-durable@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-tools@packages+core+tools)(@earendil-works/pi-durable@1.0.0(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))(@hy-sde-org/dsh-pi-durable@0.2.0-rc.2(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3))':
     dependencies:
       '@deepseek-ai/cordis': link:vendor/cordis
       '@deepseek-ai/dsh-tools': link:packages/core/tools
       '@earendil-works/pi-durable': 1.0.0(@aws-sdk/credential-provider-node@3.972.84)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)
-      '@hy-sde-org/dsh-pi-durable': file:../dsh-plugins/dsh-pi-durable/packages/pi-durable(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)
+      '@hy-sde-org/dsh-pi-durable': 0.2.0-rc.2(@aws-sdk/credential-provider-node@3.972.84)(@deepseek-ai/cordis@vendor+cordis)(@modelcontextprotocol/sdk@1.29.0(supports-color@9.4.0)(zod@4.4.3))(@smithy/signature-v4@5.7.4)(supports-color@9.4.0)(undici@8.10.0)(ws@8.21.0)(zod@4.4.3)
 
   '@hy-sde-org/dsh-zstd-frame@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@vendor+cordis))':
     dependencies:

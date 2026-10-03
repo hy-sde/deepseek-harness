@@ -130,9 +130,9 @@
     "@deepseek-ai/dsh-tool-memory": "workspace:*",
     "@deepseek-ai/dsh-tool-openwiki": "workspace:*",
     "@deepseek-ai/dsh-tool-session-query": "workspace:*",
-    "@hy-sde-org/dsh-code-runtime-kernels": "^0.2.0-rc.2",
-    "@hy-sde-org/dsh-pi-durable": "file:../../../dsh-plugins/dsh-pi-durable/packages/pi-durable",
-    "@hy-sde-org/dsh-tool-pi-durable": "file:../../../dsh-plugins/dsh-pi-durable/packages/tool-pi-durable",
+    "@hy-sde-org/dsh-code-runtime-kernels": "^0.2.0-rc.2.1",
+    "@hy-sde-org/dsh-pi-durable": "^0.2.0-rc.2",
+    "@hy-sde-org/dsh-tool-pi-durable": "^0.2.0-rc.2",
     "@hy-sde-org/dsh-session-intelligence": "^0.2.0-rc.2"
   },
   "devDependencies": {
@@ -186,8 +186,7 @@
     "ws": "8.21.0",
     "@deepseek-ai/dsh-agent-spine-demo": "workspace:*",
     "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/dsh-tool-subagent-report": "workspace:*",
-    "@deepseek-ai/dsh-zstd-frame": "workspace:*"
+    "@deepseek-ai/dsh-tool-subagent-report": "workspace:*"
   },
   "exports": {
     "./profile-boot": {
