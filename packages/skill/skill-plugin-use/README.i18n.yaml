@@ -1,0 +1,55 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/skill/skill-plugin-use/README.md
+/:
+  en: 99989fe5b8443e6e
+  zh: 5359455ad6852e4f
+/deepseek-ai-dsh-skill-plugin-use:
+  en: d965043e67f90e35
+  zh: e9f3db9cd3c43c9f
+/deepseek-ai-dsh-skill-plugin-use/summary:
+  en: 89258ca464ec36a7
+  zh: 13d48a93ca2f605c
+/deepseek-ai-dsh-skill-plugin-use/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-skill-plugin-use/use-this-package:
+  en: 3e054eae16e08a9e
+  zh: 50d8c7db0994650d
+/deepseek-ai-dsh-skill-plugin-use/use-this-package/when-to-choose-it:
+  en: 15a0c2bce56db7be
+  zh: 7b0226b8581c79ba
+/deepseek-ai-dsh-skill-plugin-use/use-this-package/declare-the-advices:
+  en: acf7bb580840d830
+  zh: d758f6413c686eed
+/deepseek-ai-dsh-skill-plugin-use/use-this-package/name-advices-away-from-client-commands:
+  en: 6accdb384a372d7e
+  zh: bf9e54b61fcf7ae5
+/deepseek-ai-dsh-skill-plugin-use/use-this-package/observable-success-and-failures:
+  en: 2bfd1a7e45c2921f
+  zh: deb43eb0816c872a
+/deepseek-ai-dsh-skill-plugin-use/understand-the-implementation:
+  en: 9d42b74bf82092e8
+  zh: 379f0ee3e1afd154
+/deepseek-ai-dsh-skill-plugin-use/understand-the-implementation/design-concept:
+  en: f17c302a7e809b7d
+  zh: b8d3508957fbb568
+/deepseek-ai-dsh-skill-plugin-use/understand-the-implementation/source-map:
+  en: 9c1dcf1ae77fda4f
+  zh: 6c7f61baeb595200
+/deepseek-ai-dsh-skill-plugin-use/further-exploration:
+  en: 17a33a17cde96de9
+  zh: 596a6333bfc9b0ed
+/deepseek-ai-dsh-skill-plugin-use/model-experience:
+  en: 08eae0bc404d5e58
+  zh: 8c8dc4d9e73f972b
+/deepseek-ai-dsh-skill-plugin-use/model-experience/kv-cache-effect:
+  en: 8cfe9c01d0c984e2
+  zh: 9aec11ea00d24079
+/deepseek-ai-dsh-skill-plugin-use/known-limitations-and-deferred-work:
+  en: 48a639b2b0defe6c
+  zh: 2fe79aa984be0e68
+/deepseek-ai-dsh-skill-plugin-use/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

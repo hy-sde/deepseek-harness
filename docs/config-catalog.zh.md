@@ -852,7 +852,7 @@ export type ThemePreference = typeof THEME_PREFERENCES[number]
 ## `@deepseek-ai/dsh-code-runtime-kernels`
 
 - `inject`: `tools` · `systemPrompt`
-- `source`: [`packages/code-runtime/code-runtime-kernels/src/index.ts:49`](../packages/code-runtime/code-runtime-kernels/src/index.ts)
+- `source`: [`packages/code-runtime/code-runtime-kernels/src/index.ts:52`](../packages/code-runtime/code-runtime-kernels/src/index.ts)
 
 ```ts config-catalog
 /**
@@ -880,6 +880,40 @@ export interface Config {
   startupTimeoutMs?: number
   /** Grace period for the kernel to exit after an `exit` frame. */
   shutdownGraceMs?: number
+  /**
+   * Namespace persistence: each successful run snapshots the session's kernel
+   * namespace to disk, and a fresh kernel for that session restores it once
+   * (so state survives kernel death and a full plugin restart). `false`
+   * disables; `snapshotDir` sets the root (default `~/.dsh/code-runtime-kernels/state`,
+   * language + session-hash subdirectories).
+   */
+  snapshot?: boolean
+  /** Root directory for session snapshots (ignored when `snapshot` is false). */
+  snapshotDir?: string
+  /** Combined byte cap for one snapshot file; entries past it are skipped by name. */
+  snapshotMaxBytes?: number
+  /** Per-entry byte cap; an entry larger than this is skipped and named. */
+  snapshotMaxEntryBytes?: number
+  /** Confine kernel subprocesses through the sandbox seam (default false = unconfined). */
+  sandboxConfinement?: boolean
+  /** The confine capability (see `SandboxProvider` in `@deepseek-ai/dsh-sandbox`); required when `sandboxConfinement` is true. */
+  sandboxProvider?: KernelSandboxProvider
+  /** Writable root under `workspace-write` confinement (defaults to the process cwd). */
+  sandboxWorkspaceRoot?: string
+  /** File-effect mode for kernels under confinement (default `workspace-write`). */
+  sandboxMode?: 'read-only' | 'workspace-write'
+}
+
+/**
+ * The sandbox seam's confine capability, structurally typed (no runtime
+ * dependency on `@deepseek-ai/dsh-sandbox`): wrap exact argv under a
+ * file-effect policy, or fail closed. See the published seam for the contract.
+ */
+export interface KernelSandboxProvider {
+  confine(
+    argv: readonly string[],
+    policy: { mode: 'read-only' | 'workspace-write'; workspaceRoot: string },
+  ): { argv: string[] }
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-code-runtime-kernels -->
@@ -3396,6 +3430,48 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-skill-office -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-skill-plugin-use -->
+<a id="deepseek-aidsh-skill-plugin-use"></a>
+
+## `@deepseek-ai/dsh-skill-plugin-use`
+
+- `inject`: `skills`
+- `source`: [`packages/skill/skill-plugin-use/src/index.ts:53`](../packages/skill/skill-plugin-use/src/index.ts)
+
+```ts config-catalog
+/** Plugin-advice provider configuration. */
+export interface Config {
+  /** Unique provider name. Defaults to `plugin-use`. */
+  providerName?: string
+  /** Base directory for relative `instructionsFile` paths. Defaults to the process cwd. */
+  baseDir?: string
+  /** One advice per plugin; an empty list publishes nothing. */
+  plugins?: PluginAdvice[]
+}
+
+/** One composition-declared plugin advice. */
+export interface PluginAdvice {
+  /** Kebab-case skill name; the same token is the `/name` gesture. */
+  readonly name: string
+  /** Short routing description shown by discovery consumers. */
+  readonly description: string
+  /** Optional extra routing guidance passed through to the catalog. */
+  readonly whenToUse?: string
+  /** Inline advice body. Exactly one of `instructions` and `instructionsFile` is required. */
+  readonly instructions?: string
+  /**
+   * Markdown advice body path. Absolute or `~`-expanded paths load as-is;
+   * relative paths resolve against `Config.baseDir`.
+   */
+  readonly instructionsFile?: string
+  /** Tool names the plugin contributes; rendered as a trailing tool-map line. */
+  tools?: string[]
+  /** Whether model-facing catalogs and the `skill` tool include this advice. Defaults to true. */
+  readonly modelInvocable?: boolean
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-skill-plugin-use -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-spill-local -->
 <a id="deepseek-aidsh-spill-local"></a>
 
@@ -4162,7 +4238,7 @@ export interface CodebaseMemoryToolConfig {
 ## `@deepseek-ai/dsh-tool-debug`
 
 - `inject`: `tools` · `dap` · `systemPrompt`
-- `source`: [`packages/debug/tool-debug/src/index.ts:71`](../packages/debug/tool-debug/src/index.ts)
+- `source`: [`packages/debug/tool-debug/src/index.ts:46`](../packages/debug/tool-debug/src/index.ts)
 
 ```ts config-catalog
 /** Plugin configuration: result caps and timeout budgets. */

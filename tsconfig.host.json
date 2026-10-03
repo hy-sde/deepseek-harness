@@ -244,6 +244,9 @@
       "path": "./packages/skill/skill-office"
     },
     {
+      "path": "./packages/skill/skill-plugin-use"
+    },
+    {
       "path": "./packages/skill/tool-workspace-dependencies"
     },
     {
