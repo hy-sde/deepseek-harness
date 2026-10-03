@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-02-merge-decision-ledger.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-10-02-merge-decision-ledger.md
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution:
+  en: 234b72cea83351e6
+  zh: 352d1b3e28e0f893
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/problem:
+  en: 88fcf3fb37f2a7d9
+  zh: bf94582793d45714
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/decision:
+  en: 533bfc263caf4ef6
+  zh: 358603f255783872
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/decision/consult-ritual-binding:
+  en: 69372e271632a0f8
+  zh: 2831df2a131cb4f0
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/decision/operations:
+  en: 26a2303e119d9bbc
+  zh: 10f50e436f31190e
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/decision/seeded-decisions-2026-10-02:
+  en: 0054c9f14d2cfd6f
+  zh: 3b7e5048e83142c4
