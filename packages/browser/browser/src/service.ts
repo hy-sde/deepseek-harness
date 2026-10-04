@@ -33,6 +33,7 @@ import {
 } from './stealth.ts'
 import { startRelayServer, type RelayServer } from './relay/server.ts'
 import { resolveRelayKind } from './relay/kind.ts'
+import { waitForRelayReady } from './relay/probe.ts'
 import { launchCloakBrowser, cloakBrowserPid } from './cloak.ts'
 import type { BrowserConfig, BrowserKind, PageObservation, ScreenshotResult } from './types.ts'
 
@@ -176,6 +177,13 @@ export class BrowserService extends Service {
     }
 
     // attach + relay both speak Chrome CDP discovery; the relay impersonates it.
+    if (kind.kind === 'relay') {
+      // A cold extension service worker dials seconds after the relay starts:
+      // give it the readiness budget so the first connect does not race the
+      // dial (oh-my-pi b4c96b126e). Expiry never throws — connectOverCDP then
+      // surfaces its own error.
+      await waitForRelayReady(kind.cdpUrl)
+    }
     const browser = await chromium.connectOverCDP(kind.cdpUrl)
     return { kind, browser, headless: false, cwd }
   }

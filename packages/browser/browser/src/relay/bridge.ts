@@ -25,6 +25,7 @@
  *   shared root session and passed through verbatim
  */
 import type { ExtToRelayMessage, RelayRpcRequest, RelayToExtMessage, TabSnapshot } from './protocol'
+import { DSH_RELAY_PROTOCOL } from './protocol'
 
 /** Transport-agnostic websocket surface the bridge writes to. */
 export interface RelaySocket {
@@ -191,6 +192,9 @@ export class RelayBridge {
       'User-Agent': ua,
       'V8-Version': '',
       'WebKit-Version': '',
+      // Build marker: lets callers tell a stale relay from an unconnected
+      // extension (oh-my-pi b4c96b126e — diagnosed stale relay after upgrades).
+      dshRelayProtocol: String(DSH_RELAY_PROTOCOL),
       webSocketDebuggerUrl: wsUrl,
     }
   }

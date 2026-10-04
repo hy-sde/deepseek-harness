@@ -9,6 +9,15 @@
  * pushes tab lifecycle and `chrome.debugger` events as they happen.
  */
 
+/**
+ * Relay build marker advertised on `/json/version` (both the 200 and the 503
+ * body). A stale relay from an older build answers without it, letting
+ * callers diagnose a wedged endpoint before blaming the extension. Purely
+ * diagnostic: a marker mismatch never fails a connection (capability match
+ * beats version match — oh-my-pi 0f0910f42b).
+ */
+export const DSH_RELAY_PROTOCOL = 1
+
 /** Minimal view of a Chrome tab shared between extension and relay. */
 export interface TabSnapshot {
   tabId: number
