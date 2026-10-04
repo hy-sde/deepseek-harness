@@ -46,7 +46,7 @@ The ARIA snapshot is produced by the bundled Playwright ARIA-snapshot sources (A
 
 The `patch` backend launches the CloakBrowser Chromium through the `cloakbrowser` npm dependency — a drop-in Playwright wrapper that returns a regular `playwright-core` `Browser` (same instance the service drives). Its fingerprint randomization happens at the C++ layer per session, so the JS-level stealth scripts and UA override are deliberately NOT applied on this backend. The first launch auto-downloads the patched Chromium (~200 MB, cached under `~/.cloakbrowser/`); `patchOptions` can pass `proxy`, `geoip` (match timezone+locale to the proxy IP), and `humanize` (human-like input). Anti-detection raises the bar, it does not make a site accessible.
 
-The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, serves `GET /json/version` (503 until the extension connects), `GET /json`, `WS /cdp` (downstream CDP clients), `WS /ext` (the extension, token-gated when configured), and `GET /ext-assets/*` so the extension can be sideloaded from `chrome://extensions` → Load unpacked. The bridge multiplexes every downstream CDP connection over the extension's one `chrome.debugger` attachment per tab with minted session ids — the same design as `omp browser-relay` (MIT).
+The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, serves `GET /json/version` (503 until the extension connects; both the 200 and the 503 body carry the `dshRelayProtocol` build marker, so a stale relay of another build is diagnosable before blaming the extension — a mismatch never fails a connection), `GET /json`, `WS /cdp` (downstream CDP clients), `WS /ext` (the extension, token-gated when configured), and `GET /ext-assets/*` so the extension can be sideloaded from `chrome://extensions` → Load unpacked. The relay path waits (bounded budget, silent expiry) for `/json/version` to answer 200 before `connectOverCDP`, so the first connect does not race a cold extension service-worker dial. The bridge multiplexes every downstream CDP connection over the extension's one `chrome.debugger` attachment per tab with minted session ids. Chrome-discarded tabs (memory saver) are never announced or attached — a discard retires held sessions and retracts the target, a revival (activation refetch) reannounces and re-attaches, and an attach waits out a tracked in-flight detach instead of being silently undone by it — the same design as `omp browser-relay` (MIT).
 
 <a id="configuration"></a>
 ## Configuration
@@ -59,7 +59,7 @@ The relay (`src/relay/server.ts`, `bridge.ts`, a port of omp's) binds loopback, 
 - `relayUrl` / `relayToken` — relay endpoint and optional extension token.
 - `timeoutMs` — default navigation timeout (30000).
 
-The service is host-plane, holds no durable state, and is disposed with its owning context (closes its browsers and stops the relay).
+The service is host-plane, holds no durable state, and is disposed with its owning context (closes its browsers and stops the relay). Spawned browsers (launch, and patch when the peer exposes its pid) are recorded in the orphan registry (`src/orphan-registry.ts`) and reaped by a later host if this process dies; a record is dropped only once its close is confirmed — a failed close keeps the pid reapable.
 
 **Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.
 
