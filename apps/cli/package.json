@@ -129,11 +129,7 @@
     "@deepseek-ai/dsh-tool-lsp": "workspace:*",
     "@deepseek-ai/dsh-tool-memory": "workspace:*",
     "@deepseek-ai/dsh-tool-openwiki": "workspace:*",
-    "@deepseek-ai/dsh-tool-session-query": "workspace:*",
-    "@hy-sde-org/dsh-code-runtime-kernels": "^0.2.0-rc.2.1",
-    "@hy-sde-org/dsh-pi-durable": "^0.2.0-rc.2",
-    "@hy-sde-org/dsh-tool-pi-durable": "^0.2.0-rc.2",
-    "@hy-sde-org/dsh-session-intelligence": "^0.2.0-rc.2"
+    "@deepseek-ai/dsh-tool-session-query": "workspace:*"
   },
   "devDependencies": {
     "@agentclientprotocol/sdk": "1.4.0",
