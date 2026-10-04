@@ -158,7 +158,7 @@ export class BrowserService extends Service {
       if (pid !== undefined) {
         void recordOwnedBrowser(pid).catch(() => { })
       }
-      return { kind, server, browser, headless: this.headless, cwd, pid }
+      return { kind, server, browser, headless: this.headless, cwd, ...(pid !== undefined ? { pid } : {}) }
     }
 
     if (kind.kind === 'patch') {
@@ -173,7 +173,7 @@ export class BrowserService extends Service {
       if (pid !== undefined) {
         void recordOwnedBrowser(pid).catch(() => { })
       }
-      return { kind, browser: browser as PlaywrightBrowser, headless: this.headless, cwd, pid }
+      return { kind, browser: browser as PlaywrightBrowser, headless: this.headless, cwd, ...(pid !== undefined ? { pid } : {}) }
     }
 
     // attach + relay both speak Chrome CDP discovery; the relay impersonates it.
