@@ -33,7 +33,7 @@ import {
 } from './stealth.ts'
 import { startRelayServer, type RelayServer } from './relay/server.ts'
 import { resolveRelayKind } from './relay/kind.ts'
-import { launchCloakBrowser } from './cloak.ts'
+import { launchCloakBrowser, cloakBrowserPid } from './cloak.ts'
 import type { BrowserConfig, BrowserKind, PageObservation, ScreenshotResult } from './types.ts'
 
 export type { BrowserConfig, BrowserKind, BrowserKindTag, PageObservation, ObservationEntry, ScreenshotResult } from './types.ts'
@@ -165,7 +165,14 @@ export class BrowserService extends Service {
       // JS-level stealth scripts and UA override are deliberately NOT applied
       // on this backend (they would fight the per-session randomization).
       const browser = await launchCloakBrowser({ headless: this.headless, ...this.patchOptions })
-      return { kind, browser: browser as PlaywrightBrowser, headless: this.headless, cwd }
+      // The patch backend spawns its own Chromium with no launchServer handle;
+      // record its pid like a launch's so a crashed host's patch browser is
+      // reapable too (no-op when the peer exposes no process accessor).
+      const pid = cloakBrowserPid(browser)
+      if (pid !== undefined) {
+        void recordOwnedBrowser(pid).catch(() => { })
+      }
+      return { kind, browser: browser as PlaywrightBrowser, headless: this.headless, cwd, pid }
     }
 
     // attach + relay both speak Chrome CDP discovery; the relay impersonates it.
