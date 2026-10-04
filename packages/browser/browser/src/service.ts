@@ -21,7 +21,7 @@
 
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { chromium, type Browser as PlaywrightBrowser, type BrowserServer as PlaywrightServer, type Page as PlaywrightPage } from 'playwright-core'
-import { forgetOwnedBrowser, reapOrphanBrowsers, recordOwnedBrowser } from './orphan-registry.ts'
+import { forgetOwnedBrowser, isPidAlive, reapOrphanBrowsers, recordOwnedBrowser } from './orphan-registry.ts'
 import { captureAriaSnapshot, resolveAriaRefElement } from './aria.ts'
 import {
   DEFAULT_VIEWPORT,
@@ -63,6 +63,8 @@ interface BrowserEntry {
   server?: PlaywrightServer
   headless: boolean
   cwd: string
+  /** OS pid of a browser this host spawned (launch/patch) and recorded in the orphan registry; attach/relay browsers belong to other owners. */
+  pid?: number
 }
 
 interface TabEntry {
@@ -151,10 +153,11 @@ export class BrowserService extends Service {
       // (attach/relay browsers belong to other owners and must never be
       // touched by our reap sweep).
       const launchedPid = server.process().pid
-      if (typeof launchedPid === 'number' && Number.isInteger(launchedPid)) {
-        void recordOwnedBrowser(launchedPid).catch(() => { })
+      const pid = typeof launchedPid === 'number' && Number.isInteger(launchedPid) ? launchedPid : undefined
+      if (pid !== undefined) {
+        void recordOwnedBrowser(pid).catch(() => { })
       }
-      return { kind, server, browser, headless: this.headless, cwd }
+      return { kind, server, browser, headless: this.headless, cwd, pid }
     }
 
     if (kind.kind === 'patch') {
@@ -388,8 +391,7 @@ export class BrowserService extends Service {
         this.tabs.delete(tabName)
       }
       if (opts.kill && entry) {
-        await this.#closeBrowser(entry)
-        this.#releaseBrowser(entry)
+        await this.#closeAndRelease(entry)
         this.browsers.delete(this.browserKeyFor(opts.kind, opts.cwd))
       }
       return
@@ -399,8 +401,7 @@ export class BrowserService extends Service {
     void tab.page.close().catch(() => { })
     this.tabs.delete(name)
     if (opts.kill && entry) {
-      void this.#closeBrowser(entry)
-      this.#releaseBrowser(entry)
+      void this.#closeAndRelease(entry)
       this.browsers.delete(this.browserKeyFor(opts.kind, opts.cwd))
     }
   }
@@ -419,10 +420,21 @@ export class BrowserService extends Service {
 
   /** Drop a closed browser from the orphan registry (we closed it ourselves, so it is not an orphan). */
   #releaseBrowser(entry: BrowserEntry): void {
-    const launchedPid = entry.server?.process().pid
-    if (typeof launchedPid === 'number' && Number.isInteger(launchedPid)) {
-      void forgetOwnedBrowser(launchedPid).catch(() => { })
+    if (entry.pid !== undefined) {
+      void forgetOwnedBrowser(entry.pid).catch(() => { })
     }
+  }
+
+  /**
+   * Close a browser, then forget its registry record only once the close is
+   * confirmed — the pid is provably gone. A close that failed while the
+   * process still lives keeps the record: it is the only handle a later
+   * boot's reap has on the orphan (oh-my-pi f2e742011d/e5d1fac2a3: forget
+   * only on a confirmed stop, never on a requested one).
+   */
+  async #closeAndRelease(entry: BrowserEntry): Promise<void> {
+    await this.#closeBrowser(entry)
+    if (mayForgetClosedBrowser(entry.pid)) this.#releaseBrowser(entry)
   }
 
   /**
@@ -470,10 +482,9 @@ export class BrowserService extends Service {
   /** Close every browser connection and stop the relay (cleanup on ctx dispose). */
   stop(): void {
     for (const entry of this.browsers.values()) {
-      // release from the orphan registry first: a graceful ctx dispose means
-      // WE are closing these, so no later host should treat them as orphans.
-      this.#releaseBrowser(entry)
-      void this.#closeBrowser(entry)
+      // We own these closes, so their records would be forgotten — but only
+      // once each close confirms; a failed close must stay reapable.
+      void this.#closeAndRelease(entry)
     }
     this.browsers.clear()
     this.tabs.clear()
@@ -485,6 +496,25 @@ export class BrowserService extends Service {
   get browserCount(): number {
     return this.browsers.size
   }
+}
+
+/**
+ * Whether a closed browser's registry record may be dropped: only when its
+ * pid is provably gone. A close that failed while the process lives keeps the
+ * record — the durable entry is the only handle a later boot's
+ * {@link reapOrphanBrowsers} has on the orphan (oh-my-pi f2e742011d:
+ * forget only on a confirmed stop).
+ * @param pid - the recorded browser pid, or undefined for browsers this host
+ *   never spawned (attach/relay) and never records.
+ * @param isAlive - pid liveness probe; injectable for tests.
+ * @returns true when the record can be forgotten.
+ */
+export function mayForgetClosedBrowser(
+  pid: number | undefined,
+  isAlive: (pid: number) => boolean = isPidAlive,
+): boolean {
+  if (pid === undefined) return true
+  return !isAlive(pid)
 }
 
 export { captureAriaSnapshot, resolveAriaRefElement } from './aria.ts'
