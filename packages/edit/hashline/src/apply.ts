@@ -192,8 +192,11 @@ interface ReplacementGroup {
  * replacement inserts sharing one source op line, immediately followed by the
  * contiguous range deletes for that same op. Mirrors how the parser lowers an
  * `replace N.=M:` hunk with a body.
+ *
+ * Exported for the patcher's shift-rescue, which walks the same groups to
+ * evidence a stale-looking anchor against the content the payload carries.
  */
-function findReplacementGroup(edits: readonly AppliedEdit[], start: number): ReplacementGroup | undefined {
+export function findReplacementGroup(edits: readonly Edit[], start: number): ReplacementGroup | undefined {
   const first = edits[start]
   if (first?.kind !== 'insert' || first.mode !== 'replacement' || first.cursor.kind !== 'before_anchor') {
     return undefined
@@ -1041,6 +1044,17 @@ function resolveInwardLanding(
  * inward across the block's trailing closers when the body is deeper than
  * the block's closing line. Returns the corrected edit list plus one warning
  * per shifted hunk.
+ *
+ * Upstream additionally vetoes the outward shift when the shift itself
+ * breaks a tree-sitter parse (omp 7a8ac98e13, 92731fe30b): the batch
+ * materialized with the shift must parse while the batch materialized
+ * without it parses too. This port has no parse probe (syntax.ts stubs
+ * `parsesCleanly`), so the veto can never fire and is omitted — porting it
+ * verbatim would be a guaranteed no-op. When a real probe lands, port the
+ * veto with that batch-comparison base: the comparison is against the
+ * materialization of the batch as written (prior shifts included), never
+ * against the original text, or an unrelated broken edit in the same patch
+ * would veto every shift.
  */
 function repairAfterInsertLandings(
   edits: readonly AppliedEdit[],
