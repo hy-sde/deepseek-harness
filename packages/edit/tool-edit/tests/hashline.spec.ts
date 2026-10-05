@@ -8,6 +8,7 @@ import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
+import { FsTargetKey } from '@deepseek-ai/dsh-fs'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import { computeFileHash, getSessionSnapshotStore, InMemorySnapshotStore, Patch, type PatchSection } from '@deepseek-ai/dsh-hashline'
@@ -432,8 +433,9 @@ describe('tool-edit (hashline) × diff-preview mismatch origin', () => {
     const before = 'line one\nline two\n'
     await writeFile(sample, before)
     const reader: FileReader = {
-      resolve: async target => target,
-      readText: async target => readFile(target, 'utf8'),
+      resolve: async path => ({ targetKey: FsTargetKey(path), displayPath: path }),
+      stat: async () => undefined,
+      readText: async target => readFile(target.displayPath, 'utf8'),
     }
 
     // The preview shares the apply-time rejection shape: a tag issued for
