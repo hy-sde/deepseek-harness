@@ -37,15 +37,19 @@
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-brand": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-session-reference": "workspace:*",
     "@deepseek-ai/dsh-zstd-frame": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-internal-urls": "workspace:*"
+    "@deepseek-ai/dsh-internal-urls": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-internal-urls": "workspace:*"
+    "@deepseek-ai/dsh-internal-urls": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*"
   }
 }

@@ -18,7 +18,16 @@
       "path": "../../util/zstd"
     },
     {
+      "path": "../../util/brand"
+    },
+    {
       "path": "../../fs/internal-urls"
+    },
+    {
+      "path": "../../context/session-reference"
+    },
+    {
+      "path": "../../core/session"
     }
   ]
 }

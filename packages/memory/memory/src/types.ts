@@ -29,6 +29,8 @@ export interface MemoryEntryView {
   context?: string
   /** Origin label (`retain`, `learn`, `recall`, `invalidate`, …). */
   source: string
+  /** Session id that originated this entry, when known. */
+  sessionId?: string
   /** Bag of free-form tags when the backend supports them. */
   tags?: string[]
   /** Recency/importance hints flattened for recall rendering. */
