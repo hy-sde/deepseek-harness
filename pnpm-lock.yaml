@@ -9587,6 +9587,9 @@ importers:
       '@deepseek-ai/dsh-session-projection':
         specifier: workspace:*
         version: link:../../session/session-projection
+      '@deepseek-ai/dsh-session-turn-outline':
+        specifier: workspace:*
+        version: link:../../session/session-turn-outline
       '@deepseek-ai/dsh-system-prompt':
         specifier: workspace:*
         version: link:../../core/system-prompt
@@ -11379,9 +11382,15 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-brand':
+        specifier: workspace:*
+        version: link:../../util/brand
       '@deepseek-ai/dsh-home-paths':
         specifier: workspace:*
         version: link:../../util/home-paths
+      '@deepseek-ai/dsh-session-reference':
+        specifier: workspace:*
+        version: link:../../context/session-reference
       '@deepseek-ai/dsh-zstd-frame':
         specifier: workspace:*
         version: link:../../util/zstd
@@ -11389,6 +11398,9 @@ importers:
       '@deepseek-ai/dsh-internal-urls':
         specifier: workspace:*
         version: link:../../fs/internal-urls
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
 
   packages/memory/memory-extraction:
     dependencies:
@@ -12183,9 +12195,15 @@ importers:
 
   packages/session-query/session-url:
     dependencies:
+      '@deepseek-ai/dsh-compaction':
+        specifier: workspace:*
+        version: link:../../compaction/compaction
       '@deepseek-ai/dsh-session-query':
         specifier: workspace:*
         version: link:../session-query
+      '@deepseek-ai/dsh-session-turn-outline':
+        specifier: workspace:*
+        version: link:../../session/session-turn-outline
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
