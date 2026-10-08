@@ -242,12 +242,12 @@ describe('local backend', () => {
   it('exposes the originating sessionId on readEntry, listEntries, and search hits', async () => {
     const root = await tempRoot()
     const backend = backendFor(root)
-    const saved = await backend.save({ cwd: CWD }, { content: 'provenance fact', sessionId: 'sess-origin-9' })
+    const saved = await backend.save({ cwd: CWD }, { content: 'origin fact', sessionId: 'sess-origin-9' })
     const idValue = saved.id ?? ''
     expect((await backend.readEntry({ cwd: CWD }, idValue))?.sessionId).toBe('sess-origin-9')
     const listed = await backend.listEntries({ cwd: CWD }, 10)
     expect(listed.find(item => item.id === idValue)?.sessionId).toBe('sess-origin-9')
-    const found = await backend.search({ cwd: CWD }, 'provenance fact')
+    const found = await backend.search({ cwd: CWD }, 'origin fact')
     expect(found.items[0]?.sessionId).toBe('sess-origin-9')
   })
 

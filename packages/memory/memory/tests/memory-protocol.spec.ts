@@ -86,7 +86,7 @@ describe('MemoryProtocolHandler', () => {
   it('renders a session header with the canonical mention for entries carrying sessionId', async () => {
     const stub = new StubBackend()
     stub.entries.set('m_sess', {
-      id: 'm_sess', content: 'the provenance fact', source: 'retain', sessionId: 'sess-origin-42',
+      id: 'm_sess', content: 'the origin fact', source: 'retain', sessionId: 'sess-origin-42',
     })
     const resource = await handlerFor(stub as unknown as MemoryBackend)
       .resolve(parsed('memory://m_sess'), resolveContext)
@@ -177,10 +177,10 @@ describe('memory:// through ctx.internalUrls (package integration)', () => {
     expect(resource.content).toContain(`id: ${saved.id}`)
   })
 
-  it('renders session provenance as a mention in entry and root reads (end to end)', async () => {
+  it('renders session origin as a mention in entry and root reads (end to end)', async () => {
     const { ctx } = await mount()
     await new Promise<void>(resolve => setTimeout(resolve, 0))
-    const saved = await ctx.memory.save({ cwd: '/ws' }, { content: 'provenance fact', sessionId: 'sess-integration-9' })
+    const saved = await ctx.memory.save({ cwd: '/ws' }, { content: 'origin fact', sessionId: 'sess-integration-9' })
     const mention = formatSessionReferenceMention({ sessionId: SessionId('sess-integration-9'), label: 'sess-integration-9' })
     const entry = await ctx.internalUrls.resolve(`memory://${saved.id}`, { cwd: '/ws', sessionKey: 's1' })
     expect(entry.content).toContain(`session: ${mention}`)

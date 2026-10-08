@@ -1,9 +1,9 @@
 /**
- * Canonical `dsh-session` mention rendering for stored session provenance.
+ * Canonical `dsh-session` mention rendering for stored session origin.
  * Mentions are produced only by `formatSessionReferenceMention` so the target
  * URI is the canonical encoding (`decodeSessionReferenceUri` round-trips it)
  * and the label is escaped by the same function.
- * @module @deepseek-ai/dsh-memory/session-provenance
+ * @module @deepseek-ai/dsh-memory/session-origin
  */
 
 import { brandString } from '@deepseek-ai/dsh-brand'
@@ -15,7 +15,7 @@ import { formatSessionReferenceMention } from '@deepseek-ai/dsh-session-referenc
  * @param sessionId - raw session id as persisted by the backend.
  * @returns mention whose label is the raw session id.
  */
-export function sessionProvenanceMention(sessionId: string): string {
+export function sessionOriginMention(sessionId: string): string {
   return formatSessionReferenceMention({
     sessionId: brandString<SessionId>(sessionId),
     label: sessionId,
