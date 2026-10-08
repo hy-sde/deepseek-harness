@@ -112,7 +112,6 @@ The default artifact is a standard concatenation of independent [Zstandard frame
 | [`src/format.ts`](src/format.ts) | Log path derivation, header encoding, and current record scanning |
 | [`src/generation.ts`](src/generation.ts) | Single-pass historical restore, bounded stage encoding, source revision check, and exclusive successor publication |
 | [`src/migration-verifier.ts`](src/migration-verifier.ts) | Worker lifecycle for staged and competing-generation verification |
-| [`src/zstd.ts`](src/zstd.ts) | Zstandard frame compression, decoding, and frame scanning |
 | [`src/win32.ts`](src/win32.ts) | Windows write-through publish and directory creation |
 | — | No runtime invariant companion is published; persistence correctness requires backend round-trip and crash-tail tests; this package exposes no continuously observable in-process relation. |
 
