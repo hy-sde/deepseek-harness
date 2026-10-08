@@ -81,6 +81,19 @@ const turnOutlineStateSchema: ZodType<TurnOutlineState> = z.object({
 
 const EMPTY_OUTLINE: TurnOutlineState = { turns: [], draft: '' }
 
+/**
+ * Fold the whole-log turn outline over a complete event list: the registry
+ * drive's pure core (the definition's `apply`), exposed for offline readers
+ * that already hold decoded events and have no mounted registry.
+ * @param events - the session's events in ascending seq order.
+ * @returns the folded outline state, including the open turn's response draft.
+ */
+export function foldTurnOutline(events: readonly SessionEvent[]): TurnOutlineState {
+  let state: TurnOutlineState = EMPTY_OUTLINE
+  for (const event of events) state = turnOutlineProjectionDefinition.apply(state, event)
+  return state
+}
+
 /** The `turnOutline` unit registered on `ctx.sessionProjections` (exported for the unit spec). */
 export const turnOutlineProjectionDefinition = {
   key: 'turnOutline',

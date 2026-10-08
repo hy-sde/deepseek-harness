@@ -13,6 +13,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { turnOutlineProjectionDefinition } from './projection.ts'
 
 export type * from './types.ts'
+export { foldTurnOutline } from './projection.ts'
 
 /** Cordis plugin name. */
 export const name = 'session-turn-outline'
