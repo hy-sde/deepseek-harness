@@ -89,8 +89,8 @@ export interface WritethroughBatch {
  * `finalContent` is the authoritative text to persist: identical to the
  * authored input when formatting is off/unavailable, otherwise the
  * formatter's output. This mirrors oh-my-pi's `WritethroughResult.finalContent`
- * (upstream `412821e429` "preserve formatted writethrough content" +
- * `3f698cd31a` "keep diagnostics nested with final content"): without it a
+ * (upstream "preserve formatted writethrough content" +
+ * "keep diagnostics nested with final content"): without it a
  * `formatOnWrite` format is computed for diagnostics but never lands on disk,
  * and diagnostics collected against formatted text describe a file that was
  * never written. Diagnostics — when `diagnosticsOnEdit` — are collected

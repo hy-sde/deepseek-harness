@@ -308,7 +308,7 @@ describe('tool-edit (replace mode) × LSP writethrough', () => {
     }
   }
 
-  it('persists the formatter output when formatOnWrite is enabled (oh-my-pi 412821e429)', async () => {
+  it('persists the formatter output when formatOnWrite is enabled (oh-my-pi formatter persistence)', async () => {
     const history = { formatted: [] as string[], diagnosed: [] as string[] }
     const { ctx, root, owner } = await setup(
       { formatOnWrite: true, diagnosticsOnEdit: true },

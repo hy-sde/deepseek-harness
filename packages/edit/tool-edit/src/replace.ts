@@ -1125,7 +1125,7 @@ export async function executeReplace(options: ExecuteReplaceOptions): Promise<Re
 
   // Writethrough (format + optional diagnostics) before the guarded write:
   // `finalContent` is authoritative — when `formatOnWrite` is enabled the
-  // formatter's output is what gets persisted (oh-my-pi 412821e429).
+  // formatter's output is what gets persisted (oh-my-pi "preserve formatted writethrough content").
   const writethroughResult = await writethrough(absolutePath.displayPath, finalContent, signal)
   const diagnostics = writethroughResult.diagnostics
   const written = writethroughResult.finalContent

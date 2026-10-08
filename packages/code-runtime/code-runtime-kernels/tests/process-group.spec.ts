@@ -79,7 +79,7 @@ describe('KernelHost shutdown — process-group sweep', () => {
       // The python kernel's runner is detached (setsid), so this program's
       // spawned child lands in the kernel's process group. The child installs
       // a TERM trap to survive the graceful part of the shutdown; only the
-      // final group SIGKILL sweep (omp c5aa69d322) can reap it. The program
+      // final group SIGKILL sweep (omp's process-group teardown) can reap it. The program
       // writes the child's pid so the test can assert on it directly. A
       // sessionId keeps the kernel alive past the run so `teardown()` drives
       // the shutdown under test.

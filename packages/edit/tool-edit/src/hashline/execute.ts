@@ -78,7 +78,7 @@ const SEEN_LINE_ROW_RE = /^[ *]?(\d+)(?:-(\d+))?:/
 /**
  * Extract the 1-indexed lines a rendered hashline result displays as
  * `N:content` rows (plus range ends `N-M:`) so they can be registered as
- * seen provenance on the snapshot the result tag names. Mirrors oh-my-pi's
+ * seen-line registration on the snapshot the result tag names. Mirrors oh-my-pi's
  * `seen_lines_from_body` (crates/pi-edit/src/store.rs). Header rows
  * (`[path#tag]`) do not match: `[` is not in the prefix class.
  */
@@ -148,7 +148,7 @@ function recordRenderedSeenLines(
   // Drift guard (mirrors upstream): when what actually landed differs from
   // `after`, the tag and header name the RECORDED text while the rendered
   // preview rows are numbered against `after` — marking them seen would mint
-  // bogus provenance, so only carried lines register.
+  // bogus seen lines, so only carried lines register.
   const drifted = recorded !== result.after
   const seen: number[] = []
   // Only updates carry: a create has no prior text to prove lines against.
@@ -158,7 +158,7 @@ function recordRenderedSeenLines(
   }
   if (!drifted) seen.push(...seenLinesFromBody(text))
   if (seen.length === 0) return
-  // A moved file carries its provenance to the destination: the patcher
+  // A moved file carries its seen lines to the destination: the patcher
   // already rewrote `canonicalPath` to the destination canonical path and
   // relocated the store history there.
   snapshots.recordSeenLines(result.canonicalPath, result.fileHash, seen)

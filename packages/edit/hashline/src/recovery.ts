@@ -211,7 +211,7 @@ interface RemappedEdits {
  * neighbors, and the edit lands in the wrong block while every positional
  * check passes. Comparing the enclosing constructs by content rejects those
  * landings. Files with no inferable language report no chain on either side
- * and stay allowed (mirrors upstream facc0f9cdf).
+ * and stay allowed (mirrors the upstream sibling-construct guard).
  */
 export function contextPreserved(
   previous: string,

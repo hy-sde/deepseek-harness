@@ -236,10 +236,10 @@ describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => 
   })
 })
 
-describe('tool-edit (hashline mode) × edit-result line provenance', () => {
+describe('tool-edit (hashline mode) × edit-result seen-line registration', () => {
   /** Full composition with seen-line enforcement: real backend + policy + read tool + rich editor. */
-  async function provenanceStack() {
-    const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-provenance-'))
+  async function seenLineStack() {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-seenlines-'))
     roots.push(root)
     const ctx = new Context()
     contexts.push(ctx)
@@ -257,7 +257,7 @@ describe('tool-edit (hashline mode) × edit-result line provenance', () => {
   async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
     return ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: ToolCallId(`tool-edit-provenance-${++callNumber}`),
+      callId: ToolCallId(`tool-edit-seenlines-${++callNumber}`),
       name,
       arguments: args,
       agent: owner,
@@ -273,8 +273,8 @@ describe('tool-edit (hashline mode) × edit-result line provenance', () => {
     return /\[[^\]#]+#([0-9A-F]{4})\]/.exec(text)?.[1]
   }
 
-  it('registers displayed edit-result rows as post-edit snapshot provenance: rejects hidden lines, accepts displayed lines', async () => {
-    const { ctx, root, owner } = await provenanceStack()
+  it('registers displayed edit-result rows as post-edit snapshot seen lines: rejects hidden lines, accepts displayed lines', async () => {
+    const { ctx, root, owner } = await seenLineStack()
     const sample = join(root, 'a.txt')
     const source = 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\nline11\nline12\n'
     // Post-edit content: `NEWLINE` inserted after line 2 (13 lines).
@@ -291,8 +291,8 @@ describe('tool-edit (hashline mode) × edit-result line provenance', () => {
 
     // First edit anchors the seen line 2 (PUT >2 = insert after). The rendered
     // rows are `1:line1`, `2:line2`, `3:NEWLINE` — row 3 was NEVER displayed by
-    // the read, so registering it as seen provenance on the post-edit tag is
-    // the fix under test (omp cea3caf71f). Without it the follow-up edit at
+    // the read, so registering it as a seen line on the post-edit tag is
+    // the fix under test (omp's seen-line registration). Without it the follow-up edit at
     // line 3 would be rejected as anchored on a never-displayed line.
     const first = await run(ctx, owner, 'edit', {
       input: `[${sample}#${originalTag}]\nPUT >2:\n+NEWLINE\n`,
@@ -313,7 +313,7 @@ describe('tool-edit (hashline mode) × edit-result line provenance', () => {
 
     // (b) A line the edit result DID display is accepted under the same tag:
     // line 3 is anchorable because the edit result rendered it as `3:NEWLINE`
-    // and registered it as seen provenance on the post-edit snapshot.
+    // and registered it as a seen line on the post-edit snapshot.
     const seen = await run(ctx, owner, 'edit', {
       input: `[${sample}#${editedTag}]\nPUT 3.=3:\n+LINE3\n`,
     })
@@ -355,7 +355,7 @@ describe('tool-edit (hashline mode) × LSP writethrough', () => {
 })
 
 describe('tool-edit (hashline mode) × default seen-line enforcement', () => {
-  /** Default settings (no explicit enforceSeenLines): regression for omp 760d5dfdee. */
+  /** Default settings (no explicit enforceSeenLines): regression ported from omp's default seen-line enforcement. */
   async function defaultStack() {
     const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-seenlines-'))
     roots.push(root)
@@ -448,7 +448,7 @@ describe('tool-edit (hashline) × diff-preview mismatch origin', () => {
   })
 })
 
-describe('tool-edit (hashline mode) × carried read provenance', () => {
+describe('tool-edit (hashline mode) × carried read seen lines', () => {
   /** Composition with seen-line enforcement, as the GUI mounts it. */
   async function carriedStack() {
     const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-carried-'))
@@ -500,7 +500,7 @@ describe('tool-edit (hashline mode) × carried read provenance', () => {
 
     // Insert above line 35 and cut below it — net-zero, so line 35 keeps
     // its number and content. The rendered result only previews the touched
-    // hunks, so without carried provenance line 35 would go unseen on the
+    // hunks, so without carried seen lines line 35 would go unseen on the
     // post-edit tag and the follow-up edit would bounce.
     const first = await run(ctx, owner, 'edit', {
       input: `[${sample}#${tag}]\nPUT <10:\n+inserted line\nCUT 30\n`,
@@ -535,7 +535,7 @@ describe('tool-edit (hashline mode) × carried read provenance', () => {
     const editedTag = tagFrom(modelText(first))
 
     // Old line 16 now sits at 17; number 16 names line15. Carried
-    // provenance covers only unshifted lines, so the stale anchor rejects.
+    // seen-line tracking covers only unshifted lines, so the stale anchor rejects.
     const stale = await run(ctx, owner, 'edit', {
       input: `[${sample}#${editedTag}]\nPUT 16.=16:\n+line16 (edited)\n`,
     })

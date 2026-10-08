@@ -19,7 +19,7 @@
  * body plus a single scope annotation line so applicability survives into the
  * model-facing chain without a separate rule schema. Upstream also lets rule
  * authors turn a rule off with `enabled: false` frontmatter (oh-my-pi
- * `f250bbf3e3`); the fork mirrors that: such foreign files are discovered
+ * rule-disable semantics); the fork mirrors that: such foreign files are discovered
  * but omitted from the chain (see {@link isForeignRuleDisabled}).
  *
  * @module @deepseek-ai/dsh-agent-instructions/importers
@@ -204,7 +204,7 @@ export function isForeignRuleFile(displayPath: string): boolean {
 
 /**
  * True when a foreign rule file's frontmatter explicitly disables it
- * (`enabled: false`) — oh-my-pi discovery semantics (`f250bbf3e3`): a rule a
+ * (`enabled: false`) — oh-my-pi discovery semantics: a rule a
  * team turned off must not be inherited into the instruction chain, while the
  * file stays on disk for inspection. Only foreign rule files are considered;
  * every other path returns `false`.

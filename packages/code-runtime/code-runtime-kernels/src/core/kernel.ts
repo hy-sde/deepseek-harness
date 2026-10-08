@@ -568,7 +568,7 @@ export class KernelHost {
     }
     // A confirmed leader exit does not prove its descendants exited (a child
     // may ignore TERM and hold the pipes), so an attempted shutdown always
-    // finishes with a SIGKILL sweep of the leader's group (omp c5aa69d322).
+    // finishes with a SIGKILL sweep of the leader's group (omp's process-group teardown).
     killProcessGroup(this.#proc.pid, 'SIGKILL')
     if (outcome !== 'exited') outcome = await Promise.race([exited.then(() => 'exited' as const), grace()])
     await exited.catch(() => { })

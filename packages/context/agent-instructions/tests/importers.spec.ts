@@ -200,7 +200,7 @@ describe('foreign rules in the instruction chain', () => {
       await write(join(root, '.github/instructions/naming.instructions.md'), '---\napplyTo: "**/*.ts"\n---\nUse kebab-case.\n')
 
       // Discovery is content-free: the disabled file stays discoverable for
-      // inspection, while the loaded chain omits it (oh-my-pi f250bbf3e3).
+      // inspection, while the loaded chain omits it (oh-my-pi discovery semantics).
       const files = await discoverBaselineInstructionFiles({ cwd: root, dshHome: home })
       expect(files.map(file => file.displayPath)).toContain('.cursor/rules/style.mdc')
       expect(files.map(file => file.displayPath)).toContain('.github/instructions/naming.instructions.md')
