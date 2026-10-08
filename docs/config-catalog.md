@@ -4220,7 +4220,7 @@ export interface CodebaseMemoryToolConfig {
   cliPath?: string
   /** Default project name applied when a tool call omits `project`. */
   project?: string
-  /** Per-call process timeout in ms (default 60000). */
+  /** Per-call process timeout in ms (default 120000). */
   timeoutMs?: number
   /** Timeout for `codebase_index_repository` in ms (default 600000). */
   indexTimeoutMs?: number
