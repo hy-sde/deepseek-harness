@@ -89,13 +89,13 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
     order: ctx.systemPrompt.getSectionOrder('TOOL_READ'),
     text: ({ scope }) => ctx.tools.get('read', scope) === undefined
       ? ''
-      : 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text.',
+      : 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text; append ?outline=1 to a session log to read its turn outline instead of the transcript.',
   })
 
   ctx.tools.register(defineTool({
     name: 'read',
     description:
-      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool\'s hashline sections so edits anchor on the exact content you saw.',
+      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool\'s hashline sections so edits anchor on the exact content you saw.',
     parameters: {
       file_path: { type: 'string', required: true, description: 'Path to read, resolved by the filesystem backend.' },
       offset: { type: 'number', description: '1-based first line to return. Defaults to 1.' },
@@ -181,6 +181,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
           offset: 1,
           lines: zstdRead.lines,
           totalLines: zstdRead.totalLines,
+          ...zstdRead.notice !== undefined ? { notice: zstdRead.notice } : {},
         }
       }
 

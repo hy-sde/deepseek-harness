@@ -2,7 +2,9 @@
  * Zstd-aware `read` routing: `foo.zst`/`foo.zstd`/`session.jsonl.zstd` files
  * with the zstd magic serve their decoded plaintext (concatenated frames)
  * through the standard read window; non-zstd bytes or non-UTF-8 decoded
- * content fall through to the regular text read.
+ * content fall through to the regular text read. A session log read with a
+ * `?outline=1` suffix serves its turn outline instead; a literal path whose
+ * name carries `?` and exists on disk wins.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -13,6 +15,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { FileSystem, FsError, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
 import type { FsDirEntry, FsInfo, FsPathInfo, FsTarget, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
+import { zstdTargetOf } from '../src/read-zstd.ts'
 import { compressZstdFrame } from '@deepseek-ai/dsh-zstd-frame'
 
 const testToolSignal = new AbortController().signal
@@ -108,6 +111,7 @@ interface ReadValue {
   offset: number
   lines: { number: number; text: string }[]
   totalLines: number
+  notice?: string
 }
 
 function textOf(result: { content?: { type: string; text?: string }[] }): string {
@@ -150,6 +154,25 @@ async function framedCompactedSession(): Promise<Uint8Array> {
 /** A single-frame generic `.zst` text file. */
 async function singleFrameText(): Promise<Uint8Array> {
   return compressZstdFrame('line one\nline two\nline three\n')
+}
+
+/** A session log with real turn boundaries: one errored turn + one open turn. */
+async function framedTurnedSession(): Promise<Uint8Array> {
+  const header = await compressZstdFrame(
+    '{"type":"session","version":0,"id":"s4","createdAt":1700000000000,"cwd":"/workspace"}\n',
+  )
+  const batch = await compressZstdFrame(
+    '{"type":"turn/start","seq":0,"time":0,"data":{"turn":1}}\n'
+    + '{"type":"user/message","seq":1,"time":1,"surfaceOp":"append","data":{"source":{"kind":"user"},"content":[{"type":"text","text":"hello world"}]}}\n'
+    + '{"type":"assistant/message","seq":2,"time":2,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"I will do it"}]}}}\n'
+    + '{"type":"tool/call","seq":3,"time":3,"data":{"turn":1,"step":1,"callId":"c1","name":"write","arguments":"{}"}}\n'
+    + '{"type":"tool/result","seq":4,"time":4,"surfaceOp":"append","data":{"turn":1,"step":1,"error":{"name":"FsError","code":"FS_IO_ERROR"}}}\n'
+    + '{"type":"turn/end","seq":5,"time":5,"data":{"turn":1,"reason":{"kind":"error","error":{"message":"oops","code":"UNKNOWN"}}}}\n'
+    + '{"type":"turn/start","seq":6,"time":6,"data":{"turn":2}}\n'
+    + '{"type":"user/message","seq":7,"time":7,"surfaceOp":"append","data":{"source":{"kind":"user"},"content":[{"type":"text","text":"follow-up"}]}}\n'
+    + '{"type":"assistant/message","seq":8,"time":8,"surfaceOp":"append","data":{"message":{"role":"assistant","content":[{"type":"text","text":"new answer"}]}}}\n',
+  )
+  return Buffer.concat([header, batch])
 }
 
 describe('read zstd routing', () => {
@@ -242,5 +265,57 @@ describe('read zstd routing', () => {
     expect(result.isError).toBe(true)
     expect(textOf(result)).toContain('cannot decode zstd file')
     expect(textOf(result)).toContain('/abs/corrupt.zstd')
+  })
+})
+
+describe('read zstd ?outline=1 routing', () => {
+  it('renders the turn outline for a session log read with ?outline=1', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:turned.jsonl.zstd', await framedTurnedSession())
+    const { value: result } = await readResult(ctx, 'turned.jsonl.zstd?outline=1')
+    expect(result.path).toBe('/abs/turned.jsonl')
+    const text = result.lines.map(l => l.text).join('\n')
+    expect(text).toContain('SESSION s4')
+    expect(text).toContain('turn 1 @ seq 0 — hello world → I will do it · ✗ error — oops')
+    expect(text).toContain('turn 2 @ seq 6 — follow-up → new answer (open)')
+    // outline mode, not the transcript rendering
+    expect(text).not.toContain('# user')
+    expect(result.notice).toContain('?outline=1')
+  })
+
+  it('falls back to the generic window when ?outline=1 targets a non-session zstd', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:data.zst', await singleFrameText())
+    const { value: result } = await readResult(ctx, 'data.zst?outline=1')
+    expect(result.totalLines).toBe(3)
+    expect(result.lines.map(l => l.text)).toEqual(['line one', 'line two', 'line three'])
+    expect(result.notice).toBeUndefined()
+  })
+
+  it('falls back to the generic window when the outline cannot render', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:bare.jsonl.zstd', await compressZstdFrame(
+      '{"type":"session","version":0,"id":"s3","createdAt":1}\n{"type":"bogus"\n',
+    ))
+    const { value: result } = await readResult(ctx, 'bare.jsonl.zstd?outline=1')
+    expect(result.lines.map(l => l.text).join('\n')).toContain('"id":"s3"')
+    expect(result.notice).toBeUndefined()
+  })
+
+  it('serves a literal file whose name carries the ? suffix instead', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:literal.zst?outline=1', ENCODER.encode('literal bytes\n'))
+    const { value: result } = await readResult(ctx, 'literal.zst?outline=1')
+    expect(result.path).toBe('/abs/literal.zst?outline=1')
+    expect(result.lines.map(l => l.text).join('\n')).toContain('literal bytes')
+  })
+
+  it('splits the suffix only at a ? boundary after the extension, longest first', () => {
+    expect(zstdTargetOf('session.jsonl.zst?outline=1')).toEqual({ path: 'session.jsonl.zst', query: 'outline=1' })
+    expect(zstdTargetOf('plain.zstd')).toEqual({ path: 'plain.zstd', query: undefined })
+    expect(zstdTargetOf('UPPER.ZST?outline=1')).toEqual({ path: 'UPPER.ZST', query: 'outline=1' })
+    expect(zstdTargetOf('archive.zst.gz')).toBeUndefined()
+    expect(zstdTargetOf('notes.txt')).toBeUndefined()
+    expect(zstdTargetOf('weird.zst?x=1')).toEqual({ path: 'weird.zst', query: 'x=1' })
   })
 })
