@@ -7,6 +7,10 @@
  * - `session://*` (or `session://list`) — directory listing of known sessions.
  * - `session://<id>` — rendered transcript of one session
  *   (`seq | type | time` plus indented semantic text per event).
+ * - `session://<id>/outline` — the session's turn outline: one bounded entry
+ *   per turn boundary (prompt/response previews from the turnOutline
+ *   projection fold) plus per-turn tool calls, failures, and compaction
+ *   digests.
  * - `session://<id>/event` — directory listing of that session's event seqs.
  * - `session://<id>/event/<seq>` — one exact event as JSON.
  * - `session://search?q=<terms>` — FTS-backed cross-session search hits
@@ -38,7 +42,10 @@ import {
   type SessionQueryEngine,
   type SessionSearchRequest,
 } from '@deepseek-ai/dsh-session-query'
-import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
+import type { CompactionResult } from '@deepseek-ai/dsh-compaction'
+import type { SessionEvent, SessionId, TurnEndReason } from '@deepseek-ai/dsh-session'
+import { foldTurnOutline } from '@deepseek-ai/dsh-session-turn-outline'
+import type { TurnOutlineState } from '@deepseek-ai/dsh-session-turn-outline'
 
 /** Cap on sessions rendered by one `session://*` listing. */
 export const SESSION_LISTING_CAP = 200
@@ -52,6 +59,16 @@ export const EVENT_TEXT_MAX_CHARS = 400
 export const EVENT_JSON_MAX_BYTES = 128_000
 /** Page size for `session://search?q=…`. */
 export const SESSION_SEARCH_LIMIT = 25
+/** Cap on turns rendered into one `session://<id>/outline`. */
+export const OUTLINE_TURN_CAP = 200
+/** Cap on distinct tool names listed for one outlined turn. */
+export const OUTLINE_TOOL_NAMES_PER_TURN = 6
+/** Cap on one tool name's label length in an outline tools line. */
+export const OUTLINE_TOOL_NAME_MAX_CHARS = 40
+/** Cap on compaction digests rendered into one `session://<id>/outline`. */
+export const OUTLINE_DIGEST_CAP = 8
+/** Per-digest text length shown in an outline. */
+export const OUTLINE_DIGEST_MAX_CHARS = 200
 
 /** The `SESSION_QUERY_SEARCH_DISABLED` error code carried by SessionQueryError. */
 const SEARCH_DISABLED_CODE = 'SESSION_QUERY_SEARCH_DISABLED' as const
@@ -76,8 +93,81 @@ function capLabel(value: string, maxChars: number): string {
   return value.length <= maxChars ? value : `${value.slice(0, maxChars)}…`
 }
 
+/**
+ * Label for one turn's end. Error ends carry the failure message; every other
+ * non-completed reason (including plugin-merged variants) labels by its kind.
+ */
+function turnEndLabel(reason: TurnEndReason): string {
+  if (reason.kind === 'error') return `error — ${capLabel(reason.error.message, 160)}`
+  if (reason.kind === 'completed') return ''
+  return reason.kind
+}
+
+/** Turn-end labels keyed by turn number; only non-completed ends are recorded. */
+function turnEndLabels(events: readonly SessionEvent[]): Map<number, string> {
+  const labels = new Map<number, string>()
+  for (const event of events) {
+    if (event.type !== 'turn/end') continue
+    const label = turnEndLabel(event.data.reason)
+    if (label !== '') labels.set(event.data.turn, label)
+  }
+  return labels
+}
+
+/** Narrow to the declaration-merged compaction summary payload. */
+function isCompactionDigest(event: SessionEvent): event is SessionEvent<'compaction/summary'> {
+  return event.type === 'compaction/summary'
+}
+
+/** Count of events shadowed by one compaction summary. */
+function compactionDigestCount(event: SessionEvent<'compaction/summary'>): number {
+  // The merge types `data.shadowedSeqs`; `CompactionResult` is the namespace for the payload.
+  const shadowed: CompactionResult['shadowedSeqs'] = event.data.shadowedSeqs
+  return shadowed.length
+}
+
+/** Per-turn tool facts: distinct call names with counts, plus failed-result count. */
+interface TurnToolFacts {
+  calls: Map<string, number>
+  failures: number
+}
+
+/** Tool calls and failed results keyed by turn number. */
+function turnToolFacts(events: readonly SessionEvent[]): Map<number, TurnToolFacts> {
+  const byTurn = new Map<number, TurnToolFacts>()
+  const factsOf = (turn: number): TurnToolFacts => {
+    const existing = byTurn.get(turn)
+    if (existing !== undefined) return existing
+    const created: TurnToolFacts = { calls: new Map(), failures: 0 }
+    byTurn.set(turn, created)
+    return created
+  }
+  for (const event of events) {
+    if (event.type === 'tool/call') {
+      const facts = factsOf(event.data.turn)
+      facts.calls.set(event.data.name, (facts.calls.get(event.data.name) ?? 0) + 1)
+    } else if (event.type === 'tool/result' && event.data.error !== undefined) {
+      factsOf(event.data.turn).failures += 1
+    }
+  }
+  return byTurn
+}
+
+/** The bounded `tools:` line for one outlined turn; empty when the turn called no tools. */
+function outlineToolLines(facts: TurnToolFacts): string[] {
+  const names = [...facts.calls.entries()]
+    .slice(0, OUTLINE_TOOL_NAMES_PER_TURN)
+    .map(([name, count]) => `${capLabel(name, OUTLINE_TOOL_NAME_MAX_CHARS)} ×${count}`)
+  if (names.length === 0 && facts.failures === 0) return []
+  const omitted = facts.calls.size - names.length
+  const parts = names.length > 0 ? [`tools: ${names.join(', ')}`] : ['tools: (none recorded)']
+  if (facts.failures > 0) parts.push(`${facts.failures} failed`)
+  if (omitted > 0) parts.push(`+${omitted} more`)
+  return [`  ${parts.join(' · ')}`]
+}
+
 function invalidUrl(): Error {
-  return new Error('Invalid session:// URL. Expected session://* (listing), session://<id> (transcript), session://<id>/event (seq index), session://<id>/event/<seq> (exact event), or session://search?q=<terms>.')
+  return new Error('Invalid session:// URL. Expected session://* (listing), session://<id> (transcript), session://<id>/outline (turn outline), session://<id>/event (seq index), session://<id>/event/<seq> (exact event), or session://search?q=<terms>.')
 }
 
 /** `session://` handler with a bound query engine. */
@@ -134,6 +224,7 @@ export class SessionProtocolHandler implements ProtocolHandler {
     }
     lines.push('', 'Subresources:')
     lines.push('- session://<id> — transcript of one session')
+    lines.push('- session://<id>/outline — turn outline of one session (bounded prompts/responses, tools, failures, digests)')
     lines.push('- session://<id>/event — seq index of one session')
     lines.push('- session://<id>/event/<seq> — one exact event as JSON')
     lines.push('- session://search?q=<terms> — FTS-backed cross-session search')
@@ -194,10 +285,14 @@ export class SessionProtocolHandler implements ProtocolHandler {
     }
   }
 
-  /** Resolve `session://<id>` / `/event` / `/event/<seq>`; anything else is invalid. */
+  /** Resolve `session://<id>` / `/outline` / `/event` / `/event/<seq>`; anything else is invalid. */
   private async session(id: SessionId, url: ParsedInternalUrl, context?: ResolveContext): Promise<InternalResource> {
     const [first, seqRaw] = url.pathSegments
     if (first === undefined) return this.transcript(id, url, context)
+    if (first === 'outline') {
+      if (url.pathSegments.length !== 1) throw invalidUrl()
+      return this.outline(id, url)
+    }
     if (first !== 'event') throw invalidUrl()
     if (seqRaw === undefined) return this.eventIndex(id, url)
     if (url.pathSegments.length === 2) return this.eventJson(id, seqRaw, url)
@@ -233,6 +328,80 @@ export class SessionProtocolHandler implements ProtocolHandler {
       contentType: 'text/markdown',
       immutable: true,
       notes: [`Read one event: session://${id}/event/<seq>`, 'grep session://<id> searches this transcript.'],
+    }
+  }
+
+  /**
+   * `session://<id>/outline` — the session's turn outline: the turnOutline
+   * projection fold (turn boundaries with bounded prompt/response previews)
+   * plus per-turn tool calls and failures and the compaction digests.
+   */
+  private async outline(id: SessionId, url: ParsedInternalUrl): Promise<InternalResource> {
+    const snapshot = await this.readSessionOrThrow(id)
+    let state: TurnOutlineState
+    try {
+      state = foldTurnOutline(snapshot.events)
+    } catch (error) {
+      // A fold-rejected log degrades to an explanatory note; the read succeeds.
+      return {
+        url: url.rawHref,
+        content: [
+          `session://${id} outline is unavailable: the turn-outline fold rejected this log.`,
+          '',
+          `Read session://${id} for the full transcript instead.`,
+        ].join('\n'),
+        contentType: 'text/plain',
+        immutable: true,
+        notes: [`Fold error: ${capLabel(error instanceof Error ? error.message : String(error), 200)}`],
+      }
+    }
+    const title = await this.titleOf(id)
+    const header = snapshot.session
+    const shown = state.turns.slice(0, OUTLINE_TURN_CAP)
+    const ends = turnEndLabels(snapshot.events)
+    const toolFacts = turnToolFacts(snapshot.events)
+    const lines = [
+      `Turn outline of session ${id} — ${capLabel(title, 160)}`,
+      `Created: ${isoTime(header.createdAt)}`,
+      ...header.cwd !== undefined ? [`cwd: ${capLabel(header.cwd, 160)}`] : [],
+    ]
+    if (state.turns.length === 0) {
+      lines.push('No recorded turns: the outline lists one entry per turn/start boundary with bounded prompt and response previews.')
+    } else {
+      lines.push(`Turns (${state.turns.length}, showing ${shown.length}):`)
+    }
+    for (const [index, turn] of shown.entries()) {
+      const open = state.turns.length <= OUTLINE_TURN_CAP && index === shown.length - 1 && state.draft !== ''
+      const response = open ? `${state.draft} (open)` : turn.response
+      const previews = [turn.prompt, response].filter(text => text.length > 0)
+      let line = `turn ${turn.turn} @ seq ${turn.seq}`
+      if (previews.length > 0) line += ` — ${previews.join(' → ')}`
+      const ended = ends.get(turn.turn)
+      if (ended !== undefined) line += ` · ✗ ${ended}`
+      lines.push(line)
+      const facts = toolFacts.get(turn.turn)
+      if (facts !== undefined) lines.push(...outlineToolLines(facts))
+    }
+    if (shown.length < state.turns.length) {
+      lines.push('', `(${state.turns.length - shown.length} more turns omitted; read session://${id} for the full transcript)`)
+    }
+    const digests = snapshot.events.filter(isCompactionDigest)
+    const shownDigests = digests.slice(0, OUTLINE_DIGEST_CAP)
+    if (digests.length > 0) {
+      lines.push('', `Compaction digests (${digests.length}, showing ${shownDigests.length}):`)
+      for (const digest of shownDigests) {
+        lines.push(`  📦 compacted ${compactionDigestCount(digest)} events: ${eventText(digest, OUTLINE_DIGEST_MAX_CHARS)}`)
+      }
+      if (digests.length > shownDigests.length) {
+        lines.push(`(${digests.length - shownDigests.length} more digests omitted)`)
+      }
+    }
+    return {
+      url: url.rawHref,
+      content: lines.join('\n'),
+      contentType: 'text/markdown',
+      immutable: true,
+      notes: [`Read session://${id} for the full transcript.`, `Read one event: session://${id}/event/<seq>.`],
     }
   }
 

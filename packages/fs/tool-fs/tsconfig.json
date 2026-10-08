@@ -48,6 +48,9 @@
       "path": "../internal-urls"
     },
     {
+      "path": "../../session/session-turn-outline"
+    },
+    {
       "path": "../fs-archive"
     },
     {

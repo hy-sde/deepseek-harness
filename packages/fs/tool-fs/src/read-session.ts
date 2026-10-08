@@ -5,7 +5,9 @@
  * the current (non-shadowed) surface projection plus compaction digests —
  * instead of the raw JSONL window. This is the "history as a file" half of
  * the read multi-format story: reading a session log reads a conversation,
- * not a blob of JSON.
+ * not a blob of JSON. The same parse also serves the `?outline=1` surface
+ * (read-zstd): a bounded turn outline — one entry per turn boundary — in
+ * place of the transcript.
  *
  * The renderer is read-only and defensive by construction: any record that
  * does not parse, any event shape `foldSurface` rejects, falls back to the
@@ -15,6 +17,7 @@
  */
 
 import { foldSurface, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { foldTurnOutline, type TurnOutlineState } from '@deepseek-ai/dsh-session-turn-outline'
 
 /**
  * Structural event view: read-session consumes parsed JSON log rows, not the
@@ -32,6 +35,9 @@ interface TranscriptEvent {
 
 /** Cap on surface + digest events rendered into one transcript. */
 export const MAX_TRANSCRIPT_EVENTS = 4000
+
+/** Cap on turns rendered into one `?outline=1` read of a session log. */
+export const MAX_OUTLINE_TURNS = 200
 
 /** Cap on one rendered event's contribution to a single line (chars). */
 export const MAX_TRANSCRIPT_LINE_CHARS = 300
@@ -158,17 +164,54 @@ function renderEvent(event: TranscriptEvent): string[] {
   }
 }
 
-/** Compact the surface fold's current nodes + the digest events into transcript lines. */
-function renderTranscript(events: TranscriptEvent[], header: Record<string, unknown>): string | undefined {
-  let folded: { nodes: number[] }
-  try {
-    folded = foldSurface(events.map(event => event.raw) as unknown as SessionEvent[])
-  } catch {
-    return undefined // malformed/partial log — let the generic decode window serve it
-  }
-  const bySeq = new Map<number, TranscriptEvent>()
-  for (const event of events) bySeq.set(event.seq, event)
+/** One parsed session log: the header record plus its numbered events. */
+interface ParsedSessionLog {
+  header: Record<string, unknown>
+  events: TranscriptEvent[]
+}
 
+/**
+ * Parse `decodedText` as a session log: a `session` header record with a
+ * string id, followed (after storage-record expansion) by numbered events.
+ * @returns the parsed log, or undefined when the text is not a session log.
+ */
+function parseSessionLog(decodedText: string): ParsedSessionLog | undefined {
+  const values = parseValues(decodedText)
+  const header = values.find(value => value.type === 'session')
+  if (header === undefined) return undefined
+  if (typeof (header.value as { id?: unknown }).id !== 'string') return undefined // a `session` row with no id is not a header
+
+  // Expand every storage record (chunk rows → the original events) and keep
+  // only numbered events. `decodeStorageRecord` is lossless and layout-blind,
+  // and the full parsed record is retained so `foldSurface` sees every field.
+  const events: TranscriptEvent[] = []
+  for (const line of values) {
+    if (line === header) continue
+    for (const event of decodeStorageRecord(line.value) as Array<Record<string, unknown>>) {
+      if (typeof event.seq !== 'number' || !Number.isSafeInteger(event.seq) || event.seq < 0) continue
+      events.push({
+        type: typeof event.type === 'string' ? event.type : '',
+        seq: event.seq,
+        data: (event as { data?: unknown }).data,
+        raw: event,
+      })
+    }
+  }
+  events.sort((a, b) => a.seq - b.seq)
+  if (events.length === 0) return undefined
+  return { header: header.value as Record<string, unknown>, events }
+}
+
+/**
+ * The fold boundary shared by both renderers: they consume parsed JSON rows,
+ * while `foldSurface`/`foldTurnOutline` expect the typed event union.
+ */
+function foldableEvents(events: readonly TranscriptEvent[]): SessionEvent[] {
+  return events.map(event => event.raw) as unknown as SessionEvent[]
+}
+
+/** The two header lines shared by the transcript and outline renderers. */
+function headerLinesOf(header: Record<string, unknown>): string[] {
   const headerLines: string[] = []
   const id = typeof header.id === 'string' ? header.id : '?'
   headerLines.push(`SESSION ${id}`)
@@ -177,8 +220,21 @@ function renderTranscript(events: TranscriptEvent[], header: Record<string, unkn
   if (typeof header.cwd === 'string') facts.push(`cwd ${header.cwd}`)
   if (typeof header.parentSession === 'string') facts.push(`parent ${header.parentSession}`)
   if (facts.length > 0) headerLines.push(facts.join(' · '))
+  return headerLines
+}
 
-  const lines: string[] = headerLines
+/** Compact the surface fold's current nodes + the digest events into transcript lines. */
+function renderTranscript(events: TranscriptEvent[], header: Record<string, unknown>): string | undefined {
+  let folded: { nodes: number[] }
+  try {
+    folded = foldSurface(foldableEvents(events))
+  } catch {
+    return undefined // malformed/partial log — let the generic decode window serve it
+  }
+  const bySeq = new Map<number, TranscriptEvent>()
+  for (const event of events) bySeq.set(event.seq, event)
+
+  const lines: string[] = headerLinesOf(header)
   let rendered = 0
   for (const seq of folded.nodes) {
     if (rendered >= MAX_TRANSCRIPT_EVENTS) break
@@ -227,28 +283,67 @@ function renderTranscript(events: TranscriptEvent[], header: Record<string, unkn
  * @returns the rendered transcript, or undefined when the text is not a session log.
  */
 export function tryRenderSessionTranscript(decodedText: string): string | undefined {
-  const values = parseValues(decodedText)
-  const header = values.find(value => value.type === 'session')
-  if (header === undefined) return undefined
-  if (typeof (header.value as { id?: unknown }).id !== 'string') return undefined // a `session` row with no id is not a header
+  const log = parseSessionLog(decodedText)
+  if (log === undefined) return undefined
+  return renderTranscript(log.events, log.header)
+}
 
-  // Expand every storage record (chunk rows → the original events) and keep
-  // only numbered events. `decodeStorageRecord` is lossless and layout-blind,
-  // and the full parsed record is retained so `foldSurface` sees every field.
-  const events: TranscriptEvent[] = []
-  for (const line of values) {
-    if (line === header) continue
-    for (const event of decodeStorageRecord(line.value) as Array<Record<string, unknown>>) {
-      if (typeof event.seq !== 'number' || !Number.isSafeInteger(event.seq) || event.seq < 0) continue
-      events.push({
-        type: typeof event.type === 'string' ? event.type : '',
-        seq: event.seq,
-        data: (event as { data?: unknown }).data,
-        raw: event,
-      })
+/** Turn-end labels keyed by turn number; only non-completed ends are recorded. */
+function turnEndLabels(events: readonly TranscriptEvent[]): Map<number, string> {
+  const labels = new Map<number, string>()
+  for (const event of events) {
+    if (event.type !== 'turn/end') continue
+    const data = event.data as { turn?: unknown; reason?: { kind?: unknown; error?: { message?: unknown } } } | undefined
+    if (typeof data?.turn !== 'number' || typeof data.reason?.kind !== 'string') continue
+    if (data.reason.kind === 'completed') continue
+    if (data.reason.kind === 'error' && typeof data.reason.error?.message === 'string') {
+      labels.set(data.turn, `error — ${oneLine(data.reason.error.message, MAX_TRANSCRIPT_LINE_CHARS)}`)
+      continue
     }
+    // Any other end reason (including plugin-merged variants) labels by its kind.
+    labels.set(data.turn, data.reason.kind)
   }
-  events.sort((a, b) => a.seq - b.seq)
-  if (events.length === 0) return undefined
-  return renderTranscript(events, header.value as Record<string, unknown>)
+  return labels
+}
+
+/** Render the turn-outline fold of one parsed session log into bounded lines. */
+function renderTurnOutline(events: TranscriptEvent[], header: Record<string, unknown>): string | undefined {
+  let state: TurnOutlineState
+  try {
+    state = foldTurnOutline(foldableEvents(events))
+  } catch {
+    return undefined // a fold-rejecting log is served by the generic decode window instead
+  }
+  const lines = headerLinesOf(header)
+  if (state.turns.length === 0) {
+    lines.push('No recorded turns: the outline lists one entry per turn boundary with bounded prompt and response previews.')
+    return lines.join('\n')
+  }
+  const ends = turnEndLabels(events)
+  const shown = state.turns.slice(0, MAX_OUTLINE_TURNS)
+  for (const [index, turn] of shown.entries()) {
+    const open = state.turns.length <= MAX_OUTLINE_TURNS && index === shown.length - 1 && state.draft !== ''
+    const response = open ? `${state.draft} (open)` : turn.response
+    const previews = [turn.prompt, response].filter(text => text.length > 0).map(text => oneLine(text, MAX_TRANSCRIPT_LINE_CHARS))
+    let line = `turn ${turn.turn} @ seq ${turn.seq}`
+    if (previews.length > 0) line += ` — ${previews.join(' → ')}`
+    const ended = ends.get(turn.turn)
+    if (ended !== undefined) line += ` · ✗ ${ended}`
+    lines.push(line)
+  }
+  if (shown.length < state.turns.length) {
+    lines.push(`(${state.turns.length - shown.length} more turns omitted; read without ?outline=1 for the full transcript)`)
+  }
+  return lines.join('\n')
+}
+
+/**
+ * Try to render `decodedText` as a session-log turn outline (`?outline=1`).
+ * @param decodedText - fully decoded text of one zstd stream.
+ * @returns the rendered outline, or undefined when the text is not a session log.
+ */
+export function tryRenderSessionTurnOutline(decodedText: string): string | undefined {
+  const log = parseSessionLog(decodedText)
+  if (log === undefined) return undefined
+  return renderTurnOutline(log.events, log.header)
 }

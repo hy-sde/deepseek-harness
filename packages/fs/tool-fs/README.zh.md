@@ -43,12 +43,14 @@ kind: "package-reference"
 
 | 工具 | 参数 | 行为 |
 |---|---|---|
-| `read` | `file_path`、`offset?`、`limit?` | 带行号的 UTF-8 内容与分页 footer；`offset` 从 1 开始，`limit` 默认为配置的 `readLimit`，上限也为该值 |
+| `read` | `file_path`、`offset?`、`limit?` | 带行号的 UTF-8 内容与分页 footer；`offset` 从 1 开始，`limit` 默认为配置的 `readLimit`，上限也为该值。`.zst`/`.zstd` 路径返回解码后的文本；会话日志带 `?outline=1` 后缀读取时返回回合大纲而非对话记录 |
 | `read_image` | `file_path` | 读取并持久保存 PNG/JPEG/WebP/GIF 源图；无扩展名路径（包括规范化附件对象路径）按文件签名识别格式；规范化可在下一次模型请求前缩小图片，因此模型无需先创建缩略图 |
 | `write` | `file_path`、`content` | 创建或完整替换文件；有策略插件时，覆盖要求先在未变版本上执行 `read`，创建不需要 |
 | `edit` | `file_path`、`old_string`、`new_string`、`replace_all?` | 字面量替换，除非 `replace_all` 为 true 否则要求唯一匹配；有策略插件时，要求先执行 `read` 且文件未变 |
 
 字段名使用 snake_case，与 Claude Code 和现有 harness 工具 schema 一致。成功返回紧凑信封——读取窗口、图像引用或 `Created file`/`Updated file` 确认——`write`/`edit` 还会派生可回放的 diff 卡片元数据供 UI 展示。
+
+带 `?outline=1` 查询后缀的 `.zst`/`.zstd` 路径（如 `session.jsonl.zstd?outline=1`）返回会话的回合大纲——每回合一条有界行（上限 `MAX_OUTLINE_TURNS`），带回合结束标签——而非对话记录。文件名里确实含 `?` 的字面文件优先于后缀；任何非会话日志的负载（或 fold 拒绝的日志）都会回退到对话记录或通用解码窗口。大纲复用 `@deepseek-ai/dsh-session-turn-outline` 的纯 turn-outline fold；成功的大纲读取会附带一条提示，指向去掉后缀的路径以读取完整记录。
 
 ### 配置
 

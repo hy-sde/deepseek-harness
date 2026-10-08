@@ -43,12 +43,14 @@ The policy plugin is optional: without it the tools run against the bare provide
 
 | Tool | Arguments | Behavior |
 |---|---|---|
-| `read` | `file_path`, `offset?`, `limit?` | Line-numbered UTF-8 content with a pagination footer; `offset` is 1-based and `limit` defaults to and caps at the configured `readLimit` |
+| `read` | `file_path`, `offset?`, `limit?` | Line-numbered UTF-8 content with a pagination footer; `offset` is 1-based and `limit` defaults to and caps at the configured `readLimit`. `.zst`/`.zstd` paths serve their decoded text; a session log read with a `?outline=1` suffix serves its turn outline instead of the transcript |
 | `read_image` | `file_path` | Reads and persists a PNG/JPEG/WebP/GIF source; an extension-less path (normalized attachment object paths included) is identified from its file signature; normalization can downscale it before the next model request, so the model need not create a thumbnail first |
 | `write` | `file_path`, `content` | Creates or fully replaces a file; with the policy plugin, overwriting requires a prior `read` at the unchanged version, creating does not |
 | `edit` | `file_path`, `old_string`, `new_string`, `replace_all?` | Literal replacement requiring a unique match unless `replace_all` is true; with the policy plugin, requires a prior `read` and an unchanged file |
 
 Field names are snake_case to match Claude Code and existing harness tool schemas. Successes return compact envelopes — a read window, an image reference, or a `Created file`/`Updated file` confirmation — and `write`/`edit` derive replayable diff-card metadata for UI presentation.
+
+A `.zst`/`.zstd` path with a `?outline=1` query suffix (e.g. `session.jsonl.zstd?outline=1`) serves the session's turn outline — one bounded line per turn (capped at `MAX_OUTLINE_TURNS`) with turn-end labels — instead of the transcript. A literal file whose name contains `?` wins over the suffix, and any payload that is not a session log (or a log the fold rejects) falls back to the transcript or generic decoded window. The outline reuses the pure turn-outline fold from `@deepseek-ai/dsh-session-turn-outline`; successful outline reads return a notice pointing at the un-suffixed path for the full transcript.
 
 ### Configuration
 
