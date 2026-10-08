@@ -29,7 +29,7 @@ Enable this service when hosts should let a user mention another session and giv
 
 ### Mention syntax
 
-A canonical mention is `@[label](dsh-session:<base64url-encoded-id>)` in Markdown, or the bare `dsh-session:` URI; every JavaScript string session id round-trips exactly. The service rewrites mentions into readable `@label` text in the message and returns the structured references. Explicit Markdown mentions reject malformed URIs; empty or punctuation-only scheme mentions stay ordinary discussion text.
+A canonical mention is `@[label](dsh-session:<base64url-encoded-id>)` in Markdown, or the bare `dsh-session:` URI; every JavaScript string session id round-trips exactly. The service rewrites mentions into readable `@label` text in the message and returns the structured references. A malformed explicit mention in a direct message stays plain text: the original wording is kept, no reference is resolved, and the turn proceeds. The exported parser keeps rejecting malformed URIs for its own callers. Empty or punctuation-only scheme mentions are ordinary discussion text.
 
 ### What the agent gets
 
