@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-graph-wakes` 在根会话的下一个空闲边界投递 Agent Graph 的主管唤醒——绝不在 turn 运行中——并通过控制存储自身的 begin/complete CAS 持久化结算每次尝试。它提供基于结构性存储接缝加投递钩子与可注入空闲观察器的进程内 `GraphWakeRuntime`；投递在构造上即空闲门控，因此运行时从不自行启动任何内容。唤醒可以安排到未来的 `dueAt`，并用 `recurMs` 链成循环任务（见[计划与循环唤醒](#scheduled-and-recurring-wakes)）。由主机接线挂载，让 P6 投递钩子重新驱动图协调器即可。本包不添加任何工具、提示词或插件行。
+`dsh-graph-wakes` 在根会话的下一个空闲边界投递 Agent Graph 的主管唤醒——绝不在 turn 运行中——并通过控制存储自身的 begin/complete CAS 持久化结算每次尝试。它提供基于结构性存储接缝、投递钩子与可注入空闲观察器的进程内 `GraphWakeRuntime`；投递受空闲门控，因此运行时从不自行启动任何内容。唤醒可以安排到未来的 `dueAt`，并用 `recurMs` 链成循环任务。由主机接线挂载，让 P6 投递钩子重新驱动图协调器即可。本包不添加任何工具、提示词或插件行。
 
 ## 目录
 

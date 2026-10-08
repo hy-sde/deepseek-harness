@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-wakes` delivers the Agent Graph's supervisor wakes at the root session's next idle boundary — never mid-turn — and settles every attempt durably through the control store's own begin/complete CAS. It supplies the process-local `GraphWakeRuntime` over a structural store seam plus a deliver hook and an injectable idle observer; delivery is idle-gated by construction, so the runtime starts nothing on its own. Wakes may be scheduled for a future `dueAt` and chained with `recurMs` into recurring jobs (see [Scheduled and recurring wakes](#scheduled-and-recurring-wakes)). Mount it in host wiring, and let the P6 deliver hook re-drive the graph coordinator. It adds no tool, prompt, or plugin row.
+`dsh-graph-wakes` delivers the Agent Graph's supervisor wakes at the root session's next idle boundary — never mid-turn — and settles every attempt durably through the control store's own begin/complete CAS. It supplies the process-local `GraphWakeRuntime` over a structural store seam, a deliver hook, and an injectable idle observer; delivery is idle-gated, so the runtime starts nothing on its own. Wakes may be scheduled for a future `dueAt` and chained with `recurMs` into recurring jobs. Mount it in host wiring and let the P6 deliver hook re-drive the graph coordinator. It adds no tool, prompt, or plugin row.
 
 ## Table of Contents
 
