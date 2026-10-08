@@ -1,5 +1,5 @@
 ---
-description: "The model-facing memory surface: retain, recall, reflect, memory_edit, and learn tools over the host ctx.memory service, plus a memory:project system-prompt section that reloads project memory each session."
+description: "The model-facing memory surface: retain, recall, reflect, memory_edit, learn, and mine_sessions tools over the host ctx.memory service, plus a memory:project system-prompt section that reloads project memory each session."
 kind: "package-reference"
 ---
 
@@ -9,11 +9,11 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-memory` gives an agent the model-facing memory surface: `retain`, `recall`, `reflect`, `memory_edit`, and `learn` over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory at the start of every session. Choose it in a preset when an agent should persist and retrieve project decisions, preferences, and lessons across sessions; storage lives in `@deepseek-ai/dsh-memory`, and this package registers no service of its own. The main boundary is retrieval quality — recall/reflect rank rather than enumerate, so low-relevance entries can be missed, and `memory_edit` invalidation does not rewrite entries already embedded in longer prompts.
+`dsh-tool-memory` gives an agent the model-facing memory surface: `retain`, `recall`, `reflect`, `memory_edit`, `learn`, and `mine_sessions` over the host `ctx.memory` service, plus a `memory:project` system-prompt section that reloads the session's project memory at the start of every session. Choose it in a preset when an agent should persist and retrieve project decisions, preferences, and lessons across sessions; storage lives in `@deepseek-ai/dsh-memory`, and this package registers no service of its own. The main boundary is retrieval quality — recall/reflect rank rather than enumerate, so low-relevance entries can be missed, and `memory_edit` invalidation does not rewrite entries already embedded in longer prompts.
 
 ## Table of Contents
 
-- [The five tools](#the-five-tools)
+- [The six tools](#the-six-tools)
 - [Prompt injection](#prompt-injection)
 - [Config](#config)
 - [Tests](#tests)
@@ -23,17 +23,18 @@ English | [中文](README.zh.md)
 
 -----
 
-**The model-facing memory surface** of DeepSeek Harness — the five tools `retain`, `recall`, `reflect`, `memory_edit`, and `learn` over the host `ctx.memory` service, plus a `memory:project` system-prompt section that **reloads the session's project memory at the start of every session**. Ported from the [@oh-my-pi](https://github.com/oh-my-pi) coding-agent memory surface (see `port_omp.md` item 4); storage lives in `@deepseek-ai/dsh-memory`.
+**The model-facing memory surface** of DeepSeek Harness — the six tools `retain`, `recall`, `reflect`, `memory_edit`, `learn`, and `mine_sessions` over the host `ctx.memory` service, plus a `memory:project` system-prompt section that **reloads the session's project memory at the start of every session**. Ported from the [@oh-my-pi](https://github.com/oh-my-pi) coding-agent memory surface (see `port_omp.md` item 4); storage lives in `@deepseek-ai/dsh-memory`.
 
 This package is **agent-plane**: it mounts as a preset row and resolves the host `memory` service, registering no service of its own — the `standard`/`code` preset rows sit loose beside `tool-fs` and `tool-ast`.
 
-## The five tools
+## The six tools
 
 - - `retain` — store one or more durable facts (user preferences, project decisions, architectural choices) for future sessions. Batch related facts; entries are self-contained, normalized, and deduplicated.
 - - `recall` — relevance-ranked search over bank + lessons + summary. Returns ids that round-trip through `memory_edit`. Use proactively before questions about past decisions or preferences.
 - - `reflect` — synthesize an answer across many stored memories (blends, unlike `recall`). Grounding is memory-only; verify repository facts.
 - - `memory_edit` — `update` (replace content/importance), `forget` (hard delete), `invalidate` (soft supersede, optional `replacement_id`). Lesson and summary entries are read-only facts.
 - - `learn` — capture one durable lesson (what/when/why) into `learned.md`; write-path neutralization strips prompt-injection markers and secrets.
+- - `mine_sessions` — harvest lessons from this project's recent sessions into project memory. Candidates are ranked by lesson density (turn failures, tool failures, compaction digests, all-completed todos; recency breaks ties), and each stored entry is annotated with the session's outcome (e.g. `errored: 2 failed turns`, `completed`, `aborted`).
 
 ## Prompt injection
 
@@ -46,6 +47,12 @@ This package is **agent-plane**: it mounts as a preset row and resolves the host
 | `root` | `<harness home>/memories` | Must match the `ctx.memory` row's root. |
 | `injectionMaxChars` | `16000` | Combined char budget for the injected summary + lessons. |
 | `enabled` | `true` | Set `false` to disable prompt injection while keeping the tools. |
+| `searchLimit` | `10` | Result cap for one `recall` without an explicit `limit`. |
+| `sessionRecall` | `true` | Set `false` to keep `recall`/`reflect` bank-only. |
+| `sessionRecallLimit` | `3` | Max session hits merged into one recall result. |
+| `mineSessionLimit` | `3` | Top-ranked sessions digested per `mine_sessions` run. |
+| `mineLessonLimit` | `10` | Max lessons stored per `mine_sessions` run. |
+| `mineCandidateLimit` | `12` | Most-recent candidates read and scored before ranking. |
 
 ## Tests
 
@@ -61,7 +68,7 @@ pnpm vitest run packages/memory/tool-memory
 
 #### What the model sees
 
-`dsh-tool-memory` owns the retain/recall/reflect/memory_edit/learn schemas plus the `memory:project` system-prompt section that reloads project memory at session start; see [`@deepseek-ai/dsh-tool-memory`](../../../docs/tool-catalog.md#deepseek-aidsh-tool-memory).
+`dsh-tool-memory` owns the retain/recall/reflect/memory_edit/learn/mine_sessions schemas plus the `memory:project` system-prompt section that reloads project memory at session start; see [`@deepseek-ai/dsh-tool-memory`](../../../docs/tool-catalog.md#deepseek-aidsh-tool-memory).
 
 #### Token effect
 
@@ -75,6 +82,7 @@ The `memory:project` section is stable prefix text; project-memory content appen
 
 - recall/reflect are retrieval-quality, not exhaustive; low-relevance entries can be missed.
 - memory_edit invalidations do not rewrite entries already embedded in longer prompts.
+- mine_sessions health signals come from session logs (turn/end reasons, tool results, compaction digests); a session without such signals falls back to recency and yields no lessons, and the density ranking is heuristic — it does not model lesson quality.
 
 ### Dev Note
 
