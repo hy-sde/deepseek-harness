@@ -24,6 +24,9 @@
       "path": "../session-query"
     },
     {
+      "path": "../../session/session-turn-outline"
+    },
+    {
       "path": "../../fs/internal-urls"
     }
   ]

@@ -29,6 +29,7 @@ import {
   SESSION_LISTING_CAP,
   TRANSCRIPT_EVENT_CAP,
   EVENT_JSON_MAX_BYTES,
+  OUTLINE_TURN_CAP,
 } from '../src/handler.ts'
 
 /** Minimal raw events for a stub session. */
@@ -242,5 +243,78 @@ describe('session:// handler', () => {
       dispose()
     }
     expect(router.canHandle('session://sess_alpha')).toBe(false)
+  })
+})
+
+describe('session://<id>/outline', () => {
+  const outlineLog = new Map<string, SessionEvent[]>([
+    ['sess_outline', [
+      event(0, 'turn/start', { turn: 1 }),
+      event(1, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: 'fix the login bug' }] }),
+      event(2, 'assistant/message', { message: { content: [{ type: 'text', text: 'I will patch auth.ts' }] } }),
+      event(3, 'tool/call', { turn: 1, name: 'edit' }),
+      event(4, 'tool/call', { turn: 1, name: 'edit' }),
+      event(5, 'tool/result', { turn: 1, error: { name: 'FsError', code: 'FS_IO_ERROR' } }),
+      event(6, 'turn/end', { turn: 1, reason: { kind: 'error', error: { message: 'sandbox denied the write', code: 'SANDBOX' } } }),
+      event(7, 'compaction/summary', { summary: [{ type: 'text', text: 'earlier context digested' }], shadowedSeqs: [0, 1, 2] }),
+      event(8, 'turn/start', { turn: 2 }),
+      event(9, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: 'retry with sandbox off' }] }),
+      event(10, 'assistant/message', { message: { content: [{ type: 'text', text: 'retrying now' }] } }),
+    ]],
+  ])
+
+  it('renders turn boundaries with previews, tool facts, end labels, and digests', async () => {
+    const engine = stubEngine({
+      sessions: outlineLog,
+      titles: new Map([['sess_outline', 'Outline fixture']]),
+    })
+    const resource = await resolve(engine, 'session://sess_outline/outline')
+    expect(resource.immutable).toBe(true)
+    expect(resource.contentType).toBe('text/markdown')
+    expect(resource.content).toContain('Turn outline of session sess_outline — Outline fixture')
+    expect(resource.content).toContain('Turns (2, showing 2):')
+    expect(resource.content).toContain('turn 1 @ seq 0 — fix the login bug → I will patch auth.ts · ✗ error — sandbox denied the write')
+    expect(resource.content).toContain('  tools: edit ×2 · 1 failed')
+    expect(resource.content).toContain('turn 2 @ seq 8 — retry with sandbox off → retrying now (open)')
+    expect(resource.content).toContain('Compaction digests (1, showing 1):')
+    expect(resource.content).toContain('  📦 compacted 3 events: earlier context digested')
+    expect(resource.notes).toContain('Read session://sess_outline for the full transcript.')
+  })
+
+  it('caps the outline at OUTLINE_TURN_CAP turns with an omit note', async () => {
+    const events: SessionEvent[] = []
+    let seq = 0
+    for (let turn = 1; turn <= OUTLINE_TURN_CAP + 3; turn++) {
+      events.push(event(seq++, 'turn/start', { turn }))
+      events.push(event(seq++, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: `prompt ${turn}` }] }))
+      events.push(event(seq++, 'turn/end', { turn, reason: { kind: 'completed' } }))
+    }
+    const engine = stubEngine({ sessions: new Map([['sess_cap', events]]) })
+    const resource = await resolve(engine, 'session://sess_cap/outline')
+    expect(resource.content).toContain(`Turns (${OUTLINE_TURN_CAP + 3}, showing ${OUTLINE_TURN_CAP}):`)
+    expect(resource.content).toContain(`turn ${OUTLINE_TURN_CAP} @ seq`)
+    expect(resource.content).not.toContain(`turn ${OUTLINE_TURN_CAP + 1} @ seq`)
+    expect(resource.content).toContain('(3 more turns omitted; read session://sess_cap for the full transcript)')
+  })
+
+  it('degrades to an explanatory note when the fold rejects the log', async () => {
+    const engine = stubEngine({ sessions: new Map([['sess_broken', [event(1, 'turn/start', undefined)]]]) })
+    const resource = await resolve(engine, 'session://sess_broken/outline')
+    expect(resource.contentType).toBe('text/plain')
+    expect(resource.immutable).toBe(true)
+    expect(resource.content).toContain('outline is unavailable')
+    expect(resource.content).toContain('Read session://sess_broken for the full transcript instead.')
+    expect(resource.notes?.[0]).toContain('Fold error:')
+  })
+
+  it('renders a no-turns note for a log without turn boundaries', async () => {
+    const engine = stubEngine({ sessions: new Map([['sess_young', [event(1, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: 'hi' }] })]]]) })
+    const resource = await resolve(engine, 'session://sess_young/outline')
+    expect(resource.content).toContain('No recorded turns')
+  })
+
+  it('rejects deep paths under /outline', async () => {
+    const engine = stubEngine({ sessions: outlineLog })
+    await expect(resolve(engine, 'session://sess_outline/outline/extra')).rejects.toThrow(/Invalid session:\/\/ URL/)
   })
 })

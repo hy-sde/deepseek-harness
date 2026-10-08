@@ -1,5 +1,5 @@
 ---
-description: "Internal-URL scheme handler exposing the harness session history as file-shaped resources for the ported read and grep tools: listings, rendered transcripts, per-event JSON, and FTS-backed cross-session search."
+description: "Internal-URL scheme handler exposing the harness session history as file-shaped resources for the ported read and grep tools: listings, rendered transcripts, turn outlines, per-event JSON, and FTS-backed cross-session search."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-session-url` registers a `session://` internal-URL scheme so the harness's own session history reads as files through the ported `read` and `grep` tools: directory listings, rendered transcripts, exact per-event JSON, and FTS-backed cross-session search. Choose it when an agent should inspect or grep past sessions through file-shaped tools it already uses. It adds no tool code: `read` and `grep` route any registered scheme through `ctx.internalUrls`, and the handler reads the same live-preferred corpus as the session-query tools. Its boundary is read-only history: resources are immutable, `session://search` degrades when content search is disabled.
+`dsh-session-url` registers a `session://` internal-URL scheme so the harness's own session history reads as files through the ported `read` and `grep` tools: directory listings, rendered transcripts, turn outlines, exact per-event JSON, and FTS-backed cross-session search. Choose it when an agent should inspect or grep past sessions through file-shaped tools it already uses. It adds no tool code: `read` and `grep` route any registered scheme through `ctx.internalUrls`, and the handler reads the same live-preferred corpus as the session-query tools. Its boundary is read-only history: resources are immutable, `session://search` degrades when content search is disabled.
 
 ## Table of Contents
 
@@ -34,6 +34,7 @@ The handler registers into the shared internal-URL registry (`ctx.internalUrls`)
 | `session://<id>` | Rendered transcript — per event `seq \| type \| time` plus indented semantic text. |
 | `session://<id>/event` | Directory index of that session's event seqs. |
 | `session://<id>/event/<seq>` | One exact event as JSON. |
+| `session://<id>/outline` | Turn outline — one bounded entry per turn (`turn <t> @ seq <s> — prompt → response`), per-turn tool facts, end labels, compaction digests. |
 | `session://search?q=<terms>` (or `session://search/<terms>`) | FTS-backed cross-session hits (degraded when content search is disabled). |
 
 Example:
@@ -42,6 +43,7 @@ Example:
 read session://0a1b2c3d4e
 grep tsconfig session://0a1b2c3d4e
 read session://0a1b2c3d4e/event/42
+read session://0a1b2c3d4e/outline
 list session://*
 ```
 
@@ -49,6 +51,7 @@ list session://*
 
 - **Immutable:** every resource is read-only history — agents never edit a log through a file-shaped URL.
 - **Bounded:** transcripts cap at 600 events for display (`read`) and 12 000 for search consumers (`grep` via `pathOnly`); listings cap at 200 sessions; one event's JSON caps at 128 KiB (oversized events degrade to a text notice). Every cap is a module export.
+- **Turn outline:** `session://<id>/outline` reuses the pure turn-outline fold from `@deepseek-ai/dsh-session-turn-outline` over the same events — no duplicated logic. Output caps at `OUTLINE_TURN_CAP` (200) turns, `OUTLINE_TOOL_NAMES_PER_TURN` (6) tool names per turn, and `OUTLINE_DIGEST_CAP` (8) compaction digests; a log the fold rejects degrades to an explanatory note with the fold error instead of throwing.
 - **Search degradation:** deployments that disable content search (`openAt: 'never'`) make `session://search` return an explanatory note; exact reads (`session://<id>`, `/event`) never depend on the index.
 - **Safety:** session ids are unvalidated branded strings used only as the URL host; they are never treated as filesystem segments, and the handler performs no filesystem access.
 
