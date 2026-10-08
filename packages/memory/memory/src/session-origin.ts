@@ -13,11 +13,12 @@ import { formatSessionReferenceMention } from '@deepseek-ai/dsh-session-referenc
 /**
  * Canonical `@[label](dsh-session:…)` mention for one stored session id.
  * @param sessionId - raw session id as persisted by the backend.
- * @returns mention whose label is the raw session id.
+ * @param label - optional display label; defaults to the raw session id.
+ * @returns mention carrying the canonical encoding of `sessionId`.
  */
-export function sessionOriginMention(sessionId: string): string {
+export function sessionOriginMention(sessionId: string, label?: string): string {
   return formatSessionReferenceMention({
     sessionId: brandString<SessionId>(sessionId),
-    label: sessionId,
+    label: label ?? sessionId,
   })
 }

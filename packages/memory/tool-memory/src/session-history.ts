@@ -15,6 +15,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { createHash } from 'node:crypto'
+import { sessionOriginMention } from '@deepseek-ai/dsh-memory'
 import type { MemorySearchItem } from '@deepseek-ai/dsh-memory'
 
 /** Structural view of the `ctx.sessionQuery` surface this bridge consumes. */
@@ -92,33 +93,18 @@ export function sessionLabel(sessionId: string): string {
 }
 
 /**
- * Canonical session URI, format-compatible with session-reference's
- * `dsh-session:` scheme (base64url of the JSON-encoded id). Duplicated here,
- * dependency-free, so recall output can carry a mention that a session-reference
- * mount (when present) resolves to the full conversation.
- */
-export function encodeSessionUri(sessionId: string): string {
-  const payload = Buffer.from(JSON.stringify(sessionId), 'utf8').toString('base64url')
-  return `dsh-session:${payload}`
-}
-
-/** Escape a mention label for `\` and `]`, matching session-reference. */
-function escapeMentionLabel(label: string): string {
-  return label.replace(/[\\\]]/gu, match => `\\${match}`)
-}
-
-/**
  * Render a Markdown mention that points at the full conversation of one
  * session. The mention is self-identifying plain text even in presets without
  * a session-reference mount; where session-reference is mounted it resolves
- * to the session snapshot the hit came from.
+ * to the session snapshot the hit came from. Encoding is delegated to the
+ * memory core's session-origin helper (backed by session-reference) so the
+ * two spellings can never drift.
  * @param sessionId - the session the hit came from.
  * @param label - optional display label (defaults to the short session label).
- * @returns an `@[label](dsh-session:...)` mention.
+ * @returns a mention in the canonical session-reference shape.
  */
 export function formatSessionMention(sessionId: string, label?: string): string {
-  const text = label ?? sessionLabel(sessionId)
-  return `@[${escapeMentionLabel(text)}](${encodeSessionUri(sessionId)})`
+  return sessionOriginMention(sessionId, label ?? sessionLabel(sessionId))
 }
 
 /** One mined lesson candidate from a session event. */

@@ -1,13 +1,13 @@
 /**
- * Origin mention helpers in the session-history bridge: `encodeSessionUri`
- * must stay format-compatible with session-reference's canonical `dsh-session:`
- * scheme (base64url of the JSON-encoded id), and `formatSessionMention` must
- * render a mention whose URI round-trips back to the id — so recall output
- * carries a click-through that a session-reference mount can resolve.
+ * Origin mention helpers in the session-history bridge: `formatSessionMention`
+ * must render a mention in session-reference's canonical `dsh-session:` shape
+ * (base64url of the JSON-encoded id) whose URI round-trips back to the id —
+ * so recall output carries a click-through that a session-reference mount can
+ * resolve. The encoding itself is delegated to the memory core.
  */
 
 import { describe, expect, it } from 'vitest'
-import { encodeSessionUri, formatSessionMention, sessionLabel } from '../src/session-history.ts'
+import { formatSessionMention, sessionLabel } from '../src/session-history.ts'
 
 /** Mirror of session-reference's decode (kept dependency-free on purpose). */
 function decodeUri(uri: string): string {
@@ -20,8 +20,9 @@ function decodeUri(uri: string): string {
 }
 
 describe('session history origin mentions', () => {
-  it('encodeSessionUri is canonical-compatible with session-reference', () => {
-    const uri = encodeSessionUri('abc-123_session/x')
+  it('formatSessionMention stays canonical-compatible with session-reference', () => {
+    const mention = formatSessionMention('abc-123_session/x')
+    const uri = mention.slice(mention.indexOf('(') + 1, mention.indexOf(')'))
     expect(uri.startsWith('dsh-session:')).toBe(true)
     // Round-trip via the mirror decoder.
     expect(decodeUri(uri)).toBe('abc-123_session/x')

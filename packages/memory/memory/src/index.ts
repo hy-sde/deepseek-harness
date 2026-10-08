@@ -23,6 +23,7 @@ export * from './service.ts'
 export * from './local.ts'
 export { MemoryProtocolHandler, MEMORY_ROOT_NAMESPACE } from './memory-protocol.ts'
 export type { MemoryProtocolDeps } from './memory-protocol.ts'
+export { sessionOriginMention } from './session-origin.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
