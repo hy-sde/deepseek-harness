@@ -46,7 +46,7 @@ ARIA 快照由打包进来的 Playwright ARIA-snapshot 源码（Apache-2.0，微
 
 `patch` 后端通过 `cloakbrowser` npm 依赖启动 CloakBrowser Chromium — 一个可直接替换 Playwright 的封装，返回常规 `playwright-core` `Browser`（与服务驱动的是同一实例）。指纹随机化在 C++ 层逐会话进行，因此本后端刻意不应用 JS 级 stealth 脚本与 UA 覆盖。首次启动会自动下载打过补丁的 Chromium（约 200 MB，缓存于 `~/.cloakbrowser/`）；`patchOptions` 可传入 `proxy`、`geoip`（按代理 IP 匹配时区与 locale）、`humanize`（拟人化输入）。反检测只是抬高门槛，并不保证站点可访问。
 
-relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，提供 `GET /json/version`（扩展接入前返回 503）、`GET /json`、`WS /cdp`（下游 CDP 客户端）、`WS /ext`（扩展，可配置 token 门禁），以及 `GET /ext-assets/*`（便于用户在 `chrome://extensions` → Load unpacked 侧载扩展）。bridge 在扩展对每个标签页唯一的 `chrome.debugger` 附着之上，以铸造 session id 的方式复用每条下游 CDP 连接 — 与 `omp browser-relay`（MIT）同一设计。
+relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，提供 `GET /json/version`（扩展接入前返回 503；200 与 503 响应体均携带 `dshRelayProtocol` 构建标记，因此另一构建的陈旧 relay 能在归咎扩展之前被诊断出来 — 版本不匹配绝不会导致连接失败）、`GET /json`、`WS /cdp`（下游 CDP 客户端）、`WS /ext`（扩展，可配置 token 门禁），以及 `GET /ext-assets/*`（便于用户在 `chrome://extensions` → Load unpacked 侧载扩展）。relay 路径会在 `connectOverCDP` 之前等待 `/json/version` 应答 200（有界预算、静默过期），使首次连接不会与冷启动的扩展 service-worker 拨号竞争。bridge 在扩展对每个标签页唯一的 `chrome.debugger` 附着之上，以铸造 session id 的方式复用每条下游 CDP 连接。被 Chrome 丢弃的标签页（memory saver）永远不会被播报或附着 — 丢弃会退役已持有的会话并撤回目标，复活（激活重取）会重新播报并重新附着，而附着动作会等过一次已跟踪的在途分离，而不是被它悄悄撤销 — 与 `omp browser-relay`（MIT）同一设计。
 
 <a id="configuration"></a>
 ## 配置
@@ -59,7 +59,7 @@ relay（`src/relay/server.ts`、`bridge.ts`，omp 移植）绑定回环地址，
 - `relayUrl`／`relayToken` — relay 端点与可选的扩展 token。
 - `timeoutMs` — 默认导航超时（30000）。
 
-服务位于宿主平面，不持有持久状态，随其所属上下文一同销毁（关闭浏览器并停止 relay）。
+服务位于宿主平面，不持有持久状态，随其所属上下文一同销毁（关闭浏览器并停止 relay）。派生的浏览器（launch，以及 peer 暴露其 pid 时的 patch）会记录进孤儿注册表（`src/orphan-registry.ts`），若本进程死亡则由之后的宿主回收；记录仅在其关闭被确认后才移除 — 关闭失败会让 pid 保持可回收。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与延期工作
