@@ -14,8 +14,10 @@ import type {
   MemorySearchItem,
   MemorySearchResult,
 } from '@deepseek-ai/dsh-memory'
+import type { MineSignals, SessionQueryPort } from './session-history.ts'
 import {
-  formatSessionMention, mineCandidateOf, mineFingerprint, resolveSessionQuery, searchSessionHistory, sessionLabel,
+  formatSessionMention, mineCandidateOf, mineFingerprint, mineOutcomeOf, mineScoreOf, mineSignalsOf,
+  resolveSessionQuery, searchSessionHistory, sessionLabel,
 } from './session-history.ts'
 
 /** Session-history recall tuning (wired from tool config in index.ts). */
@@ -358,25 +360,40 @@ export function applyLearnTool(ctx: Context): void {
   }))
 }
 
-/* ── mine_sessions ───────────────────────────────────────────────────────── */
+/* ── mine_sessions ──────────────────────────────────────────────────────── */
 
 interface MineArgs { session_id?: string }
 interface MineValue { available: boolean; mined: number; sessions: number; message: string }
 
-export function applyMineSessionsTool(
-  ctx: Context,
-  config: { sessions: number; lessons: number } = { sessions: 3, lessons: 10 },
-): void {
+/** Mining budget for one `mine_sessions` run. */
+export interface MineSessionsConfig {
+  /** Top-ranked candidate sessions digested per run. */
+  sessions: number
+  /** Max mined lessons stored per run. */
+  lessons: number
+  /** Most-recent candidates read and scored before the top-`sessions` cut. */
+  candidates: number
+}
+
+/** Default mining budget: digest the top 3 of the 12 most-recent candidates, 10 lessons per run. */
+export const DEFAULT_MINE_CONFIG: MineSessionsConfig = { sessions: 3, lessons: 10, candidates: 12 }
+
+export function applyMineSessionsTool(ctx: Context, config: MineSessionsConfig = DEFAULT_MINE_CONFIG): void {
+  if (config.candidates < config.sessions) {
+    throw new Error('mine_sessions config: candidates must be >= sessions — the digest cut needs a pool at least that large')
+  }
   ctx.tools.register(defineTool({
     name: 'mine_sessions',
     device: true,
     description:
       'Harvest reusable lessons from your own past sessions of this project (needs the harness '
-      + '`sessionQuery` service; degrades to an unavailable notice without it). Reads the most recent '
-      + 'few session logs (or one specific `session_id`), extracts digests from compaction summaries, '
-      + 'failures from turn/end error reasons, and all-completed todos, then stores each new lesson '
-      + 'through `learn` attributed to the session. Run occasionally to convert conversation '
-      + 'history into durable memory; deduped, so re-running adds nothing new.',
+      + '`sessionQuery` service; degrades to an unavailable notice without it). Ranks the most recent '
+      + 'candidate sessions by lesson density — failed turns, failed tool calls, compaction digests, '
+      + 'all-completed todo writes; recency breaks ties — and digests the richest ones (or one specific '
+      + '`session_id`), extracting digests from compaction summaries, failures from turn/end error '
+      + 'reasons, and all-completed todos. Each stored lesson is attributed to the session and carries '
+      + 'its terse outcome (e.g. `completed`, `errored: 3 failed turns`, `aborted`). Run occasionally '
+      + 'to convert conversation history into durable memory; deduped, so re-running adds nothing new.',
     parameters: {
       session_id: { type: 'string', description: 'Optional explicit session id to mine instead of the recent sessions of this project' },
     },
@@ -406,47 +423,25 @@ export function applyMineSessionsTool(
       }
       const cwd = exec.agent?.session.header.cwd ?? process.cwd()
 
-      // Resolve the session set to mine: explicit id, or recent sessions of cwd.
-      let sessionIds: string[]
-      let title: string | undefined
-      if (args.session_id !== undefined && args.session_id.length > 0) {
-        sessionIds = [args.session_id]
-      } else {
-        const records = await port.filterSessions([{ kind: 'cwd', values: [cwd] }])
-        const sorted = [...records]
-          .sort((a, b) => (b.header.createdAt ?? 0) - (a.header.createdAt ?? 0))
-          .slice(0, config.sessions)
-        sessionIds = sorted.map(record => record.header.id)
-      }
-      if (sessionIds.length === 0) {
-        return { available: true, mined: 0, sessions: 0, message: 'No sessions found to mine for this project.' }
-      }
-
       const seen = new Set<string>()
       let mined = 0
-      for (const sessionId of sessionIds) {
-        let snapshot
-        try {
-          snapshot = await port.readSession(sessionId)
-        } catch {
-          continue // missing/corrupt session log — skip rather than fail the run
-        }
-        if (args.session_id === undefined) {
-          try {
-            title = await port.readTitle(snapshot.session.id)
-          } catch {
-            title = undefined
-          }
-        }
+
+      // Digest one already-read snapshot: store every new candidate lesson,
+      // each annotated with the session's turn/end-derived outcome.
+      const digest = async (
+        snapshot: Awaited<ReturnType<SessionQueryPort['readSession']>>,
+        title?: string,
+      ): Promise<void> => {
+        const outcome = mineOutcomeOf(mineSignalsOf(snapshot.events))
         for (const event of snapshot.events) {
-          if (mined >= config.lessons) break
+          if (mined >= config.lessons) return
           for (const candidate of mineCandidateOf(event, snapshot.session.id, title)) {
             const fingerprint = mineFingerprint(candidate.content)
             if (seen.has(fingerprint)) continue
             seen.add(fingerprint)
             const input: MemorySaveInput = {
               content: candidate.content,
-              context: candidate.context,
+              context: outcome === undefined ? candidate.context : `${candidate.context} · ${outcome}`,
               source: 'mine',
               sessionId: snapshot.session.id,
               importance: IMPORTANCE_LEARN,
@@ -456,14 +451,68 @@ export function applyMineSessionsTool(
           }
         }
       }
+
+      // One explicit session: no ranking, straight digest.
+      if (args.session_id !== undefined && args.session_id.length > 0) {
+        let snapshot
+        try {
+          snapshot = await port.readSession(args.session_id)
+        } catch {
+          snapshot = undefined // missing/corrupt session log — skip rather than fail the run
+        }
+        if (snapshot !== undefined) await digest(snapshot)
+        const noun = mined === 1 ? 'lesson' : 'lessons'
+        return {
+          available: true,
+          mined,
+          sessions: 1,
+          message: mined === 0
+            ? 'Mined 1 session(s) for this project; no new lessons.'
+            : `Mined ${mined} new ${noun} from 1 session(s) into project memory (deduped).`,
+        }
+      }
+
+      // Rank the recent sessions of this project: read a bounded candidate
+      // pool once, score each by lesson density, and digest the richest
+      // `config.sessions`; equal scores keep the recency order.
+      const records = await port.filterSessions([{ kind: 'cwd', values: [cwd] }])
+      if (records.length === 0) {
+        return { available: true, mined: 0, sessions: 0, message: 'No sessions found to mine for this project.' }
+      }
+      const pool = [...records]
+        .sort((a, b) => (b.header.createdAt ?? 0) - (a.header.createdAt ?? 0))
+        .slice(0, Math.max(config.candidates, config.sessions))
+      const candidates: { snapshot: Awaited<ReturnType<SessionQueryPort['readSession']>>; signals: MineSignals }[] = []
+      for (const record of pool) {
+        let snapshot
+        try {
+          snapshot = await port.readSession(record.header.id)
+        } catch {
+          continue // missing/corrupt session log — skip rather than fail the run
+        }
+        candidates.push({ snapshot, signals: mineSignalsOf(snapshot.events) })
+      }
+      candidates.sort((a, b) =>
+        mineScoreOf(b.signals) - mineScoreOf(a.signals)
+        || (b.snapshot.session.createdAt ?? 0) - (a.snapshot.session.createdAt ?? 0))
+      const chosen = candidates.slice(0, config.sessions)
+      for (const candidate of chosen) {
+        let title: string | undefined
+        try {
+          title = await port.readTitle(candidate.snapshot.session.id)
+        } catch {
+          title = undefined
+        }
+        await digest(candidate.snapshot, title)
+      }
       const noun = mined === 1 ? 'lesson' : 'lessons'
       return {
         available: true,
         mined,
-        sessions: sessionIds.length,
+        sessions: chosen.length,
         message: mined === 0
-          ? `Mined ${sessionIds.length} session(s) for this project; no new lessons.`
-          : `Mined ${mined} new ${noun} from ${sessionIds.length} session(s) into project memory (deduped).`,
+          ? `Mined ${chosen.length} session(s) for this project; no new lessons.`
+          : `Mined ${mined} new ${noun} from ${chosen.length} session(s) into project memory (deduped).`,
       }
     },
     presentCall: (args: MineArgs): GenericCallView | undefined => ({

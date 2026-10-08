@@ -1,8 +1,8 @@
 /**
  * Model-facing long-horizon memory tools over the host `ctx.memory` service:
- * `retain`, `recall`, `reflect`, `memory_edit`, and `learn`, plus a
- * `memory:project` system-prompt section that reloads the session's project
- * memory at the start of every session.
+ * `retain`, `recall`, `reflect`, `memory_edit`, `learn`, and `mine_sessions`,
+ * plus a `memory:project` system-prompt section that reloads the session's
+ * project memory at the start of every session.
  *
  * Port of omp (oh-my-pi)'s memory surface for the DeepSeek Harness — see
  * port_omp.md item 4. Agent-plane: this package mounts as a preset row and
@@ -17,6 +17,8 @@ import type { MemoryPromptConfig } from './prompt.ts'
 import {
   applyLearnTool, applyMemoryEditTool, applyMineSessionsTool, applyRecallTool, applyReflectTool, applyRetainTool,
 } from './tools.ts'
+import type { MineSessionsConfig } from './tools.ts'
+import { DEFAULT_MINE_CONFIG } from './tools.ts'
 
 /** Plugin configuration. */
 export interface Config extends MemoryPromptConfig {
@@ -26,10 +28,12 @@ export interface Config extends MemoryPromptConfig {
   sessionRecall?: boolean
   /** Max session hits merged into one recall result (default 3). */
   sessionRecallLimit?: number
-  /** Max sessions `mine_sessions` reads per run (default 3). */
+  /** Top-ranked sessions `mine_sessions` digests per run (default 3). */
   mineSessionLimit?: number
   /** Max mined lessons stored per `mine_sessions` run (default 10). */
   mineLessonLimit?: number
+  /** Most-recent candidates `mine_sessions` reads and scores before ranking (default 12). */
+  mineCandidateLimit?: number
 }
 
 export {
@@ -38,12 +42,15 @@ export {
   cwdFromAssemblyContext,
 } from './prompt.ts'
 export type { MemoryPromptConfig } from './prompt.ts'
+export type { MineSessionsConfig } from './tools.ts'
 export {
   applyRetainTool, applyRecallTool, applyReflectTool, applyMemoryEditTool, applyLearnTool, applyMineSessionsTool,
   sessionCwd, memoryContextOf, memorySearchWithHistory,
-  DEFAULT_SESSION_HISTORY,
+  DEFAULT_MINE_CONFIG, DEFAULT_SESSION_HISTORY,
 } from './tools.ts'
-export { searchSessionHistory, resolveSessionQuery, mineCandidateOf, mineFingerprint, sessionLabel } from './session-history.ts'
+export {
+  searchSessionHistory, resolveSessionQuery, mineCandidateOf, mineFingerprint, mineOutcomeOf, mineScoreOf, mineSignalsOf, sessionLabel,
+} from './session-history.ts'
 
 /** Cordis plugin name for loader diagnostics. */
 export const name = 'tool-memory'
@@ -61,15 +68,17 @@ export function apply(ctx: Context, config: Config = {}): void {
     enabled: config.sessionRecall ?? true,
     limit: config.sessionRecallLimit ?? 3,
   }
+  const mine: MineSessionsConfig = {
+    sessions: config.mineSessionLimit ?? DEFAULT_MINE_CONFIG.sessions,
+    lessons: config.mineLessonLimit ?? DEFAULT_MINE_CONFIG.lessons,
+    candidates: config.mineCandidateLimit ?? DEFAULT_MINE_CONFIG.candidates,
+  }
   applyRetainTool(ctx)
   applyRecallTool(ctx, history)
   applyReflectTool(ctx, history)
   applyMemoryEditTool(ctx)
   applyLearnTool(ctx)
-  applyMineSessionsTool(ctx, {
-    sessions: config.mineSessionLimit ?? 3,
-    lessons: config.mineLessonLimit ?? 10,
-  })
+  applyMineSessionsTool(ctx, mine)
   ctx.systemPrompt.section(buildMemoryPromptSection({
     ...config.root !== undefined ? { root: config.root } : {},
     ...config.injectionMaxChars !== undefined ? { injectionMaxChars: config.injectionMaxChars } : {},

@@ -140,6 +140,26 @@ function blockTexts(block: unknown): string[] {
   return []
 }
 
+/** Joined non-empty text of a compaction summary payload; '' when it carries none. */
+function compactionDigestText(summary: unknown): string {
+  const texts = Array.isArray(summary) ? summary.flatMap(blockTexts) : []
+  return texts.map(text => text.trim()).filter(Boolean).join(' ')
+}
+
+/** Contents of a todo payload when every entry is completed; [] otherwise. */
+function allCompletedTodoContents(todos: unknown): string[] {
+  if (!Array.isArray(todos) || todos.length === 0) return []
+  const entries = todos.flatMap((todo): Array<{ content: string; status: string }> => {
+    if (typeof todo !== 'object' || todo === null) return []
+    const content = (todo as Record<string, unknown>).content
+    const status = (todo as Record<string, unknown>).status
+    if (typeof content !== 'string') return []
+    return [{ content, status: typeof status === 'string' ? status : '' }]
+  })
+  if (entries.length === 0 || entries.some(entry => entry.status !== 'completed')) return []
+  return entries.map(entry => entry.content).filter(Boolean)
+}
+
 /** Extract candidate lessons from one session event, defensively. */
 export function mineCandidateOf(event: MineEventView, sessionId: string, title?: string): MineCandidate[] {
   const sessionContext = title === undefined || title.length === 0 ? `session ${sessionLabel(sessionId)}` : title
@@ -161,9 +181,7 @@ export function mineCandidateOf(event: MineEventView, sessionId: string, title?:
   }
 
   if (event.type === 'compaction/summary') {
-    const summary = (data as Record<string, unknown>).summary
-    const texts = Array.isArray(summary) ? summary.flatMap(blockTexts) : []
-    const joined = texts.map(text => text.trim()).filter(Boolean).join(' ')
+    const joined = compactionDigestText((data as Record<string, unknown>).summary)
     if (joined.length === 0) return []
     return [{
       content: `Digested summary: ${clampText(joined, MAX_MINED_CONTENT_CHARS)}`,
@@ -172,17 +190,7 @@ export function mineCandidateOf(event: MineEventView, sessionId: string, title?:
   }
 
   if (event.type === 'todo/write') {
-    const todos = (data as Record<string, unknown>).todos
-    if (!Array.isArray(todos) || todos.length === 0) return []
-    const entries = todos.flatMap((todo): Array<{ content: string; status: string }> => {
-      if (typeof todo !== 'object' || todo === null) return []
-      const content = (todo as Record<string, unknown>).content
-      const status = (todo as Record<string, unknown>).status
-      if (typeof content !== 'string') return []
-      return [{ content, status: typeof status === 'string' ? status : '' }]
-    })
-    if (entries.length === 0 || entries.some(entry => entry.status !== 'completed')) return []
-    const contents = entries.map(entry => entry.content).filter(Boolean)
+    const contents = allCompletedTodoContents((data as Record<string, unknown>).todos)
     if (contents.length === 0) return []
     return [{
       content: `Completed outcome: ${clampText(contents.join('; '), 400)}`,
@@ -191,6 +199,76 @@ export function mineCandidateOf(event: MineEventView, sessionId: string, title?:
   }
 
   return []
+}
+
+/** Value of `data[key]` when it is a JSON object, else undefined. */
+function recordField(data: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+  const value = data[key]
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined
+}
+
+/** Health and lesson-density signals counted from one candidate session's events. */
+export interface MineSignals {
+  /** `turn/end` events that ended with a structured error. */
+  failedTurns: number
+  /** `turn/end` events interrupted by a cancellation request. */
+  abortedTurns: number
+  /** `turn/end` events that completed normally. */
+  completedTurns: number
+  /** Completed tool calls that reported an error result. */
+  toolFailures: number
+  /** `compaction/summary` events carrying extracted text. */
+  digests: number
+  /** `todo/write` events whose every todo is completed. */
+  completedTodos: number
+}
+
+/**
+ * One pass over a snapshot's events, counting the signals the miner ranks by.
+ * Extraction matches {@link mineCandidateOf}, so every counted digest or
+ * completed-todo write is exactly one lesson the digest would store; failure
+ * counts rank even when their messages are empty and store nothing.
+ */
+export function mineSignalsOf(events: readonly MineEventView[]): MineSignals {
+  const signals: MineSignals = { failedTurns: 0, abortedTurns: 0, completedTurns: 0, toolFailures: 0, digests: 0, completedTodos: 0 }
+  for (const event of events) {
+    if (typeof event.data !== 'object' || event.data === null) continue
+    const data = event.data as Record<string, unknown>
+    if (event.type === 'turn/end') {
+      const kind = recordField(data, 'reason')?.kind
+      if (kind === 'error') signals.failedTurns += 1
+      else if (kind === 'aborted') signals.abortedTurns += 1
+      else if (kind === 'completed') signals.completedTurns += 1
+    } else if (event.type === 'tool/result') {
+      if (recordField(data, 'message')?.isError === true) signals.toolFailures += 1
+    } else if (event.type === 'compaction/summary') {
+      if (compactionDigestText(data.summary).length > 0) signals.digests += 1
+    } else if (event.type === 'todo/write') {
+      if (allCompletedTodoContents(data.todos).length > 0) signals.completedTodos += 1
+    }
+  }
+  return signals
+}
+
+/**
+ * Lesson-density score for one candidate: every harvestable signal counts
+ * once — failed turns and failed tool calls (health), compaction digests and
+ * all-completed todo writes (lesson richness). Recency breaks score ties.
+ */
+export function mineScoreOf(signals: MineSignals): number {
+  return signals.failedTurns + signals.toolFailures + signals.digests + signals.completedTodos
+}
+
+/**
+ * Terse outcome label derived from the turn/end reasons the miner already
+ * reads: `errored: N failed turns` outranks `aborted` outranks `completed`;
+ * a log without turn/end events annotates nothing.
+ */
+export function mineOutcomeOf(signals: MineSignals): string | undefined {
+  if (signals.failedTurns > 0) return `errored: ${signals.failedTurns} failed turn${signals.failedTurns === 1 ? '' : 's'}`
+  if (signals.abortedTurns > 0) return 'aborted'
+  if (signals.completedTurns > 0) return 'completed'
+  return undefined
 }
 
 /** Content digest used to dedupe mined lessons across sessions. */
