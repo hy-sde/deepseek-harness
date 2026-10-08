@@ -164,6 +164,8 @@ export interface MemorySummaries {
   learned?: string
   /** Markdown block combining both, or '' when the store is empty. */
   block: string
+  /** The rendered working-bank lines (joined), when the store has any. */
+  bank?: string
 }
 
 /** The storage strategy behind `ctx.memory`. */

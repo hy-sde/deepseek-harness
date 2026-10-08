@@ -606,7 +606,11 @@ describe('scheduled wakes', () => {
         replays.set(request.wakeId, call)
         if (call === 1) {
           return Promise.resolve({
-            wake: conformanceRow({ wakeId: request.wakeId, dueAt: request.dueAt, recurMs: request.recurMs }),
+            wake: conformanceRow({
+              wakeId: request.wakeId,
+              dueAt: request.dueAt,
+              ...(request.recurMs === undefined ? {} : { recurMs: request.recurMs }),
+            }),
             created: true,
           })
         }

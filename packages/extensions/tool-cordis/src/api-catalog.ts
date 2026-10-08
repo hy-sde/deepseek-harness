@@ -6764,7 +6764,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'MemoryEntryView',
-    declaration: 'export interface MemoryEntryView {\n    id: string;\n    content: string;\n    context?: string;\n    source: string;\n    tags?: string[];\n    importance?: number;\n    timestamp?: string;\n    score?: number;\n    readonly?: boolean;\n}',
+    declaration: 'export interface MemoryEntryView {\n    id: string;\n    content: string;\n    context?: string;\n    source: string;\n    sessionId?: string;\n    tags?: string[];\n    importance?: number;\n    timestamp?: string;\n    score?: number;\n    readonly?: boolean;\n}',
   },
   {
     name: 'MemorySaveInput',
@@ -6792,7 +6792,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'MemorySummaries',
-    declaration: 'export interface MemorySummaries {\n    backend: string;\n    summary?: string;\n    learned?: string;\n    block: string;\n}',
+    declaration: 'export interface MemorySummaries {\n    backend: string;\n    summary?: string;\n    learned?: string;\n    block: string;\n    bank?: string;\n}',
   },
   {
     name: 'Message',
