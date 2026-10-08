@@ -1138,7 +1138,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 ### `read`
 
-读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL。对完整的小型 UTF-8 文件，读取会在内容前加一行 hashline 锚头（[path#TAG]）——请逐字复制该标签到 edit 工具的 hashline 段，使编辑精确锚定在你看到的内容上。
+读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL；带 ?outline=1 后缀读取会话日志（如 session.jsonl.zstd?outline=1）时，提供其回合大纲而非对话记录。对完整的小型 UTF-8 文件，读取会在内容前加一行 hashline 锚头（[path#TAG]）——请逐字复制该标签到 edit 工具的 hashline 段，使编辑精确锚定在你看到的内容上。
 
 ```json
 {
