@@ -6,8 +6,8 @@
   en: 234b72cea83351e6
   zh: 352d1b3e28e0f893
 /agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/problem:
-  en: 88fcf3fb37f2a7d9
-  zh: bf94582793d45714
+  en: d546e8ab8fb990b6
+  zh: 4b8f2aab33d204c0
 /agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/decision:
   en: 533bfc263caf4ef6
   zh: 358603f255783872
@@ -18,5 +18,11 @@
   en: 26a2303e119d9bbc
   zh: 10f50e436f31190e
 /agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/decision/seeded-decisions-2026-10-02:
-  en: 0054c9f14d2cfd6f
-  zh: 3b7e5048e83142c4
+  en: 5cfb0790e8ad798a
+  zh: 35cb880a95226eb3
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/alternatives-considered:
+  en: b5b2d13566fc0f81
+  zh: e178d17a06e9ffa7
+/agent-note-upstream-merge-decision-ledger-durable-keyed-consulted-before-conflict-resolution/consequences:
+  en: 41c2edf21b308681
+  zh: c32b03bdbc2c6de3

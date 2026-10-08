@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-0.1.5/0.1.6 同步中唯一一次静默功能回归 —— fork 的字节感知实时写入批处理与 `compressionLevel` 被 `12f54ae41d` 以"upstream wins"整体采用上游重写的 session 包而丢弃（[回移](2026-09-20-upstream-merge-post-merge-validation.zh.md)）—— 以及更早审计中丢失的 `llm-pi-ai` 空 compat 修复，共享一个事后扫描器无法解决的根本原因：**原始合并会话中的按键决策账本从未成为可查阅的产物。** `13bcd9930e` 的合并信息原话："keyed-decision ledger NOT ported." 差异扫描器在合并之后才检测到丢失；没有任何东西在解决冲突时告诉人或代理，之前的合并对该 key 已经做过什么决定。知识丢失在代码丢失的上游。
+0.1.5/0.1.6 同步中唯一一次静默功能回归 —— fork 的字节感知实时写入批处理与 `compressionLevel` 被 2026-09-10 的 0.1.5-rc.1 上游合并以"upstream wins"整体采用上游重写的 session 包而丢弃（[回移](2026-09-20-upstream-merge-post-merge-validation.zh.md)）—— 以及更早审计中丢失的 `llm-pi-ai` 空 compat 修复，共享一个事后扫描器无法解决的根本原因：**原始合并会话中的按键决策账本从未成为可查阅的产物。** 2026-09-19 的 0.1.6-alpha.2 合并信息原话："keyed-decision ledger NOT ported." 差异扫描器在合并之后才检测到丢失；没有任何东西在解决冲突时告诉人或代理，之前的合并对该 key 已经做过什么决定。知识丢失在代码丢失的上游。
 
 ## 决策
 
@@ -24,10 +24,22 @@ Status: implemented
 
 ### 已播种决策（2026-10-02）
 
-- `session-persistence/live-batching-compression` — fork 胜，回归由 `9248da21c0` 修复（被 `12f54ae41d` "upstream wins" 丢失，由 3 个红的 jsonl.spec 测试暴露）。
-- `agent-loop/cancel-claimed-input` — fork 胜，由 `e0bfc3472e` 修复（取消永不擦除已认领输入；合并前即存在的代码/测试错配）。
+- `session-persistence/live-batching-compression` — fork 胜，回归由 2026-09-25 的 live-batching 重移植修复（被 2026-09-10 的 upstream-wins 合并 "upstream wins" 丢失，由 3 个红的 jsonl.spec 测试暴露）。
+- `agent-loop/cancel-claimed-input` — fork 胜，由 2026-09-25 的 cancel-semantics 修复（取消永不擦除已认领输入；合并前即存在的代码/测试错配）。
 - `scope-lifecycle/persona-field` — fork 胜（`persona` → `personaPrefix`），上游陈旧测试文案已修复。
 - `process/merge-validation-vitest-gap` — 教训：合并验证必须运行所触及包的完整 vitest 套件（批处理丢失正是在没有 vitest 的关卡下溜走的）。
 - `wiki/apiproxy` 被取代 · `tools/run-code-session-reset-params` 被取代 · `client/popup-ri-reveal` 与 `client/popup-wo-reveal` 上游已采纳 · `ui-workspace/recency-init` 被取代 · `subagent/workspace-capability` 仍在 · `worker-thread/no-warnings` 已废弃 · `codebase-memory/gitignore` 已恢复 · `tool-str-replace-editor/643-line-deletion` 属刻意删除 · `control-types/SubagentControlError-map` 属上游刻意重设计 · `AGENTS.md/package-layout-edit-ast` 未决（仅文档） · `docs/generated-catalog` 属预期翻录 —— 均出自 2026-09-24 审计。
 - `llm-pi-ai/empty-compat` 已修复 · `client/browser-catalog-ordering` 已决（采用上游 oldest-first；fork 的翻转作为可选后续，需同时翻转 index.ts 与 spec 期望） · `client/pointer-hover-close` 存活 —— 出自 2026-09-12 审计。
 - `process/consult-convention` — 承载本仪式的元条目。
+
+## 落选方案
+
+**仓库内跟踪的账本文件（markdown/csv）。** 评审可见，但这正是合并会覆盖、上游会改名的那类工件，脚本端追加每次合并都会冲突。败给持久化代理存储：只追加、`requestId` 幂等、不受上游变动影响，且可按键查询而无需 grep 散文。
+
+**只靠合并后的差异扫描器。** 它只在合并落地后检测丢失，对正在解决冲突的人毫无帮助；保留为检测层，但预防需要一份可查阅的记录。不能作为唯一机制。
+
+**在各处代码里写决策注释与测试。** 站点级溯源随代码腐烂，也无法在一处回答"之前的合并对这个 key 决定了什么"。败给按键账本。
+
+## 后果
+
+代价：账本存放在仓库之外（`~/.dsh/storages/pi-agent.sqlite`），新机器必须重跑种子脚本（幂等——重放至相同提交），且咨询仪式依赖 durable-agent 工具被挂载（cordis-plus 预设）。收益：冲突解决者在选边前就能看到先前的 side、理由与引用；2026-10-02 播种的 20 条决策保留了"因为"；扫描器仍只做检测，预防与检测不再共用单点。

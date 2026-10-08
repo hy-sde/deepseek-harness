@@ -26,7 +26,7 @@ Status: implemented
 ### 1. 合并机制
 
 3. 合并后先跑翻译配对校验（自动合并驱动只在 Git 文本合并成功时合成记录）： `pnpm run verify-translation-pairing`，再用 `pnpm run verify-translation-pairing --write <pair>` 修复任何失同步对的配对。
-4. 审计 fork 专有行为提交（`fix`、`feat`、`perf`）是否存活：对区间内每个这类 fork 提交，确认其本质存在于 合并后的 HEAD（`git diff --name-only <commit> HEAD -- <其文件>` 加针对标记的语义 grep）。0.1.5 审计正是这样找到唯一一个丢失的修复（空数组兼容检查，后已恢复）— 但最初只扫 `fix` 类提交的写法也漏掉了第二个丢失：fork 在 `session-persistence-jsonl` 里的字节感知 live-write 批处理被 0.1.5-rc.1 合并静默丢弃，直到 0.2.0-rc.2 评审才浮出水面并重新移植（9248da21c0d），因为它以 `feat` 提交落地。 [0.1.5, 0.2.0]
+4. 审计 fork 专有行为提交（`fix`、`feat`、`perf`）是否存活：对区间内每个这类 fork 提交，确认其本质存在于 合并后的 HEAD（`git diff --name-only <commit> HEAD -- <其文件>` 加针对标记的语义 grep）。0.1.5 审计正是这样找到唯一一个丢失的修复（空数组兼容检查，后已恢复）— 但最初只扫 `fix` 类提交的写法也漏掉了第二个丢失：fork 在 `session-persistence-jsonl` 里的字节感知 live-write 批处理被 0.1.5-rc.1 合并静默丢弃，直到 0.2.0-rc.2 评审才浮出水面并重新移植（2026-09-25 的 live-batching 重移植），因为它以 `feat` 提交落地。 [0.1.5, 0.2.0]
 
 ### 2. 静态门禁（必要但永不充分）
 

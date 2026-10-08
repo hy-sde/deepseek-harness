@@ -26,7 +26,7 @@ Every upstream sync is a runtime release. After the merge commit is prepared, ru
 ### 1. Merge mechanics
 
 3. After the merge, run the translation-pairing verification (the automatic merge driver composes records only when Git's text merge succeeds): `pnpm run verify-translation-pairing`, then fix any out-of-sync pair with `pnpm run verify-translation-pairing --write <pair>`.
-4. Audit fork-only behavioral commits (`fix`, `feat`, `perf`) for survival: for each such fork commit in the range, verify its essence exists at the merged HEAD (`git diff --name-only <commit> HEAD -- <its files>` plus a semantic grep for the marker). The 0.1.5 audit found exactly one lost fix this way (the empty-array compat check, later restored) — but the original `fix`-only scan also missed a second loss: the fork's byte-aware live-write batching in `session-persistence-jsonl`, dropped by the 0.1.5-rc.1 merge and re-ported only after the 0.2.0-rc.2 review surfaced it (9248da21c0d), because it had landed as a `feat` commit. [0.1.5, 0.2.0]
+4. Audit fork-only behavioral commits (`fix`, `feat`, `perf`) for survival: for each such fork commit in the range, verify its essence exists at the merged HEAD (`git diff --name-only <commit> HEAD -- <its files>` plus a semantic grep for the marker). The 0.1.5 audit found exactly one lost fix this way (the empty-array compat check, later restored) — but the original `fix`-only scan also missed a second loss: the fork's byte-aware live-write batching in `session-persistence-jsonl`, dropped by the 0.1.5-rc.1 merge and re-ported only after the 0.2.0-rc.2 review surfaced it (the 2026-09-25 live-batching re-port), because it had landed as a `feat` commit. [0.1.5, 0.2.0]
 
 ### 2. Static gates (necessary, never sufficient)
 
