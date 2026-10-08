@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-graph-wakes` delivers the Agent Graph's supervisor wakes at the root session's next idle boundary — never mid-turn — and settles every attempt durably through the control store's own begin/complete CAS. It supplies the process-local `GraphWakeRuntime` over a structural store seam plus a deliver hook and an injectable idle observer; delivery is idle-gated by construction, so the runtime starts nothing on its own. Mount it in host wiring, and let the P6 deliver hook re-drive the graph coordinator. It adds no tool, prompt, or plugin row.
+`dsh-graph-wakes` delivers the Agent Graph's supervisor wakes at the root session's next idle boundary — never mid-turn — and settles every attempt durably through the control store's own begin/complete CAS. It supplies the process-local `GraphWakeRuntime` over a structural store seam plus a deliver hook and an injectable idle observer; delivery is idle-gated by construction, so the runtime starts nothing on its own. Wakes may be scheduled for a future `dueAt` and chained with `recurMs` into recurring jobs (see [Scheduled and recurring wakes](#scheduled-and-recurring-wakes)). Mount it in host wiring, and let the P6 deliver hook re-drive the graph coordinator. It adds no tool, prompt, or plugin row.
 
 ## Table of Contents
 
@@ -50,6 +50,18 @@ await runtime.pendingWakes('graph_g1') // pending + retryable wakes (terminal st
 await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 ```
 
+```ts ignore-check
+// Schedule a future or recurring wake (durable, exactly-once per wakeId)
+await store.scheduleSupervisorWake({
+  graphId: 'graph_g1',
+  wakeId: 'graph_wake_drift_sweep', // chains as `${wakeId}#occurrence-1`, -2, …
+  snapshotVersion: 'rev-3',
+  rootSessionId: 'session-root',
+  dueAt: Date.now() + 60_000, // epoch ms; withheld until then (undefined = immediately due)
+  recurMs: 60_000, // optional: next occurrence scheduled after each delivery
+})
+```
+
 ## Understand the implementation
 
 ### Idle-gated delivery
@@ -62,7 +74,7 @@ For every due wake the runtime calls the store's `beginSupervisorWakeAttempt` wi
 
 | deliver outcome | durable attempt status | re-armed? |
 | --- | --- | --- |
-| `delivered` | `delivered` | no |
+| `delivered` | `delivered` | no (unless `recurMs`: the next occurrence is scheduled) |
 | `waiting_permission` | `waiting_permission` | no (parked until host resumption) |
 | `superseded` / `stopped` | `superseded` | no |
 | `retryable_failed` | `retryable_failed` | yes, unless exhausted |
@@ -70,6 +82,12 @@ For every due wake the runtime calls the store's `beginSupervisorWakeAttempt` wi
 ### Retries, backoff, and terminal failure
 
 A `retryable_failed` outcome re-arms the wake at `outcome.nextAttemptAt` or `now + 30 s × attemptNumber` (defaults: `DEFAULT_RETRY_BACKOFF_MS`, `DEFAULT_MAX_DELIVERY_ATTEMPTS = 3`); the re-arm is process-local and a segmented timer re-drives `handleIdle` for the owning root. Once `attemptCount` reaches `maxAttempts` the runtime durably exhausts the wake (`exhausted`, with the last failure reason on the wake row): it leaves the unsettled/retryable listings, is never re-armed, and stays terminal across restarts.
+
+### Scheduled and recurring wakes
+
+A wake row may carry an epoch-milliseconds `dueAt`: the sweep withholds delivery until that time, and a future-due wake gains no attempt row (`dueAt === undefined` keeps the historical immediately-due behavior). Scheduling is a store-level exactly-once upsert — `store.scheduleSupervisorWake` keyed by `wakeId` — so a retried scheduler or a replayed restart cannot rewrite a claimed row. Both `dueAt` and `recurMs` are durable wake-row fields.
+
+A wake with `recurMs` chains: after a delivery (only `delivered` — a retryable, superseded, or stopped outcome never recurs), the runtime schedules the next occurrence under the deterministic id `${baseWakeId}#occurrence-${n}` (occurrence 0 is the base id as scheduled; the id embeds nothing else) with `dueAt = delivery time + recurMs`, and the same segmented re-arm timer re-drives `handleIdle` for the new due time. Stop suppression still applies: a graph that is finished, stopped, or closed schedules no next occurrence, and an occurrence already scheduled before a stop is superseded like any due wake.
 
 ### Context-overflow recovery
 
@@ -85,7 +103,7 @@ Overlapping idle signals coalesce into one serial sweep (single-flight, re-reque
 
 ### Restart durability
 
-All state the runtime needs is in the store: a fresh `GraphWakeRuntime` over the same store sees the same wake rows, re-arms orphaned `retryable_failed` wakes at the next idle (like Maka's `recover`), and durably exhausts any at-cap retryable row rather than leaving it unsettled. Backoff timestamps and overflow markers are process-local and are deliberately not persisted.
+All state the runtime needs is in the store: a fresh `GraphWakeRuntime` over the same store sees the same wake rows — including their `dueAt`/`recurMs` schedule — re-arms orphaned `retryable_failed` wakes at the next idle (like Maka's `recover`), and durably exhausts any at-cap retryable row rather than leaving it unsettled. Backoff timestamps, overflow markers, and the re-arm timer itself are process-local and are deliberately not persisted.
 
 ## Runtime invariants
 
@@ -118,6 +136,7 @@ None — the package never invokes a provider itself; the wake checkpoint turn's
 ## Known Limitations and Deferred Work
 
 - The P1 attempt row has no `partialResult` (or overflow) column: the one-compact/one-partial markers are process-local. A restart clears them, so one more full attempt can occur before the `attemptCount` cap stops retries; exceeding the cap is still impossible.
+- A crash between a recurring wake's delivery and the next `scheduleSupervisorWake` write ends the recurrence chain (the delivered occurrence stays delivered; the chain is not re-derived later). Hosts that need guaranteed recurrence re-drive the scheduling themselves.
 - At the attempt cap the runtime exhausts the wake durably (`exhausted`); a crash between the last retryable completion and the exhaust call leaves the row `retryable_failed` at the cap, and the next idle sweep exhausts it.
 - `running` wakes (crash between begin and complete) are not recovered here: whether an interrupted attempt really completed is a runtime fact, and the P1 `recoverSupervisorWakes` no-op keeps that fact with host wiring (P6).
 - `waiting_permission` wakes are parked and never re-attempted; permission-response resumption (Maka `notifyPermissionResponse`) is deferred to P6.
