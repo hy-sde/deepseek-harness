@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-graph-wakes` 在根会话的下一个空闲边界投递 Agent Graph 的主管唤醒——绝不在 turn 运行中——并通过控制存储自身的 begin/complete CAS 持久化结算每次尝试。它提供基于结构性存储接缝加投递钩子与可注入空闲观察器的进程内 `GraphWakeRuntime`；投递在构造上即空闲门控，因此运行时从不自行启动任何内容。由主机接线挂载，让 P6 投递钩子重新驱动图协调器即可。本包不添加任何工具、提示词或插件行。
+`dsh-graph-wakes` 在根会话的下一个空闲边界投递 Agent Graph 的主管唤醒——绝不在 turn 运行中——并通过控制存储自身的 begin/complete CAS 持久化结算每次尝试。它提供基于结构性存储接缝加投递钩子与可注入空闲观察器的进程内 `GraphWakeRuntime`；投递在构造上即空闲门控，因此运行时从不自行启动任何内容。唤醒可以安排到未来的 `dueAt`，并用 `recurMs` 链成循环任务（见[计划与循环唤醒](#scheduled-and-recurring-wakes)）。由主机接线挂载，让 P6 投递钩子重新驱动图协调器即可。本包不添加任何工具、提示词或插件行。
 
 ## 目录
 
@@ -51,6 +51,18 @@ await runtime.pendingWakes('graph_g1') // pending + retryable wakes (terminal st
 await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 ```
 
+```ts ignore-check
+// Schedule a future or recurring wake (durable, exactly-once per wakeId)
+await store.scheduleSupervisorWake({
+  graphId: 'graph_g1',
+  wakeId: 'graph_wake_drift_sweep', // chains as `${wakeId}#occurrence-1`, -2, …
+  snapshotVersion: 'rev-3',
+  rootSessionId: 'session-root',
+  dueAt: Date.now() + 60_000, // epoch ms; withheld until then (undefined = immediately due)
+  recurMs: 60_000, // optional: next occurrence scheduled after each delivery
+})
+```
+
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
@@ -64,7 +76,7 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 
 | 投递结果 | 持久化尝试状态 | 重新武装？ |
 | --- | --- | --- |
-| `delivered` | `delivered` | 否 |
+| `delivered` | `delivered` | 否（除非带 `recurMs`：会调度下一次出现） |
 | `waiting_permission` | `waiting_permission` | 否（停驻至主机恢复） |
 | `superseded` / `stopped` | `superseded` | 否 |
 | `retryable_failed` | `retryable_failed` | 是（除非已耗尽） |
@@ -72,6 +84,13 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 ### 重试、退避与终态失败
 
 `retryable_failed` 结果会在 `outcome.nextAttemptAt` 或 `now + 30 秒 × 尝试序号` 重新武装该唤醒（默认值：`DEFAULT_RETRY_BACKOFF_MS`、`DEFAULT_MAX_DELIVERY_ATTEMPTS = 3`）；重新武装是进程本地的，分段计时器会为所属根重新驱动 `handleIdle`。一旦 `attemptCount` 达到 `maxAttempts`，运行时将该唤醒持久化耗尽（`exhausted`，最后失败原因记录在唤醒行上）：它离开未决/可重试列表，不再重新武装，并在重启后保持终态。
+
+<a id="scheduled-and-recurring-wakes"></a>
+### 计划与循环唤醒
+
+唤醒行可以携带 epoch 毫秒的 `dueAt`：扫掠在该时间之前不投递，未来到期的唤醒不产生尝试行（`dueAt === undefined` 保持历史上的立即到期行为）。调度是存储层的按 `wakeId` 键的 exactly-once upsert——`store.scheduleSupervisorWake`——因此重试的调度器或重放的重启都无法改写已被认领的行。`dueAt` 与 `recurMs` 都是持久化的唤醒行字段。
+
+带 `recurMs` 的唤醒会成链：在投递之后（仅 `delivered`——可重试、被取代或停止的结果绝不循环），运行时以确定性 id `${baseWakeId}#occurrence-${n}` 调度下一次出现（出现 0 即按调度的基础 id；id 不嵌入其他内容），`dueAt = 投递时间 + recurMs`，同一段分段计时器会为新到期时间重新驱动 `handleIdle`。停止抑制仍然适用：已 finish、停止或关闭的图不会调度下一次出现，而在停止前已调度的出现会像任何到期唤醒一样被取代。
 
 ### 上下文溢出恢复
 
@@ -87,7 +106,7 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 
 ### 重启持久性
 
-运行时需要的全部状态都在存储中：同一存储上的新 `GraphWakeRuntime` 看到相同的唤醒行，在下一个空闲处重新武装遗留的 `retryable_failed` 唤醒（如 Maka 的 `recover`），并把任何已达上限的可重试行持久化耗尽而不是任其悬置。退避时间戳与溢出标记是进程本地的，刻意不持久化。
+运行时需要的全部状态都在存储中：同一存储上的新 `GraphWakeRuntime` 看到相同的唤醒行——包括其 `dueAt`/`recurMs` 调度——在下一个空闲处重新武装遗留的 `retryable_failed` 唤醒（如 Maka 的 `recover`），并把任何已达上限的可重试行持久化耗尽而不是任其悬置。退避时间戳、溢出标记与重新武装计时器本身是进程本地的，刻意不持久化。
 
 <a id="further-exploration"></a>
 ## 运行时不变式
@@ -123,6 +142,7 @@ await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 ## 已知限制与后续工作
 
 - P1 尝试行没有 `partialResult`（或溢出）列：一次压缩/一次部分的标记是进程本地的。重启会清除它们，因此在 `attemptCount` 上限停止重试前还可能发生一次完整尝试；超过上限仍不可能。
+- 若崩溃发生在循环唤醒的投递与下一次 `scheduleSupervisorWake` 写入之间，循环链会终止（已投递的出现保持已投递；链条不会在事后重新推导）。需要保证循环的主机应自行重新驱动调度。
 - 达到尝试上限时运行时将该唤醒持久化耗尽（`exhausted`）；若在最后一次可重试完成与耗尽调用之间崩溃，行会停留在上限处的 `retryable_failed`，下一次空闲扫掠会将其耗尽。
 - 此处不恢复 `running` 唤醒（begin 与 complete 之间崩溃）：被中断的尝试是否真的完成是运行时事实，P1 的 `recoverSupervisorWakes` 空操作把该事实留给主机接线（P6）。
 - `waiting_permission` 唤醒被停驻且绝不重试；权限响应恢复（Maka `notifyPermissionResponse`）推迟到 P6。

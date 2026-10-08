@@ -49,6 +49,7 @@ export type {
   AgentGraphSupervisorWakeAttemptRecord,
   AgentGraphSupervisorWakeStatus,
   ClaimAgentGraphSupervisorWakeRequest,
+  ScheduleAgentGraphSupervisorWakeRequest,
   BeginAgentGraphSupervisorWakeAttemptRequest,
   CompleteAgentGraphSupervisorWakeAttemptRequest,
   SupersedeAgentGraphSupervisorWakesRequest,
@@ -70,3 +71,11 @@ export {
   graphWakeId,
   graphWakeAttemptId,
 } from './types.ts'
+export {
+  graphControlStoreConformanceChecks,
+} from './conformance.ts'
+export type {
+  GraphControlConformanceCheck,
+  GraphControlConformanceCheckResult,
+  ScheduleWakeConformanceStore,
+} from './conformance.ts'
