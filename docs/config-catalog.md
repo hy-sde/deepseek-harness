@@ -4530,7 +4530,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-tool-memory`
 
 - `inject`: `tools` · `systemPrompt` · `memory`
-- `source`: [`packages/memory/tool-memory/src/index.ts:22`](../packages/memory/tool-memory/src/index.ts)
+- `source`: [`packages/memory/tool-memory/src/index.ts:24`](../packages/memory/tool-memory/src/index.ts)
 
 ```ts config-catalog
 /** Plugin configuration. */
@@ -4541,10 +4541,12 @@ export interface Config extends MemoryPromptConfig {
   sessionRecall?: boolean
   /** Max session hits merged into one recall result (default 3). */
   sessionRecallLimit?: number
-  /** Max sessions `mine_sessions` reads per run (default 3). */
+  /** Top-ranked sessions `mine_sessions` digests per run (default 3). */
   mineSessionLimit?: number
   /** Max mined lessons stored per `mine_sessions` run (default 10). */
   mineLessonLimit?: number
+  /** Most-recent candidates `mine_sessions` reads and scores before ranking (default 12). */
+  mineCandidateLimit?: number
 }
 
 /** Plugin configuration for prompt injection. */
