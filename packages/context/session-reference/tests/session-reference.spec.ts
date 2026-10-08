@@ -909,12 +909,25 @@ describe('session reference discovery and preparation', () => {
     expect(decision.messages[3]).toBe(plugin)
   })
 
-  it('does not prepare a rejected pre-step and rejects malformed direct mentions', async () => {
+  it('does not prepare a rejected pre-step and leaves malformed direct mentions inert', async () => {
     const ctx = await harness()
     const target = ctx.sessions.create(SessionId('target'))
+    const source = ctx.sessions.create(SessionId('source'))
+    source.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'source fact' }],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
     const agent = fakeAgent(target)
+    const malformedText = '@[bad](dsh-session:not-canonical)'
     const malformed = createUserMessage({
-      content: [{ type: 'text', text: '@[bad](dsh-session:not-canonical)' }],
+      content: [{ type: 'text', text: malformedText }],
+      source: { kind: 'user' },
+    })
+    const mixed = createUserMessage({
+      content: [
+        { type: 'text', text: `compare ${formatSessionReferenceMention({ sessionId: source.id, label: 'Research' })}` },
+        { type: 'text', text: `and ${malformedText} stays plain` },
+      ],
       source: { kind: 'user' },
     })
     const readSurface = vi.spyOn(ctx.sessionQuery, 'readSurface')
@@ -927,11 +940,29 @@ describe('session reference discovery and preparation', () => {
     )).resolves.toEqual({ kind: 'reject' })
     expect(readSurface).not.toHaveBeenCalled()
 
-    await expect(agentEvents(ctx, agent).waterfall(
+    const decision = await agentEvents(ctx, agent).waterfall(
       'agent/pre-step',
-      { messages: [malformed], turn: 1, step: 1, signal },
-      () => Promise.resolve({ kind: 'enter' as const, messages: [malformed] }),
-    )).rejects.toThrow(/invalid session reference URI/)
+      { messages: [malformed, mixed], turn: 1, step: 1, signal },
+      () => Promise.resolve({ kind: 'enter' as const, messages: [malformed, mixed] }),
+    )
+    expect(decision.kind).toBe('enter')
+    if (decision.kind !== 'enter') throw new Error('expected entered pre-step')
+    expect(decision.messages).toHaveLength(3)
+    // The malformed literal is inert: untouched message, no rewrite, no snapshot.
+    expect(decision.messages[0]).toBe(malformed)
+    expect(decision.messages[1]).toMatchObject({
+      id: mixed.id,
+      content: [
+        { type: 'text', text: 'compare @Research' },
+        { type: 'text', text: `and ${malformedText} stays plain` },
+      ],
+    })
+    expect(decision.messages[2]?.source).toMatchObject({
+      kind: 'session-reference',
+      references: [{ sessionId: source.id, label: 'Research' }],
+    })
+    expect(readSurface).toHaveBeenCalledTimes(1)
+    expect(readSurface).toHaveBeenCalledWith(source.id)
   })
 
   it('still matches an unlabeled session on its own metadata', async () => {

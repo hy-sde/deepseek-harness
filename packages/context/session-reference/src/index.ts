@@ -34,7 +34,11 @@ import type {
   PreparedReferencedMessage, SessionReferenceCandidate, SessionReferenceInput,
   SessionReferenceMentionCandidate, SessionReferenceSource,
 } from './types.ts'
-import { formatSessionReferenceMention, parseSessionReferenceText } from './uri.ts'
+import {
+  formatSessionReferenceMention,
+  parseSessionReferenceText,
+  type ParsedSessionReferenceText,
+} from './uri.ts'
 
 export type * from './types.ts'
 export type { Config, SessionReferenceErrorCode } from './config.ts'
@@ -144,7 +148,9 @@ export class SessionReferenceResolver extends TypertRemoteService {
 
   /**
    * Replace canonical mentions in direct user messages and place each prepared
-   * snapshot immediately after the message that cited it.
+   * snapshot immediately after the message that cited it. A text block with a
+   * malformed mention keeps its original text and resolves no reference; the
+   * step proceeds.
    * @param agent - agent entering the model step.
    * @param messages - messages accepted by downstream pre-step listeners.
    * @param signal - active turn cancellation.
@@ -160,7 +166,7 @@ export class SessionReferenceResolver extends TypertRemoteService {
       const references: SessionReferenceInput[] = []
       const content = message.content.map((block): ContentBlock => {
         if (block.type !== 'text') return block
-        const parsed = parseSessionReferenceText(block.text)
+        const parsed = parseDirectMessageText(block.text)
         references.push(...parsed.references)
         return { type: 'text', text: parsed.text }
       })
@@ -392,6 +398,25 @@ export class SessionReferenceResolver extends TypertRemoteService {
       })
     }
     return rendered
+  }
+}
+
+/**
+ * Scan one direct user text block for canonical mentions. A malformed
+ * mention leaves the block as its original text with no references, so
+ * prompt text that merely discusses the mention syntax cannot error the turn.
+ * @param text - direct user text block to scan.
+ * @returns readable text and structured references in appearance order.
+ */
+function parseDirectMessageText(text: string): ParsedSessionReferenceText {
+  try {
+    return parseSessionReferenceText(text)
+  } catch (error: unknown) {
+    /* v8 ignore if -- the scanner fails only with the invalid-reference code; other errors stay loud. */
+    if (!(error instanceof SessionReferenceError) || error.code !== 'SESSION_REFERENCE_INVALID_REFERENCE') {
+      throw error
+    }
+    return { text, references: [] }
   }
 }
 
