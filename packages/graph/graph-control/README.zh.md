@@ -37,16 +37,19 @@ const { claim } = await store.claimIntentAtScheduleRevision(claimRequest, update
 
 每个进程只打开该单元一次：存储层拒绝重复打开，且本存储是该单元上的唯一写链。
 
-```ts ignore-check
-// Schedule a supervisor wake for the future, or as a recurring job
-await store.scheduleSupervisorWake({
+```ts
+import type { ScheduleAgentGraphSupervisorWakeRequest } from '@deepseek-ai/dsh-graph-control'
+
+// A future or recurring wake: durable, exactly-once per wakeId.
+const driftSweep: ScheduleAgentGraphSupervisorWakeRequest = {
   graphId: 'graph_g1',
   wakeId: 'graph_wake_drift_sweep', // recurring chains: `${wakeId}#occurrence-1`, -2, …
   snapshotVersion: 'rev-3',
   rootSessionId: 'session-root',
   dueAt: Date.now() + 60_000, // epoch ms; undefined = immediately due
   recurMs: 60_000, // optional: the runtime schedules the next occurrence after each delivery
-})
+}
+// Hand `driftSweep` to the durable store's scheduleSupervisorWake.
 ```
 
 <a id="understand-the-implementation"></a>

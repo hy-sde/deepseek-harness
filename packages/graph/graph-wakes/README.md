@@ -50,16 +50,19 @@ await runtime.pendingWakes('graph_g1') // pending + retryable wakes (terminal st
 await runtime.wakeStatus('graph_wake_abc') // durable row, any status
 ```
 
-```ts ignore-check
-// Schedule a future or recurring wake (durable, exactly-once per wakeId)
-await store.scheduleSupervisorWake({
+```ts
+import type { ScheduleAgentGraphSupervisorWakeRequest } from '@deepseek-ai/dsh-graph-control'
+
+// A future or recurring wake: durable, exactly-once per wakeId.
+const driftSweep: ScheduleAgentGraphSupervisorWakeRequest = {
   graphId: 'graph_g1',
   wakeId: 'graph_wake_drift_sweep', // chains as `${wakeId}#occurrence-1`, -2, …
   snapshotVersion: 'rev-3',
   rootSessionId: 'session-root',
   dueAt: Date.now() + 60_000, // epoch ms; withheld until then (undefined = immediately due)
   recurMs: 60_000, // optional: next occurrence scheduled after each delivery
-})
+}
+// Hand `driftSweep` to the durable store's scheduleSupervisorWake.
 ```
 
 ## Understand the implementation
