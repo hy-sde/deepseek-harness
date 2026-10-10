@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-28-user-settings-seam.md
 /agent-note-user-settings-seam-ctx-settings-and-the-file-provider:
-  en: 882895c79df2cbe3
-  zh: ce83d0a47aebd59c
+  en: 05c2e8de4bfa2275
+  zh: 4076890da94f5c38
 /agent-note-user-settings-seam-ctx-settings-and-the-file-provider/problem:
   en: 496996d962a5b406
   zh: 99dda6316cea7ada

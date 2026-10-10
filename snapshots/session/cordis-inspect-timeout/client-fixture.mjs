@@ -79,7 +79,7 @@ export async function apply(ctx) {
     }],
   }])
   let queries = 0
-  ctx.on('cordis/inspect-query', (request) => {
+  ctx.on('@deepseek-ai/cordis/inspect-query', (request) => {
     if (++queries !== 1) return
     const agent = ctx.agents.get(request.agentId)
     if (agent === undefined) throw new Error('Client inspect request has no owning Agent')

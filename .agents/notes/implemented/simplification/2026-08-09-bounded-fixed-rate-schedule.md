@@ -6,7 +6,7 @@ English | [中文](2026-08-09-bounded-fixed-rate-schedule.zh.md)
 
 ## Problem
 
-Users need simple repeating reminders, but the initial recurrence layer of [durable Session-local reminders](../feature/2026-08-05-durable-web-schedule.md) treated fixed intervals and calendar expressions as one general subsystem. It added a Cron language and evaluator, time-zone-sensitive occurrence search, tzdata replay rules, a cross-record 300-second admission gate, persisted gate evidence, deferred-delivery fields, and gate-exhaustion states. Those mechanisms enlarged the durable protocol and live owner even when the requested behavior was only “repeat every N seconds.”
+Users need simple repeating reminders, but the initial recurrence layer of [durable Session-local reminders](../../archived/feature/2026-08-05-durable-web-schedule.md) treated fixed intervals and calendar expressions as one general subsystem. It added a Cron language and evaluator, time-zone-sensitive occurrence search, tzdata replay rules, a cross-record 300-second admission gate, persisted gate evidence, deferred-delivery fields, and gate-exhaustion states. Those mechanisms enlarged the durable protocol and live owner even when the requested behavior was only “repeat every N seconds.”
 
 A cold or busy Session also cannot usefully replay every missed interval. Doing so would create a model-turn backlog whose size depends on downtime, while shifting the next target to delivery time would make the fixed rate drift.
 

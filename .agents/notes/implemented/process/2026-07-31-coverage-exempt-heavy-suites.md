@@ -17,7 +17,7 @@ The `ci-coverage` aggregate splits into two parallel gates; every test still run
 - **Instrumented gate** (`test:coverage`): sets `DSH_COVERAGE_EXEMPT_HEAVY=1`, which makes `vitest.config.ts` drop the exempt suites from both projects' excludes; every remaining file runs instrumented and carries the entire threshold proof. The variable is injected through the gate's own env (the existing `Gate.env` mechanism), not the workflow-global environment, so the uninstrumented gate beside it and any local `vitest run` never see it and behave unchanged.
 - **Uninstrumented gate** (`test:coverage-exempt-heavy`): runs exactly the exempt suites through paired positional filters, keeping the correctness signal whole.
 
-Linux coverage CI and native Windows CI use [in-job partitioned coverage](2026-08-18-in-job-partitioned-coverage.md) inside the instrumented gate. Its merged report carries the same threshold proof; the exempt gate and its membership rules remain unchanged.
+Linux coverage CI and native Windows CI use [in-job partitioned coverage](../../archived/process/2026-08-18-in-job-partitioned-coverage.md) inside the instrumented gate. Its merged report carries the same threshold proof; the exempt gate and its membership rules remain unchanged.
 
 `scripts/coverage-exempt.ts` is the single roster point, holding the membership contract and the filter/exclude pairs so the two sides cannot drift.
 
@@ -52,7 +52,7 @@ Coverage-result invariance therefore does not rest on humans maintaining the ros
 
 - **CLI `--exclude` to drop the exempt suites from the instrumented gate.** Proven ineffective: vitest 4's `cliExclude` does not participate in per-project include resolution, so under a multi-project config the exempt suites stayed selected; the env + config route replaced it.
 - **Lowering worker counts or raising gate concurrency.** Measured ineffective during the incident: the lane's wall clock was pinned by the longest tail files (aggregate/wall ≈ 4× effective parallelism), and the concurrency knobs moved nothing in either direction.
-- **Cross-runner sharding (`--shard` + blob merge).** Rejected because a matrix, artifact pipeline, and merge job would add a second workflow topology. The selected [in-job partitioning](2026-08-18-in-job-partitioned-coverage.md) uses Vitest shards only as local single-worker processes inside the existing job.
+- **Cross-runner sharding (`--shard` + blob merge).** Rejected because a matrix, artifact pipeline, and merge job would add a second workflow topology. The selected [in-job partitioning](../../archived/process/2026-08-18-in-job-partitioned-coverage.md) uses Vitest shards only as local single-worker processes inside the existing job.
 - **Deleting or skipping the heavy suites.** Rejected: they are the sole correctness evidence for the typert generator and the scripts tooling; running them uninstrumented in parallel preserves the full signal.
 
 ## Verification
@@ -61,7 +61,7 @@ Measured on CI (16-core runner): the gate segment went from 424 seconds to the t
 
 ## Consequences
 
-- The exempt suites execute without adding instrumentation cost to the thresholded gate; partitioned wall-clock measurements belong to the [in-job partitioning decision](2026-08-18-in-job-partitioned-coverage.md).
+- The exempt suites execute without adding instrumentation cost to the thresholded gate; partitioned wall-clock measurements belong to the [in-job partitioning decision](../../archived/process/2026-08-18-in-job-partitioned-coverage.md).
 - Native Windows makes the exempt gate wait for build, so the packed-image suite reads a complete workspace artifact tree.
 - `DSH_GATE_CONCURRENCY` has two schedulable gates in this lane again, so the aggregate scheduler is no longer a pass-through.
 - Adding a heavy suite to the roster requires the membership audit above; a wrong entry fails the instrumented gate loudly rather than eroding coverage silently.

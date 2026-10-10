@@ -121,12 +121,12 @@ export async function tryReadZstd(
   // A real file (or directory) whose literal name carries the `?` wins — the
   // regular read serves it, whatever it is. Never shadow an existing path.
   if (target.query !== undefined) {
-    const literal = await ctx.fs.resolve(filePath, sessionResolveOptions(exec, filePath))
+    const literal = await ctx.fs.resolve(filePath, await sessionResolveOptions(ctx, exec, filePath))
     const literalInfo = await ctx.fs.stat(literal, exec.signal)
     if (literalInfo !== undefined) return undefined
   }
 
-  const resolved = await ctx.fs.resolve(target.path, sessionResolveOptions(exec, target.path))
+  const resolved = await ctx.fs.resolve(target.path, await sessionResolveOptions(ctx, exec, target.path))
   const info = await ctx.fs.stat(resolved, exec.signal)
   if (info === undefined || info.type !== 'file') return undefined
 

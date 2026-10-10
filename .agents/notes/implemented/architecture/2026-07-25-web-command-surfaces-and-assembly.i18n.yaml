@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-25-web-command-surfaces-and-assembly.md
 /agent-note-web-command-business-surfaces-and-assembly-ui-commands-ui-skill-ui-subagent:
-  en: 4dd9d2d0f3ae27fd
-  zh: 9b9f8a676f718250
+  en: 0d75aab98ee19e06
+  zh: 998d646a5f9127fa
 /agent-note-web-command-business-surfaces-and-assembly-ui-commands-ui-skill-ui-subagent/problem:
   en: bc32927b746d3912
   zh: 049891cde20686c6

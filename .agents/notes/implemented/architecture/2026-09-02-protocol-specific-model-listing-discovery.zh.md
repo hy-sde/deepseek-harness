@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-[提供方草稿询问决策](2026-08-04-draft-provider-endpoint-interrogation.zh.md)最初只读取 OpenAI 兼容的 `data` 数组。一些兼容网关改为公布富信息 `models` 对象，而 Anthropic 公布了具有不同认证与 URL 规则的原生模型列表路由。把任一情况视为不受支持，都会迫使用户手工复制模型 id 和容量，即使端点已经公布这些信息。
+[提供方草稿询问决策](../../archived/architecture/2026-08-04-draft-provider-endpoint-interrogation.md)最初只读取 OpenAI 兼容的 `data` 数组。一些兼容网关改为公布富信息 `models` 对象，而 Anthropic 公布了具有不同认证与 URL 规则的原生模型列表路由。把任一情况视为不受支持，都会迫使用户手工复制模型 id 和容量，即使端点已经公布这些信息。
 
 向一个网关发送 OpenAI SDK `User-Agent` 可以使其返回 OpenAI 风格数组。该行为没有文档，改变了请求归属，并使回答取决于客户端身份而非受支持的响应解析器。
 

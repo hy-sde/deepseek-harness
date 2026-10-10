@@ -8,7 +8,7 @@ English | [中文](2026-08-11-background-first-continuable-delegation.zh.md)
 
 A continuable child already has a durable id, independent turns, follow-up messaging, and a manager-owned settlement notice. Treating an omitted `run_in_background` as foreground makes that lifecycle depend on the model restating `true` on every call. It also obscures the useful scheduling test: the parent should wait only when its next action requires the child's result.
 
-The child's initial task tells it how to address its direct parent with the shared `send_message` tool, while [manager-owned settlement delivery](2026-08-06-manager-owned-subagent-settlement-delivery.md) independently sends the run outcome and closing message. A child may send progress or a final handoff before settlement. Background-first scheduling preserves both: Agent-authored messages remain explicit model choices, while the manager-authored notice covers every terminal path regardless of model compliance.
+The child's initial task tells it how to address its direct parent with the shared `send_message` tool, while [manager-owned settlement delivery](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md) independently sends the run outcome and closing message. A child may send progress or a final handoff before settlement. Background-first scheduling preserves both: Agent-authored messages remain explicit model choices, while the manager-authored notice covers every terminal path regardless of model compliance.
 
 ## Decision
 

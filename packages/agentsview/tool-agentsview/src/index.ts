@@ -31,7 +31,7 @@ export type {
   AgentsviewArgs,
   AgentsviewToolValue,
 } from './agentsview.ts'
-export { checkAgentsviewCli } from './invariant.ts'
+export { checkAgentsviewCli } from './cli-check.ts'
 
 /** Cordis plugin name for loader diagnostics. */
 export const name = 'tool-agentsview'

@@ -28,7 +28,7 @@ Status: implemented
 
 ## 后果
 
-- 发现工具在打包二进制覆盖的每个平台（darwin/linux/win32，x64/arm64）上开箱即用，无需宿主安装；交付的 TUI/Web 工具清单把 `glob`/`grep` 变为固定成员（见 [拉平交付的工具清单](../feature/2026-07-31-even-out-shipped-tool-rosters.zh.md)）。
+- 发现工具在打包二进制覆盖的每个平台（darwin/linux/win32，x64/arm64）上开箱即用，无需宿主安装；交付的 TUI/Web 工具清单把 `glob`/`grep` 变为固定成员（见 [拉平交付的工具清单](../../archived/feature/2026-07-31-even-out-shipped-tool-rosters.md)）。
 - shell 字符串攻击面消失：恶意模式只是不具执行性的 argv 元素，由集成套件钉住；该套件现在也在 Windows 上运行（此前没有系统 `rg` 时它自行跳过）。
 - spawn 不受沙箱约束（普通的 `ctx.subprocess` 调用），因此前缀 `--no-config`：宿主的 `RIPGREP_CONFIG_PATH`（或二进制旁的 `rg.conf`）否则可注入 `--pre` 预处理器，对每个匹配文件执行任意命令。加上 `--no-config` 后，任何配置文件——因而任何预处理器——都无法触及搜索。
 - 原始输出溢出路径的形态改变：旧的 bash 承载路径继承了 bash-local 常开的 spill，可能留下没人读的多 MB 临时文件；subprocess seam 现在无 spill 收集，溢出是纯粹的错误（`SEARCH_RAW_OUTPUT_OVERFLOW`，"narrow pattern, path, or include and retry"），不返回任何内容。

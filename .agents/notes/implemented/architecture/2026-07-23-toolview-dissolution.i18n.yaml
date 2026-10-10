@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-23-toolview-dissolution.md
 /agent-note-toolview-dissolution-tool-rows-are-per-view-keyed-slots:
-  en: ab2a2e1ab65bb730
-  zh: 2d4efdefb2be305d
+  en: aab39852a956f69f
+  zh: 4da5d9dae35930ce
 /agent-note-toolview-dissolution-tool-rows-are-per-view-keyed-slots/problem:
   en: defed86896a85e07
   zh: e6fa9dc7a4289faf

@@ -24,8 +24,8 @@ Status: implemented
 
 **一个 `--tools-mode` CLI（命令行界面）标志或 profile 配置键。** 推迟，而非否决：标志语法暗示永久性，profile JSON 又是用户配置；两者都会固化这个 seam，而按会话选择的设计本就打算移除它。环境变量则如实呈现了它权宜之计的本质。
 
-**记录规范 `value`，而非渲染后的 `content`。** 否决：`tool/result` 持久化的是内容而非值（见[规范输出约定](../architecture/2026-07-20-canonical-tool-output-contract.zh.md)），与原生同等保真意味着与之精确对齐；值始终仅存在于执行期本地。
+**记录规范 `value`，而非渲染后的 `content`。** 否决：`tool/result` 持久化的是内容而非值（见[规范输出约定](../../archived/architecture/2026-07-20-canonical-tool-output-contract.md)），与原生同等保真意味着与之精确对齐；值始终仅存在于执行期本地。
 
 ## 后果
 
-会话格式保持 `SESSION_FORMAT_VERSION` 为 0（预发布阶段的变动不递增版本号；携带 `resultSummary` 的旧日志只是多出一个不被读取的字段并缺少 `content`；v0 不作任何兼容性承诺）。既有的 PTC mode 快照 fixture（测试前置数据）已重新录制。模型可见范围扩大了：`run_code` 的 schema（新增一个必填参数）以及每一份 PTC mode 系统提示词／工具 schema 快照都发生了变化。Web UI 工作直接构建在新的事件载荷之上；每个子调用的实时运行状态已把本事件重塑为一对分发 start/end 事件（[实时并行分发](2026-07-26-ptc-live-parallel-dispatch.zh.md)）。
+会话格式保持 `SESSION_FORMAT_VERSION` 为 0（预发布阶段的变动不递增版本号；携带 `resultSummary` 的旧日志只是多出一个不被读取的字段并缺少 `content`；v0 不作任何兼容性承诺）。既有的 PTC mode 快照 fixture（测试前置数据）已重新录制。模型可见范围扩大了：`run_code` 的 schema（新增一个必填参数）以及每一份 PTC mode 系统提示词／工具 schema 快照都发生了变化。Web UI 工作直接构建在新的事件载荷之上；每个子调用的实时运行状态已把本事件重塑为一对分发 start/end 事件（[实时并行分发](../../archived/feature/2026-07-26-ptc-live-parallel-dispatch.md)）。

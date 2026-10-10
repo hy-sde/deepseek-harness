@@ -13,7 +13,7 @@ It was built for ONE session per process, and that assumption is wired into two 
 - **`dsh-llm-replay` keyed nothing.** It served the Nth `llm/stream` call the Nth recorded entry from a single global cursor. With a parent agent AND an in-process subagent both streaming on one context, the calls interleave and the single cursor hands the child the parent's script (and vice versa).
 - **The harness harvested one log.** `findSessionLog` walked the sessions root and returned the FIRST `.jsonl` it found. A subagent runs as a second `Session` with its own log, so the child's transcript was silently dropped.
 
-This was the `TODO(subagent-snapshots)` deferral recorded in the [subagent seam Agent Note](../feature/2026-06-21-subagent-capability-seam.md): the in-process backends shipped with unit + e2e coverage, but the full-transcript snapshot tier could not express a nested-agent shape until this infrastructure landed.
+This was the `TODO(subagent-snapshots)` deferral recorded in the [subagent seam Agent Note](../../archived/feature/2026-06-21-subagent-capability-seam.md): the in-process backends shipped with unit + e2e coverage, but the full-transcript snapshot tier could not express a nested-agent shape until this infrastructure landed.
 
 ## Decision
 

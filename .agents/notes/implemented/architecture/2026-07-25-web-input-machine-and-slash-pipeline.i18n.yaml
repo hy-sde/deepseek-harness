@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-25-web-input-machine-and-slash-pipeline.md
 /agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger:
-  en: 4a6b40241d66dc70
-  zh: 65aa90bc046ec090
+  en: 017fe95313aabedc
+  zh: cee0de319352df5b
 /agent-note-web-input-state-machine-composer-slots-and-the-slash-pipeline-ui-conversation-input-ui-input-trigger/problem:
   en: 8c6239e7dc9b21c8
   zh: e41f41d37aebee9b

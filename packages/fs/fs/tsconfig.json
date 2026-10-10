@@ -21,13 +21,7 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../sandbox/sandbox"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

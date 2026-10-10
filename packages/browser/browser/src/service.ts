@@ -60,11 +60,14 @@ export type CloseMode = 'single' | 'all' | 'kill'
 interface BrowserEntry {
   kind: BrowserKind
   browser: PlaywrightBrowser
+  cwd: string
   /** The launch handle, present for launch-kind entries: owns the OS process (`.process().pid`) and a definitive kill. */
   server?: PlaywrightServer
   headless: boolean
-  cwd: string
-  /** OS pid of a browser this host spawned (launch/patch) and recorded in the orphan registry; attach/relay browsers belong to other owners. */
+  /**
+   * OS pid of a browser this host spawned (launch/patch) and recorded in the
+   * orphan registry; attach/relay browsers belong to other owners.
+   */
   pid?: number
 }
 

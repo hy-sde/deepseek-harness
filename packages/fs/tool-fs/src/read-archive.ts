@@ -74,7 +74,7 @@ export async function tryReadArchive(
   if (candidates.length === 0) return undefined
 
   for (const candidate of candidates) {
-    const target = await ctx.fs.resolve(candidate.archivePath, sessionResolveOptions(exec, candidate.archivePath))
+    const target = await ctx.fs.resolve(candidate.archivePath, await sessionResolveOptions(ctx, exec, candidate.archivePath))
     const info = await ctx.fs.stat(target, exec.signal)
     if (info === undefined || info.type !== 'file') continue
 

@@ -28,7 +28,7 @@ Filesystem access is a first-class capability seam following [the capability-sea
 
 The Consumer package depends only on the Service Definition package, never on `dsh-fs-local`. A deployment that wants a different backend loads a different provider for `ctx.fs` without changing the tool schemas or model-facing prompt guidance.
 
-The read-before-write/edit and observed-state policy is a fourth package, `@deepseek-ai/dsh-fs-observation-policy` (`packages/fs/fs-observation-policy`), contributed through the `fs/*` event gate rather than living on `ctx.fs`; a deployment loading `dsh-tool-fs` also loads `dsh-fs-observation-policy` to get read-before-write/edit. This decision established the three-package boundary; the split of policy off the provider base class is decided by [the split-fs-seam Agent Note](../simplification/2026-06-26-fsspec-style-fs-seam.md), and its realization as an event-gate plugin (not a method service) by [the event-gate Agent Note](2026-06-26-file-context-as-event-gate.md).
+The read-before-write/edit and observed-state policy is a fourth package, `@deepseek-ai/dsh-fs-observation-policy` (`packages/fs/fs-observation-policy`), contributed through the `fs/*` event gate rather than living on `ctx.fs`; a deployment loading `dsh-tool-fs` also loads `dsh-fs-observation-policy` to get read-before-write/edit. This decision established the three-package boundary; the split of policy off the provider base class is decided by [the split-fs-seam Agent Note](../../archived/simplification/2026-06-26-fsspec-style-fs-seam.md), and its realization as an event-gate plugin (not a method service) by [the event-gate Agent Note](../../archived/architecture/2026-06-26-file-context-as-event-gate.md).
 
 The first backend is deliberately local-only: `dsh-fs-local` implements `ctx.fs` against the host filesystem. Future sibling backends can provide sandboxed, remote, virtual, or project-scoped filesystems behind the same interface.
 
@@ -36,7 +36,7 @@ The first consumer is deliberately text-file-only: `dsh-tool-fs` exposes model-f
 
 Filesystem permissions and sandboxing are not implied by this split. The local backend resolves relative paths from its configured base directory, but containment policy is a separate decision: either a stricter `ctx.fs` implementation enforces it, or a permission/sandbox plugin wraps `tools/execute` and vetoes calls before they reach the consumer.
 
-Read-before-write/edit and observed state belong to `dsh-fs-observation-policy`, not `ctx.fs`. Through the `fs/*` event gate, the policy records versions per opaque actor and supplies optional mutation expectations; the provider enforces freshness atomically. `dsh-tool-fs` emits the events without depending on the policy. See the [split-seam](../simplification/2026-06-26-fsspec-style-fs-seam.md) and [event-gate](2026-06-26-file-context-as-event-gate.md) Agent Notes.
+Read-before-write/edit and observed state belong to `dsh-fs-observation-policy`, not `ctx.fs`. Through the `fs/*` event gate, the policy records versions per opaque actor and supplies optional mutation expectations; the provider enforces freshness atomically. `dsh-tool-fs` emits the events without depending on the policy. See the [split-seam](../../archived/simplification/2026-06-26-fsspec-style-fs-seam.md) and [event-gate](../../archived/architecture/2026-06-26-file-context-as-event-gate.md) Agent Notes.
 
 ## Package topology
 
@@ -140,7 +140,7 @@ The defensive-pattern classes this repo has been bitten by are pinned directly:
 
 - **Model-facing tools directly over `node:fs`** — the tool package would own execution policy, path resolution, atomic writes, text decoding, and edit semantics at once, coupling the three independently-changing concerns the Problem names and churning schemas on any backend swap.
 - **One combined `dsh-fs-tools` package** — the pre-seam shape; rejected for the same Service Definition / Service Provider / Consumer split as bash, and the combined name never became public API.
-- **Observed-state on `ctx.fs`** — the shape this Agent Note first landed; superseded by [the split-fs-seam Agent Note](../simplification/2026-06-26-fsspec-style-fs-seam.md) and [the event-gate Agent Note](2026-06-26-file-context-as-event-gate.md): a sandboxed/remote backend must not inherit model-facing observation policy, so the provider keeps only the version token and the optional version-guarded mutation.
+- **Observed-state on `ctx.fs`** — the shape this Agent Note first landed; superseded by [the split-fs-seam Agent Note](../../archived/simplification/2026-06-26-fsspec-style-fs-seam.md) and [the event-gate Agent Note](../../archived/architecture/2026-06-26-file-context-as-event-gate.md): a sandboxed/remote backend must not inherit model-facing observation policy, so the provider keeps only the version token and the optional version-guarded mutation.
 
 ## Consequences
 

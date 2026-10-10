@@ -29,7 +29,7 @@ Status: implemented
 
 没有任何东西会拒绝一个从不上报的 child。没有任何运行时路径会检查是否发送过报告，`report` 仍接受一个轮次中调用零次或多次。本次改动是面向模型的措辞加上一个调度默认值；服务权限、确认与恢复契约都保持不变。
 
-这条边界是刻意划定的：提示词文本只能到达仍在运行自身循环的 child。被错误、token 上限、取消或拆卸终止的 child 根本没有机会遵守，因此运行时会自己记录结算这件事，而不是信任这条指令（见[由管理器负责的结算投递](2026-08-06-manager-owned-subagent-settlement-delivery.zh.md)）。
+这条边界是刻意划定的：提示词文本只能到达仍在运行自身循环的 child。被错误、token 上限、取消或拆卸终止的 child 根本没有机会遵守，因此运行时会自己记录结算这件事，而不是信任这条指令（见[由管理器负责的结算投递](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md)）。
 
 ### 快照覆盖
 
@@ -57,4 +57,4 @@ Status: implemented
 
 默认 next-step 投递会在深层树中放大模型工作量。部署通过 `reportDelivery` 掌握该取舍；一起等待的报告会共享一个 step，且每条被接受的报告至多产生一次唤醒。
 
-child 仍可能不上报就结束，本次改动无法检测这一点。只有运行时自己的[结算记账](2026-08-06-manager-owned-subagent-settlement-delivery.zh.md)才能补上这一情形。
+child 仍可能不上报就结束，本次改动无法检测这一点。只有运行时自己的[结算记账](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md)才能补上这一情形。

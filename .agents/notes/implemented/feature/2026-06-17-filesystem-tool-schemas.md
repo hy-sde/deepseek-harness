@@ -6,7 +6,7 @@ English | [中文](2026-06-17-filesystem-tool-schemas.zh.md)
 
 ## Problem
 
-[The filesystem capability-seam Agent Note](../architecture/2026-06-17-filesystem-capability-seam.md) defines the filesystem capability seam (`ctx.fs`), the package split (`dsh-fs`, `dsh-fs-local`, `dsh-tool-fs`, plus the `dsh-fs-observation-policy` policy plugin), and the observed-file/stale-version policy for read-before-write/edit checks — which the [split-fs-seam](../simplification/2026-06-26-fsspec-style-fs-seam.md) and [event-gate](../architecture/2026-06-26-file-context-as-event-gate.md) Agent Notes moved off `ctx.fs` into the `dsh-fs-observation-policy` plugin on the `fs/*` event gate. The remaining decision for the first filesystem tool delivery is the model-facing schema: what arguments the model sees for `read`, `write`, and `edit`.
+[The filesystem capability-seam Agent Note](../architecture/2026-06-17-filesystem-capability-seam.md) defines the filesystem capability seam (`ctx.fs`), the package split (`dsh-fs`, `dsh-fs-local`, `dsh-tool-fs`, plus the `dsh-fs-observation-policy` policy plugin), and the observed-file/stale-version policy for read-before-write/edit checks — which the [split-fs-seam](../../archived/simplification/2026-06-26-fsspec-style-fs-seam.md) and [event-gate](../../archived/architecture/2026-06-26-file-context-as-event-gate.md) Agent Notes moved off `ctx.fs` into the `dsh-fs-observation-policy` plugin on the `fs/*` event gate. The remaining decision for the first filesystem tool delivery is the model-facing schema: what arguments the model sees for `read`, `write`, and `edit`.
 
 The schema must be small, yet stable enough that local/remote/sandboxed filesystem backends do not require model-facing churn, and must avoid importing every option from reference systems. Claude Code and OpenCode expose similar core file tools but differ in naming style and extra flags; this decision picks the minimal shared surface.
 
@@ -70,7 +70,7 @@ The first pass rejects Codex-style patch grammars and multi-mode edit APIs. It u
 
 ## Result shape
 
-The first implementation formatted `ContentBlock[]` in `execute`. The [canonical tool-output contract](../architecture/2026-07-20-canonical-tool-output-contract.md) now keeps `ctx.fs` result facts as the tool's validated value and derives the same model text through `output.render`; file-state recording/refreshing remains on `ctx.fs`.
+The first implementation formatted `ContentBlock[]` in `execute`. The [canonical tool-output contract](../../archived/architecture/2026-07-20-canonical-tool-output-contract.md) now keeps `ctx.fs` result facts as the tool's validated value and derives the same model text through `output.render`; file-state recording/refreshing remains on `ctx.fs`.
 
 Default native projections:
 

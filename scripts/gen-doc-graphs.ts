@@ -108,6 +108,21 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'cotTranslation',
+    pkg: 'experimental-client-ui-cot-translation',
+    title: 'Reasoning translation Remote',
+    mode: 'service',
+    note: 'Serves reasoning translations, reuses saved results, and joins ordinary Session activation for uncached inactive Sessions.',
+  },
+  {
+    key: 'translator',
+    pkg: 'experimental-translator',
+    title: 'Anonymous text translation',
+    mode: 'service',
+    consumers: ['experimental-client-ui-cot-translation'],
+    note: 'Resolves Google or Bing requests and retains shared experimental records through the active Session writer.',
+  },
+  {
     key: 'av',
     pkg: 'av',
     title: 'Automic Vault credential scanning seam',
@@ -115,7 +130,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['tool-av'],
     consumers: ['tool-av'],
     note: 'Runs the installed `av` CLI over configured scopes: exposure scan, doctor/catalogs, and name-only listing; value-releasing verbs stay human-in-the-loop in a terminal.',
-  },{
+  },
+  {
     key: 'browser',
     pkg: 'browser',
     title: 'Headless browser automation seam',
@@ -123,7 +139,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['browser'],
     consumers: ['tool-browser'],
     note: 'One BrowserService owning launch/stealth/aria snapshots and per-session navigation, DOM and screenshot capture behind tool-browser\'s model-facing verbs.',
-  },{
+  },
+  {
     key: 'dap',
     pkg: 'dap',
     title: 'Debug Adapter Protocol seam',
@@ -131,7 +148,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['dap'],
     consumers: ['tool-debug'],
     note: 'Spawns debug adapters and drives the DAP session lifecycle (launch/attach, breakpoints, stepping, evaluation) behind the debug tool\'s operation set.',
-  },{
+  },
+  {
     key: 'git',
     pkg: 'git',
     title: 'Local git repository seam',
@@ -139,7 +157,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['git'],
     consumers: ['tool-git'],
     note: 'Runs git plumbing over a workspace repository: status, diffs, history, staging and commit, with path scoping to the caller-owned root.',
-  },{
+  },
+  {
     key: 'memory',
     pkg: 'memory',
     title: 'Agent-curated long-horizon memory seam',
@@ -147,14 +166,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['memory'],
     consumers: ['tool-memory', 'tool-edit'],
     note: 'Project-scoped durable memory: retention, recall/reflect synthesis, and editing of the bank/lesson/summary files, with injection-neutralized storage.',
-  },{
+  },
+  {
     key: 'modelSlots',
     pkg: 'llm-slots',
     title: 'Model-route slot registry',
     mode: 'core',
     consumers: ['agent-loop', 'tool-subagent'],
     note: 'Each running agent occupies one model slot; routes resolve, reserve and release slots so concurrent agents never oversubscribe the configured provider budget.',
-  },{
+  },
+  {
     key: 'vcs',
     pkg: 'vcs',
     title: 'VCS working-tree seam',
@@ -162,14 +183,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['vcs'],
     consumers: ['tool-fs', 'tool-git'],
     note: 'Resolves VCS-rooted file state and attribution for the working tree the agent opens; dsh-tool-git owns the model-facing commands.',
-  },{
+  },
+  {
     key: 'wikiController',
     pkg: 'wiki-controller',
     title: 'Embedded LLM-wiki host controller',
     mode: 'core',
     consumers: ['client-ui-wiki', 'wiki'],
     note: 'Projects the logseq-graph wire onto the Typert `wiki` Remote namespace: page rows, block trees with linked references, tag/property listings, search, Datalog query, upsert/remove and server actions.',
-  },{
+  },
+  {
     key: 'wikiGraph',
     pkg: 'logseq-graph',
     title: 'LLM-wiki graph seam',
@@ -217,6 +240,24 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'core',
     consumers: ['api-gateway', 'host-frontend-static'],
     note: 'Owns browser authentication and shared HTTP request dispatch; API adapters register endpoints and streams.',
+  },
+  {
+    key: 'worktrees',
+    pkg: 'experimental-worktree',
+    title: 'Git worktree creation',
+    mode: 'seam',
+    implementations: ['experimental-worktree'],
+    consumers: ['experimental-tool-worktree'],
+    note: 'Explicit experimental creation from a pinned local commit. Existing write permissions govern checkout and shared Git metadata; the working-directory service owns the resulting Session directory.',
+  },
+  {
+    key: 'workingDirectory',
+    pkg: 'working-directory',
+    title: 'Session working directory',
+    mode: 'seam',
+    implementations: ['working-directory'],
+    consumers: ['tool-working-directory', 'tool-fs', 'tool-bash', 'tool-pwsh', 'subagent', 'sdk-jsonrpc-server'],
+    note: 'One Session projection owns the effective execution directory. The filesystem validates changes; user context reports them while original metadata and write grants stay fixed.',
   },
   {
     key: 'mcpResources',
@@ -306,7 +347,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session',
     title: 'In-memory session store',
     mode: 'core',
-    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'subagent-in-process-driver', 'invariants', 'message-feedback'],
+    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'subagent', 'message-feedback'],
     note: 'Owns append-only Session instances and emits the durable session event feed.',
   },
   {
@@ -498,7 +539,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'service',
     note: 'Exports explicitly submitted analytics events through OTLP/HTTP; mounting alone collects nothing.',
   },
-
   {
     key: 'sessionTelemetry',
     pkg: 'session-telemetry',
@@ -655,7 +695,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'agent',
     title: 'Agent service',
     mode: 'core',
-    consumers: ['agent-loop', 'acp', 'subagent-in-process-driver'],
+    consumers: ['agent-loop', 'acp', 'subagent'],
     note: 'Owns live Agent handles, the create/resume factory seam, and process-local initiator propagation.',
   },
   {
@@ -801,7 +841,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'seam',
     implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp', 'subagent-codex', 'subagent-claude-code', 'subagent-dsh-sdk'],
     consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph'],
-    note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
+    note: 'Providers prepare local children or execute external tasks; one activation manager owns both lifecycles. The delegation tool selects a backend, control tools deliver local follow-ups, and workflows await activation results.',
   },
   {
     key: 'speechToText',
@@ -818,7 +858,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Agent Teams coordination domain',
     mode: 'core',
     consumers: ['experimental-tool-agent-team'],
-    note: 'Owns the implicit-root roster, durable peer mailbox, shared task DAG, and continuable-child lifecycle; tool-agent-team contributes model controls.',
+    note: 'Owns the implicit-root roster, direct peer inbox delivery, shared task DAG, and continuable-child lifecycle; tool-agent-team contributes model controls.',
+  },
+  {
+    key: 'claudeCodeMods',
+    pkg: 'experimental-claude-code-mods',
+    title: 'Claude Code mods bridge',
+    mode: 'core',
+    note: 'Loads mods that defineMod plugins add, raises their hook chains from harness extension points, and draws the band above the prompt over its Remote.',
   },
   {
     key: 'inspector',
@@ -833,8 +880,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Background job registry',
     mode: 'seam',
     implementations: ['jobs-local'],
-    consumers: ['tool-bash', 'tool-pwsh', 'tool-terminal', 'tool-subagent', 'tool-jobs', 'api-job-controller'],
-    note: 'Producers (background bash/pwsh, PTY sends, and subagent delegations) register running work; record-declaring jobs additionally stream raw output for non-consuming observers; tool-jobs is the model-facing controller that reads, lists, and kills it; jobs-local is the process-local registry.',
+    consumers: ['tool-bash', 'tool-pwsh', 'tool-terminal', 'tool-jobs', 'api-job-controller'],
+    note: 'Producers (background bash/pwsh and PTY sends) register running work; record-declaring jobs additionally stream raw output for non-consuming observers; tool-jobs is the model-facing controller that reads, lists, and kills it; jobs-local is the process-local registry.',
   },
   {
     key: 'web',

@@ -54,8 +54,12 @@ export function sessionKeyOf(exec: ToolExecution): string | undefined {
 }
 
 /** Build a {@link ResolveContext} for the calling tool execution. */
-export function resolveContextOf(exec: ToolExecution, path: string): { cwd?: string; signal: AbortSignal; sessionKey?: string } {
-  const cwd = sessionCwd(exec, path)
+export async function resolveContextOf(ctx: Context, exec: ToolExecution, path: string): Promise<{
+  cwd?: string
+  signal: AbortSignal
+  sessionKey?: string
+}> {
+  const cwd = await sessionCwd(ctx, exec, path)
   const sessionKey = sessionKeyOf(exec)
   return {
     ...cwd !== undefined ? { cwd } : {},
@@ -84,7 +88,7 @@ export async function tryReadInternal(
   }
 
   if (!iu.canHandle(filePath)) return undefined
-  const resource = await iu.resolve(filePath, resolveContextOf(exec, filePath))
+  const resource = await iu.resolve(filePath, await resolveContextOf(ctx, exec, filePath))
   if (resource.isDirectory === true) {
     throw new FsError(`cannot read "${resource.url}": directory listing must be read as text (content summary)`, 'FS_NOT_REGULAR_FILE')
   }
@@ -106,7 +110,7 @@ async function readConflictSummary(
   caps: InternalReadCaps,
 ): Promise<InternalReadOutcome> {
   const base = rawPath.slice(0, -':conflicts'.length)
-  const cwd = sessionCwd(exec, base)
+  const cwd = await sessionCwd(ctx, exec, base)
   const target = await ctx.fs.resolve(base, cwd !== undefined ? { cwd } : undefined)
   const info = await ctx.fs.stat(target, exec.signal)
   if (info === undefined) throw new FsError(`cannot read "${base}": not found`, 'FS_NOT_FOUND')

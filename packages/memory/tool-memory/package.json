@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-memory",
   "description": "Model-facing long-horizon memory tools (retain, recall, reflect, memory_edit, learn) over the ctx.memory service, plus first-turn project-memory prompt injection",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },

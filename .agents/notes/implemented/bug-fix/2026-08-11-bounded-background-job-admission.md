@@ -14,7 +14,7 @@ The process-local job registry already owns the exact job owner and the authorit
 
 `LocalJobRegistry` owns a `maxConcurrentJobsPerOwner` configuration field. It accepts positive safe integers, defaults to `10`, and is available through the provider's Cordis schema and the ACP app configuration. Profile compositions configure the provider row directly; the process-local provider owns the value's meaning.
 
-The [generic job runtime decision](../architecture/2026-06-20-generic-long-running-tool-runtime.md) owns the shared Task lifecycle and control API; this note owns the process-local admission policy.
+The [generic job runtime decision](../../archived/architecture/2026-06-20-generic-long-running-tool-runtime.md) owns the shared Task lifecycle and control API; this note owns the process-local admission policy.
 
 `start()` performs admission after the existing task-controller, task-field, and live-owner checks and before `JobStart.run()`. It derives the active count from the registry's current records instead of storing another counter:
 

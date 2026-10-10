@@ -33,16 +33,10 @@
       "path": "../../test-support/loader-smoke"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../core/session"
     },
     {
       "path": "../../session/session-projection"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

@@ -8,7 +8,7 @@ English | [中文](2026-08-21-out-of-process-subagent-minimal-diagnostics.zh.md)
 
 An ACP or DSH SDK child can stop because it reached a remote limit, denied a required permission, ended with a non-completed child turn, lost its protocol transport, or exited as a process. The shared result historically reduced these outcomes to a stop reason such as `error`, while startup and cleanup rejection messages could expose the original exception. A parent could not choose between narrowing the task, adjusting permission policy, or repairing the child deployment without Host logs.
 
-Copying exceptions, stderr, task content, tool input, paths, environment values, credentials, or protocol payloads into `SubagentResult.diagnostic` would make untrusted child text model-visible. Reusing a complete product-specific error union would also duplicate independently versioned authorities in the provider-neutral [subagent seam](2026-06-21-subagent-capability-seam.md).
+Copying exceptions, stderr, task content, tool input, paths, environment values, credentials, or protocol payloads into `SubagentResult.diagnostic` would make untrusted child text model-visible. Reusing a complete product-specific error union would also duplicate independently versioned authorities in the provider-neutral [subagent seam](../../archived/feature/2026-06-21-subagent-capability-seam.md).
 
 ## Decision
 

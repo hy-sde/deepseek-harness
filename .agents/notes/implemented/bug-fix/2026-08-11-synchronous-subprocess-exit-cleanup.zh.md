@@ -6,7 +6,7 @@ Status: implemented
 
 ## Problem
 
-本地 subprocess provider拥有普通 detached进程树和 terminal session，但此前只能通过异步 Cordis dispose触及它们。致命 launcher可能在 dispose完成前调用 `process.exit()`：[fail-loud release](2026-07-31-fail-loud-releases-the-terminal.zh.md)最多等待两秒，而本地进程可以拥有更长的终止宽限期。Node进入同步退出阶段后，待处理的 Promise与升级 timer不会继续执行，因此忽略 TERM的子进程可能比宿主存活更久，继续占用 CPU、内存或端口。部分 ACP、JSON-RPC和 SDK入口也没有 root release回调。
+本地 subprocess provider拥有普通 detached进程树和 terminal session，但此前只能通过异步 Cordis dispose触及它们。致命 launcher可能在 dispose完成前调用 `process.exit()`：[fail-loud release](../../archived/bug-fix/2026-07-31-fail-loud-releases-the-terminal.md)最多等待两秒，而本地进程可以拥有更长的终止宽限期。Node进入同步退出阶段后，待处理的 Promise与升级 timer不会继续执行，因此忽略 TERM的子进程可能比宿主存活更久，继续占用 CPU、内存或端口。部分 ACP、JSON-RPC和 SDK入口也没有 root release回调。
 
 公共 subprocess seam在正常 dispose期间承诺等待完全停稳，这项承诺是正确的。缺陷属于 seam之下另一条最终宿主退出路径，不应削弱正常生命周期，也不应让每个 launcher重复保存进程所有权。
 

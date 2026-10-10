@@ -41,6 +41,6 @@ The seam ahead of the handle refactor is smaller: one export method, no path que
 ## Related
 
 - [Retain ignorable external session events](../architecture/2026-08-30-retain-ignorable-external-session-events.md) — owns the read-side-only unknown-type gate this change leans on.
-- [Session persistence as an abstract service](../architecture/2026-06-14-session-persistence.md) — owns the seam these trims shrink.
-- [Zstandard JSONL session logs](../architecture/2026-07-19-zstandard-jsonl-session-logs.md) — owns the frame container these reads and appends flow through.
+- [Session persistence as an abstract service](../../archived/architecture/2026-06-14-session-persistence.md) — owns the seam these trims shrink.
+- [Zstandard JSONL session logs](../../archived/architecture/2026-07-19-zstandard-jsonl-session-logs.md) — owns the frame container these reads and appends flow through.
 - [Session identity and log location](../feature/2026-07-10-agent-session-identity-and-log-location.md) — partially superseded: its `DSH_SESSION_ID` and shell-env registry decisions stand; its `locate`/`DSH_SESSION_JSONL`/`transcript_path` decisions are removed here.

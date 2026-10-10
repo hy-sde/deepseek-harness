@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-codebase-memory",
   "description": "Model-facing codebase-memory CLI tools (codebase_list_projects/index_repository/index_status/search_graph/query_graph/trace_path/get_code_snippet/get_graph_schema/get_architecture/search_code/detect_changes/manage_adr/ingest_traces/delete_project) that run one-shot queries against the codebase-memory daemon from the terminal — the local alternative to the stdio MCP client row",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },
@@ -26,17 +26,11 @@
       "types": "./lib/types/prompt.d.ts",
       "default": "./lib/types/prompt.js"
     },
-    "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
-      "default": "./lib/invariant.js"
-    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
   "files": [
     "lib/index.js",
-    "lib/invariant.js",
-    "lib/invariant-*.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
@@ -44,13 +38,11 @@
   "dependencies": {},
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-invariants": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-invariants": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@types/node": "^22.0.0",

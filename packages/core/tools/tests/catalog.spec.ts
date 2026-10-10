@@ -20,7 +20,7 @@ const testToolSignal = new AbortController().signal
  * route hint. Mirrors the PTC mode unit tier in ptc.spec.ts.
  */
 
-type Mode = 'native' | 'ptc' | 'both' | 'catalog'
+type Mode = 'native' | 'ptc' | 'catalog'
 
 async function setup(options: { mode?: Mode; toolOrder?: string[] } = {}) {
   const ctx = new Context()

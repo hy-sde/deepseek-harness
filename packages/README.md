@@ -40,7 +40,7 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`subprocess/`](subprocess/README.md) | Subprocess capability family: Service Definition + local process-tree provider |
 | [`ssh/`](ssh/README.md) | POSIX remote connection with paired filesystem, subprocess and sandbox providers |
 | [`shell/`](shell/README.md) | Bash capability family: executor seam, local impl, model-facing tools |
-| [`terminal/`](terminal/README.md) | Persistent PTY capability family: owner-scoped sessions, local implementation, model-facing tools |
+| [`terminal/`](terminal/README.md) | Persistent PTY service with owner-scoped sessions and a local shell backend |
 | [`ptc-runtime/`](ptc-runtime/README.md) | PTC execution capability family: Service Definition + sandboxed Node provider + PTC mode Consumer |
 | [`code-runtime/`](code-runtime/README.md) | Persistent Python and JavaScript code kernels behind the model-facing `run_kernel_code` tool |
 | [`computer-use/`](computer-use/README.md) | Exclusive named desktop-provider registration |
@@ -65,9 +65,8 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`jobs/`](jobs/README.md) | Generic background-job runtime and model-facing job control tools |
 | [`graph/`](graph/README.md) | Agent Graph (Maka port): durable control plane, operator executor, host assembly, projection, stream, wakes, and supervisor tools |
 | [`orchestration/`](orchestration/README.md) | Parallelize-by-default orchestration policy: config-driven fan-out rules, fail-closed task isolation, prompt section |
-| [`experimental/`](experimental/README.md) | Pre-stable prototypes with explicit private exceptions |
-| [`workflow/`](workflow/README.md) | Workflow seam, PTC process engine, and model-facing `workflow`/`ralph` tools |
-| [`webhook/`](webhook/README.md) | Verified external events, trusted rules, and fire-and-forget Workspace Sessions |
+| [`experimental/`](experimental/README.md) | Capabilities under evaluation; [status and support policy](experimental/README.md#status) |
+| [`workflow/`](workflow/README.md) | Workflow seam, PTC process engine, and the model-facing `workflow` tool |
 | [`web/`](web/README.md) | Web capability family: seam, search/fetch providers, model-facing web tools |
 | [`document/`](document/README.md) | Shared Host Office-to-PDF conversion |
 | [`attachment/`](attachment/README.md) | Durable attachment identity, validation, local content-addressed storage |
@@ -81,7 +80,6 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`mcp/`](mcp/README.md) | External Model Context Protocol servers exposed as native tools |
 | [`logseq/`](logseq/README.md) | Logseq capability family: host wiki-graph service + model-facing Logseq CLI tools |
 | [`openwiki/`](openwiki/README.md) | OpenWiki capability family: deterministic wiki-engine core + resumable repository wiki-generation tools |
-| [`hooks/`](hooks/README.md) | Hook bridges + the shared Claude Code / Codex wire-protocol library |
 | [`session/`](session/README.md) | Durable session data plane: persistence seam + backends, projection seam, log-backed titles, session reporting |
 | [`session-query/`](session-query/README.md) | Session retrieval family: logical corpus, bounded reads, lineage, semantic filtering, SQLite full-text search |
 | [`agentsview/`](agentsview/README.md) | Session-intelligence queries (health grades, analytics, token cost, semantic search) over the local agentsview archive |
@@ -97,7 +95,6 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`client/`](client/README.md) | Web-GUI browser half: shell, wire, object services, slots, `ui-*` plugins |
 | [`examples/`](examples/README.md) | Demo assemblies: the executor-less/UI-less agent spine and the logseq diary example |
 | [`test-support/`](test-support/README.md) | Test infrastructure (testkits, replay, Loader smokes) |
-| [`runtime-diagnostics/`](runtime-diagnostics/README.md) | Runtime diagnostics: package-owned invariant checks and reports |
 | [`util/`](util/README.md) | Low-level zero-dependency utilities shared across groups (`Branded<B>`, home/path helpers, timeout, retention) |
 
 -----
@@ -105,7 +102,7 @@ Every package lives in exactly one group; new packages join existing groups, and
 <a id="release-expectations"></a>
 ## Release expectations
 
-Most groups are product — stable API. The exceptions: `experimental/` publishes without stability or support promises, and `test-support/`, `runtime-diagnostics/`, and `util/` are support with lower compatibility expectations.
+Product groups have maintained product roles, while their public APIs remain pre-stable. [Experimental status](experimental/README.md#status) is independent of publication, installation, and optional delivery. Nonexperimental runtime packages must have product use or an explicit [package classification](../scripts/product-package-policy.ts); SDK, build, test, and declaration infrastructure have separate classifications.
 
 -----
 
@@ -121,7 +118,7 @@ The dependency graph is generated: [docs/module-graph.md](../docs/module-graph.m
 <a id="package-readme-contracts"></a>
 ## Package README contracts
 
-Every package README covers purpose, configuration, extension points, and [Model Experience](../docs/cookbook/adding-a-package.md#4-write-the-package-readme) unless the model-agnostic [omission allowlist](../scripts/verify-package-readme-model-experience.ts) exempts it. It also carries `## Known Limitations and Deferred Work` or uses its [allowlist](../scripts/verify-package-readme-limitations.ts). Package conventions — exports, service access, invariants, tests — live in [packages/AGENTS.md](AGENTS.md).
+Every package README covers purpose, configuration, extension points, and [Model Experience](../docs/cookbook/adding-a-package.md#4-write-the-package-readme) unless the model-agnostic [omission allowlist](../scripts/verify-package-readme-model-experience.ts) exempts it. It also carries `## Known Limitations and Deferred Work` or uses its [allowlist](../scripts/verify-package-readme-limitations.ts). Package conventions — exports, service access, tests — live in [packages/AGENTS.md](AGENTS.md).
 
 -----
 

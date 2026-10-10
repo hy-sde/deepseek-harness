@@ -18,7 +18,7 @@ store 最多保存一个请求标识和一个进度值：当前题号，以及�
 
 忙碌状态、失败提示、折叠状态和焦点记录仍留在组件本地，因为它们描述当前已挂载交互，而不是未完成的答案。`plan-review` 呈现界面没有多题草稿，也不读取该 store。
 
-这落实了既有的 [Session scope 规则](../architecture/2026-07-25-web-client-session-scope-and-provide-channel.zh.md)：需要跨重新挂载保留的状态应归 Session 绑定的数据源；同时保留[由 Host 持久化偏好的决策](2026-08-06-host-backed-web-preferences.zh.md)：草稿仍只存在于当前页面，从不进入 settings、`localStorage` 或磁盘。[多选自定义答案组合](2026-07-30-multi-select-custom-answer-composition.zh.md)规定的答案语义保持不变。
+这落实了既有的 [Session scope 规则](../../archived/architecture/2026-07-25-web-client-session-scope-and-provide-channel.md)：需要跨重新挂载保留的状态应归 Session 绑定的数据源；同时保留[由 Host 持久化偏好的决策](../../archived/bug-fix/2026-08-06-host-backed-web-preferences.md)：草稿仍只存在于当前页面，从不进入 settings、`localStorage` 或磁盘。[多选自定义答案组合](2026-07-30-multi-select-custom-answer-composition.zh.md)规定的答案语义保持不变。
 
 ## Testing
 

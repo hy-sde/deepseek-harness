@@ -36,7 +36,7 @@ import { CONTEXT_WINDOW_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type {
   SubagentResult,
-  SubagentRun,
+  SubagentActivation,
   SubagentStartRequest,
   SubagentStopReason,
 } from '@deepseek-ai/dsh-subagent'
@@ -94,10 +94,9 @@ function must<T>(value: T | undefined): T {
   return value
 }
 
-class FakeRun implements SubagentRun {
+class FakeRun implements SubagentActivation {
   private static seq = 0
-  readonly id = SessionId(`run-${FakeRun.seq++}`)
-  readonly localAgent = undefined
+  readonly childId = SessionId(`run-${FakeRun.seq++}`)
   disposed = false
   private readonly resolvers = Promise.withResolvers<SubagentResult>()
   readonly result = this.resolvers.promise
@@ -117,7 +116,7 @@ class FakeSubagents implements GraphHostSubagents {
   readonly starts: { name: string; request: SubagentStartRequest }[] = []
   readonly runs: FakeRun[] = []
 
-  async start(name: string, request: SubagentStartRequest): Promise<SubagentRun> {
+  async start(name: string, request: SubagentStartRequest): Promise<SubagentActivation> {
     this.starts.push({ name, request })
     const run = new FakeRun()
     this.runs.push(run)

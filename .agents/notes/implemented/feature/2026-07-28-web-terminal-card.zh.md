@@ -69,4 +69,4 @@ Web client 却对它视而不见。`packages/client/ui-tool/src/client/tool/mode
 
 - [Tagged render-intent union for tool-call presentation](../architecture/2026-07-02-tool-render-intent-union.zh.md)——本次消费的 `card` 标签词汇；Web client 现在是 `terminal` 分支的完整消费方，而不再只消费参数。
 - [Web client syntax highlighting](../process/2026-07-26-web-syntax-highlighting-shiki.zh.md)——它拥有 `CodeBlock` 及其 shiki 分支，并记录了工具输出为何有意不做语法高亮；这里的 ANSI 颜色是作者指定的颜色，不是猜出来的语法。
-- [Web client architecture](../architecture/2026-07-19-gui-web-client-architecture.zh.md)——两个渲染点所处的 slot 与快照分层。
+- [Web client architecture](../../archived/architecture/2026-07-19-gui-web-client-architecture.md)——两个渲染点所处的 slot 与快照分层。

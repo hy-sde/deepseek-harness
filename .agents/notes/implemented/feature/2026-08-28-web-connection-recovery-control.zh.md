@@ -14,7 +14,7 @@ Host 默认通过既有且经过校验的 `websocketHeartbeatIntervalMs` 配置�
 
 Client Connection 服务暴露 identity 稳定的 `ctx.connection.state` observable 与 `ctx.connection.reconnect()`。snapshot 在首次连接结果前为 undefined，此后为 `disconnected`、`connecting` 或 `connected`；等价状态不触发通知。手动重连会中断当前 generation 或重试等待、重置 attempt 序号，并通过与自动恢复相同的物理和逻辑路径立即开始 retry 1。浏览器的 `offline` 事件会立即中断活动连接工作、发布 `disconnected` 并暂停自动 retry；下一次 `online` 转换会发布 `connecting`、重置 attempt 序号，并从 500ms 退避档重新开始；重复事件不会创建另一条循环。Host 是否可达由新的 `$events` ready 帧证明，而不是由 `navigator.onLine` 证明。替换 generation 建立后，各 logical stream 仍自行持有 baseline、cursor 与 replay 语义。
 
-[Web Client 架构](../architecture/2026-07-19-gui-web-client-architecture.zh.md)、[Remote 事件投递](../architecture/2026-08-10-remote-event-delivery.zh.md)和[会话事件传输](../architecture/2026-08-18-session-history-and-event-transport.zh.md)继续持有各自更宽的所有权决策；本笔记只取代其中原有的重试时序。
+[Web Client 架构](../../archived/architecture/2026-07-19-gui-web-client-architecture.md)、[Remote 事件投递](../../archived/architecture/2026-08-10-remote-event-delivery.md)和[会话事件传输](../architecture/2026-08-18-session-history-and-event-transport.zh.md)继续持有各自更宽的所有权决策；本笔记只取代其中原有的重试时序。
 
 Settings 外壳是恢复功能专用消费方，因此直接注入 Connection；普通功能代码仍使用 `ctx.remote`。它的私有 hooks compartment 绑定状态 observable 与重连命令。展开的侧边栏在 Settings 右侧渲染 `ConnectionIndicator`：`disconnected` 是浅黄色的**连接异常**操作；`connecting` 保持黄色，其中一至三个点每 500ms 前进一次，与 retry 时序无关；恢复后则以浅绿色显示**连接成功**并驻留 2 秒。鼠标悬浮或键盘聚焦任一黄色状态时只把文字改为**立即重连**；按压反馈采用轻微的警告色过渡，不使用原生 title tooltip。所有可见状态都为最宽的本地化文字预留空间，并使用固定的图标列和左对齐文字列，因此状态变化不会移动控件或改变其宽度。首次启动和未曾中断的健康连接都不渲染。
 

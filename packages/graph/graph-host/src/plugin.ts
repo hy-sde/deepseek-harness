@@ -213,7 +213,17 @@ function storageFacade(ctx: Context, config: Config): GraphHostStorage {
 function subagentsFacade(ctx: Context, config: Config): GraphHostSubagents {
   return {
     provider: config.subagentProvider,
-    start: (internalName, request) => ctx.subagents.start(internalName, request),
+    start: (name, request) => {
+      const { signal, ...rest } = request
+      const { label, ...startRequest } = rest
+      return ctx.subagents.startActivation({
+        provider: name,
+        label: label ?? name,
+        request: startRequest,
+        delivery: 'caller',
+        signal,
+      })
+    },
   }
 }
 

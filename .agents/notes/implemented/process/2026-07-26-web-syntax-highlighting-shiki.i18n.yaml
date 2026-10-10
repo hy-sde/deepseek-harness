@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-07-26-web-syntax-highlighting-shiki.md
 /agent-note-web-client-syntax-highlighting-synchronous-fine-grained-shiki:
-  en: 43be52b9af687aed
-  zh: 5f5b70aa4c821e00
+  en: 1650dcf2041192ac
+  zh: 86089434a2fea421
 /agent-note-web-client-syntax-highlighting-synchronous-fine-grained-shiki/problem:
   en: 56852ef478157a4d
   zh: 397c12dac67ce35d

@@ -25,7 +25,7 @@ Host 在 Workspace entity 上提供以下 GUI 接线：
 | `session.create({ workspaceId, sessionId? })` | 从 Workspace 解析 cwd，以可选预分配 id 幂等创建 Session 并 attach |
 | `session.create({ cwd })` | 保留给非 Workspace 调用方，创建 Ungrouped Session |
 
-Host 流推送 Workspace 与 Session 增量，包括 `host/workspace-removed`；Client 重连后分别刷新 `workspace.list` 与 `session.list` 基线。删除注册记录的所有权与安全边界由 [Workspace 注册记录删除 Agent Note](2026-07-27-workspace-registration-deletion.zh.md)定义。
+Host 流推送 Workspace 与 Session 增量，包括 `host/workspace-removed`；Client 重连后分别刷新 `workspace.list` 与 `session.list` 基线。删除注册记录的所有权与安全边界由 [Workspace 注册记录删除 Agent Note](../../archived/feature/2026-07-27-workspace-registration-deletion.md)定义。
 
 Workspace 的 `sessionIds` 是有序候选索引。成员投影同时要求 id 位于索引且对应 `SessionHeader.cwd` canonical 后等于 Workspace path；SessionHeader 不增加 `workspaceId`。cwd 匹配但未入索引的 Session 保持 Ungrouped，索引命中但 header 缺失、cwd 无效或 cwd 不匹配的 id 被过滤。同一 Session 被两个 Workspace 索引占用属于损坏状态并明确报错。
 

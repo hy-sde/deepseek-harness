@@ -27,13 +27,7 @@
       "path": "../../core/scope"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../typert/protocol"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

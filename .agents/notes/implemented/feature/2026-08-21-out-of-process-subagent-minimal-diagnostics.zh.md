@@ -8,7 +8,7 @@ Status: implemented
 
 ACP 或 DSH SDK 子进程可能因为达到远端限制、拒绝必需权限、以非完成子轮次结束、失去协议传输或进程退出而停止。共享结果以往只把这些结果压成 `error` 等结束原因，而启动和清理拒绝的消息还可能暴露原始异常。父 agent 若不读取 Host 日志，就无法决定应缩小任务、调整权限策略还是修复子运行时部署。
 
-若把异常、stderr、任务内容、工具输入、路径、环境值、凭证或协议 payload 复制进 `SubagentResult.diagnostic`，不受信任的子进程文本就会变成模型可见内容。若复用完整的产品专属错误联合，又会在提供方无关的 [subagent seam](2026-06-21-subagent-capability-seam.zh.md) 中复制彼此独立版本化的权威。
+若把异常、stderr、任务内容、工具输入、路径、环境值、凭证或协议 payload 复制进 `SubagentResult.diagnostic`，不受信任的子进程文本就会变成模型可见内容。若复用完整的产品专属错误联合，又会在提供方无关的 [subagent seam](../../archived/feature/2026-06-21-subagent-capability-seam.md) 中复制彼此独立版本化的权威。
 
 ## Decision
 

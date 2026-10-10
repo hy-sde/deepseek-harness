@@ -16,7 +16,7 @@ Status: implemented
 
 ### 何为「核心」——主干与子系统的分界线
 
-> **作为页面范围界定规则已被取代**，见[按包锚定的子系统页面](2026-08-03-package-anchored-subsystem-pages.zh.md)：每页现在锚定到声明其词汇的包分组。下文的 `ts type-equiv` 机制仍然有效。
+> **作为页面范围界定规则已被取代**，见[按包锚定的子系统页面](../../archived/process/2026-08-03-package-anchored-subsystem-pages.md)：每页现在锚定到声明其词汇的包分组。下文的 `ts type-equiv` 机制仍然有效。
 
 范围界定的决定性测试是 `ShellExecRequest`/`ShellExecSpec`/`ShellRunResult`：bash 是一个能力 *seam*，不属于 agent loop（智能体循环）主干；如果这些算「核心」，那么「核心」就意味着*所有跨包词汇*，目录沦为平铺罗列；如果不算，「核心」就意味着*中央主干*，bash 词汇归入其自身的子系统页面。后者胜出，由此确定了整体结构：一个**分层文件夹**，而非一份平铺文档。
 

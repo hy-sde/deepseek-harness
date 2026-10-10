@@ -152,7 +152,6 @@ const POSTCONDITIONS: readonly PostCondition[] = [
   { file: 'vendor/hmr/package.json', text: '"name": "@deepseek-ai/cordis-plugin-hmr"', count: 1 },
   { file: 'scripts/cordis-walk.ts', text: '@deepseek-ai\\/cordis', count: 1 },
   { file: 'scripts/cordis-walk.ts', text: '!== \'@deepseek-ai/cordis\'', count: 1 },
-  { file: 'scripts/gen-scoped-events.ts', text: '=== \'@deepseek-ai/cordis\'', count: 1 },
   { file: 'packages/typert/generator/src/analyzer.ts', text: '!== \'@deepseek-ai/cordis\'', count: 2 },
   { file: 'scripts/check-workspace-constraints.ts', text: '?.[\'@deepseek-ai/cordis\']', count: 2 },
   { file: 'packages/boot/app-boot/tsdown.config.ts', text: '[\'@deepseek-ai/cordis-plugin-include\']', count: 1 },
@@ -569,7 +568,7 @@ function main(): void {
   const mode = args.includes('--apply') ? 'apply' : args.includes('--check') ? 'check' : 'dry'
   const reverse = args.includes('--reverse')
   const all = patterns(reverse)
-  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8', maxBuffer: 128 * 1024 * 1024 })
     .split('\0')
     .filter(file => file !== '' && !isRescopeExcluded(file))
 

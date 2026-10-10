@@ -20,7 +20,7 @@ Agents inspect the outgoing diff and run the narrowest tests and checks that cov
 
 ## Supersedes
 
-This decision supersedes the local-hook portion of [Parallel pre-push gates](2026-07-06-parallel-pre-push-gates.md) and the hook/CI symmetry in [Mechanical quality gates over prose guidelines](2026-06-11-quality-gates.md). Their CI scheduler, package-gate, and mechanical-enforcement decisions remain in force.
+This decision supersedes the local-hook portion of [Parallel pre-push gates](../../archived/process/2026-07-06-parallel-pre-push-gates.md) and the hook/CI symmetry in [Mechanical quality gates over prose guidelines](../../archived/process/2026-06-11-quality-gates.md). Their CI scheduler, package-gate, and mechanical-enforcement decisions remain in force.
 
 ## Alternatives considered
 

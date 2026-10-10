@@ -6,55 +6,9 @@ Slots 是 Web Client 的类型化 React 组合系统。[`dsh-client-ui-slots`](.
 
 本文记录 slot 的所有权、组件输入、扩展 API 与当前层级。外围的启动、Remote、Client model 与 Conversation 数据通路见 [Web Client 架构](web-client.zh.md)。
 
-<!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
+`plugins.bundle.config` 以 npm 包名为 key，提供 Bundle 详情配置。`plugins.bundle.activation` 在用户显式启用后渲染可选引导，由拥有者提供关闭引导和打开该 Bundle 详情的回调。`conversation.input.activity` 提供模型选择器与发送按钮之间的单个活动控件，可展开工具栏并在卸载时释放展开状态。
 
-<a id="cordis-surface"></a>
-
-## Cordis API
-
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
-
-<a id="ctxmodelslots--modelslotsservice"></a>
-
-### `ctx.modelSlots` — `ModelSlotsService`
-
-Host service exposing the global gate: live stats and runtime capacity controls. Constructed inside apply; registered with the mounting fiber, so stop/update removes it.
-
-```ts cordis-catalog
-/**
- * Transient admission snapshot for operators and the GUI.
- * @returns the current slot-gate stats.
- */
-stats(): ModelSlotsStats
-
-/**
- * Toggle admission enforcement (independent of capacity).
- * @param enabled - whether admission is enforced.
- */
-setEnabled(enabled: boolean): void
-
-/**
- * Change the host-wide slot budget; a shrink takes effect as calls drain.
- * @param capacity - the new slot budget (clamped to >= 1).
- */
-setCapacity(capacity: number): void
-
-/**
- * Wrap one `llm/stream` waterfall tail in the admission gate: acquire a slot
- * before the first chunk is requested and hold it until the stream settles
- * (finish, error, or consumer abort). Aborting while queued rejects the
- * acquire, which surfaces as a thrown AbortError to the stream consumer.
- * @param options - the full model request; `signal` cancels the wait.
- * @param next - the downstream waterfall tail.
- * @returns a stream that begins only after a slot is held.
- */
-async *wrap(options: GenerateOptions, next: () => AsyncIterable<StreamChunk>): AsyncIterable<StreamChunk>
-```
-
-Types: [GenerateOptions](llm-streaming.zh.md) · [StreamChunk](llm-streaming.zh.md)
-
-Source: [`packages/llm/llm-slots/src/index.ts`](../../packages/llm/llm-slots/src/index.ts)
-<!-- END GENERATED cordis-surface -->
+插件目录声明 `plugins.add.actions`，它是 root 作用域的 list，在添加插件菜单的安装项之后提供 `MenuItemButton` 行。owner 提供 `onDismiss()`，用于开始动作前关闭菜单。该 slot 遵循所属插件页面声明的生命周期。
 
 ## 声明与生命周期
 
@@ -166,7 +120,9 @@ root
 │  ├─ sidebar.panellist
 │  ├─ sidebar.footer.action
 │  ├─ sidebar.workspaces
-│  │  └─ sidebar.workspaces.directoryFlow
+│  │  ├─ sidebar.workspaces.directoryFlow
+│  │  ├─ sidebar.workspaces.session.menu.item
+│  │  └─ sidebar.workspaces.session.row.action
 │  └─ sidebar.settings
 │     ├─ settings.trigger
 │     ├─ settings.header
@@ -179,27 +135,34 @@ root
 │        ├─ settings.models.footer
 │        └─ settings.plugins.tab
 ├─ main
+│  ├─ plugins.add.actions
 │  ├─ plugins.item
 │  ├─ plugins.bundle.config
 │  ├─ plugins.row.config
+│  ├─ plugins.detail.actions
+│  ├─ plugins.detail.badge
+│  ├─ plugins.detail.section
 │  └─ main.conversation
 │     ├─ conversation.session
 │     │  └─ conversation.view
-│     │     ├─ conversation.chat.node
-│     │     │  ├─ conversation.chat.assistant-actions
-│     │     │  ├─ conversation.chat.commandview
-│     │     │  ├─ conversation.chat.turnTail
-│     │     │  └─ tool.call.toolview
-│     │     │     ├─ tool.call.images
-│     │     │     └─ tool.view.cordis
-│     │     ├─ conversation.message.images
+│     │     ├─ conversation.chat.flow
+│     │     │  ├─ conversation.chat.node
+│     │     │  │  ├─ conversation.chat.assistant-actions
+│     │     │  │  ├─ conversation.chat.reasoning.body
+│     │     │  │  ├─ conversation.chat.commandview
+│     │     │  │  ├─ conversation.chat.turnTail
+│     │     │  │  └─ tool.call.toolview
+│     │     │  │     ├─ tool.call.images
+│     │     │  │     └─ tool.view.cordis
+│     │     │  └─ conversation.message.images
 │     │     └─ conversation.trajectory.images
-│     ├─ conversation.session.header
-│     │  ├─ conversation.session.header.lineage
-│     │  ├─ conversation.session.header.leading
-│     │  ├─ conversation.session.header.actions
-│     │  ├─ conversation.session.header.utilities
-│     │  └─ conversation.session.header.corner
+│     ├─ conversation.header
+│     │  ├─ conversation.header.leading
+│     │  └─ conversation.session.header
+│     │     ├─ conversation.session.header.lineage
+│     │     ├─ conversation.session.header.actions
+│     │     ├─ conversation.session.header.utilities
+│     │     └─ conversation.session.header.corner
 │     ├─ conversation.composer
 │     │  ├─ conversation.approval.detail
 │     │  └─ conversation.plan-review.actions
@@ -224,7 +187,10 @@ root
 │     │  └─ sidebar.right.tab.guide.entry
 │     ├─ sidebar.right.pane.tab.title
 │     └─ sidebar.right.tab.menu.item
+├─ shell.bottom
+├─ shell.leading
 └─ shell.overlay
+   └─ shell.quota-notice
 ```
 
 生成的 Client inspect catalog 是每个 key 的完整参考，包含 cardinality、scope、owner props、标准 props、当前 occupant、声明 owner 与替换风险。运行中的动态包可以用 `cordis_inspect what:"client"` 查询实时树与某个精确 key；源码 catalog 由 `pnpm run gen-client-catalog` 根据 `SlotMap` 声明和 `slots.register()` 调用点生成。

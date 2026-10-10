@@ -103,7 +103,7 @@ type TextRetentionStrategy =
 
 `grep` 在分组前使用 `ItemRetainer<FlatGrepMatch>`，并将其配置为 `{ kind: 'head', maxItems: grepMaxMatches }`。执行器解析 ripgrep 输出、映射路径、应用逐行预览截断，并输入扁平匹配项。调用 `finish()` 后，工具按文件对保留的匹配项分组；如果行内结果达到上限，还可以通过 spill seam 保存完整匹配列表。分组不属于 retainer，因为上限针对匹配总数，而不是文件数；逐匹配项的预览截断和 `incomplete` 也与结果级保留相互独立。
 
-`bash` 可以使用 `TextRetainer`，配置为 `tail` 或 `headTail`，并读取至进程结束。bash 执行器仍负责 spill 文件、退出状态、信号、超时与后台任务行为；保留辅助函数只在需要该行为时替换临时实现的内存首尾核算。长时间运行任务的所有权与[通用长时间运行工具的运行时](2026-06-20-generic-long-running-tool-runtime.zh.md)相互独立。
+`bash` 可以使用 `TextRetainer`，配置为 `tail` 或 `headTail`，并读取至进程结束。bash 执行器仍负责 spill 文件、退出状态、信号、超时与后台任务行为；保留辅助函数只在需要该行为时替换临时实现的内存首尾核算。长时间运行任务的所有权与[通用长时间运行工具的运行时](../../archived/architecture/2026-06-20-generic-long-running-tool-runtime.md)相互独立。
 
 `web_fetch` 可以使用 `TextRetainer`，配置为 `head` 或 `headTail`；如果提供方必须在内部读取和解码，也可以保留由提供方负责的正文上限。无论采用哪种方式，fetch 结果中的 `truncated` 仍是提供方／工具事实，该库只提供保留文本与省略元数据。
 
@@ -152,6 +152,6 @@ const formatGrepNotice = (notice: RetentionNotice): string =>
 
 **把 `read` 窗口交给 `ItemRetainer`。**不予采纳：`read` 是唯一已交付的窗口消费方，其语义属于文件分页，而不是通用保留。一个 `Omitted` 计数无法表示行窗口两侧，而且 `read` 还携带 `totalLines`、offset 范围错误、逐行预览截断和针对所选输出的字节上限。让 `read-render` 由工具所有，可以避免共享库围绕一项特例膨胀。
 
-**让截断成为 `ToolExecutionResult` 的一部分。** 不予采纳：工具注册表将不得不理解工具专用的恢复指引、分组、行号、退出状态和提供方语义。保留是由工具的 Native renderer（原生渲染器）使用的库；模型可见投影继续由工具所有，而[规范值](2026-07-20-canonical-tool-output-contract.zh.md)可以保留完整的已采集结果。
+**让截断成为 `ToolExecutionResult` 的一部分。** 不予采纳：工具注册表将不得不理解工具专用的恢复指引、分组、行号、退出状态和提供方语义。保留是由工具的 Native renderer（原生渲染器）使用的库；模型可见投影继续由工具所有，而[规范值](../../archived/architecture/2026-07-20-canonical-tool-output-contract.md)可以保留完整的已采集结果。
 
 **在每个面向模型的工具 schema 中公开上限。** 不作为默认方案：Claude Code 的 grep 公开 `head_limit`／`offset`，但本 harness 会把常规预算保留为部署配置，除非模型确实需要控制分页。未来可以为具体工具增加类似 read 的续传字段；它不属于共享保留原语。

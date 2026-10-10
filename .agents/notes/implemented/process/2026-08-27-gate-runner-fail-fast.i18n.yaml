@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-27-gate-runner-fail-fast.md
 /agent-note-gate-runner-fail-fast:
-  en: e8fc9c2e3de4a821
-  zh: 580fb7a1be044cb2
+  en: 1fcd49429c5a3979
+  zh: e056beefcada71b5
 /agent-note-gate-runner-fail-fast/problem:
   en: dfa71e6e78c14475
   zh: 34073cfb0756a9b4

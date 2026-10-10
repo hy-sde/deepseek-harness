@@ -18,7 +18,7 @@ The store holds at most one request identity and one progress value: current que
 
 Busy state, failure feedback, collapse state, and focus bookkeeping remain component-local because they describe the mounted interaction rather than the unfinished answer. The `plan-review` presentation has no multi-question draft and does not read the store.
 
-This realizes the existing [Session-scope rule](../architecture/2026-07-25-web-client-session-scope-and-provide-channel.md) that remount-surviving state belongs in a Session-bound source, while retaining the [Host-backed preference decision](2026-08-06-host-backed-web-preferences.md): drafts remain page-local and never enter settings, `localStorage`, or disk. The answer semantics from [multi-select custom composition](2026-07-30-multi-select-custom-answer-composition.md) are unchanged.
+This realizes the existing [Session-scope rule](../../archived/architecture/2026-07-25-web-client-session-scope-and-provide-channel.md) that remount-surviving state belongs in a Session-bound source, while retaining the [Host-backed preference decision](../../archived/bug-fix/2026-08-06-host-backed-web-preferences.md): drafts remain page-local and never enter settings, `localStorage`, or disk. The answer semantics from [multi-select custom composition](2026-07-30-multi-select-custom-answer-composition.md) are unchanged.
 
 ## Testing
 

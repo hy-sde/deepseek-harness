@@ -106,7 +106,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         type: 'object',
         additionalProperties: false,
         properties: {
-          path: { type: 'string', required: true },
+          path: { type: 'string', required: true, description: 'Canonical absolute path in the filesystem execution world.' },
           offset: { type: 'integer', required: true },
           lines: {
             type: 'array',
@@ -253,7 +253,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
       }
 
       const outcome = {
-        path: target.displayPath,
+        path: ctx.fs.processPath(target),
         offset: input.offset,
         lines: window.lines,
         totalLines: window.totalLines,

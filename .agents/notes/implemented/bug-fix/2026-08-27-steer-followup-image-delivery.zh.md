@@ -18,7 +18,7 @@ agent 运行期间提交的图片没有可靠进入模型上下文，也没有�
 
 ## Decision
 
-**Host 侧子代理图片准入。** `SubagentPromptRequest.content` 改为上传形态的 `PromptContentPart[]`（同步更新 [Web 子代理会话](../feature/2026-07-27-web-subagent-conversations.zh.md) 的 wire 契约）。`dsh-attachment` 负责共享上传词汇，以及 Session prompt 端点与 `SubagentRuntime.prompt` 共用的 `admitPromptContent()` 转换；Session Controller 的共享请求类型保留结构相同的 Client wire 声明，使生成的 Client Cordis 目录包含完整的 prompt part 字段，并用编译期等价测试防止两处定义偏离。子代理路由在 `followup()` 之前经 `ctx.attachments` 完成整批图片的准入与持久化；continuation 管理器在逐子级锁内，当子级 `agent.options` 路由解析到不接受图片输入的模型时拒绝投递（`MODEL_DOES_NOT_SUPPORT_IMAGES`，以与 Session 路由一致的 `subagent/attachment-invalid` 词汇表上抛）。子级没有固定 options 路由，或部署未挂载 LLM 注册表时照常投递，交给 LLM 层的纯文本投影。客户端原样转发图片部分，`SUBAGENT_IMAGE_UNSUPPORTED` 文案删除。
+**Host 侧子代理图片准入。** `SubagentPromptRequest.content` 改为上传形态的 `PromptContentPart[]`（同步更新 [Web 子代理会话](../../archived/feature/2026-07-27-web-subagent-conversations.md) 的 wire 契约）。`dsh-attachment` 负责共享上传词汇，以及 Session prompt 端点与 `SubagentRuntime.prompt` 共用的 `admitPromptContent()` 转换；Session Controller 的共享请求类型保留结构相同的 Client wire 声明，使生成的 Client Cordis 目录包含完整的 prompt part 字段，并用编译期等价测试防止两处定义偏离。子代理路由在 `followup()` 之前经 `ctx.attachments` 完成整批图片的准入与持久化；continuation 管理器在逐子级锁内，当子级 `agent.options` 路由解析到不接受图片输入的模型时拒绝投递（`MODEL_DOES_NOT_SUPPORT_IMAGES`，以与 Session 路由一致的 `subagent/attachment-invalid` 词汇表上抛）。子级没有固定 options 路由，或部署未挂载 LLM 注册表时照常投递，交给 LLM 层的纯文本投影。客户端原样转发图片部分，`SUBAGENT_IMAGE_UNSUPPORTED` 文案删除。
 
 **队列展示。** 队列镜像的文本预览不再包含图片块，queue dock 把每个持久化图片部分渲染为缩略图，经 `ctx.uiConversation.imageUrl` 解析，与会话记录使用同一个会话授权读取。已排队图片消息的编辑仍然拒绝（#3072）。
 

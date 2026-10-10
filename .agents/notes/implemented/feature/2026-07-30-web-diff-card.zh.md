@@ -54,4 +54,4 @@ fixture（`packages/client/connection/tests/fake-generation.client.ts`）携带�
 
 - [Web terminal 卡片](2026-07-28-web-terminal-card.zh.md) —— `terminal` 支路的同一套四层结构；本 note 复用其内联输出决策与头尾上限算术。
 - [工具调用呈现的标签化 render-intent union](../architecture/2026-07-02-tool-render-intent-union.zh.md) —— 本改动消费的 `card` 标签词汇；Web 客户端现在也是 `diff` 支路的消费者。
-- [Web 客户端架构](../architecture/2026-07-19-gui-web-client-architecture.zh.md) —— 两个渲染点所处的 slot 与快照分层。
+- [Web 客户端架构](../../archived/architecture/2026-07-19-gui-web-client-architecture.md) —— 两个渲染点所处的 slot 与快照分层。

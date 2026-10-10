@@ -8,7 +8,7 @@ English | [中文](2026-06-20-agent-note-classification.zh.md)
 
 A lifecycle-only Agent Note tree — `proposed/` / `implemented/` / `rejected/` — does not record what *kind* of decision each file contains. A reader browsing one lifecycle cannot distinguish a new capability from a removal or a tooling-policy change without opening each file.
 
-The repo's standing bias is [mechanical quality gates over prose guidelines](2026-06-11-quality-gates.md): a convention that isn't machine-checked rots. So a classification scheme here had to be enforceable, not an honor-system header.
+The repo's standing bias is [mechanical quality gates over prose guidelines](../../archived/process/2026-06-11-quality-gates.md): a convention that isn't machine-checked rots. So a classification scheme here had to be enforceable, not an honor-system header.
 
 ## Decision
 

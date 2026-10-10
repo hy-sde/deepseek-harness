@@ -6,7 +6,7 @@ English | [中文](2026-06-20-assembled-assistant-messages-only.zh.md)
 
 ## Problem
 
-The canonical session log currently persists every `assistant/chunk` exactly as streamed by the model. The [session persistence Agent Note](../../implemented/architecture/2026-06-14-session-persistence.md) chose this for token-level replay fidelity and contiguous `seq`, but the cost has grown: JSONL fixtures are dominated by tiny delta records, snapshot scenarios replay the model by grouping chunk events, ACP load reconstructs prior assistant output from chunks, and any future log reader must distinguish durable message history from token-level trace.
+The canonical session log currently persists every `assistant/chunk` exactly as streamed by the model. The [session persistence Agent Note](../../archived/architecture/2026-06-14-session-persistence.md) chose this for token-level replay fidelity and contiguous `seq`, but the cost has grown: JSONL fixtures are dominated by tiny delta records, snapshot scenarios replay the model by grouping chunk events, ACP load reconstructs prior assistant output from chunks, and any future log reader must distinguish durable message history from token-level trace.
 
 For successful steps that assemble completed content, the loop already appends an `assistant/message`. That is the event `deriveMessages()` uses for the next model request. In other words, the normal resumable conversation state is already present without the chunks; chunks are a live rendering and deterministic-test artifact, not required conversation history. Failed or aborted streams are different: partial assistant output may exist only as chunks, and empty max-token steps may produce no `assistant/message` at all.
 
@@ -31,6 +31,6 @@ The canonical user session no longer reconstructs the exact token stream of an o
 
 ## Related
 
-This supersedes the chunk-persistence choice in [session persistence](../../implemented/architecture/2026-06-14-session-persistence.md) and affects [ACP snapshot tests](../../implemented/testing/2026-06-19-acp-snapshot-tests.md), whose current replay plugin derives its script from `assistant/chunk` events.
+This supersedes the chunk-persistence choice in [session persistence](../../archived/architecture/2026-06-14-session-persistence.md) and affects [ACP snapshot tests](../../archived/testing/2026-06-19-acp-snapshot-tests.md), whose current replay plugin derives its script from `assistant/chunk` events.
 
 <!-- agent-note-format: alternatives-not-recorded (pre-format Agent Note) -->

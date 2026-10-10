@@ -12,7 +12,7 @@ The [agent-instructions plugin](2026-06-24-workspace-context.md) resolved one wi
 
 Every existing candidate in each list loads — the base list first, then the local list — in configured order. Within one directory, candidates whose content is byte-identical after trimming leading and trailing whitespace collapse to the earliest candidate in that order, and the kept file's original bytes are rendered. Dedup is per-directory rather than global, and symmetric across the base and local lists. Trimming before comparison tolerates a trailing newline or indentation difference between a file and its near-copy while still rendering the survivor verbatim — the "extra safe" comparison the request asked for.
 
-Symlinks now flow through this uniformly. Instruction discovery resolves each candidate and stats its target instead of rejecting a final-component symlink, so a `CLAUDE.md` that symlinks its sibling `AGENTS.md` resolves to identical content and collapses here like any byte-identical real duplicate. Content dedup therefore renders the common symlink-mirror once through the same path as a real copy. The [follow-symlinks note](2026-07-21-follow-instruction-symlinks.md) owns that reversal and its residual trust-boundary risk.
+Symlinks now flow through this uniformly. Instruction discovery resolves each candidate and stats its target instead of rejecting a final-component symlink, so a `CLAUDE.md` that symlinks its sibling `AGENTS.md` resolves to identical content and collapses here like any byte-identical real duplicate. Content dedup therefore renders the common symlink-mirror once through the same path as a real copy. The [follow-symlinks note](../../archived/feature/2026-07-21-follow-instruction-symlinks.md) owns that reversal and its residual trust-boundary risk.
 
 ## Scope keys become per-candidate
 
@@ -30,7 +30,7 @@ Dedup is enforced during reconciliation, not only at baseline composition. Each 
 
 **Compare raw bytes without trimming.** Rejected: an editor that adds a trailing newline, or a copy that reflows indentation, would defeat dedup for files that are the same in substance. Trimming before comparison is the tolerant key the request asked for, and the survivor still renders its original bytes.
 
-**Follow symlinks so a mirror deduplicates through content.** Rejected for this change to preserve the no-follow invariant, then adopted separately: the [follow-symlinks note](2026-07-21-follow-instruction-symlinks.md) reverses that invariant, after which a symlinked mirror is resolved and deduplicated through content exactly like a real duplicate.
+**Follow symlinks so a mirror deduplicates through content.** Rejected for this change to preserve the no-follow invariant, then adopted separately: the [follow-symlinks note](../../archived/feature/2026-07-21-follow-instruction-symlinks.md) reverses that invariant, after which a symlinked mirror is resolved and deduplicated through content exactly like a real duplicate.
 
 ## Consequences
 

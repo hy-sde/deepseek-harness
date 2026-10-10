@@ -40,6 +40,6 @@ The solution root `extends` the base deliberately: `scripts/` has no nearer tsco
 ## Consequences
 
 - `docs/development.md#typescript-project-layout` is the authoritative description; root `AGENTS.md` carries the two disciplines as conventions.
-- The [ts-build-config note](2026-06-17-ts-build-config.md) keeps ownership of the tsc-first build pipeline (tsc emits, tsdown bundles, `.ts` specifiers with `rewriteRelativeImportExtensions`); its former "one root typecheck project" shape is superseded by this note.
+- The [ts-build-config note](../../archived/process/2026-06-17-ts-build-config.md) keeps ownership of the tsc-first build pipeline (tsc emits, tsdown bundles, `.ts` specifiers with `rewriteRelativeImportExtensions`); its former "one root typecheck project" shape is superseded by this note.
 - Adding an ordinary package registers it in exactly one aggregate's references: Host packages in `tsconfig.host.json` and Client packages in `tsconfig.client.json`. `api/remotes` is the only explicit split exception because the Host generates a contract that the Client consumes later; its two concrete projects are registered separately, while its package-root solution enters neither aggregate.
 - The Host and Client build phases must run serially: Client tsc cannot begin until Host tsdown has generated the contract. Each phase reuses its projects' incremental state instead of processing the same graph concurrently.

@@ -6,55 +6,9 @@ Slots are the Web Client's typed React composition system. [`dsh-client-ui-slots
 
 This page documents slot ownership, component inputs, extension APIs, and the shipped hierarchy. The surrounding boot, Remote, Client model, and Conversation paths are in [Web Client architecture](web-client.md).
 
-<!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
+`plugins.bundle.config` supplies bundle detail configuration, keyed by npm package name. `plugins.bundle.activation` renders optional guidance after user-requested enablement, with owner callbacks to dismiss or open that bundle’s details. `conversation.input.activity` supplies one action between the model selector and Send, with toolbar expansion released on unmount.
 
-<a id="cordis-surface"></a>
-
-## Cordis API
-
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
-
-<a id="ctxmodelslots--modelslotsservice"></a>
-
-### `ctx.modelSlots` — `ModelSlotsService`
-
-Host service exposing the global gate: live stats and runtime capacity controls. Constructed inside apply; registered with the mounting fiber, so stop/update removes it.
-
-```ts cordis-catalog
-/**
- * Transient admission snapshot for operators and the GUI.
- * @returns the current slot-gate stats.
- */
-stats(): ModelSlotsStats
-
-/**
- * Toggle admission enforcement (independent of capacity).
- * @param enabled - whether admission is enforced.
- */
-setEnabled(enabled: boolean): void
-
-/**
- * Change the host-wide slot budget; a shrink takes effect as calls drain.
- * @param capacity - the new slot budget (clamped to >= 1).
- */
-setCapacity(capacity: number): void
-
-/**
- * Wrap one `llm/stream` waterfall tail in the admission gate: acquire a slot
- * before the first chunk is requested and hold it until the stream settles
- * (finish, error, or consumer abort). Aborting while queued rejects the
- * acquire, which surfaces as a thrown AbortError to the stream consumer.
- * @param options - the full model request; `signal` cancels the wait.
- * @param next - the downstream waterfall tail.
- * @returns a stream that begins only after a slot is held.
- */
-async *wrap(options: GenerateOptions, next: () => AsyncIterable<StreamChunk>): AsyncIterable<StreamChunk>
-```
-
-Types: [GenerateOptions](llm-streaming.md) · [StreamChunk](llm-streaming.md)
-
-Source: [`packages/llm/llm-slots/src/index.ts`](../../packages/llm/llm-slots/src/index.ts)
-<!-- END GENERATED cordis-surface -->
+The plugin catalog declares `plugins.add.actions`, a root-scoped list for `MenuItemButton` rows after installation in the Add plugin menu. Its owner supplies `onDismiss()` to close the menu before starting an action. The slot follows the owning Plugins page declaration lifetime.
 
 ## Declaration and lifecycle
 
@@ -166,7 +120,9 @@ root
 │  ├─ sidebar.panellist
 │  ├─ sidebar.footer.action
 │  ├─ sidebar.workspaces
-│  │  └─ sidebar.workspaces.directoryFlow
+│  │  ├─ sidebar.workspaces.directoryFlow
+│  │  ├─ sidebar.workspaces.session.menu.item
+│  │  └─ sidebar.workspaces.session.row.action
 │  └─ sidebar.settings
 │     ├─ settings.trigger
 │     ├─ settings.header
@@ -179,27 +135,34 @@ root
 │        ├─ settings.models.footer
 │        └─ settings.plugins.tab
 ├─ main
+│  ├─ plugins.add.actions
 │  ├─ plugins.item
 │  ├─ plugins.bundle.config
 │  ├─ plugins.row.config
+│  ├─ plugins.detail.actions
+│  ├─ plugins.detail.badge
+│  ├─ plugins.detail.section
 │  └─ main.conversation
 │     ├─ conversation.session
 │     │  └─ conversation.view
-│     │     ├─ conversation.chat.node
-│     │     │  ├─ conversation.chat.assistant-actions
-│     │     │  ├─ conversation.chat.commandview
-│     │     │  ├─ conversation.chat.turnTail
-│     │     │  └─ tool.call.toolview
-│     │     │     ├─ tool.call.images
-│     │     │     └─ tool.view.cordis
-│     │     ├─ conversation.message.images
+│     │     ├─ conversation.chat.flow
+│     │     │  ├─ conversation.chat.node
+│     │     │  │  ├─ conversation.chat.assistant-actions
+│     │     │  │  ├─ conversation.chat.reasoning.body
+│     │     │  │  ├─ conversation.chat.commandview
+│     │     │  │  ├─ conversation.chat.turnTail
+│     │     │  │  └─ tool.call.toolview
+│     │     │  │     ├─ tool.call.images
+│     │     │  │     └─ tool.view.cordis
+│     │     │  └─ conversation.message.images
 │     │     └─ conversation.trajectory.images
-│     ├─ conversation.session.header
-│     │  ├─ conversation.session.header.lineage
-│     │  ├─ conversation.session.header.leading
-│     │  ├─ conversation.session.header.actions
-│     │  ├─ conversation.session.header.utilities
-│     │  └─ conversation.session.header.corner
+│     ├─ conversation.header
+│     │  ├─ conversation.header.leading
+│     │  └─ conversation.session.header
+│     │     ├─ conversation.session.header.lineage
+│     │     ├─ conversation.session.header.actions
+│     │     ├─ conversation.session.header.utilities
+│     │     └─ conversation.session.header.corner
 │     ├─ conversation.composer
 │     │  ├─ conversation.approval.detail
 │     │  └─ conversation.plan-review.actions
@@ -224,7 +187,10 @@ root
 │     │  └─ sidebar.right.tab.guide.entry
 │     ├─ sidebar.right.pane.tab.title
 │     └─ sidebar.right.tab.menu.item
+├─ shell.bottom
+├─ shell.leading
 └─ shell.overlay
+   └─ shell.quota-notice
 ```
 
 The generated Client inspect catalog is the exhaustive contract for each key: cardinality, scope, owner props, standard props, current occupants, declaration owner, and replacement risk. A running dynamic package can query the live tree and an exact key with `cordis_inspect what:"client"`; the source catalog is generated from `SlotMap` declarations and `slots.register()` call sites by `pnpm run gen-client-catalog`.

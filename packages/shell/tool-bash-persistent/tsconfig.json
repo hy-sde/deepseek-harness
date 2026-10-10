@@ -28,6 +28,9 @@
     },
     {
       "path": "../../util/timeout"
+    },
+    {
+      "path": "../../session/working-directory"
     }
   ]
 }

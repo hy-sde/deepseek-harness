@@ -8,7 +8,7 @@ English | [中文](2026-09-01-css-produced-file-layout.zh.md)
 
 The produced-files row duplicated every candidate chip in a hidden probe tree, synchronously read computed styles and element geometry in a layout effect, and repeated those reads whenever the row or a probe resized. That machinery existed only to choose how many labels fit on one line. Its forced layout work cost more than exact width-dependent chip counts were worth.
 
-The produced-file discovery and Host-opening behavior remain owned by [opening a produced file from the web UI](../feature/2026-07-31-web-workspace-file-links.md). This decision changes only how that row handles limited horizontal space.
+The produced-file discovery and Host-opening behavior remain owned by [opening a produced file from the web UI](../../archived/feature/2026-07-31-web-workspace-file-links.md). This decision changes only how that row handles limited horizontal space.
 
 ## Decision
 

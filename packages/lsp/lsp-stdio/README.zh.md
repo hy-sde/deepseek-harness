@@ -113,7 +113,6 @@ TypeScript 7 移除了 `typescript-language-server` 所包装的 JS `lib/tsserve
 | [`src/translate.ts`](src/translate.ts) | 能力检查、UTF-16 协商、`Location`／`LocationLink`／hover 规范化 |
 | [`src/abort.ts`](src/abort.ts) | 融合调用方与释放信号的取消辅助 |
 | [`src/typescript.ts`](src/typescript.ts) | TypeScript 安装检查与按工作区的原生／包装器服务器选择 |
-| — | 不发布运行时不变式伴生入口；进程池与队列是私有状态。 |
 
 ### 协议行为
 

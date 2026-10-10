@@ -1,10 +1,6 @@
 /**
  * Provider-routed model-request retry policy on the agent loop's request
- * recovery extension point. Each scheduled retry is durable before its
- * cancellable wait; the wait itself is an Effect-native interruption-aware
- * sleep over one `ManagedRuntime` per mounted context (see `./runtime.ts` —
- * the pilot Effect seam; the cordis plugin shell, config, session projection,
- * and promise facade are unchanged).
+ * recovery extension point. Each scheduled retry is durable before its cancellable wait.
  *
  * @module @deepseek-ai/dsh-llm-retry
  */
@@ -17,7 +13,6 @@ import type { Agent, RequestErrorAction } from '@deepseek-ai/dsh-agent'
 import type { LlmFailure, ResolvedRetryPolicy } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import { RetryId } from './brand.ts'
-import { cancellableDelay, makeRetryRuntime } from './runtime.ts'
 import type { LlmRetryEventData } from './types.ts'
 
 export type { LlmRetryEventData, LlmRetryStartedEventData } from './types.ts'
@@ -85,6 +80,21 @@ function retryStateKey(provider: string, policyKey: string): string {
   return JSON.stringify([provider, policyKey])
 }
 
+function cancellableDelay(delayMs: number, signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve(true)
+    }, delayMs)
+    function onAbort(): void {
+      clearTimeout(timer)
+      resolve(false)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
 /**
  * Install provider-routed normal or unbounded request recovery.
  * @param ctx - plugin context that owns the listener and active waits.
@@ -127,7 +137,6 @@ export function apply(ctx: Context, config: Config = {}, internals: RetryInterna
     },
   })
   const random = internals.random ?? Math.random
-  const runtime = makeRetryRuntime()
   const lifetime = new AbortController()
   const active = new Set<Promise<RequestErrorAction>>()
 
@@ -177,7 +186,7 @@ export function apply(ctx: Context, config: Config = {}, internals: RetryInterna
         failure,
       }
     agent.session.append('llm/retry', eventData)
-    if (!await cancellableDelay(delayMs, fusedSignal, runtime)) return
+    if (!await cancellableDelay(delayMs, fusedSignal)) return
     agent.session.append('llm/retry-started', { retryId, turn, step, retry })
     return { kind: 'retry' }
   }
@@ -246,6 +255,5 @@ export function apply(ctx: Context, config: Config = {}, internals: RetryInterna
     disposeListener()
     lifetime.abort(new Error('llm-retry plugin disposed'))
     await Promise.allSettled([...active])
-    await runtime.dispose()
-  }, 'llm-retry: abort, drain active recovery, and release the Effect runtime')
+  }, 'llm-retry: abort and drain active recovery')
 }

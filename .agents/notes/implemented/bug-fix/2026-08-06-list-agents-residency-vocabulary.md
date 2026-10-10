@@ -8,7 +8,7 @@ English | [中文](2026-08-06-list-agents-residency-vocabulary.zh.md)
 
 `list_agents` projected a continuable child's process residency as `running | idle | complete`. `complete` reads as a terminal unit of work with a result somewhere, but the underlying fact says only that no Activation is resident: the conversation is intact, `send_message` can continue it, and nothing about the child's outcome is being claimed. A model that reads `complete` reasonably looks for a result to collect or sends replacement work to a conversation it believes has ended.
 
-The word is especially misleading alongside [manager-owned settlement delivery](../feature/2026-08-06-manager-owned-subagent-settlement-delivery.md). Completion reaches the parent as a notice; listing exists to recall durable conversations, not to poll for that notice.
+The word is especially misleading alongside [manager-owned settlement delivery](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md). Completion reaches the parent as a notice; listing exists to recall durable conversations, not to poll for that notice.
 
 ## Decision
 

@@ -67,4 +67,4 @@ Inline rendering is licensed for the terminal intent alone. A future intent that
 
 - [Tagged render-intent union for tool-call presentation](../architecture/2026-07-02-tool-render-intent-union.md) — the `card`-tagged vocabulary this consumes; the Web client is now a full consumer of the `terminal` arm rather than of args alone.
 - [Web client syntax highlighting](../process/2026-07-26-web-syntax-highlighting-shiki.md) — owns `CodeBlock` and its shiki arm, and records why tool output deliberately stays unhighlighted; ANSI color here is authored color, not guessed grammar.
-- [Web client architecture](../architecture/2026-07-19-gui-web-client-architecture.md) — the slot and snapshot layering the two render sites sit in.
+- [Web client architecture](../../archived/architecture/2026-07-19-gui-web-client-architecture.md) — the slot and snapshot layering the two render sites sit in.

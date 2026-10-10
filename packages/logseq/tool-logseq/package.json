@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-logseq",
   "description": "Model-facing Logseq CLI tools (logseq_list/upsert/remove/query/show/search/graph/server) that drive a Logseq database graph from the terminal — headless-capable alternative to the desktop MCP bridge",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },
@@ -26,17 +26,11 @@
       "types": "./lib/types/prompt.d.ts",
       "default": "./lib/types/prompt.js"
     },
-    "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
-      "default": "./lib/invariant.js"
-    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
   "files": [
     "lib/index.js",
-    "lib/invariant.js",
-    "lib/invariant-*.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
@@ -44,13 +38,11 @@
   "dependencies": {},
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-invariants": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-invariants": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@types/node": "^22.0.0",

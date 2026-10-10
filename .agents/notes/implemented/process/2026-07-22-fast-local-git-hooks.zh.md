@@ -20,7 +20,7 @@ agent 检查待推送的 diff，并仅运行一次能够覆盖其行为的最小
 
 ## 取代关系
 
-本决策取代[并行 pre-push 门禁](2026-07-06-parallel-pre-push-gates.zh.md)中涉及本地钩子的部分，以及[以机械质量门禁代替文字规范](2026-06-11-quality-gates.zh.md)中关于钩子与 CI 对称性的部分。上述记录中关于 CI 调度器、包门禁与机械化强制执行的决策继续有效。
+本决策取代[并行 pre-push 门禁](../../archived/process/2026-07-06-parallel-pre-push-gates.md)中涉及本地钩子的部分，以及[以机械质量门禁代替文字规范](../../archived/process/2026-06-11-quality-gates.md)中关于钩子与 CI 对称性的部分。上述记录中关于 CI 调度器、包门禁与机械化强制执行的决策继续有效。
 
 ## 考虑过的替代方案
 

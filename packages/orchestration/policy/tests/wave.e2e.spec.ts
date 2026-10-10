@@ -64,7 +64,6 @@ class WaveProvider implements SubagentProvider {
     const output: ContentBlock[] = [{ type: 'text', text: 'wave child done' }]
     return {
       id: SessionId(`wave-child-${this.starts.length}`),
-      localAgent: undefined,
       result: Promise.resolve({ output, stopReason: 'completed' }),
       dispose: async () => {},
     }
@@ -96,7 +95,7 @@ async function makeFixture(): Promise<Fixture> {
     inject: ['subagents'],
     apply(pluginCtx: Context): void { pluginCtx.subagents.registerProvider(provider) },
   })
-  await ctx.plugin(toolSubagentPackage, { provider: 'wave', backgroundMode: 'one-shot', maxDepth: 'provider-managed' })
+  await ctx.plugin(toolSubagentPackage, { provider: 'wave', maxDepth: 'provider-managed' })
   await ctx.plugin(policyPackage, { enabled: true, maxFanOut: 2 })
 
   const fixture: Fixture = {

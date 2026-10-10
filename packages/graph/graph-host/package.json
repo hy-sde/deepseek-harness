@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-graph-host",
   "description": "Agent Graph host assembly: wires the P1-P5 slices to real harness services (storage, subagents, worktrees, compaction, idle) and provides the controller service the supervisor tools consume (Maka port, slices P6-P7a)",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },

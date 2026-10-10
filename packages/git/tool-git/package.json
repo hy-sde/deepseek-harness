@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-git",
   "description": "Model-facing agentic git tools (commit analyze + commit_apply split execution with validation, and review with P0-P3 verdicts) over the host ctx.git service",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },

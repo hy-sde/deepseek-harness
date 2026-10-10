@@ -28,7 +28,7 @@ The `fs-glob-sampling` ACP snapshot scenario now executes the real packaged bina
 
 ## Consequences
 
-- The discovery tools work on every platform the packaged binary covers (darwin/linux/win32, x64/arm64) with no host install; the shipped TUI/Web rosters gain `glob`/`grep` as fixed members ([even-out-shipped-tool-rosters](../feature/2026-07-31-even-out-shipped-tool-rosters.md)).
+- The discovery tools work on every platform the packaged binary covers (darwin/linux/win32, x64/arm64) with no host install; the shipped TUI/Web rosters gain `glob`/`grep` as fixed members ([even-out-shipped-tool-rosters](../../archived/feature/2026-07-31-even-out-shipped-tool-rosters.md)).
 - The shell-string attack surface is gone: hostile patterns are inert argv elements, pinned by the integration suite, which now runs on Windows too (it previously self-skipped without a system `rg`).
 - The spawn is unconfined (a plain `ctx.subprocess` call), so `--no-config` is prepended: a host `RIPGREP_CONFIG_PATH` (or an `rg.conf` beside the binary) can otherwise inject a `--pre` preprocessor that executes an arbitrary command for every matched file. With `--no-config`, no config file — and therefore no preprocessor — can reach the search.
 - The raw-output overflow path changed shape: the old bash-backed route inherited bash-local's always-on spill and could leave an unread multi-megabyte temp file; the subprocess seam now collects without spill, and overflow is a pure error (`SEARCH_RAW_OUTPUT_OVERFLOW`, "narrow pattern, path, or include and retry") with zero content returned.

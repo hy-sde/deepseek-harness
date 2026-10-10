@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-edit",
   "description": "Model-facing rich edit tool (replace / patch / apply_patch / hashline modes) over ctx.fs, with optional LSP format-on-write and diagnostics, ported from @oh-my-pi coding-agent (MIT)",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },

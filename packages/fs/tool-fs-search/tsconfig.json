@@ -43,6 +43,9 @@
     },
     {
       "path": "../internal-urls"
+    },
+    {
+      "path": "../../session/working-directory"
     }
   ]
 }

@@ -8,7 +8,7 @@ Status: implemented
 
 可继续 child 已经具备持久化 id、独立轮次、后续消息以及由管理器负责的结算通知。如果把省略的 `run_in_background` 视为前台，模型就必须在每次调用时重复写出 `true`，才能得到这套生命周期。这样也会掩盖真正有用的调度判断：只有当 parent 的下一步动作需要 child 结果时，parent 才应等待。
 
-child 的初始任务会告诉它如何使用共享的 `send_message` 工具向直接 parent 发送消息，而[由管理器负责的结算投递](2026-08-06-manager-owned-subagent-settlement-delivery.zh.md)会独立发送本次运行的结束结果与收尾消息。child 可以在结算前发送进度或最终交接。后台优先调度会保留两者：由 Agent 编写的消息仍是模型的显式选择，由管理器生成的通知则不依赖模型是否遵循指令，覆盖每种终止路径。
+child 的初始任务会告诉它如何使用共享的 `send_message` 工具向直接 parent 发送消息，而[由管理器负责的结算投递](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md)会独立发送本次运行的结束结果与收尾消息。child 可以在结算前发送进度或最终交接。后台优先调度会保留两者：由 Agent 编写的消息仍是模型的显式选择，由管理器生成的通知则不依赖模型是否遵循指令，覆盖每种终止路径。
 
 ## 决策
 

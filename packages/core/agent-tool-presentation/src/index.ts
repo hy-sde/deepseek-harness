@@ -38,18 +38,18 @@ export const inject = ['tools']
 export interface Config {
   /**
    * The form this agent's model sees. `native` sends every visible schema,
-   * `ptc` sends only `run_code` plus a generated SDK, `both` sends both,
-   * and `catalog` sends eager schemas plus the discoverable `dyn` device
-   * transport. Required rather than defaulted: the deployment default is what
-   * a preset without this row already gets, so an omitted value would mean the
-   * row was composed for nothing.
+   * `ptc` sends only `run_code` plus a generated SDK, and `catalog` sends
+   * eager schemas plus the discoverable `dyn` device transport. Required
+   * rather than defaulted: the deployment default is what a preset without
+   * this row already gets, so an omitted value would mean the row was
+   * composed for nothing.
    */
   mode: ToolPresentationMode
 }
 
 /** Runtime schema. */
 export const Config: z<Config> = z.object({
-  mode: z.union(['native', 'ptc', 'both', 'catalog'] as const).required(),
+  mode: z.union(['native', 'ptc', 'catalog'] as const).required(),
 })
 
 /**

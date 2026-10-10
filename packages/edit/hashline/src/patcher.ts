@@ -818,7 +818,7 @@ export class Patcher {
     if (!seen || seen.size === 0) return
     let unseen = section.collectAnchorLines().filter(line => !seen.has(line))
     if (unseen.length === 0) return
-    if (rescue !== undefined && matchedSnapshot !== null) {
+    if (rescue !== undefined) {
       const rescued = rescueShiftedAnchors(section, this.snapshots, rescue.canonicalPath, rescue.currentText, unseen)
       if (rescued.length > 0) {
         const rescuedSet = new Set(rescued)

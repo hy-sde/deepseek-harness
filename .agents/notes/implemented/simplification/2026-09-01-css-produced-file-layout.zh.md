@@ -8,7 +8,7 @@ Status: implemented
 
 产出文件行会在隐藏探针树中复制每个候选 chip，在 layout effect 中同步读取计算样式和元素几何，并在该行或任一探针改变尺寸时重复读取。这套机制只用于决定一行能容纳多少标签，其强制布局工作不值得用来换取随宽度精确变化的 chip 数量。
 
-产出文件发现与 Host 打开行为仍由[从 web UI 打开产出的文件](../feature/2026-07-31-web-workspace-file-links.zh.md)所有。本决策只改变该行处理有限横向空间的方式。
+产出文件发现与 Host 打开行为仍由[从 web UI 打开产出的文件](../../archived/feature/2026-07-31-web-workspace-file-links.md)所有。本决策只改变该行处理有限横向空间的方式。
 
 ## 决策
 

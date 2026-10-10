@@ -24,8 +24,8 @@ Three changes, one per obstacle:
 
 **A `--tools-mode` CLI flag or profile key.** Deferred, not rejected: the flag grammar suggests permanence, and the profile json is user config — both would harden a seam the per-session design intends to remove. An env var reads as the workaround it is.
 
-**Log the canonical `value` instead of rendered `content`.** Rejected: `tool/result` persists content, not values (the [canonical output contract](../architecture/2026-07-20-canonical-tool-output-contract.md)), and native parity means matching that exactly; values remain execution-local everywhere.
+**Log the canonical `value` instead of rendered `content`.** Rejected: `tool/result` persists content, not values (the [canonical output contract](../../archived/architecture/2026-07-20-canonical-tool-output-contract.md)), and native parity means matching that exactly; values remain execution-local everywhere.
 
 ## Consequences
 
-Session format keeps `SESSION_FORMAT_VERSION` 0 (pre-release churn does not bump; old logs with `resultSummary` simply carry an extra unread field and lack `content` — v0 makes no compatibility promise). Existing ptc snapshot fixtures were re-recorded. Model-visible surface grew: the `run_code` schema (one required parameter) and every ptc system prompt/tool-schema snapshot changed. The web UI work builds directly on the new event payload; live per-sub-call running state reshaped this event into a dispatch start/end pair ([live parallel dispatch](2026-07-26-ptc-live-parallel-dispatch.md)).
+Session format keeps `SESSION_FORMAT_VERSION` 0 (pre-release churn does not bump; old logs with `resultSummary` simply carry an extra unread field and lack `content` — v0 makes no compatibility promise). Existing ptc snapshot fixtures were re-recorded. Model-visible surface grew: the `run_code` schema (one required parameter) and every ptc system prompt/tool-schema snapshot changed. The web UI work builds directly on the new event payload; live per-sub-call running state reshaped this event into a dispatch start/end pair ([live parallel dispatch](../../archived/feature/2026-07-26-ptc-live-parallel-dispatch.md)).

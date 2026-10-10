@@ -54,4 +54,4 @@ The fixture (`packages/client/connection/tests/fake-generation.client.ts`) carri
 
 - [Web terminal card](2026-07-28-web-terminal-card.md) — the same four-layer shape for the `terminal` arm; this note reuses its inline-output decision and its head/tail cap arithmetic.
 - [Tagged render-intent union for tool-call presentation](../architecture/2026-07-02-tool-render-intent-union.md) — the `card`-tagged vocabulary this consumes; the Web client is now a consumer of the `diff` arm too.
-- [Web client architecture](../architecture/2026-07-19-gui-web-client-architecture.md) — the slot and snapshot layering the two render sites sit in.
+- [Web client architecture](../../archived/architecture/2026-07-19-gui-web-client-architecture.md) — the slot and snapshot layering the two render sites sit in.

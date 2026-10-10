@@ -112,7 +112,6 @@ This section explains the design decisions behind the provider and where the cod
 | [`src/translate.ts`](src/translate.ts) | Capability checks, UTF-16 negotiation, `Location`/`LocationLink`/hover normalization |
 | [`src/abort.ts`](src/abort.ts) | Cancellation helpers fusing caller and disposal signals |
 | [`src/typescript.ts`](src/typescript.ts) | TypeScript install inspection and per-workspace native/wrapper server selection |
-| — | No runtime invariant companion is published; process pools and per-workspace queues are private implementation state, and this provider publishes no independent lifecycle event stream or enumerable snapshot. |
 
 ### Protocol behavior
 

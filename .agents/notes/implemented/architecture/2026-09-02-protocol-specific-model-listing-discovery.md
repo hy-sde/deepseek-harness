@@ -6,7 +6,7 @@ English | [中文](2026-09-02-protocol-specific-model-listing-discovery.zh.md)
 
 ## Problem
 
-The [draft provider interrogation](2026-08-04-draft-provider-endpoint-interrogation.md) originally read the OpenAI-compatible `data` array only. Some compatible gateways instead publish an enriched `models` object, while Anthropic publishes a native model-listing route with different authentication and URL rules. Treating either case as unsupported forced a user to copy model ids and capacities by hand even though the endpoint disclosed them.
+The [draft provider interrogation](../../archived/architecture/2026-08-04-draft-provider-endpoint-interrogation.md) originally read the OpenAI-compatible `data` array only. Some compatible gateways instead publish an enriched `models` object, while Anthropic publishes a native model-listing route with different authentication and URL rules. Treating either case as unsupported forced a user to copy model ids and capacities by hand even though the endpoint disclosed them.
 
 One gateway could be made to return an OpenAI-style array by sending an OpenAI SDK `User-Agent`. That behavior was undocumented, changed request attribution, and made the reply depend on a client identity rather than on a supported response parser.
 

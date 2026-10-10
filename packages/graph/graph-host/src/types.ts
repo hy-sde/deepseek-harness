@@ -13,7 +13,7 @@ import type { AgentGraphController } from '@deepseek-ai/dsh-tool-graph'
 import type { GraphWakeRuntime } from '@deepseek-ai/dsh-graph-wakes'
 import type { GraphControlStore } from '@deepseek-ai/dsh-graph-control'
 import type { AgentGraphExecutor } from '@deepseek-ai/dsh-graph-stream'
-import type { SubagentRun, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
+import type { SubagentActivation, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 import type { KvUnit, KvUnitDescriptor } from '@deepseek-ai/dsh-storage'
 import type { SessionEventMap } from '@deepseek-ai/dsh-session/types'
 import type { SessionGraphProjection } from '@deepseek-ai/dsh-graph-projection/types'
@@ -25,10 +25,10 @@ export interface GraphHostStorage {
   open(descriptor: KvUnitDescriptor): Promise<KvUnit>
 }
 
-/** Subagent seam: one named-provider start (plugin maps it to `ctx.subagents.start`). */
+/** Subagent seam: one provider activation (plugin maps it to `ctx.subagents.startActivation`). */
 export interface GraphHostSubagents {
   readonly provider: string
-  start(name: string, request: SubagentStartRequest): Promise<SubagentRun>
+  start(name: string, request: SubagentStartRequest): Promise<SubagentActivation>
 }
 
 /** One pooled worktree the host can adopt or cut (plugin maps it to the git engine pool). */

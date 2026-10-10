@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/cordis-plugin-hmr",
   "description": "Hot Module Replacement Plugin for Cordis",
-  "version": "0.1.7-rc.2",
+  "version": "1.0.20-alpha.1",
   "publishConfig": {
     "access": "public"
   },
@@ -37,7 +37,7 @@
     },
     "description": {
       "en": "Hot Module Replacement",
-      "zh": "\u6a21\u5757\u70ed\u66ff\u6362"
+      "zh": "模块热替换"
     }
   },
   "peerDependencies": {

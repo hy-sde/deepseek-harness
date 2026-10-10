@@ -41,6 +41,6 @@ Status: implemented
 ## 相关资料
 
 - [保留可忽略的外部会话事件](../architecture/2026-08-30-retain-ignorable-external-session-events.zh.md)——拥有本变更所依赖的仅读取侧未知类型门禁。
-- [会话持久化作为抽象服务](../architecture/2026-06-14-session-persistence.zh.md)——拥有本次精简所缩小的 seam。
-- [Zstandard JSONL 会话日志](../architecture/2026-07-19-zstandard-jsonl-session-logs.zh.md)——拥有这些读取与追加流经的帧容器。
+- [会话持久化作为抽象服务](../../archived/architecture/2026-06-14-session-persistence.md)——拥有本次精简所缩小的 seam。
+- [Zstandard JSONL 会话日志](../../archived/architecture/2026-07-19-zstandard-jsonl-session-logs.md)——拥有这些读取与追加流经的帧容器。
 - [会话标识与日志位置](../feature/2026-07-10-agent-session-identity-and-log-location.zh.md)——部分被取代：其 `DSH_SESSION_ID` 与 shell-env 注册表决策仍然有效；其 `locate`/`DSH_SESSION_JSONL`/`transcript_path` 决策在此移除。

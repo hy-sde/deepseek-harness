@@ -18,7 +18,7 @@ Status: implemented
 
 `@deepseek-ai/dsh-invariants` 是与产品无关的 Cordis 服务插件，注册 `ctx.invariants`。它只负责配置、注册唯一性、子 fiber 生命周期和带包归属的失败；不导入 session、agent、scope 或 agent-loop 包，也不包含这些包的检查。
 
-只有拥有可独立观察的事件或可变数据关系时，工作区包才发布 `./invariant` 伴随插件；该 companion 会注册自己完整且准确的 npm 包名。没有该关系的包会省略 companion 与发布接线，并在 README 中记录原因；[运行时约定 Agent Note](2026-07-19-package-invariant-runtime-contracts.zh.md) 与[省略决策](../simplification/2026-08-28-omit-unneeded-invariant-companions.zh.md)禁止生成占位符、空 installer 和合成 API 形状断言。包的根入口不会隐式导入或注册诊断，因此加载根包不会改变运行时检查，也不要求不变式服务存在。
+只有拥有可独立观察的事件或可变数据关系时，工作区包才发布 `./invariant` 伴随插件；该 companion 会注册自己完整且准确的 npm 包名。没有该关系的包会省略 companion 与发布接线，并在 README 中记录原因；[运行时约定 Agent Note](../../archived/architecture/2026-07-19-package-invariant-runtime-contracts.md) 与[省略决策](../../archived/simplification/2026-08-28-omit-unneeded-invariant-companions.md)禁止生成占位符、空 installer 和合成 API 形状断言。包的根入口不会隐式导入或注册诊断，因此加载根包不会改变运行时检查，也不要求不变式服务存在。
 
 ### 配置与选择
 

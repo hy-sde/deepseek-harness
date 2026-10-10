@@ -25,7 +25,7 @@ The Host provides the following GUI wiring on the Workspace entity:
 | `session.create({ workspaceId, sessionId? })` | Resolves cwd from the Workspace, idempotently creates a Session with an optional preallocated id, and attaches it |
 | `session.create({ cwd })` | Remains available to non-Workspace callers and creates an Ungrouped Session |
 
-The Host stream pushes Workspace and Session deltas, including `host/workspace-removed`, and the Client refreshes the `workspace.list` and `session.list` baselines separately after reconnecting. Registration-deletion ownership and safety are defined in the [Workspace registration deletion Agent Note](2026-07-27-workspace-registration-deletion.md).
+The Host stream pushes Workspace and Session deltas, including `host/workspace-removed`, and the Client refreshes the `workspace.list` and `session.list` baselines separately after reconnecting. Registration-deletion ownership and safety are defined in the [Workspace registration deletion Agent Note](../../archived/feature/2026-07-27-workspace-registration-deletion.md).
 
 A Workspace's `sessionIds` is an ordered candidate index. A membership projection requires both that an id appear in the index and that the corresponding canonicalized `SessionHeader.cwd` equal the Workspace path; SessionHeader does not gain a `workspaceId`. A Session whose cwd matches but whose id is absent from the index remains Ungrouped, while an indexed id is filtered out if its header is missing, its cwd is invalid, or its cwd does not match. Two Workspace indexes claiming the same Session is corrupt state and fails loudly.
 

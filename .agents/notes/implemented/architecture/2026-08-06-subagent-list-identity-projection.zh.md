@@ -10,7 +10,7 @@ Status: implemented
 
 同一根因还有第二个症状：host 侧的 `hasSubagentDescriptor()` 在每次 Agent（智能体）绑定 RPC 的属主判定上扫描目标会话的 own suffix，即便 `SessionHeader.origin` 已经回答了同一个问题的绝大部分。
 
-根因在于 [durable-subagent-catalog 决策](../feature/2026-07-22-durable-subagent-catalog-and-list-agents.zh.md)把描述符事件（`subagent/descriptor`）定为目录的唯一持久权威，却没有为描述符读取配任何缓存层，并把逐 child 双读明确接受为「无索引的正确性基线」。[web subagent conversations](../feature/2026-07-27-web-subagent-conversations.zh.md)（#1569）已把「是不是 subagent」放进了 header（`SessionHeader.origin`），身份判定不再读日志；mode 与 label 仍然要扫。
+根因在于 [durable-subagent-catalog 决策](../feature/2026-07-22-durable-subagent-catalog-and-list-agents.zh.md)把描述符事件（`subagent/descriptor`）定为目录的唯一持久权威，却没有为描述符读取配任何缓存层，并把逐 child 双读明确接受为「无索引的正确性基线」。[web subagent conversations](../../archived/feature/2026-07-27-web-subagent-conversations.md)（#1569）已把「是不是 subagent」放进了 header（`SessionHeader.origin`），身份判定不再读日志；mode 与 label 仍然要扫。
 
 ## 决策
 
@@ -185,5 +185,5 @@ export type SubagentListEntry =
 - [session projections 与命令生命周期日志](../../proposed/architecture/2026-07-27-session-projection-and-command-log.zh.md)——registry 约定的权威；本记录为其新增 `subagent` 身份 unit，并消费其 live 与 cold wire 快照。
 - [session projection 状态与客户端视图](2026-08-19-session-projection-state-and-client-views.zh.md)——state/client 拆分；`subagent` 与 `subagentTiming` 都提供客户端 wire view。
 - [session projections 作为必需接缝](2026-08-19-session-projection-mandatory-seam.zh.md)——`sessionProjections` 转为必需注入；列表的错误约定随其变化（registry 缺席是激活期失败，投影错误码删除）。
-- [web subagent conversations](../feature/2026-07-27-web-subagent-conversations.zh.md)——`SessionHeader.origin` 的出处（#1569），身份判定去日志化的前半步；其 history 冷读（inspect 前缀加 registry 折叠）是本记录取值阶梯的同款先例。
+- [web subagent conversations](../../archived/feature/2026-07-27-web-subagent-conversations.md)——`SessionHeader.origin` 的出处（#1569），身份判定去日志化的前半步；其 history 冷读（inspect 前缀加 registry 折叠）是本记录取值阶梯的同款先例。
 - [发布前可复用的 Session 准备阶段](2026-08-05-session-preparation.zh.md)——`inspect()` 冷读与 LRU 复用；cold child 整读的成本模型建立其上。

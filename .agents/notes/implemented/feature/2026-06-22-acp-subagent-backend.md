@@ -6,7 +6,7 @@ English | [中文](2026-06-22-acp-subagent-backend.zh.md)
 
 ## Problem
 
-The subagent seam ([the seam Agent Note](2026-06-21-subagent-capability-seam.md)) was built so multiple backends coexist by name on `ctx.subagents`. The in-process backends (`-spawn`/`-fork`) run a child as a second `Agent` on the SAME cordis context — cheap, but the child shares the parent's process, model client, and tools. The seam's whole point was to also support an OUT-OF-PROCESS child reached over a protocol, proving the abstraction generalizes across a process boundary. This Agent Note adds the first such backend: an Agent Client Protocol (ACP) client.
+The subagent seam ([the seam Agent Note](../../archived/feature/2026-06-21-subagent-capability-seam.md)) was built so multiple backends coexist by name on `ctx.subagents`. The in-process backends (`-spawn`/`-fork`) run a child as a second `Agent` on the SAME cordis context — cheap, but the child shares the parent's process, model client, and tools. The seam's whole point was to also support an OUT-OF-PROCESS child reached over a protocol, proving the abstraction generalizes across a process boundary. This Agent Note adds the first such backend: an Agent Client Protocol (ACP) client.
 
 ## Decision
 
@@ -60,4 +60,4 @@ Every run pays a fresh subprocess (spawn + `initialize` + `newSession`). The par
 
 ## Product-provider siblings
 
-The [Codex app-server and Claude Code Agent SDK providers](2026-08-04-claude-code-and-codex-subagent-backends.md) apply the same out-of-process spawn/prompt/settle/cancel boundary as siblings registered by name. A2A remains a future sibling transport; the ACP backend proves that the subagent seam supports this boundary without owning product-private protocols.
+The [Codex app-server and Claude Code Agent SDK providers](../../archived/feature/2026-08-04-claude-code-and-codex-subagent-backends.md) apply the same out-of-process spawn/prompt/settle/cancel boundary as siblings registered by name. A2A remains a future sibling transport; the ACP backend proves that the subagent seam supports this boundary without owning product-private protocols.

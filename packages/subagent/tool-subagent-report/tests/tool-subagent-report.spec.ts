@@ -87,13 +87,14 @@ async function setup(options: { load?: boolean; config?: tool.Config } = {}) {
 
 /** Start and resolve one resident continuable child. */
 async function startChild(ctx: Context, parent: Agent, prompt = 'child task') {
-  const started = await ctx.subagents.startContinuable({
+  const started = await ctx.subagents.startActivation({
     provider: 'spawn',
     label: prompt,
     request: {
       prompt: [{ type: 'text', text: prompt }],
       parent,
     },
+    delivery: 'parent',
     signal: testSignal,
   })
   const child = await vi.waitFor(() => {
@@ -194,7 +195,7 @@ describe('dsh-tool-subagent-report', () => {
     await ctx.plugin(control)
     expect(ctx.tools.schemas().map(schema => schema.name)).toContain('send_message')
 
-    const started = await ctx.subagents.startContinuable({
+    const started = await ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'restricted child',
       request: {
@@ -202,6 +203,7 @@ describe('dsh-tool-subagent-report', () => {
         parent,
         toolFilter: { allow: [] },
       },
+      delivery: 'parent',
       signal: testSignal,
     })
     const child = await vi.waitFor(() => {
@@ -372,7 +374,7 @@ describe('dsh-tool-subagent-report', () => {
     expect((await callReport(ctx, child, 'orphaned')).isError).toBe(true)
 
     adapter.release()
-    const draining = ctx.subagents.drainContinuableDescendants([child])
+    const draining = ctx.subagents.drainDescendants([child])
     await expect(ctx.subagents.reportFrom(child, [{ type: 'text', text: 'draining' }], {
       delivery: 'quiet',
       signal: testSignal,
@@ -503,13 +505,14 @@ describe('dsh-tool-subagent-report', () => {
     const announced: SessionId[] = []
     const listener = (session: { id: SessionId }): void => { announced.push(session.id) }
     const removeListener = ctx.on('session/created', listener)
-    await expect(ctx.subagents.startContinuable({
+    await expect(ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'racing child',
       request: {
         prompt: [{ type: 'text', text: 'racing child' }],
         parent,
       },
+      delivery: 'parent',
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'ACTIVATION_SETUP_REVOKED' })
     removeListener()
@@ -529,13 +532,14 @@ describe('dsh-tool-subagent-report', () => {
     const announced: SessionId[] = []
     const removeListener = ctx.on('session/created', (session) => { announced.push(session.id) })
 
-    await expect(ctx.subagents.startContinuable({
+    await expect(ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'revoked child',
       request: {
         prompt: [{ type: 'text', text: 'revoked child' }],
         parent,
       },
+      delivery: 'parent',
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'ACTIVATION_SETUP_REVOKED' })
     removeListener()

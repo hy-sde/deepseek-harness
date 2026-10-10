@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-api-wiki-controller",
   "description": "LLM-wiki Remote commands over the headless logseq graph seam",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },

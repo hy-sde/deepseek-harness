@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-vcs",
   "description": "Native vcs plumbing: the host ctx.vcs service (pi-vcs CLI resolution + probe, repo-info / rev-diff / staged-diff / watch over the subprocess seam) wrapping the narrow native slice of the omp vcs surface; the git service stays the default path",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.1-alpha.2",
   "publishConfig": {
     "access": "public"
   },

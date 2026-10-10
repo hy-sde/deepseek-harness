@@ -7,11 +7,12 @@
 
 已发布插件向 `ctx.tools` 提供的所有面向模型的工具：模型通过系统提示词组装获得的 `name`、`description` 和 JSON Schema `parameters`。本目录是[子系统页面](subsystems/core.zh.md)（类型及每页生成的 `cordis-surface` 接线区域）的补充；本页列出的是向 agent（智能体）提供的*工具*。
 
-英文源文件由系统**生成**，并通过 `pnpm run verify-tool-catalog`（`doc-sync`（文档同步门禁）的一部分）验证新鲜度；本中文文件作为经评审对侧通过双语配对维护。与 Cordis 目录（纯源码 AST 处理）不同，英文生成器会在真实上下文中**启动**每个工具插件并读取 `ctx.tools.schemas()`，因为工具 schema 无法通过静态分析完全确定，例如运行时展开的枚举、拼接的描述、由配置决定的名称以及使用原始 JSON Schema 的 MCP 工具。完整性守卫会 glob 匹配 `packages/*/tool-*`；如果生成器的启动 manifest（元数据清单）遗漏任何包，检查就会失败，因此新工具不会在无人察觉的情况下缺少文档。。
+英文源文件由系统**生成**，并通过 `pnpm run verify-tool-catalog`（`doc-sync`（文档同步门禁）的一部分）验证新鲜度；本中文文件作为经评审对侧通过双语配对维护。与 Cordis 目录（纯源码 AST 处理）不同，英文生成器会在真实上下文中**启动**每个工具插件并读取 `ctx.tools.schemas()`，因为工具 schema 无法通过静态分析完全确定，例如运行时展开的枚举、拼接的描述、由配置决定的名称以及使用原始 JSON Schema 的 MCP 工具。完整性守卫会 glob 匹配 `packages/*/tool-*`；如果生成器的启动 manifest（元数据清单）遗漏任何包，检查就会失败，因此新工具不会在无人察觉的情况下缺少文档。
 
 范围：`packages/*/tool-*` 下已发布的产品工具，每个工具均使用其**默认**配置启动；但如果某个 Config 字段是**必填项**且没有默认值，生成器就必须作出选择，对应包的说明会记录本页展示的是哪个分支。注册的工具**名称**可以是加载时配置，例如 `tool-subagent` 的 `toolName`，因此部署可能以不同名称或额外名称提供某个包；如果存在随产品发布的别名，对应包的说明会予以记录。`examples/` 中的演示工具（例如 `echo`）不在范围内，这与 Cordis 目录仅涵盖包的范围一致。
 
 <a id="tool-package-map"></a>
+
 ## 工具包映射
 
 下表将模型可见的工具名称与其背后的插件包和服务 seam 对应起来。各包章节随后给出确切的 JSON Schema。
@@ -22,36 +23,38 @@
 | `@deepseek-ai/dsh-mcp-resources` | `list_mcp_resource_templates`, `list_mcp_resources`, `read_mcp_resource` | `ctx.tools`, `ctx.mcpResources` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-experimental-browser-use-stagehand-native` | `stagehand_act`、`stagehand_extract`、`stagehand_navigate`、`stagehand_observe`、`stagehand_screenshot`、`stagehand_tabs` | `ctx.browserUse`、`ctx.agents`、`ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-ask-user` | `ask_user_question` | `ctx.tools`、`ctx.userQuestions` | `tool/call`、`tool/result after an answer or timeout`、`late user/message` | - | ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才启用前台超时与 pending 结果，同时问题仍可回答；timed 模式内 `timeout: -1` 让本次调用无限期阻塞。 |
-| `@deepseek-ai/dsh-tools` | `run_code` | `ctx.tools`、`ctx.ptcRuntime (execution time)`、`ctx.systemPrompt` | `tool/call`、`one tool/ptc-dispatch-start + tool/ptc-dispatch pair per bridged sub-call`、`tool/result` | - | 在 `mode: ptc`／`mode: both` 下，它由工具注册表所有，作为可过滤能力层之外的保留传输机制（参见 PTC mode Agent Note）。在 `ptc` 下，它是注册表对协议格式（wire format）的唯一贡献；其他可见能力在使用已加载运行时语言生成的 SDK 章节中声明。程序通过 binding 调用这些能力，调用按照原生并发约定调度：启动顺序和策略遵循提交顺序，并发安全的函数体最多重叠执行 `maxParallelSubCalls` 个。调用会重新进入完整且受守卫保护的工具流水线，并将每个嵌套执行关联到此外层结果。 |
+| `@deepseek-ai/dsh-tools` | `run_code` | `ctx.workingDirectory (Agent executions)`、`ctx.tools`、`ctx.ptcRuntime (execution time)`、`ctx.systemPrompt` | `tool/call`、`one tool/ptc-dispatch-start + tool/ptc-dispatch pair per bridged sub-call`、`tool/result` | - | 在 `mode: ptc` 下，它由工具注册表所有，作为可过滤能力层之外的保留传输机制（参见 PTC mode Agent Note）。在 `ptc` 下，它是注册表对协议格式（wire format）的唯一贡献；其他可见能力在使用已加载运行时语言生成的 SDK 章节中声明。程序通过 binding 调用这些能力，调用按照原生并发约定调度：启动顺序和策略遵循提交顺序，并发安全的函数体最多重叠执行 `maxParallelSubCalls` 个。调用会重新进入完整且受守卫保护的工具流水线，并将每个嵌套执行关联到此外层结果。 |
 | `@deepseek-ai/dsh-plan-mode` | `exit_plan_mode` | `ctx.tools`、`ctx.systemPrompt`、`ctx.userQuestions (execution time, opportunistic)` | `tool/call`、`plan/mode inactive on an approved review`、`tool/result` | - | 规划未激活时，exit_plan_mode 仍保留在面向模型的 schema 中，这样状态转换不会在规划策略变更之外额外造成工具目录变动。其执行路径会拒绝规划模式之外的调用；在规划模式下，它通过用户交互 seam 提交计划（批准／根据反馈继续规划），批准后会在步骤边界记录规划模式已停用。 |
-| `@deepseek-ai/dsh-tool-bash` | `bash` | `ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；禁用 `enableRunInBackground` 配置（默认为 true）后，该参数会被完全移除。 |
-| `@deepseek-ai/dsh-tool-present` | `present` | `ctx.tools`、`ctx.fs`、`ctx.sessionProjections` | `tool/call`、`deliverables/presented after a successful final result`、`tool/result` | - | 交付物归属于调用它的 Session；Web ui-deliverables 提供源文件打开与卡片展示。 |
-| `@deepseek-ai/dsh-tool-pwsh` | `pwsh` | `ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费方（由 `@deepseek-ai/dsh-pwsh-local` 等 PowerShell 执行器为 `ctx.shell` 提供后端）；除沙箱接口外，它逐项对应 bash 工具调用。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具收集／停止；托管的 `DSH_*` 环境来自 `@deepseek-ai/dsh-shell-env`。每次调用都在新进程中运行，不使用持久 PTY 会话。路径采用原生 `C:\...` 形式，变量采用 `$env:NAME`。 |
+| `@deepseek-ai/dsh-tool-bash` | `bash` | `ctx.workingDirectory`、`ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs for run_in_background and the job-backed foreground path` | `tool/call`、`tool/result` | - | bash 工具是 bash 执行器 seam 面向模型的消费方。组合中有 job 注册表时，每次调用一启动就注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；没有注册表或 `enableRunInBackground: false` 时，工具注册不带 `run_in_background` 参数的纯前台 schema。 |
+| `@deepseek-ai/dsh-tool-present` | `present` | `ctx.workingDirectory`、`ctx.tools`, `ctx.fs`, `ctx.sessionProjections` | `tool/call`, `deliverables/presented 在成功的最终结果之后`, `tool/result` | - | 交付归调用方 Session 所有；Web ui-deliverables 提供源文件打开与卡片。 |
+| `@deepseek-ai/dsh-tool-pwsh` | `pwsh` | `ctx.workingDirectory`、`ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs for run_in_background and the job-backed foreground path` | `tool/call`、`tool/result` | - | pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费方（由 `@deepseek-ai/dsh-pwsh-local` 等 PowerShell 执行器为 `ctx.shell` 提供后端）；除沙箱接口外，它逐项对应 bash 工具调用。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具收集／停止；托管的 `DSH_*` 环境来自 `@deepseek-ai/dsh-shell-env`。每次调用都在新进程中运行，不使用持久 PTY 会话。路径采用原生 `C:\...` 形式，变量采用 `$env:NAME`。 |
 | `@deepseek-ai/dsh-tool-cordis` | `cordis_inspect_list`, `cordis_inspect_query` | `ctx.tools`, `ctx.cordisInspect` | `tool/call`, `tool/result` | - | 创造模式提供两个只读运行时检查工具。Cordis host runner 提供检查注册表；Client 查询需要已连接页面。持久化变更编写为组合包，再通过 plugin_manager 安装。 |
-| `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 bash 工具；部署组合提供 PTY 后端，并可覆盖面向模型的环境描述。 |
+| `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.workingDirectory`、`ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 bash 工具；部署组合提供 PTY 后端，并可覆盖面向模型的环境描述。 |
 | `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`tool/result` | - | 四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。 |
-| `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 pwsh 工具，持久 bash 工具的 Windows 对应物；部署组合提供 pwsh 方言的 PTY 后端，并可覆盖面向模型的环境描述。 |
-| `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`、`ctx.fs` | `tool/call`、`fs/observed after view presence/absence, edit absence, or successful mutation`、`tool/result` | - | 独立于文件系统接缝的查看／创建／唯一字面替换／行插入工具；可与任何 Shell 或终端 API 组合使用。 |
-| `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (read_image registration)`、`ctx.llm + an image-capable route (read_image execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时 `read_image` 不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。 |
+| `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.workingDirectory`、`ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 pwsh 工具，持久 bash 工具的 Windows 对应物；部署组合提供 pwsh 方言的 PTY 后端，并可覆盖面向模型的环境描述。 |
+| `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`、`ctx.fs` | `tool/call`、`fs/observed after view presence/absence, edit absence, or successful mutation`、`tool/result` | - | 基于文件系统 seam 的独立查看／创建／唯一字面量替换／按行插入工具；可与任何 shell 或终端接口组合。 |
+| `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.workingDirectory`、`ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (image-tool registration)`、`ctx.llm + an image-capable route (image-tool execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时图片工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图片输入，否则拒绝。 |
 | `@deepseek-ai/dsh-tool-graph` | `update_agent_graph`、`view_agent_graph`、`yield_agent_graph` | `ctx.tools`、`执行时归属的 Agent（root／direct-only 强制由宿主侧执行）`、`可选的 `agentGraphController` 服务（通过 ctx.get 读取）` | `tool/call`、`tool/result` | - | 宿主提供控制器上的 Agent Graph 监督工具（Maka 移植，切片 P4）：恰好三个模型可见工具 view_agent_graph / update_agent_graph / yield_agent_graph，外加 orchestration:graph 提示段。控制器服务是可选的（ctx.get），因此没有图宿主时会话也能创建；在提供之前每次调用都会以 [agent-graph-unavailable] 明确失败，宿主强制 root-only、direct-only 寻址。 |
-| `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
+| `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.workingDirectory`、`ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`、`ast_grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt`、`ctx.fs (ast_edit apply)` | `tool/call`、`fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`、`tool/result` | - | ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。 |
 | `@deepseek-ai/dsh-tool-memory` | `learn`、`memory_edit`、`mine_sessions`、`recall`、`reflect`、`retain` | `ctx.tools`、`ctx.memory`、`ctx.systemPrompt` | `tool/call`、`project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`、`tool/result` | - | retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。同时挂载 `sessionQuery` 服务（tool-session-query 行）时，`recall`/`reflect` 合并过往会话命中（source `session`、只读、带 sessionId/seq 溯源），`mine_sessions` 从最富教训的近期会话日志中收割教训——候选按回合失败、工具失败、压缩摘要与全部完成的待办排序（以新近度作平局裁决）——以 `learn` 条目存储、按运行去重，并标注会话结局（`completed`、`errored: N failed turns`、`aborted`）；没有该服务时所有会话特性降级为无操作。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。 |
-| `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
+| `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.workingDirectory`、`ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
-| `@deepseek-ai/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
+| `@deepseek-ai/dsh-tool-schedule` | `schedule_create`、`schedule_delete`、`schedule_list`、`schedule_update` | `ctx.tools`、`ctx.schedule` | `tool/call`、Schedule storage domain 创建、更新或删除、`tool/result` | - | preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四个管理工具。每次调用都作用于调用方 Agent 的 Session。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。 |
 | `@deepseek-ai/dsh-tool-debug` | `debug` | `ctx.tools`, `ctx.dap`, `ctx.systemPrompt`, `a session workspace cwd` | `tool/call`, `tool/result`, `the composed debuggee process state via the mounted DAP adapter` | - | debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter. |
 | `@deepseek-ai/dsh-code-runtime-kernels` | `run_kernel_code` | `ctx.tools`、`ctx.systemPrompt`、`调用时 PATH 上的 python3 与 node 二进制（或配置 pythonPath/nodePath）` | `tool/call`、`kernel 子进程会话状态（按 session id，reset: true 时重置）`、`tool/result` | - | run_kernel_code 在持久化 kernel（python3 或 node 子进程，仅标准库／内置）中执行模型代码，共享同一个宿主驱动：按 session id 的 kernel 状态与 reset、墙钟预算、SIGINT→SIGTERM→SIGKILL 升级、恶意对端解析。这是进程隔离而非安全边界——与 harness 进程后端相同的信任（port_omp.md 第 1 项）。 |
-| `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
+| `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.workingDirectory`、`ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
-| `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
+| `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.workingDirectory`、`ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`、`session_event_search`、`session_event_trace`、`session_search`、`session_trace` | `ctx.tools`、`ctx.systemPrompt`、`ctx.sessionQuery`、`a calling Agent for workspace authority` | `tool/call`、`tool/result` | - | 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。 |
-| `@deepseek-ai/dsh-tool-subagent` | `list_subagent_models`、`subagent` | `ctx.tools`、`ctx.subagents`、`ctx.systemPrompt`、`用于模型发现和所选路由校验的 ctx.llm` | `tool/call`、`tool/result`、`child session events through the chosen provider` | `subagent`、`subagent_fork` | 注册的委派工具名称取决于加载时 `toolName` 配置（默认为 `subagent`）；上述默认 schema 关闭模型选择，而发现 schema 则展示为已启用 Session 中可用的固定配套工具。Web preset 会在每个新顶层 Session 创建时读取插件页偏好，并为其子 Session 保留该决定；`subagent_fork` 始终使用固定路由。每个实例通过 `modelSelectionSettings`、`backgroundMode` 与 `enableRunInBackground` 独立控制是否读取模型选择设置及其后台行为。 |
-| `@deepseek-ai/dsh-tool-subagent-control` | `interrupt_agent`、`list_agents`、`send_message` | `ctx.tools`、`ctx.subagents`、`ctx.agents and ctx.sessionProjections (list_agents only)` | `tool/call`、`tool/result`、`child session events through ctx.subagents` | - | 这些是控制可继续后台 subagent 的全局命名工具：绑定提供方的 `tool-subagent` 实例注册不同的委派工具；本包注册一次 `send_message` 和 `interrupt_agent`，另由 `list_agents` 通过单独加载的 `/list-agents` 插件提供，其目录行使用 sessionProjections 和实时 Agent 注册表。 |
+| `@deepseek-ai/dsh-tool-subagent` | `list_subagent_models`、`subagent` | `ctx.tools`、`ctx.subagents`、`ctx.systemPrompt`、`用于模型发现和所选路由校验的 ctx.llm` | `tool/call`、`tool/result`、`child session events through the chosen provider` | `subagent`、`subagent_fork` | 注册的委派工具名称取决于加载时 `toolName` 配置（默认为 `subagent`）；上述默认 schema 关闭模型选择，而发现 schema 则展示为已启用 Session 中可用的固定配套工具。Web preset 会在每个新顶层 Session 创建时读取插件页偏好，并为其子 Session 保留该决定；`subagent_fork` 始终使用固定路由。每个实例通过 `provider` 选择后端，通过 `modelSelectionSettings` 读取模型选择设置。每次委派都会立即返回子代理 id；本地子代理接受后续消息，外部后端自动汇报单次执行结果。 |
+| `@deepseek-ai/dsh-tool-subagent-control` | `interrupt_agent`、`list_agents`、`send_message` | `ctx.tools`、`ctx.subagents`、`ctx.agents and ctx.sessionProjections (list_agents only)` | `tool/call`、`tool/result`、`child session events through ctx.subagents` | - | 这些是用于发现、中断托管 subagent 和向本地子代理发送消息的全局命名工具：绑定提供方的 `tool-subagent` 实例注册不同的委派工具；本包注册一次 `send_message` 和 `interrupt_agent`，另由 `list_agents` 通过单独加载的 `/list-agents` 插件提供，其目录行使用 sessionProjections 和实时 Agent 注册表。 |
 | `@deepseek-ai/dsh-tool-subagent-report` | `report` | `ctx.subagents`、`ctx.systemPrompt`、`a live continuable in-process child Agent` | `tool/call`、`tool/result`、`a user-role message in the direct parent session` | - | 按可继续的进程内子级注册，而非全局注册，因此该 schema 仅在这种子级内部可见，并且不受其全局 `toolFilter` 影响。同一份贡献还会安装子级作用域的 `tool:report` 系统提示词 section，本目录不渲染该 section。面向父级的 `send_message` 工具单独安装。 |
-| `@deepseek-ai/dsh-tool-jobs` | `job_kill`、`job_list`、`job_output` | `ctx.tools`、`ctx.jobs`、`ctx.systemPrompt` | `tool/call`、`tool/result`、`user/message via agent.inject() for background completion notices` | - | 与任务种类无关的后台任务控制器：后台 bash 命令、PTY 发送和 subagent 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。 |
-| `@deepseek-ai/dsh-experimental-tool-agent-team` | `interrupt_agent`、`list_agents`、`send_message`、`spawn_teammate`、`team_task_create`、`team_task_get`、`team_task_list`、`team_task_update`、`wait_agent` | `ctx.tools`、`ctx.systemPrompt`、`ctx.agentTeams`、`an exact live Team member Agent` | `tool/call`、`team/member`、`team/message/queued`、`team/message/delivered`、`team/task`、`tool/result` | - | 这 9 个工具限定于隐式 Team Lead 与持久 teammate 作用域。随产品发布的 dsh-base bundle 默认禁用该包；文档中的 Agent Teams profile patch 会启用它，并禁用旧 continuable child 的同名控制工具。 |
+| `@deepseek-ai/dsh-tool-jobs` | `job_kill`、`job_list`、`job_output` | `ctx.tools`、`ctx.jobs`、`ctx.systemPrompt` | `tool/call`、`tool/result`、`user/message via agent.inject() for background completion notices` | - | 与任务种类无关的后台任务控制器：后台 bash 命令与 PTY 发送 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。 |
+| `@deepseek-ai/dsh-experimental-tool-agent-team` | `interrupt_agent`、`list_agents`、`send_message`、`spawn_teammate`、`team_task_create`、`team_task_get`、`team_task_list`、`team_task_update`、`wait_agent` | `ctx.tools`、`ctx.systemPrompt`、`ctx.agentTeams`、`an exact live Team member Agent` | `tool/call`、`team/member`、`team/task`、`agent/inbox/spliced`、`user/message on inbox claim`、`tool/result` | - | 这 9 个工具限定于隐式 Team Lead 与持久 teammate 作用域。随产品发布的 dsh-base bundle 默认禁用该包；文档中的 Agent Teams profile patch 会启用它，并禁用旧 continuable child 的同名控制工具。 |
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
+| `@deepseek-ai/dsh-tool-working-directory` | `working_directory` | `ctx.tools`, `ctx.workingDirectory` | `tool/call`, `working-directory/change`, `user context for directory changes`, `tool/result` | - | 读取或改变调用方 Session 的目录。已有 shell 和进程保留自己的目录；原始元数据和权限根目录保持不变。 |
+| `@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` | `ctx.tools`, `ctx.worktrees`, `a calling Agent` | `tool/call`, `Git branch and checkout`, `working-directory/change`, `tool/result` | - | 仅通过显式实验组合加载。在现有写权限下从固定的本地提交创建新分支与检出目录，再改变 Session 工作目录。离开时保留分支与检出目录。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-workspace-dependencies` | `load_workspace_dependencies` | `ctx.tools` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
@@ -64,7 +67,6 @@
 | `@deepseek-ai/dsh-tool-openwiki` | `openwiki_begin`、`openwiki_finish`、`openwiki_next_page`、`openwiki_submit_page`、`openwiki_submit_plan` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | 仓库 wiki 生命周期工具（openwiki_begin/submit_plan/next_page/submit_page/finish）在进程内运行移植的 openwiki 0.4 确定性引擎核心——可恢复的 .run.json 检查点、页面 manifest、带仓库证据解析的 Grounded Claims、OKF 前言修复与索引同步——无需外部 openwiki CLI，并与 codebase-memory 接通以做结构化发现。 |
 
 <a id="deepseek-aidsh-plugin-manager"></a>
-
 
 ## `@deepseek-ai/dsh-plugin-manager`
 
@@ -93,7 +95,7 @@
     },
     "target": {
       "type": "string",
-      "description": "Plugin entry id, bundle package name, or installation spec, according to action."
+      "description": "Plugin entry id, bundle package name, or installation spec, according to action. For an Official catalog entry, pass list_bundles installTarget.spec to install_bundle."
     },
     "enabled": {
       "type": "boolean",
@@ -563,13 +565,13 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 {
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Provide `description` before `code` in the arguments. Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
+    },
     "code": {
       "type": "string",
       "description": "The program: the body of an async TypeScript function."
-    },
-    "description": {
-      "type": "string",
-      "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
     },
     "timeoutMs": {
       "type": "number",
@@ -597,8 +599,8 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
     }
   },
   "required": [
-    "code",
-    "description"
+    "description",
+    "code"
   ]
 }
 ```
@@ -650,13 +652,13 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 {
   "type": "object",
   "properties": {
-    "command": {
-      "type": "string",
-      "description": "The bash command to execute."
-    },
     "description": {
       "type": "string",
       "description": "Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"npm install\" → \"Install package dependencies\"."
+    },
+    "command": {
+      "type": "string",
+      "description": "The bash command to execute."
     },
     "timeoutMs": {
       "type": "number",
@@ -672,8 +674,8 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
     }
   },
   "required": [
-    "command",
-    "description"
+    "description",
+    "command"
   ]
 }
 ```
@@ -743,13 +745,13 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
 {
   "type": "object",
   "properties": {
-    "command": {
-      "type": "string",
-      "description": "The PowerShell command to execute."
-    },
     "description": {
       "type": "string",
       "description": "Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"Get-Process\" → \"List running processes\"."
+    },
+    "command": {
+      "type": "string",
+      "description": "The PowerShell command to execute."
     },
     "timeoutMs": {
       "type": "number",
@@ -765,8 +767,8 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
     }
   },
   "required": [
-    "command",
-    "description"
+    "description",
+    "command"
   ]
 }
 ```
@@ -1110,7 +1112,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
   "properties": {
     "file_path": {
       "type": "string",
-      "description": "Path to edit, resolved by the filesystem backend."
+      "description": "Path to edit, resolved by the filesystem backend. Provide `file_path` before `old_string` and `new_string` in the arguments."
     },
     "old_string": {
       "type": "string",
@@ -1198,7 +1200,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
   "properties": {
     "file_path": {
       "type": "string",
-      "description": "Path to write, resolved by the filesystem backend."
+      "description": "Path to write, resolved by the filesystem backend. Provide `file_path` before `content` in the arguments."
     },
     "content": {
       "type": "string",
@@ -1800,7 +1802,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
 
 ### `terminal_list`
@@ -1814,7 +1816,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
 
 ### `terminal_open`
@@ -1835,7 +1837,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
     },
     "cwd": {
       "type": "string",
-      "description": "Initial working directory. Defaults to the deployment workspace root."
+      "description": "Initial working directory, relative to the Session current directory when not absolute."
     }
   },
   "required": [
@@ -1844,7 +1846,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
 
 ### `terminal_read`
@@ -1874,7 +1876,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
 
 ### `terminal_send`
@@ -1909,7 +1911,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
 
 ### `terminal_signal`
@@ -1943,7 +1945,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
+来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。
 
@@ -2048,12 +2050,11 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 <a id="deepseek-aidsh-schedule"></a>
 
 
-## `@deepseek-ai/dsh-schedule`
-
+## `@deepseek-ai/dsh-tool-schedule`
 
 ### `schedule_create`
 
-在当前会话中创建一条提醒。请提供非空 prompt 和恰好一个 selector：正的安全整数 after_seconds 延时；作为严格带偏移日期时间或本地日期／时间对象的 at；或不小于 300 的安全整数 every_seconds。固定速率提醒始终与创建时刻对齐，会跳过错过的发生时点，并把每条逾期规则的最新一个发生时点合并到一个批次中。交付模式是 session-local：只有此会话处于 live 状态时，提醒才会准时运行；否则提醒会进入 overdue 状态，直至会话恢复。
+在当前会话中创建一条提醒，到期时投递 prompt。请恰好提供一个时间参数：after_seconds、at、every_seconds、daily、weekly 或 cron。时区中不存在的本地时间会被跳过；重复出现的本地时间只在较早的时刻触发一次。停机后，重复提醒只投递最近错过的一次。崩溃后可能重复投递。
 
 ```json
 {
@@ -2176,12 +2177,11 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 }
 ```
 
-来源：[`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
-
+来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
 ### `schedule_delete`
 
-使用 schedule_create 或 schedule_list 返回的确切 id，删除当前会话中的一条活动提醒。未知或已经结束的 id 会返回 deleted false。
+删除当前会话中的一条提醒，活动或已结束的均可。删除不会撤回已经入队的提醒消息。
 
 ```json
 {
@@ -2189,7 +2189,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
   "properties": {
     "id": {
       "type": "string",
-      "description": "Schedule id returned by schedule_list."
+      "description": "Exact schedule id."
     }
   },
   "required": [
@@ -2198,12 +2198,11 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 }
 ```
 
-来源：[`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
-
+来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
 ### `schedule_list`
 
-按创建顺序列出当前会话中的所有活动提醒，包括确切 id、UTC 目标、scheduled 或 overdue 状态，以及 session-local 交付模式。
+列出当前会话中的活动提醒。
 
 ```json
 {
@@ -2212,12 +2211,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 }
 ```
 
-来源：[`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
-
-仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。
-
-<a id="deepseek-aidsh-tool-debug"></a>
-
+来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
 ### `schedule_update`
 
@@ -2343,9 +2337,9 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 }
 ```
 
-Source: [`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedule/src/tools.ts)
+Source: [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
-Schedule 服务加载期间，在 live 根 Agent scope 内注册。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。
+preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四个管理工具。每次调用都作用于调用方 Agent 的 Session。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。
 
 <a id="deepseek-aidsh-tool-lsp"></a>
 
@@ -2689,7 +2683,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 }
 ```
 
-来源：[`packages/workflow/tool-ralph/src/index.ts`](../packages/workflow/tool-ralph/src/index.ts)
+来源：[`packages/experimental/tool-ralph/src/index.ts`](../packages/experimental/tool-ralph/src/index.ts)
 
 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。
 
@@ -2757,7 +2751,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 }
 ```
 
-来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
 
 ### `session_event_search`
@@ -2818,7 +2812,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 }
 ```
 
-来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
 
 ### `session_event_trace`
@@ -2844,7 +2838,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 }
 ```
 
-来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
 
 ### `session_search`
@@ -2938,7 +2932,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 }
 ```
 
-来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
 
 ### `session_trace`
@@ -2957,7 +2951,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 }
 ```
 
-来源：[`packages/session-query/tool-session-query/src/index.ts`](../packages/session-query/tool-session-query/src/index.ts)
+来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。
 
@@ -2998,6 +2992,10 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 {
   "type": "object",
   "properties": {
+    "cwd": {
+      "type": "string",
+      "description": "Initial child working directory. Relative paths use your current directory; omitted inherits it. Later directory changes in either agent are independent."
+    },
     "description": {
       "type": "string",
       "description": "A short (3-5 word) description of the delegated task, for display."
@@ -3005,10 +3003,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
     "prompt": {
       "type": "string",
       "description": "The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."
-    },
-    "run_in_background": {
-      "type": "boolean",
-      "description": "Run as a background job and return its id (collect with job_output, stop with job_kill). Defaults to false."
     },
     "workspace": {
       "type": "string",
@@ -3596,6 +3590,58 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 <a id="deepseek-aidsh-tool-workflow"></a>
 
+
+## `@deepseek-ai/dsh-tool-working-directory`
+
+### `working_directory`
+
+读取当前工作目录，或通过 cd 改变它。相对路径使用当前目录。已有 shell 和运行中的进程保留自己的目录。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cd": {
+      "type": "string",
+      "description": "Existing directory to enter. Omit to read the current directory."
+    }
+  }
+}
+```
+
+来源：[`packages/session/tool-working-directory/src/index.ts`](../packages/session/tool-working-directory/src/index.ts)
+
+读取或改变调用方 Session 的目录。已有 shell 和进程保留自己的目录；原始元数据和权限根目录保持不变。
+
+<a id="deepseek-aidsh-experimental-tool-worktree"></a>
+
+## `@deepseek-ai/dsh-experimental-tool-worktree`
+
+### `create_worktree`
+
+从本地提交、分支或标签创建新的 Git 分支与工作树，再将本 Session 的工作目录切换到该位置。默认使用 HEAD 和自动生成的名称。未提交文件保留在源检出目录中。名称已存在时失败。使用 working_directory 的 cd 参数离开；检出目录与分支仍然保留。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "New branch name, also used as the checkout directory. Omit to generate a unique name."
+    },
+    "from": {
+      "type": "string",
+      "description": "Local commit, branch, or tag to start from. Defaults to HEAD; no fetch is performed."
+    }
+  }
+}
+```
+
+来源：[`packages/experimental/tool-worktree/src/index.ts`](../packages/experimental/tool-worktree/src/index.ts)
+
+仅通过显式实验组合加载。在现有写权限下从固定的本地提交创建新分支与检出目录，再改变 Session 工作目录。离开时保留分支与检出目录。
+
+<a id="deepseek-aidsh-tool-workflow"></a>
 
 ## `@deepseek-ai/dsh-tool-workflow`
 

@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-01-shared-base-web-fetch-default.md
 /agent-note-shared-base-web-fetch-default:
-  en: 7dce5913d7eb0ad8
-  zh: e7de486d7417fe3f
+  en: 7d600cd6628e8922
+  zh: 8441eb4556cd4df0
 /agent-note-shared-base-web-fetch-default/problem:
   en: 7c507b19fe0aebb1
   zh: 64d87b8e31140464

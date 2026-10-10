@@ -6,7 +6,7 @@ English | [中文](2026-07-12-scoped-layers-store.zh.md)
 
 ## Problem
 
-Agent scoping ([decision](2026-07-08-agent-scope-contexts.md), [runtime design](2026-07-12-agent-scope-runtime-design.md)) gives scope-aware registries the same recurring shape: one global registration layer plus one exact agent layer. Seven registration facades use that shape: `tools.register`, `tools.restrict`, and `tools.guard` in `dsh-tools`; `SystemPrompt.section`, `SystemPrompt.tools`, and `SystemPrompt.variable` in `dsh-system-prompt`; and `CommandRuntime.register` in `dsh-commands`.
+Agent scoping ([decision](../../archived/architecture/2026-07-08-agent-scope-contexts.md), [runtime design](../../archived/architecture/2026-07-12-agent-scope-runtime-design.md)) gives scope-aware registries the same recurring shape: one global registration layer plus one exact agent layer. Seven registration facades use that shape: `tools.register`, `tools.restrict`, and `tools.guard` in `dsh-tools`; `SystemPrompt.section`, `SystemPrompt.tools`, and `SystemPrompt.variable` in `dsh-system-prompt`; and `CommandRuntime.register` in `dsh-commands`.
 
 Without a shared primitive, each facade repeats the lifecycle choreography around its domain state: derive visibility from the calling context, create a scoped container on demand, attach ownership to the same Cordis fiber, install undo before notifying observers, return Cordis's exact disposer, and reclaim empty scoped state. Separate maps and collection types also leave a service without one object representing a scope's complete contribution.
 

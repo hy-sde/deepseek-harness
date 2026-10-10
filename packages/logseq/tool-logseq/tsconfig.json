@@ -18,16 +18,10 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../core/system-prompt"
     },
     {
       "path": "../../core/tools"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

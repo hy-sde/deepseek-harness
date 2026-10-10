@@ -40,6 +40,6 @@ solution 根文件刻意 `extends` base：`scripts/` 没有更近的 tsconfig，
 ## 后果
 
 - `docs/development.md#typescript-project-layout` 是权威描述；根 `AGENTS.md` 以约定形式收录上述两条纪律。
-- [ts-build-config Agent Note](2026-06-17-ts-build-config.zh.md) 继续拥有 tsc 先行的构建流水线（tsc 负责输出，tsdown 负责打包，`.ts` 说明符配合 `rewriteRelativeImportExtensions`）；其原先「单一根类型检查项目」的形态由本文取代。
+- [ts-build-config Agent Note](../../archived/process/2026-06-17-ts-build-config.md) 继续拥有 tsc 先行的构建流水线（tsc 负责输出，tsdown 负责打包，`.ts` 说明符配合 `rewriteRelativeImportExtensions`）；其原先「单一根类型检查项目」的形态由本文取代。
 - 新增一个普通 package 只登记进恰好一个 aggregate 的 references（Host package 进 `tsconfig.host.json`，Client package 进 `tsconfig.client.json`）。`api/remotes` 因 Host 生成约定与 Client 消费约定的顺序关系成为唯一显式拆分例外；其两个具体 project 分别登记，包根 solution 不进入任一 aggregate。
 - Host 与 Client 构建阶段必须串行：Host tsdown 生成约定后 Client tsc 才能开始。各阶段复用各 project 的增量状态，不通过并发重复处理同一张图。

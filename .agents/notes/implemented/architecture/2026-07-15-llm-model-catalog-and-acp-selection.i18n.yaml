@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-15-llm-model-catalog-and-acp-selection.md
 /agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection:
-  en: 286906110f6ec6f3
-  zh: d221bda3fd904d81
+  en: e8864814beebaddb
+  zh: 06dbeca64bd0a202
 /agent-note-advisory-llm-catalogs-and-per-session-acp-model-selection/problem:
   en: 60278c8f9552f1c6
   zh: c62490e057a21057

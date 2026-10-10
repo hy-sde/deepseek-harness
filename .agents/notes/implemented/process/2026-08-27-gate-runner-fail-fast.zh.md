@@ -4,7 +4,7 @@ Status: implemented
 
 [English](2026-08-27-gate-runner-fail-fast.md) | 中文
 
-[并行推送前门禁](2026-07-06-parallel-pre-push-gates.zh.md)拥有 `scripts/run-gates.ts` 中有界的门禁调度器；本笔记为该调度器新增一个调度选项。
+[并行推送前门禁](../../archived/process/2026-07-06-parallel-pre-push-gates.md)拥有 `scripts/run-gates.ts` 中有界的门禁调度器；本笔记为该调度器新增一个调度选项。
 
 ## 问题
 
