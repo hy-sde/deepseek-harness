@@ -51,7 +51,7 @@ export function apply(ctx: Context): void {
       platform: { type: 'string', required: true, enum: ['host', 'client'], description: 'Runtime platform that owns the Provider.' },
       provider: { type: 'string', required: true, description: 'Exact Provider ID returned by cordis_inspect_list.' },
       method: { type: 'string', required: true, description: 'Exact method name declared by the Provider manifest.' },
-      input: { type: 'json', description: 'Optional query input; it must satisfy the method input schema.' },
+      input: { type: 'object', additionalProperties: true, description: 'Optional query input; it must satisfy the method input schema. Cordis service methods conventionally take an object.' },
     },
     output: {
       schema: { type: 'json' },
