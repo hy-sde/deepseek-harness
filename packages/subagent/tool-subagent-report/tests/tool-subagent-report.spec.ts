@@ -13,6 +13,8 @@ import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
+import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
+import FsLocal from '@deepseek-ai/dsh-fs-local'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import * as control from '@deepseek-ai/dsh-tool-subagent-control'
@@ -69,6 +71,8 @@ async function setup(options: { load?: boolean; config?: tool.Config } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'dsh-tool-subagent-report-'))
   await ctx.plugin(JsonlSessionPersistence, { root })
   await ctx.plugin(AgentLoop, { agents: [] })
+  await ctx.plugin(FsLocal)
+  await ctx.plugin(WorkingDirectory)
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   const fiber = options.load === false
@@ -141,7 +145,7 @@ function registerReportConflict(child: Agent): () => void {
 /** Reports already visible or still pending in one Agent. */
 function reports(agent: Agent): { id: string; text: string; sender: string }[] {
   const visible = agent.session.snapshotEvents().flatMap(event => event.type === 'user/message' ? [event.data] : [])
-  return [...visible, ...agent.inbox.nextStep].flatMap((message) => {
+  return [...visible, ...agent.inbox.nextStep, ...agent.inbox.nextTurn].flatMap((message) => {
     if (message.source.kind !== 'agent-message') return []
     return [{
       id: message.id,
@@ -233,11 +237,13 @@ describe('dsh-tool-subagent-report', () => {
     if (result.isError) throw new Error('report unexpectedly failed')
     const messageId = (result.value as { messageId: string }).messageId
     expect(renderedText(result)).toContain(messageId)
-    expect(reports(parent)).toEqual([{
-      id: messageId,
-      text: `Agent ${started.childId} sent a message: \nCHILD_FINDING`,
-      sender: started.childId,
-    }])
+    await vi.waitFor(() => {
+      expect(reports(parent)).toEqual([{
+        id: messageId,
+        text: `Agent ${started.childId} sent a message: \nCHILD_FINDING`,
+        sender: started.childId,
+      }])
+    })
     expect(enqueues).toEqual(['queued'])
     // Queued delivery still surfaces the model request for an idle parent.
     expect(adapter.requests.filter(request => request.sessionId === parent.id)).toHaveLength(parentRequests + 1)

@@ -33,8 +33,8 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'codebase_index_repository', 'codebase_index_status', 'codebase_ingest_traces', 'codebase_list_projects',
       'codebase_manage_adr', 'codebase_query_graph', 'codebase_search_code', 'codebase_search_graph',
       'codebase_trace_path', 'commit', 'commit_apply', 'cordis_inspect_list',
-      'cordis_inspect_query', 'create_goal', 'create_worktree', 'edit',
-      'edit', 'exit_plan_mode', 'get_goal', 'glob',
+      'cordis_inspect_query', 'create_goal', 'create_worktree', 'debug',
+      'edit', 'edit', 'exit_plan_mode', 'get_goal', 'glob',
       'grep', 'interrupt_agent', 'interrupt_agent', 'job_kill',
       'job_list', 'job_output', 'learn', 'list_agents',
       'list_agents', 'list_mcp_resource_templates', 'list_mcp_resources', 'list_subagent_models',
@@ -56,7 +56,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'terminal_read', 'terminal_send', 'terminal_signal', 'todo_write',
       'update_agent_graph', 'update_goal', 'view_agent_graph', 'wait_agent',
       'web_fetch', 'web_search', 'workflow', 'working_directory',
-      'write', 'yield_agent_graph',
+      'worktree', 'write', 'yield_agent_graph',
     ])
     // Every tool carries a JSON-Schema `parameters` object (what the model sees).
     for (const entry of catalog) {

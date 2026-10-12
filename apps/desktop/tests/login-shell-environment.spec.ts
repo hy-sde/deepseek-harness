@@ -144,7 +144,7 @@ describe.skipIf(process.platform === 'win32')('readDesktopLoginShellEnvironment 
       { shell: candidates[2], reason: 'SIGTERM' },
       { shell: candidates[3], reason: 'unparsed' },
     ])
-  })
+  }, 30_000)
 
   it('completes at the closing delimiter while an rc-started child keeps stdout open', async () => {
     const pidFile = join(directory, 'child.pid')

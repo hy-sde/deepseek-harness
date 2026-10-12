@@ -28,7 +28,7 @@ export function CreatePluginMenuItem({
   t, useAgentPresets, load, onDismiss, startCreatorDraft,
 }: CreatePluginMenuItemProps) {
   const roster = useAgentPresets(state => state)
-  const enabled = roster.status === 'ready' && roster.options.some(option => option.id === '@deepseek-ai/cordis')
+  const enabled = roster.status === 'ready' && roster.options.some(option => option.id === 'cordis')
   useEffect(() => { void load() }, [load])
 
   let description = t('createPluginDescription')

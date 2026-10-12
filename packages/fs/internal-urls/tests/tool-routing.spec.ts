@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import { provideWorkingDirectoryFixture } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import { FileSystem, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
 import type { FsDirEntry, FsEditOutcome, FsEditRequest, FsInfo, FsPathInfo, FsTarget, FsWriteIntent, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
@@ -103,6 +104,7 @@ async function setup(files: Record<string, string>) {
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(FakeFs) // Service class: self-registers as ctx.fs
+  provideWorkingDirectoryFixture(ctx, CWD)
   const fs = ctx.fs as FakeFs
   for (const [name, content] of Object.entries(files)) {
     fs.files.set(`abs:${fs.canonical(name)}`, content)
@@ -136,6 +138,7 @@ describe('read/grep/write scheme routing', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(FakeFs)
+    provideWorkingDirectoryFixture(ctx, CWD)
     await ctx.plugin(ToolFs)
     const fs = ctx.fs as FakeFs
     fs.files.set('abs:/ws/a.ts', CONFLICTS)

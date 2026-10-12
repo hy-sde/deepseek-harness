@@ -13,15 +13,14 @@ import { realpathSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import { mountAgentLoopTestDependencies, provideWorkingDirectoryFixture } from '@deepseek-ai/dsh-agent-loop-testkit'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import { ToolCallId, type ContentBlock } from '@deepseek-ai/dsh-llm'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import type { SubagentCapabilities, SubagentProvider, SubagentRun, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import * as Git from '@deepseek-ai/dsh-git'
 import toolGitPackage from '@deepseek-ai/dsh-tool-git'
 import * as toolSubagentPackage from '@deepseek-ai/dsh-tool-subagent'
@@ -82,11 +81,11 @@ async function makeFixture(): Promise<Fixture> {
   gitRun(dir, ['commit', '-qm', 'init'])
 
   const ctx = new Context()
-  await ctx.plugin(SystemPrompt)
-  await ctx.plugin(ToolRuntime)
+  await mountAgentLoopTestDependencies(ctx)
+  await ctx.plugin(AgentLoop, { agents: [] })
+  provideWorkingDirectoryFixture(ctx, dir)
   await ctx.plugin(LocalSubprocessRuntime)
   await ctx.plugin(SubagentRuntime)
-  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(Git)
   await ctx.plugin(toolGitPackage, { worktreeRoot: pool })
   const provider = new WaveProvider()
@@ -117,13 +116,9 @@ afterEach(async () => {
   for (const clean of cleanups.splice(0)) await clean()
 })
 
-const parentAgent = (cwd: string): Agent => {
+async function parentAgent(ctx: Context, cwd: string): Promise<Agent> {
   const sessionId = SessionId('parent-1')
-  return {
-    id: sessionId,
-    options: {},
-    session: Object.assign(Session.create(sessionId), { header: { ...Session.create(sessionId).header, cwd } }),
-  } as unknown as Agent
+  return (await ctx.agents.create({ sessionId, meta: { cwd } })).agent
 }
 
 async function call(ctx: Context, name: string, args: Record<string, unknown>, agent?: Agent): Promise<{ value: unknown; text: string }> {
@@ -143,7 +138,7 @@ async function call(ctx: Context, name: string, args: Record<string, unknown>, a
 describe('P1 wave: worktree acquire -> subagent workspace -> release', () => {
   it('fans two independent chunks into isolated worktrees and releases both', async () => {
     const f = await makeFixture()
-    const agent = parentAgent(f.dir)
+    const agent = await parentAgent(f.ctx, f.dir)
 
     const acquire = async (branch: string) => {
       const { value } = await call(f.ctx, 'worktree', { action: 'acquire', branch }, agent)
@@ -156,12 +151,11 @@ describe('P1 wave: worktree acquire -> subagent workspace -> release', () => {
       call(f.ctx, 'subagent', { description: 'chunk a', prompt: 'work on a', workspace: a.lease.path }, agent),
       call(f.ctx, 'subagent', { description: 'chunk b', prompt: 'work on b', workspace: b.lease.path }, agent),
     ])
-    expect(ra.value).toMatchObject({ kind: 'foreground' })
-    expect(rb.value).toMatchObject({ kind: 'foreground' })
-    // The policy guard is armed and both children carried their own lease path.
+    expect(ra.value).toMatchObject({ kind: 'activation' })
+    expect(rb.value).toMatchObject({ kind: 'activation' })
+    // The policy guard is armed and both children carried their own lease directory.
     expect(f.provider.starts).toHaveLength(2)
-    expect(f.provider.starts[0]!.workspace).toBe(a.lease.path)
-    expect(f.provider.starts[1]!.workspace).toBe(b.lease.path)
+    expect(f.provider.starts.map(request => request.cwd).sort()).toEqual([a.lease.path, b.lease.path].sort())
     expect(ra.text).not.toContain('warning:')
 
     await call(f.ctx, 'worktree', { action: 'release', path: a.lease.path, leaseId: a.lease.leaseId }, agent)
@@ -174,7 +168,7 @@ describe('P1 wave: worktree acquire -> subagent workspace -> release', () => {
 
   it('fail-closes a policy-on start without a workspace through the real tool path', async () => {
     const f = await makeFixture()
-    const agent = parentAgent(f.dir)
+    const agent = await parentAgent(f.ctx, f.dir)
     await expect(
       call(f.ctx, 'subagent', { description: 'unguarded', prompt: 'go' }, agent),
     ).rejects.toThrow(/worktree acquire.*workspace/)

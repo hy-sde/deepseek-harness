@@ -12,6 +12,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import { provideWorkingDirectoryFixture } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import { FileSystem, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
 import type { FsDirEntry, FsEditOutcome, FsEditRequest, FsInfo, FsPathInfo, FsTarget, FsWriteIntent, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
@@ -92,6 +93,7 @@ async function setup() {
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(FakeFs)
+  provideWorkingDirectoryFixture(ctx, CWD)
   await ctx.plugin(InternalUrls)
   const root = await mkdtemp(join(tmpdir(), 'dsh-memory-tool-'))
   await ctx.plugin(Memory, { root })

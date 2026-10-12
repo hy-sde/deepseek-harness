@@ -13,6 +13,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
@@ -23,7 +25,14 @@ const testToolSignal = new AbortController().signal
 let dir: string
 let ctx: Context
 let fiber: Awaited<ReturnType<Context['plugin']>>
-const session = { header: {} }
+const session = {
+  header: {},
+  append: () => {},
+  inject: () => {},
+  inheritedEventCount: 0 as never,
+  get seq(): number { return 0 },
+  snapshotEvents: () => [],
+}
 
 let callCounter = 0
 function call(name: string, args: unknown) {
@@ -32,7 +41,7 @@ function call(name: string, args: unknown) {
     callId: ToolCallId(`call-${++callCounter}`),
     name,
     arguments: args,
-    agent: { session } as never,
+    agent: { session, ctx: { fiber: { assertActive: () => {} } } } as never,
   })
 }
 
@@ -57,7 +66,9 @@ async function setup() {
   dir = await mkdtemp(join(tmpdir(), 'dsh-tool-fs-native-'))
   ctx = new Context()
   await ctx.plugin(SystemPrompt)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(WorkingDirectory, { defaultDirectory: dir })
   await ctx.plugin(LocalFileSystem, { cwd: dir })
   await ctx.plugin(FsPolicy)
   fiber = await ctx.plugin(ToolFs)

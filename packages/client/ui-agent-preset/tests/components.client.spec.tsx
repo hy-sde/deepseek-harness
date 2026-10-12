@@ -102,7 +102,7 @@ function renderLabel(
 describe('the new-session chip', () => {
   it.each([false, true])('offers Standard, Creator and custom presets with Developer tools %s', (enabled) => {
     const actions = renderSeat({ options: [
-      { id: 'standard' }, { id: 'ptc' }, { id: 'minimal' }, { id: '@deepseek-ai/cordis' }, { id: 'mine' },
+      { id: 'standard' }, { id: 'ptc' }, { id: 'minimal' }, { id: 'cordis' }, { id: 'mine' },
     ] }, undefined, undefined, enabled)
 
     fireEvent.click(screen.getByRole('button'))
@@ -112,7 +112,7 @@ describe('the new-session chip', () => {
     expect(screen.queryByRole('menuitem', { name: /^PTC mode/ }) !== null).toBe(enabled)
     expect(screen.queryByRole('menuitem', { name: /^Minimal mode/ }) !== null).toBe(enabled)
     fireEvent.click(screen.getByRole('menuitem', { name: /^Creator mode/ }))
-    expect(actions.select).toHaveBeenCalledWith('@deepseek-ai/cordis')
+    expect(actions.select).toHaveBeenCalledWith('cordis')
   })
 
   it('keeps a named custom preset that overrides a development preset id', () => {
@@ -256,7 +256,7 @@ describe('a refused switch', () => {
     try {
       const reason = 'failed to import loader entry live-on-mac (@deepseek-ai/dsh-also-gone)'
       const actions = renderSeat({ current: '' }, undefined, undefined, false)
-      const refusal = { preset: { id: '@deepseek-ai/cordis' }, reason }
+      const refusal = { preset: { id: 'cordis' }, reason }
       act(() => { actions.store.set({ ...actions.store.getSnapshot(), error: refusal }) })
 
       // The host refuses a mount discovery reported healthy, so this banner is

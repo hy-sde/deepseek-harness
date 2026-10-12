@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -16,6 +16,8 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { computeHashlineSectionDiff } from '../src/hashline/diff.ts'
 import { carriedSeenLines } from '../src/hashline/execute.ts'
 import type { FileReader } from '../src/session.ts'
@@ -167,9 +169,11 @@ describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => 
     const ctx = new Context()
     contexts.push(ctx)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(WorkingDirectory, { defaultDirectory: root })
     await ctx.plugin(FsPolicy)
     // read/write only from tool-fs; the literal `edit` slot is owned by tool-edit.
     await ctx.plugin(ToolFs, { enableEdit: false })
@@ -202,13 +206,14 @@ describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => 
     expect(readResult.isError).toBe(false)
     const output = modelText(readResult)
     const tag = computeFileHash(before)
-    expect(output).toContain(`[${sample}#${tag}]`)
+    const canonicalSample = await realpath(sample)
+    expect(output).toContain(`[${canonicalSample}#${tag}]`)
 
     // First edit attempt, tag copied verbatim from the read: no rejection,
     // no extra read round-trip — this is the omp "edit landed on first try"
     // contract that the observation policy must not break.
     const input = [
-      `[${sample}#${tag}]`,
+      `[${canonicalSample}#${tag}]`,
       'PUT 1.=2:',
       '+def greet(name):',
       '+    print(f"Hello, {name}")',
@@ -244,9 +249,11 @@ describe('tool-edit (hashline mode) × edit-result seen-line registration', () =
     const ctx = new Context()
     contexts.push(ctx)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(WorkingDirectory, { defaultDirectory: root })
     await ctx.plugin(FsPolicy)
     // read/write only from tool-fs; the literal `edit` slot is owned by tool-edit.
     await ctx.plugin(ToolFs, { enableEdit: false })
@@ -362,9 +369,11 @@ describe('tool-edit (hashline mode) × default seen-line enforcement', () => {
     const ctx = new Context()
     contexts.push(ctx)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(WorkingDirectory, { defaultDirectory: root })
     await ctx.plugin(FsPolicy)
     await ctx.plugin(ToolFs, { enableEdit: false })
     // No config — the flip under test is the DEFAULT.
@@ -456,9 +465,11 @@ describe('tool-edit (hashline mode) × carried read seen lines', () => {
     const ctx = new Context()
     contexts.push(ctx)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(WorkingDirectory, { defaultDirectory: root })
     await ctx.plugin(FsPolicy)
     await ctx.plugin(ToolFs, { enableEdit: false })
     const fiber = await ctx.plugin(ToolEdit, { enforceSeenLines: true })

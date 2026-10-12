@@ -63,7 +63,7 @@ interface CannedReviewer {
 let cannedRuns: CannedReviewer[] = []
 let erroringStart = false
 let fakeIndex = 0
-function fakeSubagents(): { getProvider: () => unknown; start: () => Promise<unknown> } {
+function fakeSubagents(): { getProvider: () => unknown; start: () => Promise<unknown>; startActivation: () => Promise<unknown> } {
   return {
     getProvider: () => ({ provider: 'spawn' }),
     start: () => {
@@ -76,6 +76,21 @@ function fakeSubagents(): { getProvider: () => unknown; start: () => Promise<unk
       const canned = cannedRuns[fakeIndex] ?? { overall_correctness: 'correct', explanation: 'no runs left', confidence: 1, findings: [] }
       fakeIndex += 1
       return Promise.resolve({
+        result: Promise.resolve({ stopReason: 'completed', structured: canned, output: [] }),
+        dispose: () => Promise.resolve(),
+      })
+    },
+    startActivation: () => {
+      if (erroringStart) {
+        return Promise.resolve({
+          result: Promise.resolve({ stopReason: 'error', diagnostic: 'model transport failed', output: [] }),
+          dispose: () => Promise.resolve(),
+        })
+      }
+      const canned = cannedRuns[fakeIndex] ?? { overall_correctness: 'correct', explanation: 'no runs left', confidence: 1, findings: [] }
+      fakeIndex += 1
+      return Promise.resolve({
+        childId: undefined,
         result: Promise.resolve({ stopReason: 'completed', structured: canned, output: [] }),
         dispose: () => Promise.resolve(),
       })

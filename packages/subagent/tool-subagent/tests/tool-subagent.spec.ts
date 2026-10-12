@@ -978,7 +978,7 @@ describe('dsh-tool-subagent orchestration policy isolation guard', () => {
     try {
       const result = await callSubagent(ctx, { description: 'default task', prompt: 'p' })
       expect(result.isError).toBe(false)
-      expect(text(result)).toContain('child done')
+      expect(text(result)).toMatch(/^started subagent /)
     } finally {
       await disposeSetupProvider(ctx)
       await ctx.fiber.dispose()
@@ -1017,7 +1017,7 @@ describe('dsh-tool-subagent orchestration policy isolation guard', () => {
     try {
       const result = await callSubagent(ctx, { description: 'suggested task', prompt: 'p' })
       expect(result.isError).toBe(false)
-      expect(text(result)).toContain('child done')
+      expect(text(result)).toMatch(/^started subagent /)
     } finally {
       await disposeSetupProvider(ctx)
       await ctx.fiber.dispose()

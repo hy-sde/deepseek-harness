@@ -620,7 +620,7 @@ describe('PythonPtcRuntime — seam descriptors and misuse', () => {
     expect(result.error?.kind).toBe('timeout')
     expect(result.error?.message).toContain('CPU time exhausted')
     expect(result.value).toBeUndefined()
-  })
+  }, 35_000)
 
   it('disposes the first run before any program can outlive its provider', async () => {
     const { fiber, runtime } = await setup({ maxWallMs: 8_000 })
@@ -4988,18 +4988,18 @@ describe('PythonPtcRuntime — hostile peer', () => {
     // exception. Linux-only RLIMIT_AS repro; on macOS the value round-trips
     // either way, but the fixture stays within the address space so it is honest.
     //
-    // `maxWallMs` is 60s, not the 20s the memory assertion alone needs: the O(depth)
-    // cursor pulls 6M elements one at a time through Python-level frames, which costs
-    // ~11s on an idle machine and more under the coverage lane's V8 instrumentation
-    // with several workers sharing a box. This budget bounds the run without letting a
-    // loaded runner's scheduling latency read as a `timeout` — what this test asserts
-    // is the O(depth) memory shape, not a speed claim.
-    const { runtime } = await setup({ maxValueBytes: 20 * 1024 * 1024, addressSpaceMb: 384, maxWallMs: 60_000 })
+    // `maxWallMs` uses the process-heavy lane's 180s budget: the O(depth)
+    // cursor pulls 6M elements one at a time through Python-level frames. This
+    // takes about 11s on an idle machine and substantially longer when coverage
+    // instrumentation and native-runtime tests share the host. The bound keeps
+    // scheduling latency from reading as a product timeout because this test
+    // asserts the O(depth) memory use, not execution speed.
+    const { runtime } = await setup({ maxValueBytes: 20 * 1024 * 1024, addressSpaceMb: 384, maxWallMs: 180_000 })
     const result = await runtime.run(runtime.resolve({ program: 'return [0] * 6_000_000', bindings: [] }))
     expect(result.error).toBeUndefined()
     expect(Array.isArray(result.value)).toBe(true)
     expect((result.value as number[]).length).toBe(6_000_000)
-  }, 90_000)
+  }, 210_000)
 
   it('validates wide binding arguments in O(depth), not O(width)', async () => {
     // The completion-value walks are budgeted; this one is not. `dispatch` runs

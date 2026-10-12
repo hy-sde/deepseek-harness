@@ -18,7 +18,7 @@ function unusedHook(): never {
 
 function view(roster: Partial<AgentPresetSettingsState> = {}, inMenu = false) {
   const agentPresets = createSnapshotStore<AgentPresetSettingsState>({
-    status: 'ready', error: null, options: [{ id: 'standard' }, { id: '@deepseek-ai/cordis' }], ...roster,
+    status: 'ready', error: null, options: [{ id: 'standard' }, { id: 'cordis' }], ...roster,
   })
   const calls: string[] = []
   const startCreatorDraft = vi.fn(() => { calls.push('start') })

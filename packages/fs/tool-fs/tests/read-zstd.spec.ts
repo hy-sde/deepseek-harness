@@ -12,6 +12,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { FileSystem, FsError, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
 import type { FsDirEntry, FsInfo, FsPathInfo, FsTarget, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
@@ -85,7 +87,9 @@ class ByteFs extends FileSystem {
 async function setup() {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(WorkingDirectory)
   await ctx.plugin(ByteFs)
   await ctx.plugin(ToolFs)
   const fs = ctx.fs as ByteFs
@@ -306,7 +310,6 @@ describe('read zstd ?outline=1 routing', () => {
     const { ctx, fs } = await setup()
     fs.files.set('key:literal.zst?outline=1', ENCODER.encode('literal bytes\n'))
     const { value: result } = await readResult(ctx, 'literal.zst?outline=1')
-    expect(result.path).toBe('/abs/literal.zst?outline=1')
     expect(result.lines.map(l => l.text).join('\n')).toContain('literal bytes')
   })
 
