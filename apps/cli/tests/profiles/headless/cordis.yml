@@ -61,6 +61,8 @@
         # patch cannot target an entry behind a nested include).
         model: deepseek-v4-flash
         cwd: !!js process.cwd()
+    filesystem:
+      cwd: !!js process.cwd()
     workspaceContext:
       maxBytes: 65536
     persona: |
@@ -165,11 +167,8 @@
     allowParallelInProgress: true
 
 # Policy loads before the model-facing filesystem tools so writes and edits
-# require an observed file. Relative paths resolve from the process cwd.
-- id: fs-local
-  name: '@deepseek-ai/dsh-fs-local'
-  config:
-    cwd: !!js process.cwd()
+# require an observed file. Relative paths resolve from the filesystem cwd the
+# agent-spine bundle receives above.
 
 - id: fs-observation-policy
   name: '@deepseek-ai/dsh-fs-observation-policy'

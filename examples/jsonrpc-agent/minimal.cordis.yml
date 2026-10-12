@@ -37,13 +37,10 @@
   config:
     timeoutMs: 300000
 
-# The editor uses the bare local filesystem; persistent Bash still consumes the
+# The editor uses the bare local filesystem that the agent-spine bundle
+# provides through its `filesystem` config; persistent Bash still consumes the
 # shared danger-full-access sandbox policy above. tool-fs contributes read/write
 # here (its own `edit` is disabled), and tool-edit owns the `edit` name.
-- id: fs-local
-  name: '@deepseek-ai/dsh-fs-local'
-  config:
-    cwd: !!js process.env.DSH_CWD ?? process.cwd()
 
 - id: tool-fs
   name: '@deepseek-ai/dsh-tool-fs'
@@ -61,6 +58,8 @@
     includeHarnessIdentity: false
     includeRuntimeContext: false
     persona: !!js process.env.DSH_SYSTEM_PROMPT ?? 'You are a helpful software engineer assistant.'
+    filesystem:
+      cwd: !!js process.env.DSH_CWD ?? process.cwd()
     workspaceContext: false
     skills:
       enabled: false

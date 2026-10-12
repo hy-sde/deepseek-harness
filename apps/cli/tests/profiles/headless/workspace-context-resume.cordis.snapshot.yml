@@ -14,15 +14,12 @@
     file: !!js process.env.DSH_SNAPSHOT_FILE
     overrideFile: !!js process.env.DSH_SNAPSHOT_OVERRIDE
 
-- id: fs-local
-  name: '@deepseek-ai/dsh-fs-local'
-  config:
-    cwd: !!js process.cwd()
-
 - id: agent
   name: '@deepseek-ai/dsh-agent-spine-demo'
   config:
     agents: []
+    filesystem:
+      cwd: !!js process.cwd()
     workspaceContext:
       maxBytes: 65536
       dshHome: !!js process.cwd() + '/.dsh'
