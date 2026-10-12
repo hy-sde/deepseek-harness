@@ -9,7 +9,6 @@ import * as agentCore from '../src/index.ts'
 import { agentEvents, type Agent } from '@deepseek-ai/dsh-agent'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import LocalBashExecutor from '@deepseek-ai/dsh-bash-local'
-import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import {
@@ -333,7 +332,6 @@ describe('dsh-agent-spine-demo bundle', () => {
       await writeFile(join(root, 'AGENTS.md'), 'bundled project rule')
       const adapter = new MockAdapter([textResponse('first')])
       const ctx = await mount({ workspaceContext: { maxBytes: 65536 } })
-      await ctx.plugin(LocalFileSystem, { cwd: '/' })
       ctx.llm.registerAdapter(['mock'], adapter)
       const handle = await ctx.agents.create({
         sessionId: SessionId('main-session'),
@@ -444,7 +442,6 @@ describe('dsh-agent-spine-demo bundle', () => {
         },
       })
       await ctx.plugin(LocalBashExecutor, {})
-      await ctx.plugin(LocalFileSystem, { cwd: root })
       await ctx.plugin(ToolFs)
       ctx.on('tools/post-execute', async (exec, _result, next) => {
         const decision = await next()
@@ -589,7 +586,6 @@ describe('dsh-agent-spine-demo bundle', () => {
       await writeFile(join(root, 'AGENTS.md'), 'workspace rule before skills')
       const adapter = new MockAdapter([textResponse('first')])
       const ctx = await mount({ workspaceContext: { maxBytes: 65536 } })
-      await ctx.plugin(LocalFileSystem, { cwd: '/' })
       ctx.llm.registerAdapter(['mock'], adapter)
       ctx.skills.register({
         name: 'prefix-order-skill',
@@ -680,7 +676,6 @@ describe('dsh-agent-spine-demo bundle', () => {
 
     expect(ctx.tools.schemas()).toEqual([])
     ctx.systemPrompt.context({ name: 'policy', order: 0, text: 'hidden policy' })
-    expect((await ctx.systemPrompt.assemble()).contexts).toEqual([])
     expect(renderPrompt(await ctx.systemPrompt.assemble()))
       .toBe('You are a helpful software engineer assistant.')
 

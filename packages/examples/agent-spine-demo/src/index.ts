@@ -1,6 +1,7 @@
 /**
  * Default executor-less, UI-less agent spine. It bundles the common services,
- * background-job registry and controls, optional persisted goals, concrete loop, local skill and
+ * local filesystem and working-directory providers, background-job registry
+ * and controls, optional persisted goals, concrete loop, local skill and
  * agent-instructions providers, and model-facing shell/skill consumers;
  * deployments still choose the LLM adapter, bash executor, and presentation.
  * The plugin intentionally exposes named exports only because Loader default
@@ -20,6 +21,8 @@ import SkillRegistry, { type Config as SkillRegistryConfig } from '@deepseek-ai/
 import * as SkillFileSystem from '@deepseek-ai/dsh-skill-filesystem'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import LocalFileSystem, { type Config as FileSystemConfig } from '@deepseek-ai/dsh-fs-local'
+import WorkingDirectory, { type Config as WorkingDirectoryConfig } from '@deepseek-ai/dsh-working-directory'
 import GoalService, { type Config as GoalDomainConfig } from '@deepseek-ai/dsh-goal'
 import * as goalSession from '@deepseek-ai/dsh-goal-round-driver'
 import * as toolGoal from '@deepseek-ai/dsh-tool-goal'
@@ -68,13 +71,14 @@ export interface GoalConfig {
  * bridge, simply omits it), `includeHarnessIdentity`, `includeRuntimeContext`,
  * `persona`, and `toolOrder` to the system-prompt plugin (the fixed opener,
  * dynamic-context policy, deployment persona, and explicit model-facing tool
- * order), the `tools` object to the tool
- * registry (its presentation `mode`),
- * `dshHome` to bash environment and local skill discovery, `sessionTitle` to
- * the fallback title service, `skills` to the
- * skill registry/local provider/tool consumer, `workspaceContext` to the
- * agent-instructions loader, `jobs` to the process-local job provider, and
- * `toolBash`/`toolJobs` to the model-facing tool plugins this bundle owns.
+ * order), the `tools` object to the tool registry (its presentation `mode`),
+ * `filesystem` to the local filesystem
+ * provider, `workingDirectory` to the per-session directory owner, `dshHome`
+ * to bash environment and local skill discovery, `sessionTitle` to the fallback
+ * title service, `skills` to the skill registry/local provider/tool consumer,
+ * `workspaceContext` to the agent-instructions loader, `jobs` to the
+ * process-local job provider, and `toolBash`/`toolJobs` to the model-facing
+ * tool plugins this bundle owns.
  * Provider adapters own their `retryPolicy`; this bundle always mounts its
  * executor.
  * `goals` opts into and configures the persisted goal domain plus its model tool
@@ -102,6 +106,10 @@ export interface Config {
   toolOrder?: SystemPromptConfig['toolOrder']
   /** The tool registry's config — its presentation `mode` (see dsh-tools' `Config`). */
   tools?: ToolsConfig
+  /** Host filesystem resolution and overwrite-diff limits. */
+  filesystem?: FileSystemConfig
+  /** Per-session working-directory fallback. */
+  workingDirectory?: WorkingDirectoryConfig
   /** DeepSeek Harness home directory shared by shell context and local skill discovery. */
   dshHome?: string
   /** Deterministic fallback and accepted-title limits; omission uses the bundle's example policy. */
@@ -177,6 +185,8 @@ export const Config = z.intersect([
   SystemPrompt.Config,
   z.object({
     tools: ToolRuntime.Config,
+    filesystem: LocalFileSystem.Config,
+    workingDirectory: WorkingDirectory.Config,
     dshHome: z.string(),
     sessionTitle: SessionTitleConfigSchema,
     skills: SkillConfigSchema,
@@ -185,7 +195,7 @@ export const Config = z.intersect([
     jobs: JobsConfigSchema,
     toolJobs: z.union([z.const(false), ToolJobsConfigSchema]),
     goals: z.union([z.const(false), GoalConfigSchema]),
-  }) as unknown as z<Pick<Config, 'tools' | 'dshHome' | 'sessionTitle' | 'skills' | 'workspaceContext' | 'toolBash' | 'jobs' | 'toolJobs' | 'goals'>>,
+  }) as unknown as z<Pick<Config, 'tools' | 'filesystem' | 'workingDirectory' | 'dshHome' | 'sessionTitle' | 'skills' | 'workspaceContext' | 'toolBash' | 'jobs' | 'toolJobs' | 'goals'>>,
 ]) as unknown as z<Config>
 
 /**
@@ -202,6 +212,8 @@ export function pickSpineConfig(config: Omit<Config, 'agents'>): Omit<Config, 'a
     ...config.personaSuffix !== undefined ? { personaSuffix: config.personaSuffix } : {},
     ...config.toolOrder !== undefined ? { toolOrder: config.toolOrder } : {},
     ...config.tools !== undefined ? { tools: config.tools } : {},
+    ...config.filesystem !== undefined ? { filesystem: config.filesystem } : {},
+    ...config.workingDirectory !== undefined ? { workingDirectory: config.workingDirectory } : {},
     ...config.dshHome !== undefined ? { dshHome: config.dshHome } : {},
     ...config.sessionTitle !== undefined ? { sessionTitle: config.sessionTitle } : {},
     workspaceContext: config.workspaceContext,
@@ -244,6 +256,7 @@ export function apply(ctx: Context, config: Config): void {
     ...config.toolOrder !== undefined ? { toolOrder: config.toolOrder } : {},
   })
   ctx.plugin(ToolRuntime, config.tools ?? {})
+  ctx.plugin(LocalFileSystem, config.filesystem ?? {})
   const skillsEnabled = config.skills?.enabled ?? true
   if (skillsEnabled) {
     ctx.plugin(SkillRegistry, config.skills?.registry ?? {})
@@ -251,6 +264,7 @@ export function apply(ctx: Context, config: Config): void {
   }
   ctx.plugin(AgentRegistry)
   ctx.plugin(SessionProjectionRegistry)
+  ctx.plugin(WorkingDirectory, config.workingDirectory ?? {})
   ctx.plugin(llmRetry)
   if (config.goals !== undefined && config.goals !== false) {
     ctx.plugin(GoalService, config.goals.domain ?? {})

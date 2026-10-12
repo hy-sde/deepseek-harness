@@ -165,8 +165,8 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-agent-spine-demo`
 
-- `refs`: [`AgentLoopConfig`](#deepseek-aidsh-agent-loop) · [`GoalDomainConfig`](#deepseek-aidsh-goal) · [`JobsConfig`](#deepseek-aidsh-jobs-local) · [`SessionTitleConfig`](#deepseek-aidsh-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#deepseek-aidsh-skill) · [`SystemPromptConfig`](#deepseek-aidsh-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
-- `source`: [`packages/examples/agent-spine-demo/src/index.ts:88`](../packages/examples/agent-spine-demo/src/index.ts)
+- `refs`: [`AgentLoopConfig`](#deepseek-aidsh-agent-loop) · [`FileSystemConfig`](#deepseek-aidsh-fs-local) · [`GoalDomainConfig`](#deepseek-aidsh-goal) · [`JobsConfig`](#deepseek-aidsh-jobs-local) · [`SessionTitleConfig`](#deepseek-aidsh-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#deepseek-aidsh-skill) · [`SystemPromptConfig`](#deepseek-aidsh-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`WorkingDirectoryConfig`](#deepseek-aidsh-working-directory) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
+- `source`: [`packages/examples/agent-spine-demo/src/index.ts:92`](../packages/examples/agent-spine-demo/src/index.ts)
 
 ```ts config-catalog
 /**
@@ -175,13 +175,14 @@ export interface Config {
  * bridge, simply omits it), `includeHarnessIdentity`, `includeRuntimeContext`,
  * `persona`, and `toolOrder` to the system-prompt plugin (the fixed opener,
  * dynamic-context policy, deployment persona, and explicit model-facing tool
- * order), the `tools` object to the tool
- * registry (its presentation `mode`),
- * `dshHome` to bash environment and local skill discovery, `sessionTitle` to
- * the fallback title service, `skills` to the
- * skill registry/local provider/tool consumer, `workspaceContext` to the
- * agent-instructions loader, `jobs` to the process-local job provider, and
- * `toolBash`/`toolJobs` to the model-facing tool plugins this bundle owns.
+ * order), the `tools` object to the tool registry (its presentation `mode`),
+ * `filesystem` to the local filesystem
+ * provider, `workingDirectory` to the per-session directory owner, `dshHome`
+ * to bash environment and local skill discovery, `sessionTitle` to the fallback
+ * title service, `skills` to the skill registry/local provider/tool consumer,
+ * `workspaceContext` to the agent-instructions loader, `jobs` to the
+ * process-local job provider, and `toolBash`/`toolJobs` to the model-facing
+ * tool plugins this bundle owns.
  * Provider adapters own their `retryPolicy`; this bundle always mounts its
  * executor.
  * `goals` opts into and configures the persisted goal domain plus its model tool
@@ -209,6 +210,10 @@ export interface Config {
   toolOrder?: SystemPromptConfig['toolOrder']
   /** The tool registry's config — its presentation `mode` (see dsh-tools' `Config`). */
   tools?: ToolsConfig
+  /** Host filesystem resolution and overwrite-diff limits. */
+  filesystem?: FileSystemConfig
+  /** Per-session working-directory fallback. */
+  workingDirectory?: WorkingDirectoryConfig
   /** DeepSeek Harness home directory shared by shell context and local skill discovery. */
   dshHome?: string
   /** Deterministic fallback and accepted-title limits; omission uses the bundle's example policy. */

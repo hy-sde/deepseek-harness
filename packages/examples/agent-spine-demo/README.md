@@ -29,7 +29,7 @@ Use this bundle when you are building an agent without a UI and want the common 
 
 ### What the bundle includes
 
-Out of the box you get: in-memory sessions with automatic fallback titles; a system prompt assembled from your persona, the Harness identity, and optional workspace instructions; model-facing tools for bash, local skills, and background jobs; optional persisted goals the agent can create and track; and a loop that runs turns with provider-routed retries. Add a session-persistence provider when sessions must survive process exit. The full plugin list lives in the implementation section below.
+Out of the box you get: in-memory sessions with automatic fallback titles; a local filesystem with per-session working directories; a system prompt assembled from your persona, the Harness identity, and optional workspace instructions; model-facing tools for bash, local skills, and background jobs; optional persisted goals the agent can create and track; and a loop that runs turns with provider-routed retries. Add a session-persistence provider when sessions must survive process exit. The full plugin list lives in the implementation section below.
 
 ### What stays outside the bundle
 
@@ -65,6 +65,8 @@ The smallest working setup mounts the bundle with a workspace-context budget, pl
 | `persona` | `''` | the deployment persona text in the system prompt |
 | `toolOrder` | lexicographic | the order the model sees tools in |
 | `tools` | `{ mode: 'native' }` | how tools reach the model: native schemas, PTC mode, or both |
+| `filesystem` | owner defaults | local filesystem path resolution and overwrite-diff limits |
+| `workingDirectory` | launch directory | fallback for sessions without an original project directory |
 | `dshHome` | `$DSH_HOME` or `~/.dsh` | the harness home used for the bash environment and local skill folders |
 | `sessionTitle` | example limits | fallback title limits: 5 words, 40 fallback bytes, 80 accepted bytes |
 | `workspaceContext` | required | byte budget for loading workspace files into context, or `false` |
@@ -72,7 +74,6 @@ The smallest working setup mounts the bundle with a workspace-context budget, pl
 | `toolBash` | mounted | the bash tool; set `false` when another plugin owns `bash` |
 | `jobs` | owner default | how many background jobs each owner may run at once |
 | `toolJobs` | mounted | the background-job control tools; `false` keeps jobs without the tools |
-| `invariants` | owner default | developer setting: which package checks run and which packages are filtered |
 | `goals` | unmounted | optional persisted goals the agent can create and track across turns |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-agent-spine-demo) is the exhaustive source for every accepted field and its source declaration.
@@ -104,6 +105,8 @@ This section explains how the bundle composes the spine and points at the code t
 @deepseek-ai/dsh-session-title        log-backed title service + deterministic fallback
 @deepseek-ai/dsh-system-prompt        prompt-section + tool-schema assembly
 @deepseek-ai/dsh-tools                registry + guarded pre/around/post/final-result pipeline
+@deepseek-ai/dsh-fs-local             host filesystem provider
+@deepseek-ai/dsh-working-directory    durable per-session working directories
 @deepseek-ai/dsh-skill                skill provider registry
 @deepseek-ai/dsh-skill-filesystem     local filesystem skill provider
 @deepseek-ai/dsh-agent                agent registry + initiator scope + agent/* events
@@ -112,11 +115,6 @@ This section explains how the bundle composes the spine and points at the code t
 @deepseek-ai/dsh-goal-round-driver    optional same-session goal-round driver
 @deepseek-ai/dsh-llm-retry            provider-routed request retry policy
 @deepseek-ai/dsh-jobs-local           generic background-job registry
-@deepseek-ai/dsh-invariants           configurable invariant registry service
-@deepseek-ai/dsh-session/invariant
-@deepseek-ai/dsh-agent/invariant
-@deepseek-ai/dsh-scope/invariant
-@deepseek-ai/dsh-agent-loop/invariant package-owned relational checks
 @deepseek-ai/dsh-shell-env            managed DSH_* shell environment for model shell calls (unless toolBash=false)
 @deepseek-ai/dsh-tool-bash            the model-facing bash schema (unless toolBash=false)
 @deepseek-ai/dsh-agent-instructions   AGENTS.md/CLAUDE.md workspace context loader
@@ -128,10 +126,6 @@ This section explains how the bundle composes the spine and points at the code t
 ### Why a code bundle, not a shared YAML include
 
 A YAML include can deduplicate config but cannot own a bin or provide entry-point defaults; the ACP app package makes protocol-pure stdout wiring the default, though a leaf can still add an unsafe logger. Bundle children register services in the root isolate-keyed store, so injected leaf siblings see them without load-order coupling.
-
-### Invariant companions
-
-The bundle mounts the invariant registry and its four package companions (`session`, `agent`, `scope`, `agent-loop`). `invariants.enabled: false` or package filters suppress the checks but do not remove the service or companion registrations; Session's always-on validation and freezing are separate. The bundle publishes no invariant companion of its own: it owns no independent event stream or mutable data.
 
 ### Source map
 
@@ -174,7 +168,6 @@ The bundle adds no request-prefix content of its own; provider cache reuse depen
 These limits define when the bundle is a poor fit or needs special operational care. They are current package constraints, not a comparison with other composition approaches or a task backlog.
 
 - **Most of the spine set is fixed in code** — `apply()` always mounts the core services; config can omit bundled goals, skills, bash, and task-control tools, but swapping the loop or dropping another spine member means composing a different bundle.
-- **The invariant service and companions remain fixed members** — `invariants.enabled: false` or package filters suppress checks but do not remove the service or companion registrations; Session's always-on validation and freezing are separate.
 - **Retry can duplicate provider billing** — each provider attempt may incur billing, and `always` mode has no attempt limit; usage accounting stays with the entry point.
 
 <a id="dev-note"></a>

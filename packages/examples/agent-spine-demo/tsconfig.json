@@ -82,6 +82,15 @@
     },
     {
       "path": "../../jobs/tool-jobs"
+    },
+    {
+      "path": "../../fs/fs-local"
+    },
+    {
+      "path": "../../session/session-projection"
+    },
+    {
+      "path": "../../session/working-directory"
     }
   ]
 }

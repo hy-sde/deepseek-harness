@@ -18,14 +18,14 @@
   en: b78443f7358f079e
   zh: aa29c2c1b21a0545
 /deepseek-ai-dsh-agent-spine-demo/use-this-package/what-the-bundle-includes:
-  en: 77c40d545c77b8af
-  zh: b6d0508ec5e02638
+  en: 08087554074dd03a
+  zh: b1f48b2ec30e51cd
 /deepseek-ai-dsh-agent-spine-demo/use-this-package/what-stays-outside-the-bundle:
   en: 9a64c260455db47a
   zh: 9275c042f994ce12
 /deepseek-ai-dsh-agent-spine-demo/use-this-package/minimal-configuration:
-  en: d703f0c9f40729cc
-  zh: 537d4960fd22343b
+  en: 346d3a9ed0131b13
+  zh: 233f6a9df25c8d03
 /deepseek-ai-dsh-agent-spine-demo/use-this-package/request-retry-and-billing:
   en: 2d04b29ae64e6830
   zh: 5522dcf958b62e33
@@ -41,9 +41,6 @@
 /deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/why-a-code-bundle-not-a-shared-yaml-include:
   en: 6ef37b3a4e6c130f
   zh: d367cb27c22c4906
-/deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/invariant-companions:
-  en: 4cb265de060aa58a
-  zh: cdcacedba76d0e42
 /deepseek-ai-dsh-agent-spine-demo/understand-the-implementation/source-map:
   en: 0edff174909d51a0
   zh: 95e6f198772c3cf1
@@ -57,8 +54,8 @@
   en: d0457108bcb2e55a
   zh: 6dfd2359399f6771
 /deepseek-ai-dsh-agent-spine-demo/known-limitations-and-deferred-work:
-  en: 1b30f682aee398cd
-  zh: 3db2430074fe19ec
+  en: a7b0146c268b61be
+  zh: c4ace0a547472f05
 /deepseek-ai-dsh-agent-spine-demo/known-limitations-and-deferred-work/dev-note:
   en: 21cc5b56a4700e6c
   zh: dc21b19c2bbd6daf

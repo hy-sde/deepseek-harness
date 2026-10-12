@@ -29,7 +29,7 @@ kind: "package-reference"
 
 ### 组合包包含的内容
 
-开箱即得：带自动后备标题的内存会话；由你的 persona、Harness 身份与可选工作区指令组装的系统提示词；bash、本地 skill 与后台任务等面向模型的工具；agent 可以创建与跟踪的可选持久目标；以及带提供方路由重试、运行轮次的循环。会话需要在进程退出后继续存在时，请添加会话持久化提供方。完整插件清单见下方实现章节。
+开箱即得：带自动后备标题的内存会话；带每会话工作目录的本地文件系统；由你的 persona、Harness 身份与可选工作区指令组装的系统提示词；bash、本地 skill 与后台任务等面向模型的工具；agent 可以创建与跟踪的可选持久目标；以及带提供方路由重试、运行轮次的循环。会话需要在进程退出后继续存在时，请添加会话持久化提供方。完整插件清单见下方实现章节。
 
 ### 留在组合包外的内容
 
@@ -65,6 +65,8 @@ kind: "package-reference"
 | `persona` | `''` | 系统提示词中的部署 persona 文本 |
 | `toolOrder` | 字典序 | 模型看到工具的顺序 |
 | `tools` | `{ mode: 'native' }` | 工具如何到达模型：native schema、PTC mode 或两者 |
+| `filesystem` | 拥有者默认值 | 本地文件系统路径解析与覆盖差异限制 |
+| `workingDirectory` | 启动目录 | 没有原始项目目录的会话所使用的后备目录 |
 | `dshHome` | `$DSH_HOME` 或 `~/.dsh` | bash 环境与本地 skill 目录使用的 harness 主目录 |
 | `sessionTitle` | 示例限制 | 后备标题限制：5 个词、40 个后备字节、80 个可接受字节 |
 | `workspaceContext` | 必填 | 加载工作区文件进上下文的字节预算，或 `false` |
@@ -72,7 +74,6 @@ kind: "package-reference"
 | `toolBash` | 挂载 | bash 工具；当其他插件拥有 `bash` 时设 `false` |
 | `jobs` | 拥有者默认值 | 每个 owner 可同时运行的后台任务数 |
 | `toolJobs` | 挂载 | 后台任务控制工具；`false` 保留任务但不提供工具 |
-| `invariants` | 拥有者默认值 | 开发者设置：运行哪些包检查、过滤哪些包 |
 | `goals` | 不挂载 | agent 可创建并跨轮次跟踪的可选持久目标 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-agent-spine-demo)是每个受支持字段及其源声明的穷尽式真源。
@@ -104,6 +105,8 @@ kind: "package-reference"
 @deepseek-ai/dsh-session-title        log-backed title service + deterministic fallback
 @deepseek-ai/dsh-system-prompt        prompt-section + tool-schema assembly
 @deepseek-ai/dsh-tools                registry + guarded pre/around/post/final-result pipeline
+@deepseek-ai/dsh-fs-local             host filesystem provider
+@deepseek-ai/dsh-working-directory    durable per-session working directories
 @deepseek-ai/dsh-skill                skill provider registry
 @deepseek-ai/dsh-skill-filesystem     local filesystem skill provider
 @deepseek-ai/dsh-agent                agent registry + initiator scope + agent/* events
@@ -112,11 +115,6 @@ kind: "package-reference"
 @deepseek-ai/dsh-goal-round-driver    optional same-session goal-round driver
 @deepseek-ai/dsh-llm-retry            provider-routed request retry policy
 @deepseek-ai/dsh-jobs-local           generic background-job registry
-@deepseek-ai/dsh-invariants           configurable invariant registry service
-@deepseek-ai/dsh-session/invariant
-@deepseek-ai/dsh-agent/invariant
-@deepseek-ai/dsh-scope/invariant
-@deepseek-ai/dsh-agent-loop/invariant package-owned relational checks
 @deepseek-ai/dsh-shell-env            managed DSH_* shell environment for model shell calls (unless toolBash=false)
 @deepseek-ai/dsh-tool-bash            the model-facing bash schema (unless toolBash=false)
 @deepseek-ai/dsh-agent-instructions   AGENTS.md/CLAUDE.md workspace context loader
@@ -128,10 +126,6 @@ kind: "package-reference"
 ### 为何用代码组合包，而非共享 YAML include
 
 YAML include 可以去重配置，却无法拥有 bin 或提供入口默认值；ACP 应用包默认接出协议纯净的 stdout 接线，但叶节点仍可添加不安全的 logger。组合包子节点把服务注册到根 isolate-keyed store，因此叶节点的同级插件无需依赖加载顺序即可通过注入看到它们。
-
-### 不变式配套插件
-
-组合包挂载不变式注册表及其四个包配套插件（`session`、`agent`、`scope`、`agent-loop`）。`invariants.enabled: false` 或包筛选器会抑制检查，但不会移除服务或配套插件注册；Session 始终启用的校验与冻结是另一套机制。该组合包自身不发布不变式配套插件：它不拥有独立事件流或可变数据。
 
 ### 源码地图
 
@@ -174,7 +168,6 @@ YAML include 可以去重配置，却无法拥有 bin 或提供入口默认值�
 这些限制说明组合包何时不合适，或何时需要特别的运维注意。它们是当前包约束，不是与其他组合方式的对比，也不是任务积压。
 
 - **大部分主干集合固定在代码中**：`apply()` 始终挂载核心服务；配置可以省略组合包内的目标、skill、bash 与任务控制工具，但要替换循环或删除其他主干成员，就必须组合另一个组合包。
-- **不变式服务与配套插件仍是固定成员**：`invariants.enabled: false` 或包筛选器会抑制检查，但不会移除服务或配套插件注册；Session 始终启用的校验与冻结是另一套机制。
 - **重试可能重复产生提供方计费**：每次提供方尝试都可能产生计费，`always` 模式没有尝试次数上限；用量核算由入口负责。
 
 <a id="dev-note"></a>
