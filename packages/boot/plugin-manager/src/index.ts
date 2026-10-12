@@ -167,6 +167,33 @@ function parsedForRegistry(spec: string): ParsedInstallSpec {
   }
 }
 
+/** Process-local Git config that retries one GitHub repository over SSH without changing its recorded spec. */
+function githubSshFallbackEnvironment(
+  spec: ParsedInstallSpec,
+  log: string,
+  environment: Readonly<Record<string, string>> | undefined,
+): Readonly<Record<string, string>> | undefined {
+  if (!/Authentication failed|could not read Username|terminal prompts disabled|HTTP Basic: Access denied/iu.test(log)) return undefined
+  if (spec.kind !== 'git' || spec.host.toLowerCase().replace(/:.*$/u, '') !== 'github.com') return undefined
+  const raw = spec.spec.replace(/#.*$/su, '')
+  let pathname: string
+  if (/^github:/iu.test(raw)) pathname = raw.replace(/^github:/iu, '/')
+  else if (/^git@github\.com:/iu.test(raw)) pathname = raw.replace(/^git@github\.com:/iu, '/')
+  else pathname = new URL(raw.replace(/^git\+/iu, '')).pathname
+  const https = `https://github.com${pathname}`
+  const ssh = `ssh://git@github.com${pathname}`
+  const configured = environment?.GIT_CONFIG_COUNT
+  const count = configured === undefined ? 0 : Number(configured)
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error(`plugin-manager: invalid package-manager GIT_CONFIG_COUNT ${JSON.stringify(configured)}`)
+  }
+  return {
+    GIT_CONFIG_COUNT: String(count + 1),
+    [`GIT_CONFIG_KEY_${String(count)}`]: `url.${ssh}.insteadOf`,
+    [`GIT_CONFIG_VALUE_${String(count)}`]: https,
+  }
+}
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     /** Persistent management of the current profile's composition and packages. */
@@ -515,7 +542,8 @@ export class PluginManager extends TypertRemoteService {
       let version: string | undefined
       try {
         result.registries = []
-        const connection = checkGithubConnection(parsedForRegistry(spec), this.profile.dir, {
+        const parsed = parsedForRegistry(spec)
+        const connection = checkGithubConnection(parsed, this.profile.dir, {
           timeoutMs: this.githubConnectionTimeoutMs, outputBytes: this.outputBytes,
           signal: AbortSignal.any([this.abort.signal, control.abort.signal]),
           ...this.profile.packageManager?.env === undefined ? {} : { env: this.profile.packageManager.env },
@@ -539,7 +567,17 @@ export class PluginManager extends TypertRemoteService {
           if (stopped()) throw new InstallCancelledError()
           result.registries.push(registry)
           announce('installing', { registry, index: index + 1, total: plan.length })
-          run = await this.runPnpm(['add', spec, ...options?.saveExact === true ? ['--save-exact'] : [], ...registryArguments(registry)], control.abort.signal, requestId)
+          const args = ['add', spec, ...options?.saveExact === true ? ['--save-exact'] : [], ...registryArguments(registry)]
+          run = await this.runPnpm(args, control.abort.signal, requestId)
+          const sshEnvironment = githubSshFallbackEnvironment(
+            parsed,
+            run.output,
+            this.profile.packageManager?.env,
+          )
+          if (sshEnvironment !== undefined) {
+            await this.restoreFiles(files)
+            run = await this.runPnpm(args, control.abort.signal, requestId, sshEnvironment)
+          }
           result.packageResult = run
           if (stopped()) throw new InstallCancelledError()
           // A compatibility refusal is the package's own answer, so no other registry is asked.
@@ -552,7 +590,7 @@ export class PluginManager extends TypertRemoteService {
           delete result.failedAt
           // A run this manager terminated got no answer from the registry at all, so no registry explains it.
           if (run.timedOut === true) break
-          const failedAt = attributeFailure(run.kind, run.output, parsedForRegistry(spec))
+          const failedAt = attributeFailure(run.kind, run.output, parsed)
           if (failedAt !== 'other') result.failedAt = failedAt
           if (failedAt !== 'registry' || index === plan.length - 1) break
         }
@@ -708,13 +746,17 @@ export class PluginManager extends TypertRemoteService {
   /** Run one pnpm command in the profile, streaming its output as install-log chunks. */
   private async runPnpm(
     args: readonly string[], signal?: AbortSignal, requestId?: PluginInstallRequestId,
+    environment?: Readonly<Record<string, string>>,
   ): Promise<PackageResult> {
     const jobId = randomUUID()
     const argv = ['pnpm', ...args]
     const cwd = this.profile.dir
     const identity = requestId === undefined ? {} : { requestId }
+    const packageManager = this.profile.packageManager
     const task = runProfilePnpm({ ...this.profile, profile: this.profile.name }, args, {
-      execution: 'service', ...this.profile.packageManager ?? { command: this.pnpmCommand },
+      execution: 'service',
+      ...packageManager ?? { command: this.pnpmCommand },
+      ...environment === undefined ? {} : { env: { ...packageManager?.env, ...environment } },
       signal: signal === undefined ? this.abort.signal : AbortSignal.any([this.abort.signal, signal]),
       outputBytes: this.outputBytes, activateNewBundles: false, idleTimeoutMs: this.idleTimeoutMs,
       lookupTimeoutMs: this.inspectTimeoutMs,

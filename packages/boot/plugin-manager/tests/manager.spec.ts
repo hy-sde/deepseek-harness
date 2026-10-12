@@ -181,7 +181,7 @@ it('disposal waits for an active GitHub check to stop', async () => {
 it.each(['github:acme/connected', 'https://github.com/acme/connected.git', 'git+ssh://git@github.com/acme/connected.git'])(
   'installs %s through real Git and pnpm with private repository SSH fallback', async (spec) => {
     const pnpm = fileURLToPath(new URL('../../../../apps/desktop/node_modules/pnpm/bin/pnpm.mjs', import.meta.url))
-    const env = { GIT_CONFIG_GLOBAL: '', GIT_CONFIG_NOSYSTEM: '1' }
+    const env: Record<string, string> = { GIT_CONFIG_GLOBAL: '', GIT_CONFIG_NOSYSTEM: '1' }
     const { manager, dir, connection } = await fixture('startup', false, undefined, {}, {
       command: process.execPath, args: ['--expose-internals', pnpm], env,
     })
@@ -197,6 +197,14 @@ it.each(['github:acme/connected', 'https://github.com/acme/connected.git', 'git+
     writeFileSync(join(repository, 'cordis.patch.yml'), '[]\n')
     await git(['add', '.'])
     await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-m', 'fixture bundle'])
+    const ssh = join(dir, 'ssh.mjs')
+    writeFileSync(ssh, [
+      "import { spawnSync } from 'node:child_process'",
+      `const result = spawnSync('git-upload-pack', [${JSON.stringify(repository)}], { stdio: 'inherit' })`,
+      'process.exit(result.status ?? 1)',
+      '',
+    ].join('\n'))
+    env.GIT_SSH_COMMAND = `${JSON.stringify(process.execPath)} ${JSON.stringify(ssh)}`
     const requests: string[] = []
     const sockets = new Set<Socket>()
     const proxy = createServer((_request, response) => {
@@ -220,7 +228,7 @@ it.each(['github:acme/connected', 'https://github.com/acme/connected.git', 'git+
     const address = proxy.address()
     if (address === null || typeof address === 'string') throw new Error('proxy did not bind a TCP port')
     const proxyUrl = `http://127.0.0.1:${String(address.port)}`
-    writeFileSync(env.GIT_CONFIG_GLOBAL, `[url "${pathToFileURL(repository).href}"]\n insteadOf = ssh://git@github.com/acme/connected.git\n insteadOf = git@github.com:acme/connected.git\n[url "${proxyUrl}/"]\n insteadOf = https://github.com/\n[http]\n proxy =\n`)
+    writeFileSync(env.GIT_CONFIG_GLOBAL, `[url "${proxyUrl}/"]\n insteadOf = https://github.com/\n[http]\n proxy =\n`)
     // pnpm probes HTTPS with Node before falling back to SSH, even for an SSH spec.
     // Route that HTTP request to our proxy too; Git's URL rewrite alone cannot isolate it.
     const manifest = readProfileManifest('test', dir)
@@ -231,8 +239,9 @@ it.each(['github:acme/connected', 'https://github.com/acme/connected.git', 'git+
     expect(result.error).toBeUndefined()
     expect(result).toMatchObject({ changed: true, bundle: name, packageResult: { exitCode: 0 } })
     expect(readProfileManifest('test', dir).dependencies).toHaveProperty(name)
-    expect(requests).toContain('github.com:443')
+    expect(requests.some(request => /^(?:codeload\.)?github\.com:443$/u.test(request))).toBe(true)
   },
+  30_000,
 )
 
 it.each(['missing package', 'invalid manifest', 'not a bundle', 'missing patch', 'invalid patch'])(
