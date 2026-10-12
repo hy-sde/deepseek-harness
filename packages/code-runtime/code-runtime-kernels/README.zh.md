@@ -31,7 +31,7 @@ kind: "package-reference"
 - **Python** —— 一个长寿命 `python3` 子进程，运行[自包含内核](./src/python/runner.ts)（仅标准库，无需 venv/pip）。模块级变量与一个 asyncio 事件循环跨 cell 保留；支持顶层 `await`；最后一个表达式即 cell 的值。
 - **JavaScript** —— 一个长寿命 `node` 子进程，运行[自包含内核](./src/nodejs/runner.ts)（仅 Node 内置）。持久 `state` 对象与进程全局对象携带跨 cell 的值；每个 cell 以 async 函数体运行，支持顶层 `await`/`return`；`return <json>` 携带完成值。
 
-线上协议、kernel host 驱动（spawn + 握手、串行写入、敌对对端解析、SIGINT→SIGTERM→SIGKILL 升级、stdin 管道失败结算、退出握手）、会话注册表、绑定校验与输出账本全部共享（`src/core/`），两个语言的语义完全一致。
+线上协议、kernel host 驱动（spawn + 握手、串行写入、敌对对端解析——字节级分行，非 JSON 帧会告警并跳过——SIGINT→SIGTERM→SIGKILL 升级、stdin 管道失败结算、退出握手）、会话注册表、绑定校验与输出账本全部共享（`src/core/`），两个语言的语义完全一致。
 
 这是**进程隔离，而非安全边界**：程序源码拥有与内置 `process` 隔离后端相同的 bash 级信任。驱动的职责是健壮性——伪造帧不会弄崩 host，向已死亡 kernel 的 stdin 写入失败会将进行中的运行结算为 killed 并退役该 kernel（会话注册表随之替换它，omp #14196/#14199），无响应的 kernel 会被逐步升级到终止——而非隔离。
 
@@ -101,6 +101,7 @@ kind: "package-reference"
 - **会话**。带非空 `session` 的调用运行于该会话的 kernel；`executionCount` 报告累计次数。`reset: true` 先关旧 kernel 再开新 kernel 响应。
 - **一次性**。没有 `session` 时，spawn 一个新 kernel，恰好运行一个程序后关闭。
 - **持久化**。Python：模块级变量与循环状态跨 cell 保留。JavaScript：`state`（长寿命共享对象）与 sloppy 全局赋值跨 cell 保留；cell 顶层的 `const`/`let`/`function`/`class` 是每 cell 作用域（async 函数体），持久定义请放 `state`。cell 以 `return <json>` 携带完成值，或以无 `return` 结束为无值运行；非 lossless JSON 完成值（环、`BigInt`、集合）判为 `'invalid-output'`。
+- **标准输入。** Python eval 代码看到的是 `/dev/null` 作为 stdin：`input()` 直接抛 `EOFError` 而不是永远挂起；未显式指定 stdin 的子进程读到 EOF，而不会偷走 kernel 控制信道的帧（控制信道在重定向前先 dup 为独立 fd）。
 - **快照**。每次成功运行后保存命名空间（Python：`pickle` + 字节码用 `marshal`，按名报告丢失；JavaScript：V8 二进制序列化，`Map`/`Set`/`Date`/环引用可存活，但值中含函数的键整键按名丢弃）。该会话的新 kernel 对最后一份快照只恢复一次——恢复运行的日志带 `[dsh-kernels] restored N names from snapshot (could not restore: …)`。`reset: true` 先删除快照，被丢弃的状态绝不会复活。Python 字节码依赖 `marshal` 格式：跨 Python 次版本升级恢复时，函数/类条目应预期丢失（在通知中按名报告），数据不受影响。
 - **预算与失败种类**。墙钟超时 → `'timeout'`；取消或被迫终止 → `'abort'`；抛异常 → `'exception'`；非 JSON 完成 → `'invalid-output'`；合并输出溢出 → `'output-limit'`；kernel 死亡 → 会话注册表替换 kernel 并重试一次。全部是结果字段，绝不会 reject 工具调用。
 - **输出溢出恢复**。运行溢出 `maxOutputBytes`（`'output-limit'` 失败）时，工具调用 `ctx.spillStore.saveText()` 保存完整的捕获输出（日志加溢出的完成值），成功后（已加载 `spillStore` 后端且有会话属主）在失败消息后追加 `full program output preserved at <retrieval-hint>`，让溢出尾部可恢复而非被丢弃。spill 失败是最佳努力：绝不会让调用失败或改变截断后的结果。
@@ -109,7 +110,7 @@ kind: "package-reference"
 <a id="development"></a>
 ## 开发
 
-`pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、根 `tsdown` 导出（lib/）。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码，每次 spawn 落地为临时 `.py`）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/snapshot.spec.ts`](./tests/snapshot.spec.ts) 固定命名空间持久化；[`tests/confinement.spec.ts`](./tests/confinement.spec.ts) 固定 sandbox seam 的 confine 包装及其 fail-closed 配置；[`tests/startup.spec.ts`](./tests/startup.spec.ts) 固定 kernel 提前退出的快速失败；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
+`pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、根 `tsdown` 导出（lib/）。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），字节级帧拆分器在 [`src/core/lines.ts`](./src/core/lines.ts)，属主私有落地目录守卫在 [`src/core/staging.ts`](./src/core/staging.ts)（runner 每次 spawn 落地到按 uid 划分的 0700 临时目录并经 pinned fd 复验；目录名被占用时回退到全新私有目录），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/snapshot.spec.ts`](./tests/snapshot.spec.ts) 固定命名空间持久化；[`tests/lines.spec.ts`](./tests/lines.spec.ts) 固定帧拆分器与非 JSON 帧告警；[`tests/python-stdin.spec.ts`](./tests/python-stdin.spec.ts) 固定 `/dev/null` stdin 行为；[`tests/staging-dir.spec.ts`](./tests/staging-dir.spec.ts) 固定落地目录守卫与回退；[`tests/confinement.spec.ts`](./tests/confinement.spec.ts) 固定 sandbox seam 的 confine 包装及其 fail-closed 配置；[`tests/startup.spec.ts`](./tests/startup.spec.ts) 固定 kernel 提前退出的快速失败；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
 
 <a id="model-experience"></a>
 ## 模型体验
