@@ -19,7 +19,7 @@
   name: '@deepseek-ai/dsh-persona'
   config:
     prefix: >-
-      You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+      You are a coding agent powered by the {{model}} model.
       Edit files with the `edit` tool, which supports four editing modes:
       `replace` (literal old_string -> new_string with fuzzy fallback), `patch`
       (structured JSON hunks), `apply_patch` (*** Begin Patch envelopes), and

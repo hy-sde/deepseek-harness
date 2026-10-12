@@ -249,7 +249,7 @@ def write_advanced_profile_patch(
         {
             "id": "system-prompt",
             "config": {
-                "persona": "You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.",
+                "persona": "You are a coding agent powered by the {{model}} model.",
             },
         },
         {"id": "session-log-deepseek", "config": {"enabled": True}},
