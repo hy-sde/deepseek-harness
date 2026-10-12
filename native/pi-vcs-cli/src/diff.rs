@@ -1154,18 +1154,14 @@ fn push_range(out: &mut String, start: u32, len: u32) {
 impl<'a> GitHunks<'a> {
 	/// Advance the function-context cursor over the old-file lines that
 	/// precede the hunk starting at 1-based old-file line `hunk_start`,
-	/// returning the most recent qualifying line among them (identical to a
-	/// from-scratch backward scan, but O(n) total across all hunks).
+	/// returning the most recent line accepted by git's default funcname
+	/// rule among them (identical to a from-scratch scan, but O(n) total
+	/// across all hunks — hunks are consumed in ascending order, like git's
+	/// xemit resuming where the previous hunk stopped).
 	///
-	/// Qualifying = line's first byte is not ASCII whitespace and is not
-	/// `}`; a trailing `\r` is ignored for the test and omitted from the
-	/// returned slice (matching the previous implementation).
-	///
-	/// Local divergence from the omp port's `function_context`
-	/// (crates/pi-vcs/src/git/diff.rs, which rescan the whole file from
-	/// line 1 for every hunk - O(hunks x file size)): hunks are consumed in
-	/// ascending order here, so a single forward cursor reproduces the exact
-	/// same result in one pass per file.
+	/// Local divergence from the omp port's `FunctionContext::before`
+	/// (crates/pi-vcs/src/git/diff.rs): same forward-cursor shape, so a
+	/// single pass per file reproduces the git result.
 	fn advance_function_context(&mut self, hunk_start: u32) -> Option<&'a [u8]> {
 		let before = usize::try_from(hunk_start.saturating_sub(1)).ok()?;
 		while self.next_line < before {
@@ -1175,15 +1171,29 @@ impl<'a> GitHunks<'a> {
 			let line = &self.old_data[self.next_offset..line_end];
 			self.next_offset = newline.map_or(self.old_data.len(), |_| line_end + 1);
 			self.next_line += 1;
-			let line = line.strip_suffix(b"\r").unwrap_or(line);
-			if let Some(&first) = line.first() {
-				if !first.is_ascii_whitespace() && first != b'}' {
-					self.candidate = Some(line);
-				}
+			if let Some(name) = git_funcname(line) {
+				self.candidate = Some(name);
 			}
 		}
 		self.candidate
 	}
+}
+
+/// git's default funcname rule (xemit's `def_ff`, upstream 7716912396): the
+/// line starts with an ASCII letter, `_` or `$`; it is cut to 80 bytes, then
+/// trailing whitespace is trimmed. `#include`, `{`, `//` comments, digits and
+/// indented lines never qualify.
+fn git_funcname(line: &[u8]) -> Option<&[u8]> {
+	let first = *line.first()?;
+	if !(first.is_ascii_alphabetic() || first == b'_' || first == b'$') {
+		return None;
+	}
+	let line = &line[..line.len().min(80)];
+	let end = line
+		.iter()
+		.rposition(|byte| !matches!(byte, b' ' | b'\t' | b'\n' | b'\x0b' | b'\x0c' | b'\r'))
+		.map_or(0, |index| index + 1);
+	Some(&line[..end])
 }
 
 #[cfg(test)]
@@ -1223,21 +1233,94 @@ mod tests {
 	}
 
 	#[test]
-	fn qualifying_line_predicate() {
-		// indented lines and `}` never qualify; the nearest qualifying line wins
-		let data = b"  indented\nnot indented\n  indented\n}\n";
-		assert_eq!(probe(data, &[2]), vec![None]); // before: ["  indented"]
-		assert_eq!(probe(data, &[4]), vec![Some("not indented".into())]); // before: [..., "}"]
-		assert_eq!(probe(data, &[5]), vec![Some("not indented".into())]); // before ends at "}"
+	fn git_default_funcname_predicate() {
+		// git's default rule: the first byte must be an ASCII letter, `_` or
+		// `$`. `#include`, `{`, `//` comments, digits and `}` never qualify.
+		let data = b"#include <stdio.h>\nfunc()\n{\n// comment\n$dollar\n_under\n1digit\n}\n";
+		assert_eq!(probe(data, &[2]), vec![None]); // before: ["#include <stdio.h>"]
+		assert_eq!(probe(data, &[5]), vec![Some("func()".into())]); // before ends "// comment"
+		assert_eq!(probe(data, &[7]), vec![Some("_under".into())]); // "$dollar" then "_under"
+		assert_eq!(probe(data, &[8]), vec![Some("_under".into())]); // "1digit"/"}" rejected
 	}
 
 	#[test]
-	fn trailing_cr_stripped_and_last_line_without_newline() {
+	fn funcname_cut_to_80_bytes_and_trailing_whitespace_trimmed() {
+		let long = format!("long_{}()", "x".repeat(90));
+		let data = format!("{long}\nbody\n").into_bytes();
+		assert_eq!(probe(&data, &[2]), vec![Some(long[..80].to_owned())]);
+		assert_eq!(probe(b"spaced   \t\nbody\n", &[2]), vec![Some("spaced".into())]);
+	}
+
+	#[test]
+	fn trailing_cr_trimmed_and_last_line_without_newline() {
 		let data = b"one\r\ntwo\r\nlast";
-		// split on \n keeps the terminator; \r is stripped before the test
+		// split on \n keeps the terminator; git's rule trims the trailing \r
 		assert_eq!(probe(data, &[2]), vec![Some("one".into())]); // before: ["one\r"]
 		assert_eq!(probe(data, &[3]), vec![Some("two".into())]); // before: ["one\r","two\r"]
 		assert_eq!(probe(data, &[4]), vec![Some("last".into())]); // before also includes bare "last"
+	}
+
+	fn git(dir: &Path, args: &[&str]) -> String {
+		let output = std::process::Command::new("git")
+			.args(args)
+			.current_dir(dir)
+			.output()
+			.unwrap_or_else(|err| panic!("run git {args:?}: {err}"));
+		assert!(
+			output.status.success(),
+			"git {args:?}: {}",
+			String::from_utf8_lossy(&output.stderr)
+		);
+		String::from_utf8(output.stdout).expect("git output is UTF-8")
+	}
+
+	/// Git-oracle pin (upstream 7716912396): one hunk per section, so git
+	/// names each with the last earlier line that starts with a letter, `_`
+	/// or `$`, cut to 80 bytes with trailing whitespace trimmed. The renderer
+	/// must be byte-identical to `git diff`.
+	#[test]
+	fn hunk_function_context_matches_git() {
+		let dir = tempfile::tempdir().unwrap();
+		git(dir.path(), &["init", "-q", "-b", "main"]);
+		git(dir.path(), &["config", "user.name", "Diff Test"]);
+		git(dir.path(), &["config", "user.email", "diff@example.com"]);
+		let long = format!("long_{}()", "x".repeat(90));
+		let headers = [
+			long.as_str(),
+			"#include <stdio.h>",
+			"{",
+			"// comment",
+			"$dollar \t",
+			"_under",
+			"}",
+			"  indented",
+		];
+		let section = |index: usize, header: &str, changed: bool| {
+			let mut text = format!("{header}\n");
+			for row in 0..10 {
+				let body = if changed && row == 5 { "edited" } else { "body" };
+				text.push_str(&format!("    {body} {index} {row}\n"));
+			}
+			text
+		};
+		let render = |changed: bool| -> String {
+			headers
+				.iter()
+				.enumerate()
+				.map(|(index, header)| section(index, header, changed))
+				.collect()
+		};
+		std::fs::write(dir.path().join("funcs.txt"), render(false)).expect("write");
+		git(dir.path(), &["add", "funcs.txt"]);
+		git(dir.path(), &["commit", "-qm", "funcs"]);
+		std::fs::write(dir.path().join("funcs.txt"), render(true)).expect("modify");
+		let mut repo = crate::repo::discover(dir.path()).unwrap().expect("repository");
+		let expected = git(dir.path(), &["diff", "--no-ext-diff"]);
+		assert!(expected.contains(" @@ $dollar\n"), "{expected}");
+		assert_eq!(
+			diff_text(&repo.gix().unwrap(), &DiffOptions::default()).unwrap(),
+			expected
+		);
 	}
 
 	#[test]
