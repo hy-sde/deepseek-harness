@@ -437,7 +437,7 @@ describe('run record', () => {
 
 /**
  * Run one pnpm command in a profile-shaped directory, terminating and awaiting it with the test.
- * @param options - consumer directory, environment, the store and cache directories an installing
+ * @param options - consumer directory, environment, the store and state directories an installing
  *   command shares, and the arguments to append.
  * @returns The settled child result.
  */
@@ -445,13 +445,13 @@ async function pnpmIn(options: {
   readonly consumer: string
   readonly environment: NodeJS.ProcessEnv
   readonly store?: string
-  readonly cache?: string
+  readonly state?: string
   readonly args: readonly string[]
 }): Promise<{ exitCode?: number | null; stdout: string; stderr: string; timedOut: boolean }> {
   const invocation = pnpmInvocationFor([
     ...options.args,
     ...options.store === undefined ? [] : ['--store-dir', options.store],
-    ...options.cache === undefined ? [] : ['--cache-dir', options.cache],
+    ...options.state === undefined ? [] : ['--state-dir', options.state],
     '--config.fetch-retries=0',
   ])
   const child = execa(invocation.command, invocation.args, {
@@ -483,10 +483,10 @@ describe('package cache freshness', () => {
   it('installs a rebuilt archive at the same version through a retained pnpm store', { timeout: 300_000 }, async () => {
     const temporary = temporaryDirectory('dsh-local-registry-cache-')
     const store = join(temporary, 'store')
-    const cache = join(temporary, 'cache')
+    const state = join(temporary, 'state')
     const userConfig = join(temporary, 'empty.npmrc')
     writeFileSync(userConfig, '')
-    // A retained store, metadata cache, and npm configuration, so the second installation cannot pass by starting empty.
+    // A retained store, metadata state, and npm configuration, so the second installation cannot pass by starting empty.
     const environment = { ...process.env, npm_config_userconfig: userConfig }
 
     const install = async (run: string, source: string): Promise<{ payload: string; settings: string }> => {
@@ -499,7 +499,7 @@ describe('package cache freshness', () => {
       onTestFinished(() => registry.close())
       const consumer = consumerDirectory(temporary, `consumer-${run}`)
       const result = await pnpmIn({
-        consumer, environment, store, cache,
+        consumer, environment, store, state,
         args: ['add', '@dsh-local/fixture@1.0.0', `--registry=${registry.url}`],
       })
       expect(result.timedOut, `${result.stdout}\n${result.stderr}`).toBe(false)

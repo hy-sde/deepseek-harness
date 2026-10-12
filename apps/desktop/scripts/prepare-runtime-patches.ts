@@ -35,7 +35,8 @@ function patchHash(bytes: Buffer): string {
 
 /**
  * Stage selected patches and explicit overrides before Desktop resolves its temporary lockfile.
- * Every root patch must be classified; shared bytes must match the root lockfile's pnpm 11 hash.
+ * Every root patch must be classified; shared bytes must match the root lockfile's hash.
+ * The root lockfile may contain pnpm's package-manager bootstrap document before the workspace lock.
  * @param projectRoot Disposable project containing pnpm-workspace.yaml, outside the repository root itself.
  * @param repositoryRoot Source repository; its files remain read-only.
  * @param policy Desktop patch decisions, including optional runtime-only files relative to the repository.
@@ -51,9 +52,12 @@ export function prepareRuntimePatches(
   const source = yaml.load(readFileSync(join(repositoryRoot, 'pnpm-workspace.yaml'), 'utf8')) as {
     patchedDependencies: Record<string, string>
   }
-  const sourceLock = yaml.load(readFileSync(join(repositoryRoot, 'pnpm-lock.yaml'), 'utf8')) as {
-    patchedDependencies: Record<string, string>
-  }
+  const sourceLockDocuments = yaml.loadAll(readFileSync(join(repositoryRoot, 'pnpm-lock.yaml'), 'utf8')) as Array<{
+    patchedDependencies?: Record<string, string>
+  }>
+  const sourceLocks = sourceLockDocuments.filter(document => document.patchedDependencies !== undefined)
+  if (sourceLocks.length !== 1) throw new Error('desktop patches: expected one workspace lockfile document with patched dependencies')
+  const sourceLock = sourceLocks[0]!
   for (const spec of Object.keys(source.patchedDependencies)) {
     if (!Object.hasOwn(policy, spec)) throw new Error(`desktop patches: classify the workspace patch ${spec}`)
   }
@@ -71,7 +75,7 @@ export function prepareRuntimePatches(
     }
     const bytes = readFileSync(join(repositoryRoot, sourcePath))
     const hash = patchHash(bytes)
-    if (rule.scope === 'shared' && sourceLock.patchedDependencies[spec] !== hash) {
+    if (rule.scope === 'shared' && sourceLock.patchedDependencies![spec] !== hash) {
       throw new Error(`desktop patches: shared patch hash differs from the root lockfile: ${spec}`)
     }
     selected.push({ spec, ...identity, path: `patches/desktop-${selected.length}.patch`, hash, bytes })

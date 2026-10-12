@@ -996,8 +996,8 @@ importers:
         specifier: 3.1.1
         version: 3.1.1
       pnpm:
-        specifier: 11.28.5
-        version: 11.28.5
+        specifier: 12.8.1
+        version: 12.8.1
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -8296,6 +8296,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../core/tools
+      '@deepseek-ai/dsh-working-directory':
+        specifier: workspace:*
+        version: link:../../session/working-directory
       '@deepseek-ai/node-addon-landlock-run':
         specifier: workspace:*
         version: link:../../../native/landlock-run/packages/entry
@@ -12556,6 +12559,12 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent-loop':
+        specifier: workspace:*
+        version: link:../../core/agent-loop
+      '@deepseek-ai/dsh-agent-loop-testkit':
+        specifier: workspace:*
+        version: link:../../test-support/agent-loop-testkit
       '@deepseek-ai/dsh-git':
         specifier: workspace:*
         version: link:../../git/git
@@ -23628,11 +23637,6 @@ packages:
     resolution: {integrity: sha512-uysumyrvkUX0rX/dEVqt8gC3sTBzd4zoWfLeS29nb53imdaXVvLINYXTI2GNqzaMuvacNx4uJQ8+b3zXR0pkgQ==}
     engines: {node: '>=10.4.0'}
 
-  pnpm@11.28.5:
-    resolution: {integrity: sha512-SEVj0wtMKtJ8tIqpT/KzAtvOvI/2vyiBbCWJiG4UbOf3bzVPO8GkOOb16XaMMCqgpvet2CMpA81M+BQmy8FNng==}
-    engines: {node: '>=22.13'}
-    hasBin: true
-
   pnpm@12.8.1:
     resolution: {integrity: sha512-9kupB1B/XOr+BsjTjmBS0BeURFgOwSed3Vv8EctIqoomRLZlmOB+dh2oSHKp/FfV+QK4f6SdAkGY1VhhKqu+RQ==}
     engines: {node: '>=18.*'}
@@ -31429,8 +31433,6 @@ snapshots:
       '@xmldom/xmldom': 0.8.15
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
-
-  pnpm@11.28.5: {}
 
   pnpm@12.8.1:
     optionalDependencies:

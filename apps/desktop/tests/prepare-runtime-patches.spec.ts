@@ -48,7 +48,7 @@ it('classifies the current workspace and shares only runtime patch bytes', () =>
   expect(settings.overrides['@earendil-works/pi-ai']).toBeUndefined()
   expect(settings.overrides['@earendil-works/pi-ai@^1.0.2']).toBe('1.0.2')
   expect(readFileSync(join(repository, 'pnpm-lock.yaml'))).toEqual(before)
-})
+}, 30_000)
 
 it('does not infer version overrides from selected patches', () => {
   const { source, project } = fixture()
@@ -128,9 +128,11 @@ it.each([false, true])('pnpm applies runtime-only bytes and rejects an inapplica
     '--config.manage-package-manager-versions=false'], { cwd: project, env: { ...env, CI: 'true' }, timeout: 30_000, windowsHide: true })
   if (invalid) {
     const failure: unknown = await install.catch((error: unknown) => error)
-    if (!(failure instanceof Error) || !('stdout' in failure)) throw new Error('Expected a captured pnpm failure')
+    if (!(failure instanceof Error) || !('stdout' in failure) || !('stderr' in failure)) {
+      throw new Error('Expected a captured pnpm failure')
+    }
     expect(failure).toHaveProperty('code', 1)
-    expect(failure.stdout).toMatch(/PATCH_FAILED/u)
+    expect(`${String(failure.stdout)}\n${String(failure.stderr)}`).toMatch(/ERR_PNPM_PATCH_NOT_APPLIED|PATCH_FAILED/u)
   } else {
     await install
     verifyRuntimePatches(project, plan)
