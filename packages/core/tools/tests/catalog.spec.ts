@@ -98,8 +98,10 @@ describe('catalog mode wire contribution', () => {
     const parameters = dyn.parameters as JsonSchemaNode
     const properties = parameters.properties as Record<string, { type?: string; enum?: string[] }>
     expect(properties.op).toMatchObject({ type: 'string', enum: ['search', 'docs', 'invoke'] })
-    // `args` is DSCL `type: 'json'`, which projects as a schema-less property (any lossless JSON).
-    expect(properties.args).toBeDefined()
+    // `args` must project as a TYPED object: annotation-only (schema-less)
+    // properties are stringified by some OpenAI-compatible serving stacks
+    // (vLLM/GLM relay — untyped values arrive as JSON strings on the wire).
+    expect(properties.args).toMatchObject({ type: 'object', additionalProperties: true })
     expect(parameters.required).toContain('op')
   })
 

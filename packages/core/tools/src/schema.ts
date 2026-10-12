@@ -361,6 +361,13 @@ function runSchemaCompiler(initial: CompileTask): void {
       case 'json':
         assertAuthorKeys(input, path, [...authorKeys, 'type'])
         copyAnnotations(input, node)
+        // Wire constraint: annotation-only nodes have no `type` on the model
+        // surface, and some OpenAI-compatible serving stacks stringify the
+        // values of untyped properties (verified on a vLLM/GLM relay — typed
+        // object/array properties survive, untyped ones arrive as JSON
+        // strings). Model-facing INPUT params must declare a concrete type
+        // (object with additionalProperties: true, string, number, ...) —
+        // keep `type: 'json'` for OUTPUT schemas only.
         break
       case 'object':
         assertAuthorKeys(input, path, [...authorKeys, 'type', 'properties', 'additionalProperties'])

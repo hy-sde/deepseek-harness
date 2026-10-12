@@ -130,8 +130,9 @@ export function createDynTool(options: DynBridgeOptions): ToolDefinition {
         description: 'docs/invoke: the device name, exactly as `search` lists it.',
       },
       args: {
-        type: 'json',
-        description: 'invoke: the lossless-JSON arguments object the device\'s schema declares.',
+        type: 'object',
+        additionalProperties: true,
+        description: "invoke: the arguments object the device's schema declares (pass `{}` or omit for zero-parameter devices).",
       },
     },
     output: {
