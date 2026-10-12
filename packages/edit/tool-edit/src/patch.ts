@@ -37,6 +37,16 @@ export interface PatchInput {
   op: Operation
   rename?: string
   diff?: string
+  /**
+   * Codex `apply_patch` placement for context-free hunks: when the hunk's
+   * lines occur more than once, bind to the first exact or
+   * whitespace/unicode-normalized match at or after the previous hunk
+   * instead of rejecting the ambiguity. Looser matches and matches that
+   * would wrap behind the previous hunk still require a unique occurrence.
+   * Set by the apply_patch envelope only; JSON `patch` entries omit it and
+   * keep the uniqueness check.
+   */
+  firstMatch?: boolean
 }
 
 export interface FileSystem {
@@ -99,7 +109,8 @@ function applyCharacterMatch(
   hunk: DiffHunk,
   fuzzyThreshold: number,
   allowFuzzy: boolean,
-): { content: string; warnings: string[] } {
+  firstMatch: boolean,
+): { content: string; warnings: string[] } | undefined {
   const oldText = hunk.oldLines.join('\n')
   const newText = hunk.newLines.join('\n')
 
@@ -125,6 +136,9 @@ function applyCharacterMatch(
 
   // Check for multiple exact occurrences
   if (matchOutcome.occurrences && matchOutcome.occurrences > 1) {
+    // With first-match binding, repeated text is placed line-based instead:
+    // the first exact or normalized match at or after the previous hunk.
+    if (firstMatch) return undefined
     const previews = matchOutcome.occurrencePreviews?.join('\n\n') ?? ''
     const moreMsg = matchOutcome.occurrences > 5 ? ` (showing first 5 of ${matchOutcome.occurrences})` : ''
     throw new ApplyPatchError(
@@ -134,6 +148,10 @@ function applyCharacterMatch(
   }
 
   if (matchOutcome.fuzzyMatches && matchOutcome.fuzzyMatches > 1) {
+    // Repeats that only match after whitespace/unicode normalization surface
+    // here as fuzzy candidates; they bind to the first unless a single
+    // candidate dominates the scoring.
+    if (firstMatch && !matchOutcome.dominantFuzzy) return undefined
     throw new ApplyPatchError(
       `Found ${matchOutcome.fuzzyMatches} high-confidence matches in ${path}. ` +
       'The text must be unique. Please provide more context to make it unique.',
@@ -214,6 +232,7 @@ function applyHunksToContent(
   hunks: DiffHunk[],
   fuzzyThreshold: number,
   allowFuzzy: boolean,
+  firstMatch: boolean,
 ): { content: string; warnings: string[] } {
   const hadFinalNewline = originalContent.endsWith('\n')
 
@@ -228,8 +247,13 @@ function applyHunksToContent(
       hunk.oldStartLine === undefined && // No line hint to use for positioning
       !hunk.isEndOfFile // No EOF targeting (prefer end of file)
     ) {
-      const { content, warnings } = applyCharacterMatch(originalContent, path, hunk, fuzzyThreshold, allowFuzzy)
-      return { content: applyTrailingNewlinePolicy(content, hadFinalNewline), warnings }
+      // Repeated text yields no character match under first-match binding;
+      // placement then falls through to the line pass like Codex.
+      const matched = applyCharacterMatch(originalContent, path, hunk, fuzzyThreshold, allowFuzzy, firstMatch)
+      if (matched !== undefined) {
+        const { content, warnings } = matched
+        return { content: applyTrailingNewlinePolicy(content, hadFinalNewline), warnings }
+      }
     }
   }
 
@@ -244,7 +268,7 @@ function applyHunksToContent(
     strippedTrailingEmpty = true
   }
 
-  const { replacements, warnings } = computeReplacements(originalLines, path, hunks, allowFuzzy)
+  const { replacements, warnings } = computeReplacements(originalLines, path, hunks, allowFuzzy, firstMatch)
   const newLines = applyReplacements(originalLines, replacements)
 
   // Restore the trailing empty element if we stripped it
@@ -381,6 +405,7 @@ async function applyNormalizedPatch(input: PatchInput, options: ApplyPatchOption
     hunks,
     fuzzyThreshold,
     allowFuzzy,
+    input.firstMatch === true,
   )
   const finalContent = bom + restoreLineEndings(newContent, lineEnding)
   const destPath = input.rename ? resolvePath(input.rename) : absolutePath
@@ -461,6 +486,8 @@ export interface PatchEditEntry {
   op?: Operation
   rename?: string
   diff?: string
+  /** Codex first-match binding; see {@link PatchInput.firstMatch}. */
+  firstMatch?: boolean
 }
 
 export interface PatchParams {
@@ -575,7 +602,7 @@ export interface ExecutePatchEntryOptions {
  */
 export async function executePatchEntry(options: ExecutePatchEntryOptions): Promise<PatchEditOutcome> {
   const { session, path, params, signal, allowFuzzy, fuzzyThreshold, allowCreateOverwrite } = options
-  const { op: rawOp, rename, diff } = params
+  const { op: rawOp, rename, diff, firstMatch } = params
 
   const op: Operation = rawOp === 'create' || rawOp === 'delete' ? rawOp : 'update'
   const resolvedPath = await session.reader.resolve(path, signal)
@@ -586,6 +613,7 @@ export async function executePatchEntry(options: ExecutePatchEntryOptions): Prom
     op,
     ...(resolvedRename === undefined ? {} : { rename: resolvedRename.displayPath }),
     ...(diff === undefined ? {} : { diff }),
+    ...(firstMatch === undefined ? {} : { firstMatch }),
   }
   const patchFileSystem = new EditSessionFileSystem(session, signal)
   const result = await applyPatch(input, {
