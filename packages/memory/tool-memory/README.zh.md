@@ -40,7 +40,7 @@ kind: "package-reference"
 <a id="prompt-injection"></a>
 ## 提示注入
 
-`apply()` 注册`systemPrompt.section({ name: 'memory:project', order: 150 })`，该区段文本在每次组装时求值，返回调用会话的项目记忆——`memory_summary.md` + `learned.md`合并后按 `injectionMaxChars`（默认 16000 字符）首尾截断——项目尚无记忆时返回`''`。会话身份来自 `context.agent.session.header.cwd`，因此每个项目看到自己的银行，新进程在第一个回合即可读到既有记忆。
+`apply()` 注册`systemPrompt.section({ name: 'memory:project', order: 150 })`，该区段文本在每次组装时求值，返回调用会话的项目记忆——`memory_summary.md` + `learned.md`合并后按 `injectionMaxChars`（默认 16000 字符）首尾截断——项目尚无记忆时返回`''`。存储的记忆保持为字面文本，其中完整的`{{variable}}`组不会解析为提示词变量。会话身份来自 `context.agent.session.header.cwd`，因此每个项目看到自己的银行，新进程在第一个回合即可读到既有记忆。
 
 <a id="config"></a>
 ## 配置
