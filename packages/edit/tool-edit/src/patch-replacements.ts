@@ -682,9 +682,10 @@ function searchHunkPattern(
   contextIndex: number | undefined,
   allowFuzzy: boolean,
   fallbackVariants: HunkVariant[],
-): { pattern: string[]; newSlice: string[]; searchResult: SequenceSearchResult } {
+): { pattern: string[]; newSlice: string[]; searchResult: SequenceSearchResult; fromVariant: boolean } {
   // Try to find the old lines in the file
   let pattern = [...hunk.oldLines]
+  let fromVariant = false
   const matchHint = getHunkHintIndex(hunk, lineIndex)
   let searchResult = findSequenceWithHint(originalLines, pattern, lineIndex, matchHint, hunk.isEndOfFile, allowFuzzy)
   let newSlice = [...hunk.newLines]
@@ -713,6 +714,7 @@ function searchHunkPattern(
         pattern = variant.oldLines
         newSlice = variant.newLines
         searchResult = variantResult
+        fromVariant = true
         break
       }
     }
@@ -756,7 +758,7 @@ function searchHunkPattern(
     }
   }
 
-  return { pattern, newSlice, searchResult }
+  return { pattern, newSlice, searchResult, fromVariant }
 }
 
 /** Throw the "found N matches" diagnostic for an ambiguous sequence match. */
@@ -826,21 +828,39 @@ function pushMatchStrategyWarning(
   }
 }
 
+/** Throw the "found N occurrences" diagnostic for an ambiguous context-free hunk. */
+function throwAmbiguousOccurrences(
+  path: string,
+  originalLines: string[],
+  searchResult: SequenceSearchResult,
+): never {
+  const previews = formatSequenceMatchPreviews(originalLines, searchResult.matchIndices, searchResult.matchCount)
+  const previewText = previews ? `:\n\n${previews}` : ''
+  throw new ApplyPatchError(
+    `Found ${searchResult.matchCount} occurrences in ${path}${previewText}\n\n` +
+      'Add more context lines to disambiguate.',
+  )
+}
+
 /**
- * For simple diffs (no context marker, no context lines), reject ambiguous
- * replacements when the pattern occurs again after `found`. Skipped when
- * `isEndOfFile` is set (EOF marker provides disambiguation).
+ * Reject ambiguous context-free hunks: when the inexact passes found several
+ * candidates the pattern is reported with all of them — the fuzzy pass returns
+ * its best-scoring candidate rather than the first, so a forward-only search
+ * would miss earlier occurrences. Otherwise a second occurrence after `found`
+ * is rejected. The caller skips this under Codex first-match binding and for
+ * hunks disambiguated by a change context, context lines, an EOF marker or a
+ * line hint.
  */
 function assertSingleOccurrence(
   path: string,
   originalLines: string[],
-  hunk: DiffHunk,
+  searchResult: SequenceSearchResult,
   pattern: string[],
   found: number,
   allowFuzzy: boolean,
 ): void {
-  if (hunk.changeContext !== undefined || hunk.hasContextLines || hunk.isEndOfFile || hunk.oldStartLine !== undefined) {
-    return
+  if (searchResult.matchCount !== undefined && searchResult.matchCount > 1) {
+    throwAmbiguousOccurrences(path, originalLines, searchResult)
   }
   const secondMatch = seekSequence(originalLines, pattern, found + 1, false, { allowFuzzy })
   if (secondMatch.index !== undefined) {
@@ -893,6 +913,13 @@ export function computeReplacements(
   path: string,
   hunks: DiffHunk[],
   allowFuzzy: boolean,
+  /**
+   * Codex `apply_patch` placement for context-free hunks: bind repeated lines
+   * to the first exact or whitespace/unicode-normalized match at or after the
+   * previous hunk. The JSON `patch` mode passes `false` and keeps the
+   * uniqueness check.
+   */
+  firstMatch: boolean,
 ): { replacements: Replacement[]; warnings: string[] } {
   const replacements: Replacement[] = []
   const warnings: string[] = []
@@ -934,7 +961,7 @@ export function computeReplacements(
       continue
     }
 
-    const { pattern, newSlice, searchResult } = searchHunkPattern(
+    const { pattern, newSlice, searchResult, fromVariant } = searchHunkPattern(
       originalLines,
       hunk,
       lineIndex,
@@ -951,12 +978,31 @@ export function computeReplacements(
 
     pushMatchStrategyWarning(warnings, path, found, searchResult)
 
-    // Reject if match is ambiguous (prefix/substring matching found multiple matches)
-    if (searchResult.matchCount !== undefined && searchResult.matchCount > 1) {
-      throwAmbiguousSequenceMatches(path, originalLines, searchResult)
-    }
+    // apply_patch takes the first match at or after the previous hunk, like
+    // Codex's seek_sequence: only its exact and whitespace/unicode-normalized
+    // passes on the hunk's own lines. Looser strategies, narrowed variants and
+    // matches that wrapped behind the cursor still require a unique match.
+    const codexFirstMatch =
+      firstMatch &&
+      !fromVariant &&
+      found >= lineIndex &&
+      (searchResult.strategy === 'exact' ||
+        searchResult.strategy === 'trim-trailing' ||
+        searchResult.strategy === 'trim' ||
+        searchResult.strategy === 'unicode')
 
-    assertSingleOccurrence(path, originalLines, hunk, pattern, found, allowFuzzy)
+    // For simple diffs (no context marker, no context lines), reject ambiguous
+    // replacements. Skipped when isEndOfFile is set (EOF marker provides
+    // disambiguation) or under Codex first-match binding.
+    if (
+      !codexFirstMatch &&
+      hunk.changeContext === undefined &&
+      !hunk.hasContextLines &&
+      !hunk.isEndOfFile &&
+      lineHint === undefined
+    ) {
+      assertSingleOccurrence(path, originalLines, searchResult, pattern, found, allowFuzzy)
+    }
 
     // Adjust indentation if needed (handles fuzzy matches where indentation differs)
     const actualMatchedLines = originalLines.slice(found, found + pattern.length)
