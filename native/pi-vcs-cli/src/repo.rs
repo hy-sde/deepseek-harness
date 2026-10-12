@@ -40,6 +40,7 @@ impl Repo {
 	}
 
 	/// Checkout root (may be a linked worktree root).
+	#[allow(dead_code)] // kept for parity with upstream's GitRepo::root
 	pub fn root(&self) -> &Path {
 		&self.info.repo_root
 	}
@@ -57,9 +58,7 @@ impl Repo {
 		if let Some(repo) = &self.gix {
 			return Ok(repo.to_thread_local());
 		}
-		let opened = open_options()
-			.open(self.root())
-			.map_err(|err| Error::backend("git open", err))?;
+		let opened = open_discovered(self)?;
 		self.gix = Some(opened.clone());
 		Ok(opened.to_thread_local())
 	}
@@ -97,6 +96,20 @@ impl Repo {
 	}
 }
 
+/// Open the discovered `.git` entry (directory, or gitfile for linked
+/// worktrees and separate git dirs).
+///
+/// Never pass the checkout root: gix treats any `*.git` path as the metadata
+/// directory itself instead of probing `<path>/.git`, so a checkout named
+/// `repo.git` would fail to open (upstream 3ea62462b4, #14553). The entry
+/// also keeps gix deriving the work tree from it, which the resolved
+/// `git_dir` alone cannot for separate git dirs.
+fn open_discovered(repo: &Repo) -> Result<gix::ThreadSafeRepository> {
+	open_options()
+		.open(&repo.info.git_entry_path)
+		.map_err(|err| Error::backend("git open", err))
+}
+
 /// Open options for repositories the agent operates on. Local dev tool on the
 /// user's own checkout: full trust; location env overrides denied; config
 /// (user/system/git) allowed without ever executing git for install-prefix
@@ -117,4 +130,56 @@ fn open_options() -> Options {
 			attributes: permissions::Attributes::all(),
 		})
 		.with(Trust::Full)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn run_git(dir: &Path, args: &[&str]) {
+		let output = std::process::Command::new("git")
+			.args(args)
+			.current_dir(dir)
+			.output()
+			.expect("git must be installed");
+		assert!(
+			output.status.success(),
+			"git {args:?} failed: {}",
+			String::from_utf8_lossy(&output.stderr)
+		);
+	}
+
+	/// gix treats a `*.git` path as the metadata directory itself, so the
+	/// checkout root must never be handed to it in place of the `.git`
+	/// entry (upstream 3ea62462b4, #14553): a primary checkout and a linked
+	/// worktree whose directory names end in `.git` must both open, with the
+	/// work tree still derived from the entry.
+	#[test]
+	fn gix_opens_checkouts_whose_directory_name_ends_in_dot_git() {
+		let temp = tempfile::TempDir::new().unwrap();
+		let main = temp.path().join("repo.git");
+		std::fs::create_dir_all(&main).unwrap();
+		run_git(&main, &["init", "-q", "-b", "main"]);
+		run_git(&main, &["config", "user.name", "VCS Test"]);
+		run_git(&main, &["config", "user.email", "vcs@example.com"]);
+		run_git(&main, &["commit", "-q", "--allow-empty", "-m", "init"]);
+		let linked = temp.path().join("linked.git");
+		run_git(&main, &["worktree", "add", "-q", linked.to_str().unwrap(), "-b", "wt"]);
+
+		for (root, git_dir) in
+			[(&main, main.join(".git")), (&linked, main.join(".git/worktrees/linked.git"))]
+		{
+			let mut repo = discover(root).unwrap().expect("checkout");
+			let opened = repo.gix().unwrap();
+			assert_eq!(
+				std::fs::canonicalize(opened.git_dir()).unwrap(),
+				std::fs::canonicalize(git_dir).unwrap()
+			);
+			assert_eq!(
+				std::fs::canonicalize(opened.workdir().expect("non-bare checkout")).unwrap(),
+				std::fs::canonicalize(root).unwrap()
+			);
+			opened.head_id().expect("HEAD resolves");
+		}
+	}
 }
