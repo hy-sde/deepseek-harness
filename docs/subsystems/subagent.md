@@ -493,6 +493,23 @@ async waitForChildren(parent: Agent): Promise<boolean>
 async sendMessage( sender: Agent, targetId: SessionId, content: ContentBlock[], options: SubagentSendMessageOptions, ): Promise<MessageId>
 
 /**
+ * Register one deployment capability installed into every continuable
+ * child's unpublished creation context.
+ * @param contribution - synchronous child-scope installer returning its disposer.
+ * @returns an idempotent registration undo.
+ */
+registerContinuableSetup( contribution: (childCtx: Context) => () => void, ): () => void
+
+/**
+ * Deliver one resident continuable child's report to its live direct parent.
+ * @param child - exact live reporting Agent.
+ * @param content - model-authored report content.
+ * @param options - scheduling policy, caller cancellation, and structured arm.
+ * @returns the accepted durable message id.
+ */
+async reportFrom( child: Agent, content: ContentBlock[], options: SubagentReportOptions, ): Promise<MessageId>
+
+/**
  * Interrupt one live child's current execution under a human parent
  * address or an exact live ancestor Agent. Fire-and-return: the cancel
  * signal is issued before this returns, but the target may keep running

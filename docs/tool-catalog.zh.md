@@ -684,10 +684,7 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 
 bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；禁用 `enableRunInBackground` 配置（默认为 true）后，该参数会被完全移除。
 
-<a id="deepseek-aidsh-tool-pwsh"></a>
-
-
-
+<a id="deepseek-aidsh-tool-present"></a>
 
 ## `@deepseek-ai/dsh-tool-present`
 
@@ -866,8 +863,7 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 一个按所有者隔离的持久 bash 工具；部署组合提供 PTY 后端，并可覆盖面向模型的环境描述。
 
-<a id="deepseek-aidsh-tool-pwsh-persistent"></a>
-
+<a id="deepseek-aidsh-tool-edit"></a>
 
 ## `@deepseek-ai/dsh-tool-edit`
 
@@ -963,7 +959,7 @@ apply_patch / hashline mode: { input: string }
 
 四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。
 
-<a id="deepseek-aidsh-tool-fs"></a>
+<a id="deepseek-aidsh-tool-pwsh-persistent"></a>
 
 ## `@deepseek-ai/dsh-tool-pwsh-persistent`
 
@@ -991,8 +987,7 @@ apply_patch / hashline mode: { input: string }
 
 一个按所有者隔离的持久 pwsh 工具，持久 bash 工具的 Windows 对应物；部署组合提供 pwsh 方言的 PTY 后端，并可覆盖面向模型的环境描述。
 
-
-
+<a id="deepseek-aidsh-tool-str-replace-editor"></a>
 
 ## `@deepseek-ai/dsh-tool-str-replace-editor`
 
@@ -1098,6 +1093,8 @@ apply_patch / hashline mode: { input: string }
 Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool-str-replace-editor/src/index.ts)
 
 独立于文件系统接缝的查看／创建／唯一字面替换／行插入工具；可与任何 Shell 或终端 API 组合使用。
+
+<a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
 
@@ -1218,9 +1215,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时图像工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。
 
-<a id="deepseek-aidsh-tool-fs-search"></a>
-
-
+<a id="deepseek-aidsh-tool-graph"></a>
 
 ## `@deepseek-ai/dsh-tool-graph`
 
@@ -1422,6 +1417,8 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 
 Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
 
+<a id="deepseek-aidsh-tool-fs-search"></a>
+
 ## `@deepseek-ai/dsh-tool-fs-search`
 
 
@@ -1486,8 +1483,7 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 
 glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。另外，grep 的每次调用会做一次 `git status` 探测；在 git 仓库中，被修改文件会排到最前并用 ` [M in git]` 标注，非仓库工作目录则静默跳过。
 
-<a id="deepseek-aidsh-tool-terminal"></a>
-
+<a id="deepseek-aidsh-tool-ast"></a>
 
 ## `@deepseek-ai/dsh-tool-ast`
 
@@ -2047,8 +2043,7 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。
 
-<a id="deepseek-aidsh-schedule"></a>
-
+<a id="deepseek-aidsh-tool-schedule"></a>
 
 ## `@deepseek-ai/dsh-tool-schedule`
 
@@ -2337,18 +2332,18 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 }
 ```
 
-Source: [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
+来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
 preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四个管理工具。每次调用都作用于调用方 Agent 的 Session。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。
 
-<a id="deepseek-aidsh-tool-lsp"></a>
+<a id="deepseek-aidsh-tool-debug"></a>
 
 ## `@deepseek-ai/dsh-tool-debug`
 
 
 ### `debug`
 
-Attach a real debugger to a running or launched process through the Debug Adapter Protocol (DAP). 28 operations: launch, attach, set/remove_breakpoint (source or function), set/remove_instruction_breakpoint, data_breakpoint_info, set/remove_data_breakpoint, continue, step_over, step_in, step_out, pause, evaluate, stack_trace, threads, scopes, variables, disassemble, read_memory, write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. One active session at a time — terminate before launching another.
+通过调试适配器协议（DAP）附加到正在运行的进程，或启动受调试进程。28 个操作包括：launch、attach、set/remove_breakpoint（源码或函数）、set/remove_instruction_breakpoint、data_breakpoint_info、set/remove_data_breakpoint、continue、step_over、step_in、step_out、pause、evaluate、stack_trace、threads、scopes、variables、disassemble、read_memory、write_memory、modules、loaded_sources、custom_request、output、terminate、sessions。同一时间只能有一个活跃会话；启动另一个会话前须先 terminate。
 
 ```json
 {
@@ -2546,11 +2541,11 @@ Attach a real debugger to a running or launched process through the Debug Adapte
 }
 ```
 
-Source: [`packages/debug/tool-debug/src/index.ts`](../packages/debug/tool-debug/src/index.ts)
+来源：[`packages/debug/tool-debug/src/index.ts`](../packages/debug/tool-debug/src/index.ts)
 
-debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter.
+debug 通过 DAP capability seam（`ctx.dap`）组合真实调试器（gdb/lldb-dap/debugpy/dlv 等），并维持一个独占活跃会话：launch/attach、源码/函数/指令/数据断点、continue/pause/step、threads/stackTrace/scopes/variables/evaluate、disassemble、read_memory/write_memory、modules、loaded_sources、custom_request、output、terminate、sessions。它需要已挂载的 DAP provider 与 spawn seam；两者均不可用时，launch/attach 会返回结构化的“不可用”错误，并指出缺少的适配器。
 
-
+<a id="deepseek-aidsh-code-runtime-kernels"></a>
 
 ## `@deepseek-ai/dsh-code-runtime-kernels`
 
@@ -2597,13 +2592,12 @@ run_kernel_code 在持久化 kernel（python3 或 node 子进程，仅标准库�
 
 <a id="deepseek-aidsh-tool-lsp"></a>
 
-
 ## `@deepseek-ai/dsh-tool-lsp`
 
 
 ### `lsp`
 
-查询语言服务器，以精确导航代码。operation 可取 goToDefinition、findReferences、goToImplementation 或 hover。line 和 character 是从 1 开始的 UTF-16 光标坐标。findReferences 包含声明。
+查询语言服务器，以精确导航代码。operation 可取 goToDefinition、findReferences、goToImplementation、goToTypeDefinition、hover、documentSymbols、codeActions、rename 或 diagnostics。line 和 character 是从 1 开始的 UTF-16 光标坐标；documentSymbols 与 diagnostics 仅使用文件，传入 1 1 即可。findReferences 包含声明；codeActions 列出可用的快速修复与重构但不会应用；rename 预览对 new_name 的全部编辑但不会写入文件。
 
 ```json
 {
@@ -3238,6 +3232,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 与任务种类无关的后台任务控制器：后台 bash 命令、PTY 发送和 subagent 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。
 
+<a id="deepseek-aidsh-experimental-tool-agent-team"></a>
 
 ## `@deepseek-ai/dsh-experimental-tool-agent-team`
 
@@ -3588,8 +3583,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。
 
-<a id="deepseek-aidsh-tool-workflow"></a>
-
+<a id="deepseek-aidsh-tool-working-directory"></a>
 
 ## `@deepseek-ai/dsh-tool-working-directory`
 
@@ -3742,8 +3736,7 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 来源：[`packages/workflow/tool-workflow/src/index.ts`](../packages/workflow/tool-workflow/src/index.ts)
 
-<a id="deepseek-aidsh-tool-web"></a>
-
+<a id="deepseek-aidsh-tool-workspace-dependencies"></a>
 
 ## `@deepseek-ai/dsh-tool-workspace-dependencies`
 
@@ -4229,6 +4222,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 Browser tool (port of omp): open/close/run/state over launch (stealth-patched), CDP-attach, or the local relay + extension; observations are ARIA ref trees with click-by-selector, and screenshots write PNG paths.
 
+<a id="deepseek-aidsh-tool-av"></a>
 
 ## `@deepseek-ai/dsh-tool-av`
 

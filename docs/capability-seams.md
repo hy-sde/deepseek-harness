@@ -11,6 +11,35 @@ flowchart LR
   svc_cotTranslation["ctx.cotTranslation<br/>Reasoning translation Remote"]
   pkg_experimental_translator["experimental-translator"]
   svc_translator["ctx.translator<br/>Anonymous text translation"]
+  pkg_av["av"]
+  svc_av["ctx.av<br/>Automic Vault credential scanning seam"]
+  pkg_tool_av["tool-av"]
+  pkg_browser["browser"]
+  svc_browser["ctx.browser<br/>Headless browser automation seam"]
+  pkg_tool_browser["tool-browser"]
+  pkg_dap["dap"]
+  svc_dap["ctx.dap<br/>Debug Adapter Protocol seam"]
+  pkg_tool_debug["tool-debug"]
+  pkg_git["git"]
+  svc_git["ctx.git<br/>Local git repository seam"]
+  pkg_tool_git["tool-git"]
+  pkg_memory["memory"]
+  svc_memory["ctx.memory<br/>Agent-curated long-horizon memory seam"]
+  pkg_tool_memory["tool-memory"]
+  pkg_tool_edit["tool-edit"]
+  pkg_llm_slots["llm-slots"]
+  svc_modelSlots["ctx.modelSlots<br/>Model-route slot registry"]
+  pkg_agent_loop["agent-loop"]
+  pkg_tool_subagent["tool-subagent"]
+  pkg_vcs["vcs"]
+  svc_vcs["ctx.vcs<br/>VCS working-tree seam"]
+  pkg_tool_fs["tool-fs"]
+  pkg_wiki_controller["wiki-controller"]
+  svc_wikiController["ctx.wikiController<br/>Embedded LLM-wiki host controller"]
+  pkg_client_ui_wiki["client-ui-wiki"]
+  pkg_wiki["wiki"]
+  pkg_logseq_graph["logseq-graph"]
+  svc_wikiGraph["ctx.wikiGraph<br/>LLM-wiki graph seam"]
   pkg_hmr["hmr"]
   svc_hmr["ctx.hmr<br/>Serialized module and configuration reloads"]
   pkg_app_boot["app-boot"]
@@ -30,7 +59,6 @@ flowchart LR
   pkg_working_directory["working-directory"]
   svc_workingDirectory["ctx.workingDirectory<br/>Session working directory"]
   pkg_tool_working_directory["tool-working-directory"]
-  pkg_tool_fs["tool-fs"]
   pkg_tool_bash["tool-bash"]
   pkg_tool_pwsh["tool-pwsh"]
   pkg_subagent["subagent"]
@@ -61,7 +89,6 @@ flowchart LR
   pkg_llm["llm"]
   svc_llm["ctx.llm<br/>LLM adapter registry"]
   pkg_llm_replay["llm-replay"]
-  pkg_agent_loop["agent-loop"]
   pkg_compaction_basic["compaction-basic"]
   pkg_deepseek_llm_api_extensions["deepseek-llm-api-extensions"]
   svc_deepseekLlmApiExtensions["ctx.deepseekLlmApiExtensions<br/>Official DeepSeek request extensions"]
@@ -110,7 +137,6 @@ flowchart LR
   pkg_settings["settings"]
   pkg_agent_default_model["agent-default-model"]
   svc_settings["ctx.settings<br/>Plugin configuration forms"]
-  pkg_tool_subagent["tool-subagent"]
   svc_subagentModelSelection["ctx.subagentModelSelection<br/>Subagent model-selection preference"]
   pkg_credentials["credentials"]
   svc_credentials["ctx.credentials<br/>Credential seam"]
@@ -304,8 +330,10 @@ flowchart LR
   pkg_attachment --> svc_attachments
   pkg_attachment_local --> svc_attachments
   pkg_authorization --> svc_authorization
+  pkg_av --> svc_av
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
+  pkg_browser --> svc_browser
   pkg_browser_use --> svc_browserUse
   pkg_client_connection --> svc_connection
   pkg_client_file_upload --> svc_fileUploads
@@ -323,6 +351,7 @@ flowchart LR
   pkg_cordis_host_runner --> svc_dynamicCordisRunner
   pkg_credentials --> svc_credentials
   pkg_credentials_local --> svc_credentials
+  pkg_dap --> svc_dap
   pkg_deepseek_account --> svc_deepseekAccount
   pkg_deepseek_account_platform --> svc_deepseekAccount
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
@@ -346,6 +375,7 @@ flowchart LR
   pkg_fs_local --> svc_fs
   pkg_fs_sandbox --> svc_fs
   pkg_fs_ssh --> svc_fs
+  pkg_git --> svc_git
   pkg_goal --> svc_goals
   pkg_hmr --> svc_hmr
   pkg_host_directory_picker --> svc_directoryPicker
@@ -360,10 +390,13 @@ flowchart LR
   pkg_llm_deepseek --> svc_llm
   pkg_llm_pi_ai --> svc_llm
   pkg_llm_replay --> svc_llm
+  pkg_llm_slots --> svc_modelSlots
+  pkg_logseq_graph --> svc_wikiGraph
   pkg_lsp --> svc_lsp
   pkg_lsp_stdio --> svc_lsp
   pkg_mcp_client --> svc_mcpResources
   pkg_mcp_resources --> svc_mcpResources
+  pkg_memory --> svc_memory
   pkg_message_feedback --> svc_messageFeedback
   pkg_office_to_pdf --> svc_officeToPdf
   pkg_otel --> svc_otel
@@ -422,17 +455,20 @@ flowchart LR
   pkg_terminal --> svc_terminals
   pkg_terminal_bash --> svc_terminals
   pkg_token_meter --> svc_tokenMeter
+  pkg_tool_av --> svc_av
   pkg_tool_subagent --> svc_subagentModelSelection
   pkg_tools --> svc_tools
   pkg_typert_registry --> svc_typert
   pkg_user_approval --> svc_approval
   pkg_user_questions --> svc_userQuestions
+  pkg_vcs --> svc_vcs
   pkg_web --> svc_web
   pkg_web_fetch_http --> svc_web
   pkg_web_search_deepseek --> svc_web
   pkg_web_search_exa --> svc_web
   pkg_web_search_perplexity --> svc_web
   pkg_webhook --> svc_webhookRuntime
+  pkg_wiki_controller --> svc_wikiController
   pkg_workflow --> svc_workflowEngine
   pkg_workflow_ptc --> svc_workflowEngine
   pkg_working_directory --> svc_workingDirectory
@@ -454,6 +490,8 @@ flowchart LR
   svc_attachments --> pkg_llm_pi_ai
   svc_attachments --> pkg_tool_fs
   svc_authorization --> pkg_llm_pi_ai
+  svc_av --> pkg_tool_av
+  svc_browser --> pkg_tool_browser
   svc_browserUse --> pkg_experimental_browser_use_chrome_devtools_mcp
   svc_browserUse --> pkg_experimental_browser_use_playwright_mcp
   svc_browserUse --> pkg_experimental_browser_use_stagehand_native
@@ -469,6 +507,7 @@ flowchart LR
   svc_credentials --> pkg_api_settings_controller
   svc_credentials --> pkg_llm_deepseek
   svc_credentials --> pkg_llm_pi_ai
+  svc_dap --> pkg_tool_debug
   svc_deepseekAccount --> pkg_api_account_controller
   svc_deepseekAccount --> pkg_llm_deepseek
   svc_deepseekLlmApiExtensions --> pkg_llm_deepseek
@@ -477,6 +516,7 @@ flowchart LR
   svc_fileReferences --> pkg_api_session_controller
   svc_fileUploads --> pkg_api_session_controller
   svc_fs --> pkg_tool_fs
+  svc_git --> pkg_tool_git
   svc_hmr --> pkg_app_boot
   svc_jobs --> pkg_api_job_controller
   svc_jobs --> pkg_tool_bash
@@ -487,6 +527,10 @@ flowchart LR
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
   svc_mcpResources --> pkg_mcp_resources
+  svc_memory --> pkg_tool_edit
+  svc_memory --> pkg_tool_memory
+  svc_modelSlots --> pkg_agent_loop
+  svc_modelSlots --> pkg_tool_subagent
   svc_officeToPdf --> pkg_client_ui_sidebar_documentpreview
   svc_otel --> pkg_host_product_telemetry_otel
   svc_otel --> pkg_session_telemetry_otel
@@ -571,11 +615,16 @@ flowchart LR
   svc_typert --> pkg_api_gateway
   svc_typert --> pkg_typert_loader
   svc_userQuestions --> pkg_tool_ask_user
+  svc_vcs --> pkg_tool_fs
+  svc_vcs --> pkg_tool_git
   svc_web --> pkg_tool_web
   svc_webServer --> pkg_client_connection
   svc_webServer --> pkg_client_hmr
   svc_webServer --> pkg_client_modules
   svc_webhookRuntime --> pkg_webhook_github
+  svc_wikiController --> pkg_client_ui_wiki
+  svc_wikiController --> pkg_wiki
+  svc_wikiGraph --> pkg_wiki_controller
   svc_workflowEngine --> pkg_tool_ralph
   svc_workflowEngine --> pkg_tool_workflow
   svc_workingDirectory --> pkg_sdk_jsonrpc_server
@@ -594,6 +643,15 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- | --- |
 | `ctx.cotTranslation` | `service` | [`experimental-client-ui-cot-translation`](../packages/experimental/client-ui-cot-translation) | - | - | - | Serves reasoning translations, reuses saved results, and joins ordinary Session activation for uncached inactive Sessions. |
 | `ctx.translator` | `service` | [`experimental-translator`](../packages/experimental/translator) | - | [`experimental-client-ui-cot-translation`](../packages/experimental/client-ui-cot-translation) | - | Resolves Google or Bing requests and retains shared experimental records through the active Session writer. |
+| `ctx.av` | `seam` | [`av`](../packages/av/av) | [`tool-av`](../packages/av/tool-av) | [`tool-av`](../packages/av/tool-av) | - | Runs the installed `av` CLI over configured scopes: exposure scan, doctor/catalogs, and name-only listing; value-releasing verbs stay human-in-the-loop in a terminal. |
+| `ctx.browser` | `seam` | [`browser`](../packages/browser/browser) | [`browser`](../packages/browser/browser) | [`tool-browser`](../packages/browser/tool-browser) | - | One BrowserService owning launch/stealth/aria snapshots and per-session navigation, DOM and screenshot capture behind tool-browser's model-facing verbs. |
+| `ctx.dap` | `seam` | [`dap`](../packages/debug/dap) | [`dap`](../packages/debug/dap) | [`tool-debug`](../packages/debug/tool-debug) | - | Spawns debug adapters and drives the DAP session lifecycle (launch/attach, breakpoints, stepping, evaluation) behind the debug tool's operation set. |
+| `ctx.git` | `seam` | [`git`](../packages/git/git) | [`git`](../packages/git/git) | [`tool-git`](../packages/git/tool-git) | - | Runs git plumbing over a workspace repository: status, diffs, history, staging and commit, with path scoping to the caller-owned root. |
+| `ctx.memory` | `seam` | [`memory`](../packages/memory/memory) | [`memory`](../packages/memory/memory) | [`tool-memory`](../packages/memory/tool-memory), [`tool-edit`](../packages/edit/tool-edit) | - | Project-scoped durable memory: retention, recall/reflect synthesis, and editing of the bank/lesson/summary files, with injection-neutralized storage. |
+| `ctx.modelSlots` | `core` | [`llm-slots`](../packages/llm/llm-slots) | - | [`agent-loop`](../packages/core/agent-loop), [`tool-subagent`](../packages/subagent/tool-subagent) | - | Each running agent occupies one model slot; routes resolve, reserve and release slots so concurrent agents never oversubscribe the configured provider budget. |
+| `ctx.vcs` | `seam` | [`vcs`](../packages/vcs/vcs) | [`vcs`](../packages/vcs/vcs) | [`tool-fs`](../packages/fs/tool-fs), [`tool-git`](../packages/git/tool-git) | - | Resolves VCS-rooted file state and attribution for the working tree the agent opens; dsh-tool-git owns the model-facing commands. |
+| `ctx.wikiController` | `core` | `wiki-controller` | - | [`client-ui-wiki`](../packages/client/ui-wiki), `wiki` | - | Projects the logseq-graph wire onto the Typert `wiki` Remote namespace: page rows, block trees with linked references, tag/property listings, search, Datalog query, upsert/remove and server actions. |
+| `ctx.wikiGraph` | `seam` | [`logseq-graph`](../packages/logseq/logseq-graph) | [`logseq-graph`](../packages/logseq/logseq-graph) | `wiki-controller` | - | Backs the embedded wiki with the installed `logseq` CLI: page/block/tag/property CRUD, text and Datalog search, and graph/server lifecycle status. |
 | `ctx.hmr` | `core` | [`hmr`](../packages/boot/hmr) | - | [`app-boot`](../packages/boot/app-boot) | - | Owns module and exact configuration watchers; application mutations share its queue and automatic reloads await the application file lock. |
 | `ctx.pluginRegistryProbe` | `core` | [`client-ui-plugin-manager`](../packages/client/ui-plugin-manager) | - | [`client-ui-plugin-manager`](../packages/client/ui-plugin-manager) | - | Races public registry responses on the Host; the Client owns the initial registry recommendation. |
 | `ctx.pluginManager` | `core` | [`plugin-manager`](../packages/boot/plugin-manager) | - | [`plugin-manager`](../packages/boot/plugin-manager), `ui-settings-plugin-inventory` | - | Shares profile package operations with the CLI and reports persisted and running state to Web and agent callers. |

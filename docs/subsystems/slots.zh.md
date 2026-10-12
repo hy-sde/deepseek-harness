@@ -203,3 +203,53 @@ root
 - 可观测 source 及其 snapshot identity 在值变化前保持稳定；值变化时通过同一个 source 发布。
 - UI domain 之间只传 JSON 兼容数据和 callback。`hooks` compartment 是裸 observable 的唯一例外；React 内容通过 slot 传递。
 - 将 `single` 和已有 occupant 的 keyed cell 视为替换点。增量扩展使用 list id 或尚未占用的 key。
+
+<!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
+
+<a id="cordis-surface"></a>
+
+## Cordis API
+
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+
+<a id="ctxmodelslots--modelslotsservice"></a>
+
+### `ctx.modelSlots` — `ModelSlotsService`
+
+Host service exposing the global gate: live stats and runtime capacity controls. Constructed inside apply; registered with the mounting fiber, so stop/update removes it.
+
+```ts cordis-catalog
+/**
+ * Transient admission snapshot for operators and the GUI.
+ * @returns the current slot-gate stats.
+ */
+stats(): ModelSlotsStats
+
+/**
+ * Toggle admission enforcement (independent of capacity).
+ * @param enabled - whether admission is enforced.
+ */
+setEnabled(enabled: boolean): void
+
+/**
+ * Change the host-wide slot budget; a shrink takes effect as calls drain.
+ * @param capacity - the new slot budget (clamped to >= 1).
+ */
+setCapacity(capacity: number): void
+
+/**
+ * Wrap one `llm/stream` waterfall tail in the admission gate: acquire a slot
+ * before the first chunk is requested and hold it until the stream settles
+ * (finish, error, or consumer abort). Aborting while queued rejects the
+ * acquire, which surfaces as a thrown AbortError to the stream consumer.
+ * @param options - the full model request; `signal` cancels the wait.
+ * @param next - the downstream waterfall tail.
+ * @returns a stream that begins only after a slot is held.
+ */
+async *wrap(options: GenerateOptions, next: () => AsyncIterable<StreamChunk>): AsyncIterable<StreamChunk>
+```
+
+Types: [GenerateOptions](llm-streaming.zh.md) · [StreamChunk](llm-streaming.zh.md)
+
+Source: [`packages/llm/llm-slots/src/index.ts`](../../packages/llm/llm-slots/src/index.ts)
+<!-- END GENERATED cordis-surface -->

@@ -13,7 +13,7 @@ Status: implemented
 把单一 `in_progress` 上限从固定规则改为部署策略，并要求每个组合都作出选择：
 
 - `packages/todo/tool-todo/src/index.ts` 新增必填的 `Config.allowParallelInProgress` 字段。为 `true` 时，`execute` 接受任意数量的活跃条目，描述指示模型把每个正在处理的任务标记为 `in_progress`（并行工作时可以有多个，顺序工作时只有一个），并在仍有工作未完成时至少保留一个；为 `false` 时，描述要求恰好一个，`execute` 拒绝标记多个活跃条目的调用。
-- `packages/todo/tool-todo/src/invariant.ts` 中的持久日志不变式不再拒绝含多个活跃条目的快照，且不跟随该配置，因此此前持久化的日志不受影响，并行快照在任一策略下都能干净回放。
+- 持久化的 `todo/snapshot` 记录接受多个活跃条目，且不跟随部署策略，因此此前持久化的日志不受影响，并行快照在任一策略下都能干净回放。
 
 其余编码的不变式保持不变：`content` 去除首尾空白后非空且唯一、status 为合法枚举值。本决定取代[原始设计的校验决策](2026-06-29-todo-write-tool.zh.md)中「至多一个活跃」的条款；该 Agent Note 的其余部分（整列表替换、日志支撑的状态、单一所有者）依然成立。
 
@@ -27,7 +27,7 @@ Status: implemented
 
 该开关会同时改变面向模型的指令与接受的输入。把两者拆开才是 bug：描述要求只保留一个活跃任务、而 `execute` 却接受多个，等于教给模型一条工具并不遵守的规则；反过来则会拒绝描述所邀请的调用。描述中只有活跃状态那一句会变化，因为这是该策略唯一改变的指令。
 
-持久日志不变式刻意**不**跟随该开关。在允许并行时写下的日志，在部署收紧策略之后仍必须可回放，因此把 `invariant.ts` 绑定到当前配置会拒绝在写入当时合法的历史。不变式对活跃数量保持沉默；策略生效之处是工具，时机是写入的那一刻。
+持久事件校验刻意**不**跟随该开关。在允许并行时写下的日志，在部署收紧策略之后仍必须可回放，因此把回放校验绑定到当前配置会拒绝在写入当时合法的历史。持久读取器对活跃数量保持沉默；策略生效之处是工具，时机是写入的那一刻。
 
 ## 曾考虑的替代方案
 
@@ -51,4 +51,4 @@ Status: implemented
 
 ## 后果
 
-现在 todo 列表可以忠实反映并行执行，并且每个展示面都能一次渲染多个活跃标记：计划横条的表头会计数活跃条目，工具行则需要上述推导。设置 `allowParallelInProgress: true` 的组合不再拒绝一种此前无效的快照形状；设置为 `false` 的组合仍保留旧的拒绝行为，而持久日志不变式两者都接受。面向模型的描述发生了变化，这重新记录了 tool-catalog 页面以及每个带有 todo schema 的快照伴随文件。此处不记录数量：该集合会随每个新落地的 pin 场景增长。有效规则是：改动工具描述的分支必须刷新它分叉之后落地的那些伴随文件——包括固定 subagent 类工具的编号文件 `tool-schemas.<n>.expected.json`，其 schema 不被父场景覆盖——`pnpm run test:snapshot:refresh` 可以无 key 地对整个语料完成刷新。web fixture（测试前置数据）的 todo 样本现在有两个条目处于 `in_progress`，因此两个由 fixture 驱动的展示面渲染的都是并行计划。`packages/client/ui-conversation/tests/todo-panel.client.spec.tsx` 在 src 上固定工具行摘要与计划横条，ACP（Agent Client Protocol）`todo-write` 场景录制的是三条目、两个活跃的计划，而 `apps/web/tests/todo-row.expected.e2e.ts` 在组装后的应用中固定这两个面——它从构建产物 `packages/client/*/lib/client.js` 启动，因此是唯一覆盖 keyed 注册与打包接线的地方。该文件把 `summary`、`suffix` 与横条表头记录为独立字段，因此即便拼接后的文本读起来一样，把 `+N` 计数折回摘要字符串也会改变预期输出。
+待办列表如今可以忠实映照并行执行，所有界面都能同时渲染多个活跃标记：计划条标题会统计活跃项，而条目行需要上述推导。组合中设 `allowParallelInProgress: true` 后，不再拒绝原本非法的快照；设为 `false` 时保留旧拒绝行为，持久事件读取器则接受两者。面向模型的描述发生了变化，因此重新录制了工具目录页面和所有受该文本影响的快照 sidecar。
