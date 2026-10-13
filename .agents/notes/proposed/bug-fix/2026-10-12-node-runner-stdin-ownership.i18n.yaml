@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-12-node-runner-stdin-ownership.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/bug-fix/2026-10-12-node-runner-stdin-ownership.md
+/agent-note-node-runner-cells-observe-eof-stdin-not-the-control-channel:
+  en: e0fbec1b7efa1851
+  zh: 5354d62b780d2d3b
+/agent-note-node-runner-cells-observe-eof-stdin-not-the-control-channel/problem:
+  en: 49e5685c68fe445d
+  zh: 7ef80907eaed1c5f
+/agent-note-node-runner-cells-observe-eof-stdin-not-the-control-channel/proposal:
+  en: 032813b36037676c
+  zh: df864117ee5e1ba2
+/agent-note-node-runner-cells-observe-eof-stdin-not-the-control-channel/alternatives-considered:
+  en: 9142660bdafdde4b
+  zh: c204b596157e7f0f
+/agent-note-node-runner-cells-observe-eof-stdin-not-the-control-channel/acceptance-criteria:
+  en: 744007e9451d135e
+  zh: 226b00fb03a95143
+/agent-note-node-runner-cells-observe-eof-stdin-not-the-control-channel/risks:
+  en: ed47db0082fc9bb0
+  zh: a4430bcf530b1c2b
