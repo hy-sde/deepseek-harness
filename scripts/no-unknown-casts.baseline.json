@@ -1099,10 +1099,6 @@
   "packages/edit/tool-edit/src/index.ts": {
     "38a7cf3dfd5da2f739390f5b233b97731f3bfa1ac3a51fdb8e1594735764bb80": 2
   },
-  "packages/examples/agent-spine-demo/src/index.ts": {
-    "0239991759a1d3271a7a78baca219f4e22554bdf853013ada12a0bba069b9239": 1,
-    "bc195bf6d0c4b7a667e0600d32abb850b25fb493db7a489d845819e774614d51": 1
-  },
   "packages/experimental/agent-team/src/journal.ts": {
     "364930a7ddcc79316a9ffc126602f45ae56a3cecdb80484c5c8a79686f8f1057": 1
   },
@@ -1590,9 +1586,6 @@
   "packages/openwiki/openwiki-core/src/okf/frontmatter.ts": {
     "731269c66d2db6f3221553a9e6fc5f9bdfeccb7d1a2199a9c413157d0b41235a": 1,
     "9eb6f2d0abef1354f05cea69e8647405e65f00f1393ca149c4e7d388ce597e71": 1
-  },
-  "packages/orchestration/policy/tests/wave.e2e.spec.ts": {
-    "1d9ef1bd2cba4b90ad23b472f99c09dc81db4e855b5410d74aeef2a1276538d8": 1
   },
   "packages/plan/plan-mode/src/index.ts": {
     "1422d291f0118635ac06f265a9018dd86dbbd4a97f76a7ed5abb5c2a42e81b53": 1

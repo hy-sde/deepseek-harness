@@ -195,8 +195,8 @@ export const Config = z.intersect([
     jobs: JobsConfigSchema,
     toolJobs: z.union([z.const(false), ToolJobsConfigSchema]),
     goals: z.union([z.const(false), GoalConfigSchema]),
-  }) as unknown as z<Pick<Config, 'tools' | 'filesystem' | 'workingDirectory' | 'dshHome' | 'sessionTitle' | 'skills' | 'workspaceContext' | 'toolBash' | 'jobs' | 'toolJobs' | 'goals'>>,
-]) as unknown as z<Config>
+  }) as z<Pick<Config, 'tools' | 'filesystem' | 'workingDirectory' | 'dshHome' | 'sessionTitle' | 'skills' | 'workspaceContext' | 'toolBash' | 'jobs' | 'toolJobs' | 'goals'>>,
+]) as z<Config>
 
 /**
  * Copy the bundle-owned fields from an app config without leaking entry-point settings.
