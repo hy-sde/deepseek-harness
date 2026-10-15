@@ -92,14 +92,14 @@ describe('runner staging dir hardening (omp 3664bbf684 + 4bd3dc5637)', () => {
     const target = track(mkdtempSync(join(tmpdir(), 'dsh-kernels-guard-')))
     const link = track(`${target}-link`)
     symlinkSync(target, link, 'dir')
-    expect(() => assertOwnerPrivateDir(link, 'Runner staging directory')).toThrow('is a symlink')
+    expect(() => { assertOwnerPrivateDir(link, 'Runner staging directory') }).toThrow('is a symlink')
   })
 
   it.skipIf(uid === undefined)('labels a non-directory at open time', () => {
     const base = track(mkdtempSync(join(tmpdir(), 'dsh-kernels-guard-')))
     const file = track(`${base}-file`)
     writeFileSync(file, '')
-    expect(() => assertOwnerPrivateDir(file, 'Runner staging directory')).toThrow('is not a directory')
+    expect(() => { assertOwnerPrivateDir(file, 'Runner staging directory') }).toThrow('is not a directory')
   })
 
   it.skipIf(uid === undefined)('normalizes a lax-but-owned dir to 0700 through the pinned fd', () => {

@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import Loader from '@deepseek-ai/cordis-plugin-loader'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { assembleContextFor } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
@@ -12,12 +13,12 @@ import { ToolCallId, LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
+import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import FsLocal from '@deepseek-ai/dsh-fs-local'
+import AgentPresets from '@deepseek-ai/dsh-agent-preset-registry'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import * as control from '@deepseek-ai/dsh-tool-subagent-control'
 import { textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import * as tool from '../src/index.ts'
 
@@ -75,6 +76,9 @@ async function setup(options: { load?: boolean; config?: tool.Config } = {}) {
   await ctx.plugin(WorkingDirectory)
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
+  await ctx.plugin(Loader)
+  await ctx.plugin(AgentPresets, { default: 'restricted' })
+  await ctx.agentPresets.register({ id: 'restricted', plugins: [] })
   const fiber = options.load === false
     ? undefined
     : await ctx.plugin(tool, options.config ?? { reportDelivery: 'quiet' })
@@ -193,11 +197,8 @@ describe('dsh-tool-subagent-report', () => {
     expect((await callReport(ctx, child, 'missing')).isError).toBe(true)
   })
 
-  it('does not imply parent controls and survives a global-tool allow-list', async () => {
-    const { ctx, parent } = await setup()
-    expect(ctx.tools.schemas().map(schema => schema.name)).not.toContain('send_message')
-    await ctx.plugin(control)
-    expect(ctx.tools.schemas().map(schema => schema.name)).toContain('send_message')
+  it('does not imply parent controls and survives a preset-restricted child', async () => {
+    const { ctx, parent, adapter } = await setup()
 
     const started = await ctx.subagents.startActivation({
       provider: 'spawn',
@@ -205,7 +206,7 @@ describe('dsh-tool-subagent-report', () => {
       request: {
         prompt: [{ type: 'text', text: 'restricted child' }],
         parent,
-        toolFilter: { allow: [] },
+        agentPreset: 'restricted',
       },
       delivery: 'parent',
       signal: testSignal,
@@ -215,7 +216,17 @@ describe('dsh-tool-subagent-report', () => {
       expect(live).toBeDefined()
       return live as Agent
     })
-    const names = ctx.tools.schemas(child).map(schema => schema.name)
+    // The restricted preset owns the child's exposed tool set: run one child
+    // turn and read the tools the adapter actually receives.
+    child.followup(createUserMessage({
+      content: [{ type: 'text', text: 'restricted child turn' }],
+      source: { kind: 'user' },
+    }))
+    await vi.waitFor(() => {
+      expect(adapter.requests.some(request => request.sessionId === child.id)).toBe(true)
+    })
+    const childRequest = adapter.requests.find(request => request.sessionId === child.id)
+    const names = (childRequest?.tools ?? []).map(tool => tool.name)
     expect(names).toContain('report')
     expect(names).not.toContain('send_message')
   })

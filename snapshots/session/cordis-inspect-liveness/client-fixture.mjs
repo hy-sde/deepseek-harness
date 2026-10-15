@@ -75,8 +75,8 @@ export function apply(ctx) {
       outputSchema: { type: 'object' },
     }],
   }])
-  ctx.on('@deepseek-ai/cordis/inspect-query-resolved', ({ requestId }) => { resolved.push(requestId) })
-  ctx.on('@deepseek-ai/cordis/inspect-query', (request) => {
+  ctx.on('cordis/inspect-query-resolved', ({ requestId }) => { resolved.push(requestId) })
+  ctx.on('cordis/inspect-query', (request) => {
     assert.equal(ctx.typertGateway.hasLiveClient(), true)
     assert.deepEqual(request.input, { service: 'remote' })
     queries.push(request.requestId)

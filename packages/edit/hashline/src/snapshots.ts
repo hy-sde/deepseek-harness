@@ -270,7 +270,7 @@ export class InMemorySnapshotStore extends SnapshotStore {
   }
 
   recordSeenLines(path: string, hash: string, lines: Iterable<number>): void {
-    // Provenance growth counts against the budget: re-set the mutated
+    // Seen-line growth counts against the budget: re-set the mutated
     // history so the LRU recomputes its size and evicts when over — the
     // oldest path's history goes first (upstream b3458f5073).
     const history = this.#versions.get(path)

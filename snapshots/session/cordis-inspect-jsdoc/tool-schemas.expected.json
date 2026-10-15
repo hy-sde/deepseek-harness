@@ -165,7 +165,9 @@
             "description": "Exact method name declared by the Provider manifest."
           },
           "input": {
-            "description": "Optional query input; it must satisfy the method input schema."
+            "type": "object",
+            "description": "Optional query input; it must satisfy the method input schema. Cordis service methods conventionally take an object.",
+            "additionalProperties": true
           }
         },
         "required": [

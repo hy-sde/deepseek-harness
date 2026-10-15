@@ -441,7 +441,7 @@ export class RelayBridge {
     if (realTab !== undefined) {
       const announce =
         msg.method === 'Target.setAutoAttach' && msg.params?.autoAttach === true && conn.childParents.has(sessionId)
-          ? () => this.#announceChildren(conn, realTab, sessionId, sessionId)
+          ? () => { this.#announceChildren(conn, realTab, sessionId, sessionId) }
           : undefined
       await this.#forwardToTab(conn, msg, realTab, sessionId, announce)
       return

@@ -49,10 +49,9 @@ class WaveProvider implements SubagentProvider {
   readonly name = 'wave'
   readonly capabilities: SubagentCapabilities = {
     agentOptions: false,
+    agentPreset: false,
     outputSchema: false,
     depthLimit: false,
-    toolFilter: false,
-    persona: false,
     workspace: true,
   }
   readonly inheritsParentContext = false

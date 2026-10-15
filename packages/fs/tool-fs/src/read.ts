@@ -89,7 +89,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
     order: ctx.systemPrompt.getSectionOrder('TOOL_READ'),
     text: ({ scope }) => ctx.tools.get('read', scope) === undefined
       ? ''
-      : 'Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text; append ?outline=1 to a session log to read its turn outline instead of the transcript.',
+      : 'Use the read tool — not shell commands like cat, sed, head, or tail — to inspect text files. Results include line numbers. Use offset and limit to read a line range or continue a large file. Archive paths (foo.zip, foo.zip:dir) list archive members; foo.zip:dir/file reads one member as text. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded text; append ?outline=1 to a session log to read its turn outline instead of the transcript.',
   })
 
   ctx.tools.register(defineTool({

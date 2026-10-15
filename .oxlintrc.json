@@ -339,6 +339,25 @@
       ]
     },
     {
+      // Fork solution-style packages/*/tsconfig.json carry include + compilerOptions, so
+      // oxlint's type-aware service resolves THIS project for client sources instead of the
+      // composite tsconfig.client.json (which inherits noUncheckedIndexedAccess from
+      // tsconfig.base.json). Index access therefore types as non-undefined here while tsc
+      // disagrees — the two rules below misfire on the upstream shapes (binary-search
+      // `rows[middle] as Element`, `start !== undefined` narrowing) that the real client
+      // build requires. Scope the false positives rather than diverge from upstream source.
+      "files": [
+        "packages/client/ui-chat/src/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "typescript/no-unnecessary-condition": "off",
+        "typescript/no-unnecessary-type-assertion": "off"
+      },
+      "plugins": [
+        "typescript"
+      ]
+    },
+    {
       // The project-free staged profile re-includes this syntax-coverage fixture.
       "files": [
         "packages/typert/generator/tests/fixtures/type-model/**/*.{ts,tsx}"
