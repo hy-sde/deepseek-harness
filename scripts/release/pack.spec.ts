@@ -18,9 +18,14 @@ const packScript = resolve(import.meta.dirname, 'pack.ts')
 const tsxHook = pathToFileURL(require.resolve('tsx/esm')).href
 // pnpm 11 publishes bin/pnpm.cjs; pnpm 12 (this fork's packageManager) publishes
 // only the Corepack entry bin/pnpm.mjs — take whichever the installed pnpm ships.
-const pnpmDir = dirname(require.resolve('pnpm/package.json'))
-const pnpmEntry = [join(pnpmDir, 'bin/pnpm.cjs'), join(pnpmDir, 'bin/pnpm.mjs')].find(candidate => existsSync(candidate))
-if (pnpmEntry === undefined) throw new Error('pnpm CLI entry not found under ' + pnpmDir)
+// The guard lives inside the helper: a module-level narrowing does not survive
+// into hoisted function bodies (TS2322 at the Gate.args use site).
+function firstExistingPnpmEntry(pnpmDir: string): string {
+  const found = [join(pnpmDir, 'bin/pnpm.cjs'), join(pnpmDir, 'bin/pnpm.mjs')].find(candidate => existsSync(candidate))
+  if (found === undefined) throw new Error('pnpm CLI entry not found under ' + pnpmDir)
+  return found
+}
+const pnpmEntry = firstExistingPnpmEntry(dirname(require.resolve('pnpm/package.json')))
 const roots: string[] = []
 const commit = 'abcdef0'
 
