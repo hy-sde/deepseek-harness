@@ -66,7 +66,12 @@ const result = await coordinator.reconcileAndWait()             // runs one driv
 
 ### 执行器接缝
 
-```ts ignore-check
+```ts
+import type {
+  AgentGraphOperatorProvisionRequest, AgentGraphOperatorProvisionResult,
+} from '@deepseek-ai/dsh-graph-control'
+import type { AgentGraphRunClaimedIntentInput } from '@deepseek-ai/dsh-graph-stream'
+
 export interface AgentGraphExecutor {
   provisionOperator(request: AgentGraphOperatorProvisionRequest): Promise<AgentGraphOperatorProvisionResult | undefined>
   runClaimedAgentGraphIntent(input: AgentGraphRunClaimedIntentInput): Promise<void>
