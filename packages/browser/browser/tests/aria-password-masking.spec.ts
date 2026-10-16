@@ -33,7 +33,7 @@ describe.skipIf(CHROME === undefined)('ARIA snapshot password masking', { timeou
   let page: Page
 
   beforeAll(async () => {
-    browser = await chromium.launch({ executablePath: CHROME, headless: true })
+    browser = await chromium.launch({ ...(CHROME !== undefined && { executablePath: CHROME }), headless: true })
     page = await browser.newPage()
   })
 
