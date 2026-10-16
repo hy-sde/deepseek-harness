@@ -6,6 +6,19 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
 
+本 fork（`hy-sde/deepseek-harness`）跟踪上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)，在其之上新增 **279 个提交的能力**——**16 个 fork 独有的包目录**、超过 **26.7 万行新增代码**——并通过持续回移上游修复保持同步。
+
+![以产品视角看这个 fork：相对上游的能力与定制](.github/assets/fork-brief.png)
+
+用户能实际感受到的：
+
+- **冷启动类型检查快 7.7 倍**——在 337 个项目的 monorepo 上从 54 秒降到 7 秒，输出经字节级一致性验证；同一 Go 原生编译器还驱动编辑器的语言服务。
+- **整仓代码智能**——知识图谱一步回答「谁在调用它」、路由与架构问题，无需反复 grep 加阅读。
+- **每次推送都有独立评审**——并行评审 agent 将发现按 P0–P3 分级，并以 ship / no-ship 结论为推送把关。
+- **Agent 重启后依然存活**——持久化对话将转录保存在存储中，可从任意节点分叉重试，而非重放。
+- **精心维护的项目记忆**——决策、偏好与经验跨会话留存，并注入后续工作。
+- **提示词精简，能力不缩水**——持久化 Python/TypeScript 内核、可过反爬检测的隐身浏览器、真正的 DAP 调试器，以及 26 个按需加载的专用工具。
+
 文档：[https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
 
 ## 开发者预览
@@ -35,7 +48,7 @@ npx @deepseek-ai/dsh web
 如需从仓库源码运行：
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/hy-sde/deepseek-harness.git
 cd deepseek-harness
 pnpm install
 pnpm run build

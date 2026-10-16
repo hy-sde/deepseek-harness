@@ -6,6 +6,19 @@ DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek 
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
+This fork (`hy-sde/deepseek-harness`) tracks upstream [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) and ships **279 commits of additional capability** on top of it — **16 fork-only package trees**, over **267,000 added lines** — while staying current through continuous re-ports of upstream fixes.
+
+![The fork in product terms — capabilities and customization over upstream stock](.github/assets/fork-brief.png)
+
+What users actually feel:
+
+- **7.7× faster cold type-checks** — 54s → 7s on a 337-project monorepo, output verified byte-identical; the same Go-native compiler drives the editor's language server.
+- **Whole-repo code intelligence** — a knowledge graph answers who-calls-this, route, and architecture questions in one step instead of grep-and-read cycles.
+- **Independent review on every push** — parallel reviewer agents rank findings P0–P3 and a ship / no-ship verdict gates the push.
+- **Agents that survive restarts** — durable conversations keep their transcript in storage and are retried by branching from any point rather than replaying.
+- **Curated project memory** — decisions, preferences, and lessons persist across sessions and are injected into future work.
+- **Lean prompts, heavy capability** — persistent Python/TypeScript kernels, a bot-capable stealth browser, a real debugger (DAP), and 26 specialist tools that load on demand.
+
 Documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
 
 ## Developer preview
@@ -31,7 +44,7 @@ The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it
 To run from a repository checkout:
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/hy-sde/deepseek-harness.git
 cd deepseek-harness
 pnpm install
 pnpm run build
