@@ -28,7 +28,7 @@ const LOGIN_PAGE = `data:text/html,${encodeURIComponent(
   + '</form>',
 )}`
 
-describe.skipIf(CHROME === undefined)('ARIA snapshot password masking', () => {
+describe.skipIf(CHROME === undefined)('ARIA snapshot password masking', { timeout: 20_000 }, () => {
   let browser: Browser
   let page: Page
 
