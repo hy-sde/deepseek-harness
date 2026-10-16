@@ -51,6 +51,69 @@ describe('buildWindow', () => {
     expect(result.lines[0]?.text).toContain(`... (line truncated to ${READ_MAX_LINE_LENGTH} chars)`)
   })
 
+  it('reports the numbers of lines displayed truncated', async () => {
+    const result = await buildWindow(whole(`${'x'.repeat(3000)}\nshort\n${'y'.repeat(2500)}\n`), READ_ALL, 'f')
+    expect(result.wideLineNumbers).toEqual([1, 3])
+    // A raised per-call cap displays the same lines in full: none are wide.
+    const full = await buildWindow(
+      whole(`${'x'.repeat(3000)}\nshort\n${'y'.repeat(2500)}\n`),
+      { offset: 1, limit: 2000, maxLineLength: 1_000_000, maxBytes: READ_MAX_BYTES },
+      'f',
+    )
+    expect(full.wideLineNumbers).toEqual([])
+    expect(full.lines[0]?.text).not.toContain('truncated')
+  })
+
+  it('excludes byte-cap-dropped rows from the wide line numbers', async () => {
+    // The wide line never displays (the byte cap rejects it outright), so it
+    // is neither seen-eligible nor wide.
+    const result = await buildWindow(
+      whole(`${'x'.repeat(3000)}\n`),
+      { offset: 1, limit: 2000, maxLineLength: READ_MAX_LINE_LENGTH, maxBytes: 100 },
+      'f',
+    )
+    expect(result.truncatedByBytes).toBe(true)
+    expect(result.wideLineNumbers).toEqual([])
+  })
+
+  it('marks a line whose buffer overflowed past a trailing CR as wide', async () => {
+    // A lone \r at index maxLineLength strips from the capped buffer and brings
+    // the measured length back down to the cap; the dropped tail must still
+    // mark the line wide (upstream #15649 silent-tail-drop hole).
+    const result = await buildWindow(
+      whole(`${'a'.repeat(READ_MAX_LINE_LENGTH)}\rTAIL\n`),
+      READ_ALL,
+      'f',
+    )
+    expect(result.wideLineNumbers).toEqual([1])
+    expect(result.lines[0]?.text).toContain(`... (line truncated to ${READ_MAX_LINE_LENGTH} chars)`)
+  })
+
+  it('keeps a CRLF-terminated line at exactly the column cap unwide', async () => {
+    // Content is exactly maxLineLength chars; the trailing \r is a line
+    // terminator, so the line displays in full and registers as seen.
+    const result = await buildWindow(
+      whole(`${'a'.repeat(READ_MAX_LINE_LENGTH)}\r\n`),
+      READ_ALL,
+      'f',
+    )
+    expect(result.wideLineNumbers).toEqual([])
+    expect(result.lines[0]?.text).toBe('a'.repeat(READ_MAX_LINE_LENGTH))
+  })
+
+  it('keeps an exact-cap CRLF line unwide across a chunk boundary between CR and LF', async () => {
+    // The chunk boundary lands right after the \r: the at-cap buffer receives
+    // an empty segment before the \n flush, which drops nothing and must not
+    // mark the (fully buffered) line wide.
+    async function* splitChunks(): AsyncIterable<string> {
+      yield `${'a'.repeat(READ_MAX_LINE_LENGTH)}\r`
+      yield '\n'
+    }
+    const result = await buildWindow(splitChunks(), READ_ALL, 'f')
+    expect(result.wideLineNumbers).toEqual([])
+    expect(result.lines[0]?.text).toBe('a'.repeat(READ_MAX_LINE_LENGTH))
+  })
+
   it('caps output bytes and reports truncatedByBytes', async () => {
     const big = Array.from({ length: 2000 }, () => 'y'.repeat(100)).join('\n')
     const result = await buildWindow(whole(big), READ_ALL, 'f')

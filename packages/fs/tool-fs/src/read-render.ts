@@ -42,6 +42,13 @@ export interface WindowResult {
   totalLines: number
   /** Whether selected output hit the byte cap. */
   truncatedByBytes: boolean
+  /**
+   * 1-based numbers of the returned lines whose source exceeded
+   * `maxLineLength` and were therefore displayed truncated. A caller that
+   * records seen-line provenance must skip these: the model saw a column-cut
+   * prefix, and treating it as seen would let an edit silently drop the tail.
+   */
+  wideLineNumbers: number[]
 }
 
 /** Outcome of a bounded text read — what {@link formatReadOutput} renders. */
@@ -73,31 +80,40 @@ interface WindowAccumulator {
   totalLines: number
   outputBytes: number
   truncatedByBytes: boolean
+  wideLineNumbers: number[]
 }
 
 function newAccumulator(): WindowAccumulator {
-  return { lines: [], totalLines: 0, outputBytes: 0, truncatedByBytes: false }
+  return { lines: [], totalLines: 0, outputBytes: 0, truncatedByBytes: false, wideLineNumbers: [] }
 }
 
-function truncateLine(line: string, maxLineLength: number): string {
-  return line.length > maxLineLength ? `${line.substring(0, maxLineLength)}... (line truncated to ${maxLineLength} chars)` : line
+function truncateLine(line: string, maxLineLength: number, truncated: boolean): string {
+  return truncated ? `${line.substring(0, maxLineLength)}... (line truncated to ${maxLineLength} chars)` : line
 }
 
 function lineByteSize(line: string, currentLineCount: number): number {
   return Buffer.byteLength(line, 'utf8') + (currentLineCount > 0 ? 1 : 0)
 }
 
-function consumeLine(acc: WindowAccumulator, rawLine: string, request: ReadWindow): void {
+function consumeLine(acc: WindowAccumulator, rawLine: string, request: ReadWindow, bufferOverflowed: boolean): void {
   acc.totalLines += 1
   if (acc.truncatedByBytes || acc.totalLines < request.offset || acc.lines.length >= request.limit) return
 
-  const text = truncateLine(rawLine, request.maxLineLength)
+  // A buffer that overflowed the column cap proves dropped content even when
+  // stripping a trailing \r brings the measured length back down to the cap (a
+  // lone \r at index maxLineLength), so it marks the line wide — and keeps the
+  // truncation suffix on the display — regardless.
+  const wide = bufferOverflowed || rawLine.length > request.maxLineLength
+  const text = truncateLine(rawLine, request.maxLineLength, wide)
   const bytes = lineByteSize(text, acc.lines.length)
   if (acc.outputBytes + bytes > request.maxBytes) {
     acc.truncatedByBytes = true
     return
   }
   acc.outputBytes += bytes
+  // Only lines actually displayed count as wide: a byte-cap rejection drops the
+  // row entirely, so it neither displays nor needs seen-line handling.
+  if (wide) acc.wideLineNumbers.push(acc.totalLines)
   acc.lines.push({ number: acc.totalLines, text })
 }
 
@@ -109,7 +125,7 @@ function finish(acc: WindowAccumulator, request: ReadWindow, displayPath: string
   if (!acc.truncatedByBytes && request.offset > acc.totalLines && !(acc.totalLines === 0 && request.offset === 1)) {
     throw new FsError(`offset ${request.offset} is out of range for "${displayPath}" (${acc.totalLines} lines)`, 'FS_NOT_FOUND')
   }
-  return { lines: acc.lines, totalLines: acc.totalLines, truncatedByBytes: acc.truncatedByBytes }
+  return { lines: acc.lines, totalLines: acc.totalLines, truncatedByBytes: acc.truncatedByBytes, wideLineNumbers: acc.wideLineNumbers }
 }
 
 /**
@@ -119,7 +135,9 @@ function finish(acc: WindowAccumulator, request: ReadWindow, displayPath: string
  * @param chunks - decoded text chunks in file order; chunk boundaries carry no meaning.
  * @param request - the resolved window; the caller has already applied its defaults and caps.
  * @param displayPath - the caller-facing path used in the offset-out-of-range error.
- * @returns the numbered window lines, the total line count seen, and the byte-cap truncation flag.
+ * @returns the numbered window lines, the total line count seen, the
+ *   byte-cap truncation flag, and the numbers of lines displayed
+ *   truncated.
  */
 export async function buildWindow(
   chunks: AsyncIterable<string> | Iterable<string>,
@@ -130,16 +148,29 @@ export async function buildWindow(
   // One char past the truncation point is enough to prove a line overflows.
   const lineBufferCap = request.maxLineLength + 1
   let lineBuffer = ''
+  // Whether content was dropped because the line exceeded the buffer cap. A
+  // trailing-\r strip can hide that overflow from the length check (a lone \r
+  // at index maxLineLength), so it is tracked explicitly per line.
+  let lineBufferOverflowed = false
 
   function appendToLineBuffer(segment: string): void {
-    if (lineBuffer.length >= lineBufferCap) return
+    if (lineBuffer.length >= lineBufferCap) {
+      // Only real dropped characters prove overflow: an empty segment at an
+      // exact-cap buffer (a chunk boundary right after the cap) drops nothing.
+      if (segment.length > 0) lineBufferOverflowed = true
+      return
+    }
     lineBuffer += segment
-    if (lineBuffer.length > lineBufferCap) lineBuffer = lineBuffer.slice(0, lineBufferCap)
+    if (lineBuffer.length > lineBufferCap) {
+      lineBuffer = lineBuffer.slice(0, lineBufferCap)
+      lineBufferOverflowed = true
+    }
   }
 
   function flushLine(): void {
-    consumeLine(acc, stripCarriageReturn(lineBuffer), request)
+    consumeLine(acc, stripCarriageReturn(lineBuffer), request, lineBufferOverflowed)
     lineBuffer = ''
+    lineBufferOverflowed = false
   }
 
   for await (const chunk of chunks) {

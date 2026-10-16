@@ -55,7 +55,20 @@ interface ReadInput {
   filePath: string
   offset: number
   limit: number
+  /** Effective per-call column cap after defaulting to the configured value. */
+  maxLineLength: number
 }
+
+/**
+ * Upper bound on the per-call `maxLineLength` input. The configured
+ * `readMaxLineLength` is the default, not a ceiling: the full-width re-read
+ * remedy for column-cut lines needs to raise the cap above it. Output stays
+ * bounded by `maxBytes` regardless.
+ */
+export const READ_MAX_LINE_LENGTH_CAP = 1_000_000
+
+/** Wide-line notice: at most this many line numbers are listed before "and N more". */
+const MAX_WIDE_NOTICE_LINES = 20
 
 function parsePositiveInteger(value: number, name: string): number {
   if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
@@ -66,16 +79,29 @@ function parsePositiveInteger(value: number, name: string): number {
 
 /**
  * Validate value constraints the schema DSL can't express. `maxLimit` is the deployment's line cap.
- * @param args - the schema-validated raw tool arguments; `offset`/`limit` must be positive integers when given.
+ * @param args - the schema-validated raw tool arguments; `offset`/`limit` must be positive integers when given,
+ *   and `maxLineLength` either 0 (restore the default) or a positive integer within the absolute cap.
  * @param maxLimit - the configured line cap: both the default `limit` and the largest one accepted.
- * @returns the validated input with `offset` defaulted to 1 and `limit` to `maxLimit`.
+ * @param defaultMaxLineLength - the configured column cap applied when `maxLineLength` is omitted or 0.
+ * @returns the validated input with `offset` defaulted to 1, `limit` to `maxLimit`, and `maxLineLength` to `defaultMaxLineLength`.
  */
-export function parseReadArgs(args: { file_path: string; offset?: number; limit?: number }, maxLimit: number): ReadInput {
+export function parseReadArgs(
+  args: { file_path: string; offset?: number; limit?: number; maxLineLength?: number },
+  maxLimit: number,
+  defaultMaxLineLength: number,
+): ReadInput {
   if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
   const offset = args.offset === undefined ? 1 : parsePositiveInteger(args.offset, 'offset')
   const limit = args.limit === undefined ? maxLimit : parsePositiveInteger(args.limit, 'limit')
   if (limit > maxLimit) throw new Error(`limit must be less than or equal to ${maxLimit}`)
-  return { filePath: args.file_path, offset, limit }
+  let maxLineLength = defaultMaxLineLength
+  if (args.maxLineLength !== undefined && args.maxLineLength !== 0) {
+    maxLineLength = parsePositiveInteger(args.maxLineLength, 'maxLineLength')
+    if (maxLineLength > READ_MAX_LINE_LENGTH_CAP) {
+      throw new Error(`maxLineLength must be less than or equal to ${READ_MAX_LINE_LENGTH_CAP}`)
+    }
+  }
+  return { filePath: args.file_path, offset, limit, maxLineLength }
 }
 
 /**
@@ -95,11 +121,15 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
   ctx.tools.register(defineTool({
     name: 'read',
     description:
-      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool\'s hashline sections so edits anchor on the exact content you saw.',
+      'Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool\'s hashline sections so edits anchor on the exact content you saw. Lines longer than maxLineLength display truncated and are not registered as seen for edits; re-read them with a raised maxLineLength before editing.',
     parameters: {
       file_path: { type: 'string', required: true, description: 'Path to read, resolved by the filesystem backend.' },
       offset: { type: 'number', description: '1-based first line to return. Defaults to 1.' },
       limit: { type: 'number', description: `Maximum number of lines to return. Defaults to ${caps.limit}.` },
+      maxLineLength: {
+        type: 'number',
+        description: `Maximum characters returned for a single line; longer lines display with a truncation suffix. Defaults to ${caps.maxLineLength} — raise it (up to ${READ_MAX_LINE_LENGTH_CAP}) to read wide lines in full; 0 restores the default. Applies to regular file reads.`,
+      },
     },
     output: {
       schema: {
@@ -126,7 +156,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         },
       },
       render: (args, value) => {
-        const input = parseReadArgs(args, caps.limit)
+        const input = parseReadArgs(args, caps.limit, caps.maxLineLength)
         const endLine = value.lines.at(-1)?.number ?? Math.max(0, value.offset - 1)
         const truncatedByBytes = value.lines.length < input.limit && endLine < value.totalLines
         return [{
@@ -158,7 +188,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
     // Observation races fail closed because guarded mutations re-check the version in-lock.
     isConcurrencySafe: () => true,
     async execute(args, exec) {
-      const input = parseReadArgs(args, caps.limit)
+      const input = parseReadArgs(args, caps.limit, caps.maxLineLength)
       // Internal-URL routing (conflict://, pr://, issue://, …) is opt-in via a
       // mounted `ctx.internalUrls` registry; without one, read stays
       // filesystem-only.
@@ -225,7 +255,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         : [(fullText = await ctx.fs.readText(target, exec.signal))]
       const window = await buildWindow(
         chunks,
-        { offset: input.offset, limit: input.limit, maxLineLength: caps.maxLineLength, maxBytes: caps.maxBytes },
+        { offset: input.offset, limit: input.limit, maxLineLength: input.maxLineLength, maxBytes: caps.maxBytes },
         target.displayPath,
       )
 
@@ -237,6 +267,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
       // the tag hashes the WHOLE normalized file, which a partial read cannot
       // attest to (and an oversized file would evict the session's budget).
       let snapshotTag: string | undefined
+      let wideNotice: string | undefined
       if (caps.snapshotTags && fullText !== undefined && info.size !== undefined && info.size < SNAPSHOT_MAX_BYTES) {
         // Normalization mirrors the edit patcher's read convention (BOM-strip,
         // LF), so this tag is byte-identical to the one hashline computes on
@@ -244,11 +275,33 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         const normalized = normalizeToLF(stripBom(fullText).text)
         if (normalized.length > 0) {
           const sessionKey = (exec.agent?.session as object | undefined)
+          // A column-cut row never registers as seen: the model saw a truncated
+          // prefix, and treating it as seen would let an edit silently drop the
+          // tail (oh-my-pi #15649). Any window that displayed nothing — an
+          // all-column-cut window, or one whose every displayable row was
+          // dropped by the byte cap — still records provenance via the
+          // non-anchor sentinel (lines are 1-based): an empty seen set means
+          // unrestricted (the write-tag fast path), which a read must never
+          // mint. A genuinely empty file never reaches record() (its
+          // normalized length is 0 and no tag is minted).
+          const wide = new Set(window.wideLineNumbers)
+          const seenLines = window.lines.map(line => line.number).filter(number => !wide.has(number))
           snapshotTag = getSessionSnapshotStore(sessionKey).record(
             target.displayPath,
             normalized,
-            window.lines.map(line => line.number),
+            seenLines.length > 0 ? seenLines : [0],
           )
+          if (wide.size > 0) {
+            // The listed numbers are model-visible text on top of a
+            // byte-capped window: bound the list so a tiny per-call column
+            // cap cannot push the notice past the output budget.
+            const listed = window.wideLineNumbers.slice(0, MAX_WIDE_NOTICE_LINES)
+            const more = window.wideLineNumbers.length - listed.length
+            wideNotice =
+              `Line(s) ${listed.join(', ')}${more > 0 ? ` and ${more} more` : ''} longer than ` +
+              `${input.maxLineLength} chars were shown truncated and are not editable until re-read with a ` +
+              'higher maxLineLength input.'
+          }
         }
       }
 
@@ -258,6 +311,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
         lines: window.lines,
         totalLines: window.totalLines,
         ...(snapshotTag === undefined ? {} : { snapshotTag }),
+        ...(wideNotice === undefined ? {} : { notice: wideNotice }),
       }
       // Conflict surfacing: register any conflict block inside this read's
       // window with the session history so `write({ path: "conflict://<N>" })`
@@ -268,7 +322,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
           // Record the present observation too: the read succeeded and the
           // model now holds a version it can splice against.
           ctx.emit('fs/observed', target, { kind: 'present', version: info.version }, exec)
-          return { ...outcome, notice }
+          return { ...outcome, notice: wideNotice === undefined ? notice : `${notice}\n${wideNotice}` }
         }
       }
       // Record the present observation (a no-op when no policy plugin listens). The

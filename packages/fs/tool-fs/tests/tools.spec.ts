@@ -339,6 +339,55 @@ describe('read tool', () => {
     expect(text(result)).toContain('less than or equal to 2000')
   })
 
+  it('rejects a maxLineLength outside the accepted range', async () => {
+    const { ctx } = await setup()
+    const over = await call(ctx, 'read', { file_path: 'a.txt', maxLineLength: 1_000_001 })
+    expect(over.isError).toBe(true)
+    expect(text(over)).toContain('maxLineLength must be less than or equal to 1000000')
+    for (const args of [{ file_path: 'a.txt', maxLineLength: -1 }, { file_path: 'a.txt', maxLineLength: 1.5 }]) {
+      const result = await call(ctx, 'read', args)
+      expect(result.isError, JSON.stringify(args)).toBe(true)
+      expect(text(result)).toContain('maxLineLength must be a positive integer')
+    }
+  })
+
+  it('marks column-cut wide lines as not editable and serves them full-width on a raised per-call cap', async () => {
+    const { ctx, fs } = await setup()
+    const wide = `${'a'.repeat(3000)}TAIL`
+    fs.files.set('key:wide.txt', `${wide}\nshort\n`)
+
+    // Default read: the wide line truncates and the model text names the remedy.
+    const cut = await call(ctx, 'read', { file_path: 'wide.txt' })
+    if (cut.isError) throw new Error('expected read success')
+    expect((cut.value as { lines: { number: number; text: string }[] }).lines[0]?.text)
+      .toContain('... (line truncated to 2000 chars)')
+    expect(text(cut)).toContain('not editable until re-read with a higher maxLineLength input')
+
+    // Raised per-call cap: the full line displays with no notice.
+    const full = await call(ctx, 'read', { file_path: 'wide.txt', maxLineLength: 1_000_000 })
+    if (full.isError) throw new Error('expected read success')
+    expect((full.value as { lines: { number: number; text: string }[] }).lines[0]?.text).toBe(wide)
+    expect(text(full)).not.toContain('not editable until re-read')
+
+    // 0 restores the configured default.
+    const zero = await call(ctx, 'read', { file_path: 'wide.txt', maxLineLength: 0 })
+    if (zero.isError) throw new Error('expected read success')
+    expect((zero.value as { lines: { number: number; text: string }[] }).lines[0]?.text)
+      .toContain('... (line truncated to 2000 chars)')
+  })
+
+  it('still names the remedy when every displayed line was column-cut', async () => {
+    // All-cut window: seen provenance records a non-anchor sentinel (an empty
+    // seen set would mean unrestricted), and the notice still points at the
+    // raised-maxLineLength re-read.
+    const { ctx, fs } = await setup()
+    fs.files.set('key:only-wide.txt', `${'a'.repeat(3000)}\n`)
+    const result = await call(ctx, 'read', { file_path: 'only-wide.txt' })
+    if (result.isError) throw new Error('expected read success')
+    expect(text(result)).toContain('Line(s) 1 longer than 2000 chars')
+    expect(text(result)).toContain('not editable until re-read with a higher maxLineLength input')
+  })
+
   it('rejects a blank file_path', async () => {
     const { ctx } = await setup()
     const result = await call(ctx, 'read', { file_path: '   ' })
