@@ -205,7 +205,9 @@ export async function preparePrimaryRuntime(options: PreparePrimaryRuntimeOption
         pnpmVersion = options.pnpmArchive.version
         await downloadRuntimeNpmPackage(options.pnpmArchive, join(dependencies, 'pnpm'), paths.downloads)
       } else {
-        const pnpmManifest = createRequire(import.meta.url).resolve('pnpm')
+        // pnpm ships no "main"/"exports", so the bare specifier does not resolve; a manifest
+        // subpath does, and the package directory is all this code needs.
+        const pnpmManifest = createRequire(import.meta.url).resolve('pnpm/package.json')
         pnpmVersion = (JSON.parse(readFileSync(pnpmManifest, 'utf8')) as { version: string }).version
         await cp(dirname(pnpmManifest), join(dependencies, 'pnpm'), { recursive: true, dereference: true })
       }
