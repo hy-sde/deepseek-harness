@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-code-runtime-kernels",
   "description": "Model-facing persistent Python and JavaScript kernels (run_kernel_code): a long-lived python3/node subprocess per session over the shared code-runtime driver — ported from oh-my-pi (port_omp.md item 1)",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-alpha.4",
   "publishConfig": {
     "access": "public"
   },

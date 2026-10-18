@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-orchestration-policy",
   "description": "Parallelize-by-default orchestration policy: config-driven fan-out rules, fail-closed task-isolation guard, and the `orchestration:policy` system-prompt section (firstmate dispatch-profile shape)",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-alpha.4",
   "publishConfig": {
     "access": "public"
   },

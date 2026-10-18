@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-av",
   "description": "Model-facing Automic Vault tools (av_scan audit, av_doctor hardening check, av_catalog, av_list) over the host ctx.av service — read-only, never returns secret values",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-alpha.4",
   "publishConfig": {
     "access": "public"
   },
