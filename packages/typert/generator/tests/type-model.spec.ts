@@ -1721,7 +1721,11 @@ describe('FaceModelEmitter', { timeout: 60_000 }, () => {
         noEmit: true,
         skipLibCheck: false,
         target: ts.ScriptTarget.ES2024,
-        lib: ['lib.es2024.d.ts'],
+        // zod 4.6.7 (the fork's workspace-wide pin) references the DOM-global
+        // URL inside its own declaration files, so lib.dom must be on the
+        // program for skipLibCheck:false to stay clean; upstream's 4.4.3 pin
+        // needs only lib.es2024 here.
+        lib: ['lib.es2024.d.ts', 'lib.dom.d.ts'],
         types: [],
         module: ts.ModuleKind.ESNext,
         moduleResolution: ts.ModuleResolutionKind.Bundler,

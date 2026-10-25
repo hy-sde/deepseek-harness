@@ -360,7 +360,9 @@ describe('task admission and package contracts', () => {
       '@modelcontextprotocol/sdk',
       '^1.31.0',
     )
-    expect(manifest.dependencies).toHaveProperty('zod', '4.4.3')
+    // The fork pins zod 4.6.7 workspace-wide (pnpm-workspace.yaml overrides +
+    // unified manifests); upstream's manifest pins 4.4.3.
+    expect(manifest.dependencies).toHaveProperty('zod', '4.6.7')
     expect(manifest.dependencies).not.toHaveProperty('@deepseek-ai/dsh-subagent-codex')
 
     const sdkRoot = dirname(fileURLToPath(

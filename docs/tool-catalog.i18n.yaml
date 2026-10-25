@@ -66,7 +66,7 @@
   en: 76fbbf0fe38aef10
   zh: 76fbbf0fe38aef10
 /tool-schema-catalog/deepseek-ai-dsh-tools/run-code:
-  en: d03bca78d96757a7
+  en: a2368a9d8136276e
   zh: 0dbce569ba4b4c76
 /tool-schema-catalog/deepseek-ai-dsh-plan-mode:
   en: b500b530845e26a9
@@ -132,8 +132,8 @@
   en: 5b6a252adde51af6
   zh: 7aa172a5d8b9cbd2
 /tool-schema-catalog/deepseek-ai-dsh-tool-fs/read:
-  en: bf25d7b26533ad99
-  zh: 1dd70ed7f2138528
+  en: e21503369e6204b6
+  zh: d3ecd2db3fcaad18
 /tool-schema-catalog/deepseek-ai-dsh-tool-fs/read-image:
   en: f6f7a1140066ce04
   zh: 1f87182c327bec10

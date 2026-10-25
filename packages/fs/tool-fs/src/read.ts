@@ -279,7 +279,7 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
           // prefix, and treating it as seen would let an edit silently drop the
           // tail (oh-my-pi #15649). Any window that displayed nothing — an
           // all-column-cut window, or one whose every displayable row was
-          // dropped by the byte cap — still records provenance via the
+          // dropped by the byte cap — still records seen-state via the
           // non-anchor sentinel (lines are 1-based): an empty seen set means
           // unrestricted (the write-tag fast path), which a read must never
           // mint. A genuinely empty file never reaches record() (its

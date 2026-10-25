@@ -550,7 +550,10 @@
     # destination, and pins every actual connection (upstream 0.1.2 stance);
     # the tool stays base-off, each preset opts in via tool-web. The fan-out is
     # bounded by soft/hard deadlines (5s / 30s defaults), so the tool budget
-    # gets 60s while the provider-neutral tool default remains 30s.
+    # gets 60s while the provider-neutral tool default remains 30s. Upstream's
+    # DeepSeek Search/Fetch API rows stay mounted below (deepseek-search-api /
+    # deepseek-fetch-api on DEEPSEEK_API_KEY) so an overlay or the Web search
+    # settings switch can select them in place of the public default.
     - id: web
       name: '@deepseek-ai/dsh-web'
       config:
@@ -559,6 +562,11 @@
 
     - id: web-search-public
       name: '@deepseek-ai/dsh-web-search-public'
+
+    - id: web-deepseek-api
+      name: '@deepseek-ai/dsh-web-deepseek-api'
+      config:
+        apiKeyEnv: DEEPSEEK_API_KEY
 
     - id: web-fetch-http
       name: '@deepseek-ai/dsh-web-fetch-http'

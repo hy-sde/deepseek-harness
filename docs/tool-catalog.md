@@ -590,19 +590,19 @@ ask_user_question keeps the original blocking behavior by default; set `mode: ti
 
 ### `run_code`
 
-Execute a TypeScript program against the available tools. Takes two required arguments: `description`, a short summary of what the program does, and `code`, the program to execute. Call tools as `await tools.name(args)` per the declarations in the system prompt. Curate the program output. Image-bearing subtool results are attached after the run.
+Execute a TypeScript program against the available tools. Takes two required arguments: `code`, the program to execute, and `description`, a short summary of what the program does. Call tools as `await tools.name(args)` per the declarations in the system prompt. Curate the program output. Image-bearing subtool results are attached after the run.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "description": {
-      "type": "string",
-      "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Provide `description` before `code` in the arguments. Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
-    },
     "code": {
       "type": "string",
       "description": "The TypeScript program to execute, following this tool's execution instructions."
+    },
+    "description": {
+      "type": "string",
+      "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
     },
     "timeoutMs": {
       "type": "number",
@@ -630,8 +630,8 @@ Execute a TypeScript program against the available tools. Takes two required arg
     }
   },
   "required": [
-    "description",
-    "code"
+    "code",
+    "description"
   ]
 }
 ```
@@ -1165,7 +1165,7 @@ Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts
 
 ### `read`
 
-Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool's hashline sections so edits anchor on the exact content you saw.
+Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool's hashline sections so edits anchor on the exact content you saw. Lines longer than maxLineLength display truncated and are not registered as seen for edits; re-read them with a raised maxLineLength before editing.
 
 ```json
 {
@@ -1182,6 +1182,10 @@ Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip,
     "limit": {
       "type": "number",
       "description": "Maximum number of lines to return. Defaults to 2000."
+    },
+    "maxLineLength": {
+      "type": "number",
+      "description": "Maximum characters returned for a single line; longer lines display with a truncation suffix. Defaults to 2000 — raise it (up to 1000000) to read wide lines in full; 0 restores the default. Applies to regular file reads."
     }
   },
   "required": [

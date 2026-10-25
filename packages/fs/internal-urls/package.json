@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-internal-urls",
   "description": "FS-shaped internal URL schemes (conflict://, pr://, issue://, …) resolved through one registry behind the read/grep/write tools",
-  "version": "0.2.1-alpha.4",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },

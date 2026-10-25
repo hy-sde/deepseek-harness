@@ -569,7 +569,7 @@ describe('tool-edit (hashline mode) × column-cut wide lines (upstream #15649)',
     const source = `${'a'.repeat(3000)}\n`
     await writeFile(sample, source)
 
-    // An all-cut read still records provenance (a non-anchor sentinel): without
+    // An all-cut read still records seen-state (a non-anchor sentinel): without
     // it the empty seen set would read as unrestricted and let the edit through.
     const readResult = await run(ctx, owner, 'read', { file_path: 'only-wide.txt' })
     expect(readResult.isError).toBe(false)
@@ -584,14 +584,14 @@ describe('tool-edit (hashline mode) × column-cut wide lines (upstream #15649)',
     expect(await readFile(sample, 'utf8')).toBe(source)
   })
 
-  it('applies an edit anchored under an empty seen set (write-minted tag provenance)', async () => {
+  it('applies an edit anchored under an empty seen set (write-minted tag record)', async () => {
     const { ctx, root, owner } = await seenLineStack()
     const sample = join(root, 'fastpath.txt')
     const source = 'one\ntwo\n'
     await writeFile(sample, source)
 
-    // A write-minted tag records provenance with NO displayed rows: an empty
-    // seen set means unrestricted (upstream c7648f680f's fast path), so any
+    // A write-minted tag records seen-state with NO displayed rows: an empty
+    // seen set means unrestricted (the write-tag fast path), so any
     // anchor applies without a re-read.
     const store = getSessionSnapshotStore(owner.session)
     const tag = store.record(sample, source, [])

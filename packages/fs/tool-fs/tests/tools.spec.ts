@@ -377,7 +377,7 @@ describe('read tool', () => {
   })
 
   it('still names the remedy when every displayed line was column-cut', async () => {
-    // All-cut window: seen provenance records a non-anchor sentinel (an empty
+    // All-cut window: seen-state records a non-anchor sentinel (an empty
     // seen set would mean unrestricted), and the notice still points at the
     // raised-maxLineLength re-read.
     const { ctx, fs } = await setup()

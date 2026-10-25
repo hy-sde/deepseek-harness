@@ -159,7 +159,7 @@ describe('desktop external plugin profile', () => {
     await manager.applyRelease()
     const path = join(target, 'pnpm-workspace.yaml')
     const defaults = readFileSync(path, 'utf8')
-    writeFileSync(path, `${defaults}strictDepBuilds: true\nallowBuilds:\n  node-pty: true\n  koffi: true\n  fs-ext: true\n  "@deepseek-ai/dsh-subprocess-local": true\n  '@google/genai': false\n  protobufjs: false\n  node-addon-require-builtin: false\n`)
+    writeFileSync(path, `${defaults}strictDepBuilds: true\nallowBuilds:\n  node-pty: true\n  koffi: true\n  fs-ext: true\n  "@deepseek-ai/dsh-subprocess-local": true\n  '@ast-grep/cli': true\n  '@google/genai': false\n  protobufjs: false\n  node-addon-require-builtin: false\n`)
     await manager.applyRelease()
     expect(readFileSync(path, 'utf8')).toBe(defaults)
     const custom = `${defaults}allowBuilds:\n  my-plugin: true\n`

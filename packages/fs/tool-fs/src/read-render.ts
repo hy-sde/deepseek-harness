@@ -45,7 +45,7 @@ export interface WindowResult {
   /**
    * 1-based numbers of the returned lines whose source exceeded
    * `maxLineLength` and were therefore displayed truncated. A caller that
-   * records seen-line provenance must skip these: the model saw a column-cut
+   * records seen-line state must skip these: the model saw a column-cut
    * prefix, and treating it as seen would let an edit silently drop the tail.
    */
   wideLineNumbers: number[]

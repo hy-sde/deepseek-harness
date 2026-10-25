@@ -615,13 +615,13 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 {
   "type": "object",
   "properties": {
-    "description": {
-      "type": "string",
-      "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Provide `description` before `code` in the arguments. Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
-    },
     "code": {
       "type": "string",
       "description": "The TypeScript program to execute, following this tool's execution instructions."
+    },
+    "description": {
+      "type": "string",
+      "description": "Clear, concise description of what this program does in active voice, 5-10 words (shown in the UI). Examples: \"Count TODO markers across packages\"; \"Read failing test and its fixture\"; \"Rename config key in every cordis.yml\"."
     },
     "timeoutMs": {
       "type": "number",
@@ -649,8 +649,8 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
     }
   },
   "required": [
-    "description",
-    "code"
+    "code",
+    "description"
   ]
 }
 ```
@@ -1189,7 +1189,7 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 ### `read`
 
-读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL；带 ?outline=1 后缀读取会话日志（如 session.jsonl.zstd?outline=1）时，提供其回合大纲而非对话记录。对完整的小型 UTF-8 文件，读取会在内容前加一行 hashline 锚头（[path#TAG]）——请逐字复制该标签到 edit 工具的 hashline 段，使编辑精确锚定在你看到的内容上。
+读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL；带 ?outline=1 后缀读取会话日志（如 session.jsonl.zstd?outline=1）时，提供其回合大纲而非对话记录。对完整的小型 UTF-8 文件，读取会在内容前加一行 hashline 锚头（[path#TAG]）——请逐字复制该标签到 edit 工具的 hashline 段，使编辑精确锚定在你看到的内容上。超过 maxLineLength 的行会以截断形式显示，且不会被登记为已见（edits 不可用）；编辑前请调大 maxLineLength 重新读取。
 
 ```json
 {
@@ -1206,6 +1206,10 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
     "limit": {
       "type": "number",
       "description": "Maximum number of lines to return. Defaults to 2000."
+    },
+    "maxLineLength": {
+      "type": "number",
+      "description": "Maximum characters returned for a single line; longer lines display with a truncation suffix. Defaults to 2000 — raise it (up to 1000000) to read wide lines in full; 0 restores the default. Applies to regular file reads."
     }
   },
   "required": [

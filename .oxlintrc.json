@@ -326,13 +326,18 @@
       // Format codecs/encoders return Promises uniformly (some members genuinely await,
       // e.g. zstd/zlib sync-adapters), and decode hot-loops keep defensive guards against
       // truncated/malformed archives that the relaxed index typing can't see — so the
-      // equivalent-to-vendor rules relax here, everything else stays strict.
+      // equivalent-to-vendor rules relax here, everything else stays strict. Upstream
+      // never type-checks this port (absent from its tsconfig.host.json), so oxlint's
+      // project service only sees it through the fork's per-package tsconfig, where the
+      // Node stream iterator types `chunk` as any — relax the two any-surface rules too.
       "files": [
         "packages/fs/fs-archive/src/**/*.{ts,tsx}"
       ],
       "rules": {
         "typescript/require-await": "off",
-        "typescript/no-unnecessary-condition": "off"
+        "typescript/no-unnecessary-condition": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/restrict-plus-operands": "off"
       },
       "plugins": [
         "typescript"
