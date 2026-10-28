@@ -6,7 +6,7 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
 
-本 fork（`hy-sde/deepseek-harness`）跟踪上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)，在其之上新增 **279 个提交的能力**——**16 个 fork 独有的包目录**、超过 **26.7 万行新增代码**——并通过持续回移上游修复保持同步。
+本 fork（`hy-sde/deepseek-harness`）跟踪上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)，在其之上新增 **296 个提交的能力**——**16 个 fork 独有的包目录**、超过 **26.7 万行新增代码**——并通过持续回移上游修复保持同步。
 
 ![以产品视角看这个 fork：相对上游的能力与定制](.github/assets/fork-brief.png)
 

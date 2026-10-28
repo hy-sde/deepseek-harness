@@ -6,7 +6,7 @@ DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek 
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
-This fork (`hy-sde/deepseek-harness`) tracks upstream [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) and ships **279 commits of additional capability** on top of it — **16 fork-only package trees**, over **267,000 added lines** — while staying current through continuous re-ports of upstream fixes.
+This fork (`hy-sde/deepseek-harness`) tracks upstream [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) and ships **296 commits of additional capability** on top of it — **16 fork-only package trees**, over **267,000 added lines** — while staying current through continuous re-ports of upstream fixes.
 
 ![The fork in product terms — capabilities and customization over upstream stock](.github/assets/fork-brief.png)
 
