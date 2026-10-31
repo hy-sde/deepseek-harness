@@ -27,6 +27,7 @@ import * as path from 'node:path'
 import { applyEdits, findReplacementGroup } from './apply.ts'
 import { hasBlockEdit, resolveBlockEdits } from './block.ts'
 import { commitClipboard, forkClipboard, startClipboardBatch, validateClipboardSequence } from './clipboard.ts'
+import { withErrorKind } from './error-kind.ts'
 import { computeFileHash, formatHashlineHeader } from './format.ts'
 import type { Filesystem, WriteResult } from './fs.ts'
 import { isNotFound } from './fs.ts'
@@ -38,6 +39,7 @@ import {
   unverifiedWideLinesMessage,
   pathRecoveredFromTagMessage,
   type RevealedLine,
+  staleUnseenLinesMessage,
   unseenLinesMessage,
   wideUnseenLinesMessage,
   writeDriftWarning,
@@ -45,7 +47,7 @@ import {
 import { MismatchError } from './mismatch.ts'
 import { detectLineEnding, type LineEnding, normalizeToLF, restoreLineEndings, stripBom } from './normalize.ts'
 import { InvalidAbsoluteRangeError } from './parser.ts'
-import { Recovery, type RecoveryResult } from './recovery.ts'
+import { currentLineMap, Recovery, type RecoveryResult } from './recovery.ts'
 import type { Snapshot, SnapshotStore } from './snapshots.ts'
 import type { ApplyResult, BlockResolution, BlockResolver, BlockSpan, Clipboard, Edit, FileOp } from './types.ts'
 
@@ -828,13 +830,19 @@ export class Patcher {
     * its way past the guard across multiple retries
     * (over-cap retry → tail reveal → next retry applies), nor coax the tool
     * into dumping a minified megabyte-wide line into the error preview.
+    * `currentText` (no-drift path only) drives the unverified-wide-anchor
+    * check; `staleCurrentText` (drift path only) routes unseen anchors to
+    * the stale-tag live-line rejection instead of a stale reveal
+    * (oh-my-pi ff0d7262f8).
     */
   #assertSeenLines(
     section: PatchSection,
     blocks: readonly BlockResolution[],
     expected: string,
     matchedSnapshot: Snapshot | null,
-    rescue?: { canonicalPath: string; currentText: string },
+    canonicalPath: string,
+    currentText?: string,
+    staleCurrentText?: string,
   ): void {
     const seen = matchedSnapshot?.seenLines
     if (!seen || seen.size === 0) {
@@ -842,13 +850,14 @@ export class Patcher {
       // store, or a write-recorded snapshot). Anchors on lines wider than the
       // display column cap may have been silently column-cut, so reject them
       // instead of applying blind (oh-my-pi 3c49131232).
-      this.#rejectUnverifiedWideAnchors(section, blocks, rescue?.currentText)
+      this.#rejectUnverifiedWideAnchors(section, blocks, currentText)
       return
     }
-    let unseen = guardedLines(section, blocks).filter(line => !seen.has(line))
+    const guarded = guardedLines(section, blocks)
+    let unseen = guarded.filter(line => !seen.has(line))
     if (unseen.length === 0) return
-    if (rescue !== undefined) {
-      const rescued = rescueShiftedAnchors(section, this.snapshots, rescue.canonicalPath, rescue.currentText, unseen)
+    if (currentText !== undefined) {
+      const rescued = rescueShiftedAnchors(section, this.snapshots, canonicalPath, currentText, unseen)
       if (rescued.length > 0) {
         const rescuedSet = new Set(rescued)
         unseen = unseen.filter(line => !rescuedSet.has(line))
@@ -860,7 +869,19 @@ export class Patcher {
       // Out-of-range anchors are caught by parse/apply with a better message.
       if (line < 1 || line > sourceLines.length) continue
       if ((sourceLines[line - 1] ?? '').length > SEEN_LINE_REVEAL_MAX_COLUMNS) {
-        throw new Error(wideUnseenLinesMessage(section.path, unseen))
+        if (staleCurrentText !== undefined) {
+          this.#throwStaleUnseenRejection(
+            section,
+            unseen,
+            guarded,
+            expected,
+            canonicalPath,
+            matchedSnapshot,
+            staleCurrentText,
+            true,
+          )
+        }
+        throw withErrorKind(new Error(wideUnseenLinesMessage(section.path, unseen)), 'unseen_lines')
       }
     }
     const revealed: RevealedLine[] = []
@@ -881,7 +902,22 @@ export class Patcher {
     if (!truncated) {
       for (const { line } of revealed) seen.add(line)
     }
-    throw new Error(unseenLinesMessage(section.path, unseen, expected, { lines: revealed, truncated }))
+    if (truncated && staleCurrentText !== undefined) {
+      this.#throwStaleUnseenRejection(
+        section,
+        unseen,
+        guarded,
+        expected,
+        canonicalPath,
+        matchedSnapshot,
+        staleCurrentText,
+        false,
+      )
+    }
+    throw withErrorKind(
+      new Error(unseenLinesMessage(section.path, unseen, expected, { lines: revealed, truncated })),
+      'unseen_lines',
+    )
   }
 
   /**
@@ -904,8 +940,69 @@ export class Patcher {
       line => line >= 1 && line <= currentLines.length && (currentLines[line - 1] ?? '').length > SEEN_LINE_REVEAL_MAX_COLUMNS,
     )
     if (wide.length > 0) {
-      throw new Error(unverifiedWideLinesMessage(section.path, wide))
+      throw withErrorKind(new Error(unverifiedWideLinesMessage(section.path, wide)), 'unseen_lines')
     }
+  }
+
+  /**
+   * Reject unseen anchors under a stale tag by naming their CURRENT line
+   * numbers and handing back the live tag (oh-my-pi ff0d7262f8 +
+   * 2995614a54): revealing the tagged content would invite editing lines
+   * that no longer hold it. Anchors the live file no longer has (added or
+   * removed since the tag) fall back to the mismatch reply, which cannot
+   * name a position for them. Anchors the reply did not surface carry over
+   * to the live snapshot as seen lines, mapped through the shift, so a
+   * resend under the live tag stays restricted to what was shown.
+   */
+  #throwStaleUnseenRejection(
+    section: PatchSection,
+    unseen: readonly number[],
+    guarded: readonly number[],
+    expected: string,
+    canonicalPath: string,
+    taggedSnapshot: Snapshot,
+    current: string,
+    raw: boolean,
+  ): never {
+    const map = currentLineMap(taggedSnapshot.text, current)
+    const liveLines: number[] = []
+    for (const line of unseen) {
+      const live = map.get(line)
+      if (live === undefined) {
+        throw this.#mismatchError(
+          section,
+          canonicalPath,
+          current,
+          expected,
+          this.snapshots.byHash(canonicalPath, expected) !== null,
+        )
+      }
+      liveLines.push(live)
+    }
+    const unseenSet = new Set(unseen)
+    const carried = guarded
+      .filter(line => !unseenSet.has(line))
+      .map(line => map.get(line))
+      .filter((line): line is number => line !== undefined)
+    const liveTag = this.#recordReplyProvenance(canonicalPath, current, carried)
+    throw withErrorKind(
+      new Error(staleUnseenLinesMessage(section.path, unseen, expected, liveLines, liveTag, raw)),
+      'unseen_lines',
+    )
+  }
+
+  /**
+   * Record `text` as a reply the model has now seen (oh-my-pi f11dac11be):
+   * unrestricted content (no snapshot, or one without a seen set — a full
+   * read) stays unrestricted; restricted content gains the reply's displayed
+   * lines plus line 0, which no ranged read can display, so a reply that
+   * displayed nothing keeps the snapshot restrictive.
+   */
+  #recordReplyProvenance(canonicalPath: string, text: string, displayed: readonly number[] = []): string {
+    const existing = this.snapshots.byContent(canonicalPath, text)
+    const restricted = existing === null || (existing.seenLines?.size ?? 0) > 0
+    if (!restricted) return this.#recordFullSnapshot(canonicalPath, text)
+    return this.#recordFullSnapshot(canonicalPath, text, [...displayed, 0])
   }
   /**
    * Paths this session's store recorded under `expected`, excluding the file
@@ -940,7 +1037,7 @@ export class Patcher {
     const existing = this.snapshots.byContent(canonicalPath, normalized)
     const restricted = existing === null || (existing.seenLines?.size ?? 0) > 0
     const displayed = restricted ? anchoredContextLines(anchorLines, fileLines) : []
-    const actualFileHash = this.#recordFullSnapshot(canonicalPath, normalized, displayed.length > 0 ? displayed : undefined)
+    const actualFileHash = this.#recordReplyProvenance(canonicalPath, normalized, displayed)
     return new MismatchError({
       path: section.path,
       expectedFileHash: expected,
@@ -1012,10 +1109,7 @@ export class Patcher {
       // Reject any anchor the read never displayed: editing lines the model
       // has not seen is the off-by-memory mistake that mangles files.
       if (expected !== undefined && this.#enforceSeenLines) {
-        this.#assertSeenLines(section, blockResolutions, expected, matchedSnapshot, {
-          canonicalPath,
-          currentText: normalized,
-        })
+        this.#assertSeenLines(section, blockResolutions, expected, matchedSnapshot, canonicalPath, normalized)
       }
       const result = applyEdits(normalized, resolved, { clipboard, path: canonicalPath })
       return withResolveWarnings(blockResolutions.length > 0 ? { ...result, blockResolutions } : result)
@@ -1026,7 +1120,15 @@ export class Patcher {
     // the text the anchors move through. Without this, a drifted file would
     // let recovery relocate an anchor the read never displayed.
     if (this.#enforceSeenLines) {
-      this.#assertSeenLines(section, blockResolutions, expected, storedSnapshotForTag)
+      this.#assertSeenLines(
+        section,
+        blockResolutions,
+        expected,
+        storedSnapshotForTag,
+        canonicalPath,
+        undefined,
+        normalized,
+      )
     }
     // Head/tail-only inserts are position-stable: "start"/"end" cannot move
     // with content drift, so a stale tag is non-fatal. Apply onto the live
