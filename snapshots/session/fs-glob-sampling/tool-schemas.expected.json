@@ -275,7 +275,7 @@
     },
     {
       "name": "read",
-      "description": "Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool's hashline sections so edits anchor on the exact content you saw.",
+      "description": "Read a UTF-8 text file and return line-numbered content. Archive paths (foo.zip, foo.zip:dir, foo.zip:dir/file) list the archive or read a member as text through a built-in multi-format engine. Zstd paths (foo.zst, foo.zstd, session.jsonl.zstd) serve their decoded plaintext/JSONL through the same line-numbered window; a session log read with a ?outline=1 suffix (e.g. session.jsonl.zstd?outline=1) serves its turn outline instead of the transcript. Reads of a whole small UTF-8 file prefix the content with a hashline anchor header ([path#TAG]) — copy that tag verbatim into the edit tool's hashline sections so edits anchor on the exact content you saw. Lines longer than maxLineLength display truncated and are not registered as seen for edits; re-read them with a raised maxLineLength before editing.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -290,6 +290,10 @@
           "limit": {
             "type": "number",
             "description": "Maximum number of lines to return. Defaults to 2000."
+          },
+          "maxLineLength": {
+            "type": "number",
+            "description": "Maximum characters returned for a single line; longer lines display with a truncation suffix. Defaults to 2000 — raise it (up to 1000000) to read wide lines in full; 0 restores the default. Applies to regular file reads."
           }
         },
         "required": [
