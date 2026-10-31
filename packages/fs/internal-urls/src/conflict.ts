@@ -810,6 +810,7 @@ export async function reconcileRegisteredConflicts(
   history: ConflictHistory,
   bridge: ConflictFileBridge,
   absolutePath?: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   const byPath = new Map<string, ConflictEntry[]>()
   for (const entry of history.entries()) {
@@ -825,8 +826,8 @@ export async function reconcileRegisteredConflicts(
       // bytes+decode each time. Past-cap blocks are preserved by
       // reconcilePath via truncatedAtLine.
       const scan = bridge.readFileCapped === undefined
-        ? { text: await bridge.readFile(file) }
-        : await bridge.readFileCapped(file, CONFLICT_SCAN_MAX_BYTES)
+        ? { text: await bridge.readFile(file, signal) }
+        : await bridge.readFileCapped(file, CONFLICT_SCAN_MAX_BYTES, signal)
       const blocks = findRegisteredBlocks(scan.text, entries)
       history.reconcilePath(file, scan.truncatedAtLine === undefined ? { blocks } : { blocks, truncatedAtLine: scan.truncatedAtLine })
     } catch (error) {
@@ -880,7 +881,7 @@ export class ConflictProtocolHandler implements ProtocolHandler {
     const history = this.deps.historyFor(context?.sessionKey)
     if (parsed.id === '*') {
       // The wildcard summary claims live state: retire stale ids first.
-      await reconcileRegisteredConflicts(history, this.deps.bridge)
+      await reconcileRegisteredConflicts(history, this.deps.bridge, undefined, context?.signal)
       const entries = history.entries()
       const content = entries.length === 0
         ? 'No conflicts registered in this session yet. Read the conflicted file first to register its conflicts.'
@@ -893,7 +894,7 @@ export class ConflictProtocolHandler implements ProtocolHandler {
         notes: entries.length === 0 ? [] : [`${entries.length} registered conflict${entries.length === 1 ? '' : 's'}`],
       }
     }
-    const entry = await this.requireEntry(history, parsed.id)
+    const entry = await this.requireEntry(history, parsed.id, context?.signal)
     const { lines } = renderConflictRegion(entry, parsed.scope)
     const content = lines.join('\n')
     const scopeNote = parsed.scope !== undefined
@@ -914,10 +915,10 @@ export class ConflictProtocolHandler implements ProtocolHandler {
    * error. Only the addressed block's file is re-checked — other files keep
    * their ids until they are addressed in turn.
    */
-  private async requireEntry(history: ConflictHistory, id: number): Promise<ConflictEntry> {
+  private async requireEntry(history: ConflictHistory, id: number, signal?: AbortSignal): Promise<ConflictEntry> {
     const registered = history.get(id)
     if (registered !== undefined) {
-      await reconcileRegisteredConflicts(history, this.deps.bridge, registered.absolutePath)
+      await reconcileRegisteredConflicts(history, this.deps.bridge, registered.absolutePath, signal)
     }
     const entry = history.get(id)
     if (entry === undefined) {
@@ -949,7 +950,7 @@ export class ConflictProtocolHandler implements ProtocolHandler {
       await this.writeBulk(history, content, cw)
       return
     }
-    const entry = await this.requireEntry(history, parsed.id)
+    const entry = await this.requireEntry(history, parsed.id, cw.signal)
     await this.resolveEntry(entry, expandContentTokens(content, entry), cw)
   }
 
@@ -957,7 +958,7 @@ export class ConflictProtocolHandler implements ProtocolHandler {
   private async writeBulk(history: ConflictHistory, content: string, cw: HandlerWriteContext): Promise<void> {
     // Re-check every registered file first: stale ids are retired before the
     // bulk body is parsed, and shifted blocks keep their ids.
-    await reconcileRegisteredConflicts(history, this.deps.bridge)
+    await reconcileRegisteredConflicts(history, this.deps.bridge, undefined, cw.signal)
     const entries = history.entries()
     if (entries.length === 0) {
       throw new Error('conflict://* has nothing to resolve: no conflicts are registered in this session yet. Read the conflicted file first.')
@@ -992,8 +993,14 @@ export class ConflictProtocolHandler implements ProtocolHandler {
   private async resolveEntry(entry: ConflictEntry, replacementBody: string, cw: HandlerWriteContext): Promise<void> {
     const signal = cw.signal
     const original = await this.deps.bridge.readFile(entry.absolutePath, signal)
-    const splat = spliceConflict(original, entry, replacementBody)
-    await this.deps.bridge.writeFile(entry.absolutePath, splat.text, signal, cw.sandboxPolicy)
+    // Match BOM-blind like the recorded entry and the reconcile scan, but
+    // write the byte back: the :conflicts summary strips the BOM before
+    // scanning, so a line-1 block of a BOM-prefixed file registers without
+    // it — spliceConflict over the raw text would never match and every
+    // resolve would loop on "re-read it to re-register conflicts".
+    const hadBom = original.startsWith('\uFEFF')
+    const splat = spliceConflict(hadBom ? original.slice(1) : original, entry, replacementBody)
+    await this.deps.bridge.writeFile(entry.absolutePath, hadBom ? `\uFEFF${splat.text}` : splat.text, signal, cw.sandboxPolicy)
     const history = this.deps.historyFor(cw.sessionKey)
     history.invalidate(entry.id)
     // Re-align the remaining ids with the spliced text: blocks below the

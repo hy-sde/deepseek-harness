@@ -230,6 +230,19 @@ describe('read/grep/write scheme routing', () => {
     expect(now).not.toContain('<<<<<<<')
   })
 
+  it('resolves a BOM-prefixed line-1 block registered by the :conflicts summary', async () => {
+    // readConflictSummary strips the BOM before scanning, so a line-1 block
+    // registers; the splice must match BOM-blind and write the BOM back.
+    const { ctx, fs } = await setup({ 'bom.ts': '\uFEFF' + CONFLICTS })
+    await call(ctx, 'read', { file_path: 'bom.ts:conflicts' })
+    const result = await call(ctx, 'write', { file_path: 'conflict://1', content: '@theirs' })
+    expect((result.value as { operation: string }).operation).toBe('update')
+    const now = fs.files.get('abs:/ws/bom.ts') ?? ''
+    expect(now.startsWith('\uFEFF')).toBe(true)
+    expect(now).toContain('    return 2')
+    expect(now).not.toContain('<<<<<<<')
+  })
+
   it('bulk-resolves every registered conflict via conflict://*', async () => {
     const two = `${OURS_OPEN}
 a

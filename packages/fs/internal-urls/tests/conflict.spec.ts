@@ -244,15 +244,16 @@ describe('reconcileRegisteredConflicts with a capped bridge', () => {
   it('prefers the capped read and preserves blocks past the cap', async () => {
     const bridge = new CappedBridge()
     const path = '/ws/a.ts'
-    // Six short lines, then the block well past a 16-byte cap.
-    bridge.files.set(path, Array.from({ length: 6 }, (_, i) => `line ${i}\n`).join('') + TWO_WAY.join('\n') + '\n')
+    // Filler pushes the file past CONFLICT_SCAN_MAX_BYTES (10 MiB): the capped
+    // read truncates mid-filler, so the block sits past truncatedAtLine and
+    // reconciliation must leave it registered.
+    const filler = Array.from({ length: 10_241 }, () => `${'x'.repeat(1023)}\n`).join('')
+    bridge.files.set(path, filler + TWO_WAY.join('\n') + '\n')
     const history = new ConflictHistory()
     const entries = registerBlocks(history, bridge.files, path)
     await reconcileRegisteredConflicts(history, bridge)
     expect(bridge.cappedCalls).toBe(1)
     expect(bridge.fullCalls).toBe(0)
-    // The capped prefix ends inside the filler lines, so the block sits past
-    // truncatedAtLine and reconciliation must leave it registered.
     expect(history.get(entries[0]!.id)).not.toBeUndefined()
   })
 
