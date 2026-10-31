@@ -235,6 +235,46 @@ ${'>>>>>>>' + ' x'}
     expect(now).not.toContain('=======')
   })
 
+  it('keeps a block registered past a capped :conflicts scan resolvable', async () => {
+    // 10_240 filler lines of 1023 x's put the file exactly over the 10 MiB
+    // scan cap (10_240 * 1024 bytes); the block sits past the byte cap.
+    const filler = `${'x'.repeat(1023)}\n`.repeat(10_240)
+    const { ctx, fs } = await setup({ 'big.ts': filler + CONFLICTS })
+    // A windowed read past the cap registers the block it shows.
+    await call(ctx, 'read', { file_path: 'big.ts', offset: 10_241, limit: 10 })
+    const summary = await call(ctx, 'read', { file_path: 'big.ts:conflicts' })
+    const joined = text(summary)
+    expect(joined).toContain('No unresolved conflicts before line 10241')
+    expect(joined).toContain('byte cap')
+    // The capped scan must not retire the block; its id still resolves.
+    const result = await call(ctx, 'write', { file_path: 'conflict://1', content: '@ours' })
+    expect((result.value as { operation: string }).operation).toBe('update')
+    const now = fs.files.get('abs:/ws/big.ts') ?? ''
+    expect(now).toContain('    return 1')
+    expect(now).not.toContain('<<<<<<<')
+  })
+
+  it('retires ids when the file was rewritten externally before a conflict:// read', async () => {
+    const { ctx, fs } = await setup({ 'a.ts': CONFLICTS })
+    await call(ctx, 'read', { file_path: 'a.ts' }) // registers #1
+    fs.files.set('abs:/ws/a.ts', 'const resolved = true\n')
+    const region = await call(ctx, 'read', { file_path: 'conflict://1' })
+    expect(region.isError).toBe(true)
+    expect(text(region)).toMatch(/not registered/)
+    // The summary no longer counts the retired id.
+    const summary = await call(ctx, 'read', { file_path: 'a.ts:conflicts' })
+    expect(text(summary)).toContain('No unresolved conflicts in a.ts')
+  })
+
+  it('keeps the id of an unchanged block that shifted after an external edit', async () => {
+    const { ctx, fs } = await setup({ 'a.ts': CONFLICTS })
+    await call(ctx, 'read', { file_path: 'a.ts' }) // registers #1 at lines 2-6
+    fs.files.set('abs:/ws/a.ts', `// new header\n${CONFLICTS}`)
+    await call(ctx, 'write', { file_path: 'conflict://1', content: '@theirs' })
+    const now = fs.files.get('abs:/ws/a.ts') ?? ''
+    expect(now).toBe('// new header\nfunction f():\n    return 2\n    pass')
+  })
+
   it('never routes an unregistered scheme — read falls through to fs', async () => {
     const { ctx } = await setup({ 'a.ts': 'plain' })
     const result = await call(ctx, 'read', { file_path: 'folio://9' })

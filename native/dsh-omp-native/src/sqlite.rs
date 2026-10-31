@@ -663,6 +663,29 @@ pub fn resolve_row_lookup(connection: &Connection, table: &str) -> Result<RowLoo
 	}
 	Ok(RowLookup::RowId)
 }
+
+/// Returns the quoted ROWID alias that row-key access can use on `table`.
+/// A declared column shadows its hidden alias even when generated, so the
+/// canonical aliases fall through in order; the caller has validated the
+/// table already.
+fn resolve_row_id_alias(connection: &Connection, table: &str) -> Result<String, Error> {
+	let mut statement =
+		connection.prepare(&format!("PRAGMA table_xinfo({})", quote_identifier(table)))?;
+	let declared = statement
+		.query_map([], |row| {
+			row.get::<_, String>(1).map(|name| name.to_lowercase())
+		})?
+		.collect::<Result<Vec<_>, _>>()?;
+	for alias in ["rowid", "_rowid_", "oid"] {
+		if !declared.iter().any(|name| name == alias) {
+			return Ok(quote_identifier(alias));
+		}
+	}
+	Err(Error(format!(
+		"SQLite table '{table}' shadows all ROWID aliases; row-key access is unavailable"
+	)))
+}
+
 /// Validates a table name and captures schema facts needed by later row
 /// operations. Callers must still quote validated identifiers and bind values.
 pub fn validate_table(connection: &Connection, table: &str) -> Result<ValidatedTable, Error> {
@@ -759,7 +782,10 @@ pub fn row_by_key(
 		RowLookup::PrimaryKey { column, declared_type } => {
 			(format!("{} = ?1", quote_identifier(column)), lookup_value(key, declared_type)?)
 		},
-		RowLookup::RowId => ("rowid = ?1".to_owned(), coerce_integer(key, "SQLite ROWID")?.into()),
+		RowLookup::RowId => (
+			format!("{} = ?1", resolve_row_id_alias(connection, table)?),
+			coerce_integer(key, "SQLite ROWID")?.into(),
+		),
 	};
 	let mut statement = connection
 		.prepare(&format!("SELECT * FROM {} WHERE {predicate} LIMIT 1", quote_identifier(table)))?;
@@ -1282,5 +1308,62 @@ mod tests {
 				.execute("INSERT INTO records VALUES ('changed')", [])
 				.is_err()
 		);
+	}
+
+	#[test]
+	fn row_by_key_targets_the_hidden_rowid_when_no_alias_is_shadowed() {
+		let directory = tempfile::tempdir().unwrap();
+		let path = directory.path().join("rows.sqlite");
+		let writer = Connection::open(&path).unwrap();
+		writer
+			.execute_batch("CREATE TABLE items(body TEXT); INSERT INTO items VALUES ('a'), ('b');")
+			.unwrap();
+		drop(writer);
+
+		let reader = open_read_only(&path).unwrap();
+		let lookup = resolve_row_lookup(&reader, "items").unwrap();
+		let row = row_by_key(&reader, "items", &lookup, "2").unwrap().unwrap();
+		assert_eq!(row, vec![("body".to_owned(), types::Value::Text("b".into()))]);
+	}
+
+	#[test]
+	fn row_by_key_falls_back_when_a_declared_column_shadows_rowid() {
+		let directory = tempfile::tempdir().unwrap();
+		let path = directory.path().join("shadowed.sqlite");
+		let writer = Connection::open(&path).unwrap();
+		writer
+			.execute_batch(
+				"CREATE TABLE records(RoWiD INTEGER, body TEXT); \
+				 INSERT INTO records VALUES (2, 'first'), (2, 'second');",
+			)
+			.unwrap();
+		drop(writer);
+
+		// A bare `rowid = 2` comparison would match the declared RoWiD column,
+		// which both rows share; the resolved hidden alias must pick row 2.
+		let reader = open_read_only(&path).unwrap();
+		let lookup = resolve_row_lookup(&reader, "records").unwrap();
+		let row = row_by_key(&reader, "records", &lookup, "2").unwrap().unwrap();
+		let body = row.iter().find(|(column, _)| column == "body").map(|(_, value)| value_text(value));
+		assert_eq!(body.as_deref(), Some("second"));
+	}
+
+	#[test]
+	fn row_by_key_refuses_when_every_rowid_alias_is_shadowed() {
+		let directory = tempfile::tempdir().unwrap();
+		let path = directory.path().join("exhausted.sqlite");
+		let writer = Connection::open(&path).unwrap();
+		writer
+			.execute_batch(
+				"CREATE TABLE records(rowid INTEGER, _rowid_ INTEGER, OID INTEGER, body TEXT); \
+				 INSERT INTO records VALUES (2, 2, 2, 'first'), (2, 2, 2, 'second');",
+			)
+			.unwrap();
+		drop(writer);
+
+		let reader = open_read_only(&path).unwrap();
+		let lookup = resolve_row_lookup(&reader, "records").unwrap();
+		let error = row_by_key(&reader, "records", &lookup, "2").unwrap_err();
+		assert!(error.to_string().contains("shadows all ROWID aliases"));
 	}
 }
