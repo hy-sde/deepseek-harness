@@ -32,7 +32,7 @@ agent 化浏览器工具（移植自 omp / oh-my-pi）的宿主 `ctx.browser` �
 - **标签页** — `open` 导航一个命名标签页（每个名字一个标签页、每个 cwd+kind 一个浏览器连接）；`run` 在标签页内求值 JS；`observe` 返回 title／url／尺寸＋带 `[ref=eN]` id 的 ARIA 快照；`click`／`type` 按 ARIA ref 或 CSS 选择器寻址元素；`screenshot` 写出 PNG；`close` 关闭标签页，配合 `kill` 还关闭所派生的浏览器。
 - **Stealth** — 14 段 omp-puppeteer init 脚本注入每个启动的页面（`src/stealth-scripts.ts`，生成物），压制机显（machine-tell）启动参数，并在浏览器 CDP session 上应用伪装 user-agent＋client-hints 覆盖。
 
-ARIA 快照由打包进来的 Playwright ARIA-snapshot 源码（Apache-2.0，微软）在 `src/aria-bundle.ts` 提供 — 与 omp 用的是同一份生成 bundle — 因此每次快照都带可操作的 `[ref=eN]` id，且在下一次快照前保持有效。
+ARIA 快照由打包进来的 Playwright ARIA-snapshot 源码（Apache-2.0，微软）在 `src/aria-bundle.ts` 提供 — 与 omp 用的是同一份生成 bundle — 因此每次快照都带可操作的 `[ref=eN]` id，且在下一次快照前保持有效。页面观察读取（`open`／`observe`／`click`／`type`）可幸存一次读取中途的导航：当读取针对的文档在中途被替换，该读取会在新文档稳定后重跑一次（`run` 中的用户代码绝不重跑）。
 
 <a id="backends"></a>
 ## 后端
