@@ -110,7 +110,7 @@ describe('automation-only ACP bridge', () => {
     await expect(harness.client.prompt({
       sessionId: first.sessionId,
       prompt: [{ type: 'text', text: 'closed' }],
-    })).rejects.toThrow(/unknown session/)
+    })).rejects.toThrow(/Resource not found/)
   })
 
   it('cancels a running prompt and makes its session resumable before close returns', async () => {
@@ -145,7 +145,7 @@ describe('automation-only ACP bridge', () => {
     await expect(harness.client.prompt({
       sessionId: created.sessionId,
       prompt: [{ type: 'text', text: 'too late' }],
-    })).rejects.toThrow(/session is closing/)
+    })).rejects.toThrow(/Resource not found/)
     flushing.resolve()
 
     await expect(Promise.all([first, second])).resolves.toEqual([{}, {}])
@@ -998,8 +998,9 @@ describe('automation-only ACP bridge', () => {
   it('rejects prompts for unknown sessions and ignores unknown cancellation', async () => {
     harness = await makeBridgeHarness()
     await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    await expect(harness.client.prompt({ sessionId: 'missing', prompt: [{ type: 'text', text: 'go' }] }))
-      .rejects.toThrow(/unknown session/)
+    const unknownPrompt = harness.client.prompt({ sessionId: 'missing', prompt: [{ type: 'text', text: 'go' }] })
+    await expect(unknownPrompt).rejects.toThrow(/Resource not found/)
+    await expect(unknownPrompt).rejects.toMatchObject({ code: -32002 })
     await expect(harness.client.cancel({ sessionId: 'missing' })).resolves.toBeUndefined()
   })
 })
