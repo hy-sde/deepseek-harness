@@ -160,7 +160,9 @@ function parseApplyPatchWithOptions(patchText: string, options: ParseApplyPatchO
       }
 
       if (diffLines.length === 0) {
-        if (streaming) {
+        // A move-only `*** Update File` section carries no hunks; accept it
+        // outside streaming too and let the update path short-circuit.
+        if (streaming || movePath !== undefined) {
           hunks.push({ path, op: 'update', diff: '', firstMatch: true, ...(movePath === undefined ? {} : { rename: movePath }) })
           continue
         }

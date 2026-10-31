@@ -195,7 +195,10 @@ async function readExistingPatchFile(fileSystem: FileSystem, absolutePath: strin
   try {
     return await fileSystem.read(absolutePath)
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith('File not found:')) {
+    if (
+      error instanceof Error
+      && (error.message.startsWith('File not found:') || error.message.endsWith(': not found'))
+    ) {
       throw new ApplyPatchError(`File not found: ${path}`)
     }
     // node error codes are surfaced only in adapter land; treat ENOENT-style
@@ -389,11 +392,37 @@ async function applyNormalizedPatch(input: PatchInput, options: ApplyPatchOption
   }
 
   // Handle UPDATE operation
-  if (!input.diff) {
+  if (input.diff === undefined) {
     throw new ApplyPatchError('Update operation requires diff (hunks)')
   }
 
   const originalContent = await readExistingPatchFile(fs, absolutePath, input.path)
+
+  // Content-preserving move (`*** Update File` + `*** Move to` with no
+  // hunks): persist the source text unchanged. normalizeToLF + restore is
+  // not byte-lossless for mixed line endings, and upstream stages the raw
+  // read bytes when the text is untouched.
+  if (input.firstMatch === true && input.rename !== undefined && input.diff.trim() === '') {
+    const destPath = resolvePath(input.rename)
+    if (!dryRun) {
+      const parentDir = path.dirname(destPath)
+      if (parentDir && parentDir !== '.') {
+        await fs.mkdir(parentDir)
+      }
+      await fs.write(destPath, originalContent)
+      await fs.delete(absolutePath)
+    }
+    return {
+      change: {
+        type: 'update',
+        path: absolutePath,
+        newPath: destPath,
+        oldContent: originalContent,
+        newContent: originalContent,
+      },
+    }
+  }
+
   const { bom: bomFromText, text: strippedContent } = stripBom(originalContent)
   let bom = bomFromText
   if (!bom && fs.readBinary) {

@@ -13,6 +13,7 @@ import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
+import { parseApplyPatch, parseApplyPatchStreaming } from '../src/apply-patch.ts'
 
 const contexts: Context[] = []
 const roots: string[] = []
@@ -420,6 +421,81 @@ describe('tool-edit (apply_patch mode) complete-line exact matching', () => {
     const second = await applyEnvelope('from x import (\n    B,\n)\n', ['@@', '-    B,', '+    C,'])
     expect(second.result.isError).toBe(false)
     expect(await readFile(second.sample, 'utf8')).toBe('from x import (\n    C,\n)\n')
+  })
+})
+
+describe('tool-edit (apply_patch mode) move-only update sections (oh-my-pi 57f70e8c34)', () => {
+  const MOVE_ONLY = (fixture: string, moved: string): string =>
+    ['*** Begin Patch', `*** Update File: ${fixture}`, `*** Move to: ${moved}`, '*** End Patch'].join('\n')
+
+  it('parses identically in streaming and non-streaming mode', () => {
+    const input = MOVE_ONLY('fixture.txt', 'moved.txt')
+    expect(parseApplyPatch(input)).toEqual(parseApplyPatchStreaming(input))
+  })
+
+  it('preserves source bytes through the move', async () => {
+    for (const [before, expected] of [
+      ['alpha\n', 'alpha\n'],
+      ['alpha', 'alpha'],
+      // Fork delta: the harness text seam strips a leading BOM at decode
+      // (fs-local decodeUtf8 uses the TextDecoder default), so the raw read
+      // already lacks it; the move still persists the read bytes exactly.
+      ['\uFEFFalpha\r\nbeta\r\n', 'alpha\r\nbeta\r\n'],
+      ['', ''],
+    ] as const) {
+      const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+      const sample = join(root, 'fixture.txt')
+      const moved = join(root, 'moved.txt')
+      await writeFile(sample, before)
+      const result = await call(ctx, owner, { input: MOVE_ONLY(sample, moved) })
+      expect(result.isError, before).toBe(false)
+      await expect(readFile(sample, 'utf8'), before).rejects.toThrow()
+      expect(await readFile(moved, 'utf8'), before).toBe(expected)
+    }
+  })
+
+  it('keeps the missing-source, collision and same-path guards', async () => {
+    for (const [source, destination, moved, error] of [
+      [null, null, 'moved.txt', 'File not found'],
+      ['source\n', 'destination\n', 'moved.txt', 'destination already exists.'],
+      ['source\n', null, './fixture.txt', 'same as source'],
+    ] as const) {
+      const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+      const sample = join(root, 'fixture.txt')
+      if (source !== null) await writeFile(sample, source)
+      if (destination !== null) await writeFile(join(root, 'moved.txt'), destination)
+      const result = await call(ctx, owner, { input: MOVE_ONLY(sample, join(root, moved)) })
+      expect(result.isError, moved).toBe(true)
+      expect(text(result), moved).toContain(error)
+      expect(await readFile(sample, 'utf8').catch(() => null), moved).toBe(source)
+      expect(await readFile(join(root, 'moved.txt'), 'utf8').catch(() => null), moved).toBe(destination)
+    }
+  })
+
+  it('a later invalid hunk still applies the move-only section (sequential fork delta)', async () => {
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+    const sample = join(root, 'fixture.txt')
+    const other = join(root, 'other.txt')
+    const moved = join(root, 'moved.txt')
+    await writeFile(sample, 'alpha\n')
+    await writeFile(other, 'other\n')
+    const input = [
+      '*** Begin Patch',
+      `*** Update File: ${sample}`,
+      `*** Move to: ${moved}`,
+      `*** Update File: ${other}`,
+      '@@',
+      '-missing',
+      '+new',
+      '*** End Patch',
+    ].join('\n')
+    const result = await call(ctx, owner, { input })
+    expect(result.isError).toBe(true)
+    expect(await readFile(other, 'utf8')).toBe('other\n')
+    // Upstream stages the whole envelope and commits nothing; the fork's
+    // sequential apply commits the move before the other.txt hunk fails.
+    expect(await readFile(moved, 'utf8')).toBe('alpha\n')
+    await expect(readFile(sample, 'utf8')).rejects.toThrow()
   })
 })
 
