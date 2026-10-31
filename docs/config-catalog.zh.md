@@ -866,7 +866,7 @@ export type ThemePreference = typeof THEME_PREFERENCES[number]
 ## `@deepseek-ai/dsh-code-runtime-kernels`
 
 - `inject`: `tools` · `systemPrompt`
-- `source`: [`packages/code-runtime/code-runtime-kernels/src/index.ts:52`](../packages/code-runtime/code-runtime-kernels/src/index.ts)
+- `source`: [`packages/code-runtime/code-runtime-kernels/src/index.ts:53`](../packages/code-runtime/code-runtime-kernels/src/index.ts)
 
 ```ts config-catalog
 /**
@@ -876,8 +876,14 @@ export type ThemePreference = typeof THEME_PREFERENCES[number]
 export interface Config {
   /** Enabled languages; kernels of disabled languages are refused at call time. */
   languages?: ('python' | 'typescript')[]
-  /** Explicit python executable. Defaults to `python3` on PATH (fails loud at first spawn when absent). */
+  /**
+   * Explicit python interpreter, probed first; then every `python`/`python3`
+   * on PATH (first healthy candidate wins; fails loud with per-candidate
+   * reasons when none works).
+   */
   pythonPath?: string
+  /** Probe budget per candidate while resolving the python interpreter (ms; default 5000). */
+  pythonProbeTimeoutMs?: number
   /** Explicit node executable. Defaults to `node` on PATH (fails loud at first spawn when absent). */
   nodePath?: string
   /** Cooperative tool-call timeout budget (ms) for `run_kernel_code` (default 30000). */
@@ -5156,7 +5162,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-tools`
 
 - `inject`: `systemPrompt`
-- `source`: [`packages/core/tools/src/index.ts:687`](../packages/core/tools/src/index.ts)
+- `source`: [`packages/core/tools/src/index.ts:693`](../packages/core/tools/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: how the registered tools are presented to the model. */
