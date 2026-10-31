@@ -245,6 +245,13 @@ export class ConflictHistory {
       const block = matched.get(entry)
       if (block === undefined) {
         if (scan.truncatedAtLine !== undefined && entry.endLine >= scan.truncatedAtLine) continue
+        // A windowed read records wide lines cut to the read pipeline's
+        // column cap with a truncation suffix; such a recorded region can
+        // never equal the live text (findRegisteredBlocks drops over-length
+        // lines), so retiring it would make a still-live wide-line conflict
+        // unaddressable — every re-read would register and then retire it.
+        // Leave it registered: the scan cannot disprove a cut region.
+        if (buildRecordedRegion(entry).some(line => WIDE_LINE_CUT_RE.test(line))) continue
         this.#entries.delete(entry.id)
         continue
       }
@@ -252,6 +259,13 @@ export class ConflictHistory {
     }
   }
 }
+
+/**
+ * A read-pipeline column-cut line suffix (tool-fs read-render.ts truncateLine):
+ * windowed reads record wide conflict lines cut to the column cap plus this
+ * marker, and such a recorded region can never match the live text.
+ */
+const WIDE_LINE_CUT_RE = /\.\.\. \(line truncated to \d+ chars\)$/
 
 /** A side of a conflict block addressable as `conflict://N/<scope>`. */
 export type ConflictScope = 'ours' | 'theirs' | 'base'

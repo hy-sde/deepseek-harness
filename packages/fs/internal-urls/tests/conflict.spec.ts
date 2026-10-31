@@ -126,6 +126,23 @@ describe('ConflictHistory.reconcilePath', () => {
     expect(history.get(changed.id)).toBeUndefined()
   })
 
+  it('keeps blocks whose recorded region the read column-cut', () => {
+    const history = new ConflictHistory()
+    const abs = '/ws/wide.ts'
+    // A windowed read registered this block with its wide line cut to the
+    // column cap plus the read pipeline's truncation suffix.
+    const entry = history.register({
+      ...makeBlock(3),
+      oursLines: [`${'x'.repeat(240)}... (line truncated to 240 chars)`],
+      absolutePath: abs,
+      displayPath: 'wide.ts',
+    })
+    // A live scan can never match a cut region (wide lines are dropped), so
+    // without the exemption reconciliation would retire the still-live block.
+    history.reconcilePath(abs, { blocks: [] })
+    expect(history.get(entry.id)).toBeDefined()
+  })
+
   it('keeps blocks at or past a capped scan boundary', () => {
     const history = new ConflictHistory()
     const abs = '/ws/a.ts'

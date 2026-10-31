@@ -144,8 +144,12 @@ async function readConflictSummary(
     }
     // Decode strictly like readText below the cap: invalid UTF-8 is an error
     // (FS_NOT_TEXT), not silently-replaced mojibake (fsio.ts notTextError).
+    // A byte cap can split a multi-byte sequence at the prefix end; trim back
+    // to the last complete codepoint boundary first, or a valid file whose cap
+    // byte falls inside a sequence is spuriously rejected (fs-local's
+    // streaming decoder carries partial sequences across chunks).
     try {
-      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+      text = new TextDecoder('utf-8', { fatal: true }).decode(trimToCodepointBoundary(bytes))
     } catch {
       throw new FsError(`cannot read "${base}": invalid UTF-8 text`, 'FS_NOT_TEXT')
     }
@@ -183,6 +187,30 @@ async function readConflictSummary(
  * the resolution notice. Returns `undefined` when nothing to report or no
  * session key / registry are available.
  */
+/**
+ * Trim a byte prefix back to the last complete UTF-8 codepoint boundary: a
+ * byte-capped read can cut a multi-byte sequence mid-way, and the strict
+ * decoder (fatal: true) would reject the incomplete tail as invalid UTF-8
+ * even though the underlying file is valid.
+ */
+function trimToCodepointBoundary(bytes: Uint8Array): Uint8Array {
+  let end = bytes.length
+  let back = 0
+  // Walk back over up to 3 continuation bytes (10xxxxxx) to the last lead byte.
+  while (back < 4 && end > 0 && ((bytes[end - 1] ?? 0) & 0xc0) === 0x80) {
+    end -= 1
+    back += 1
+  }
+  if (back === 0) return bytes
+  const lead = bytes[end - 1] ?? 0
+  // Expected sequence length from the lead byte; a continuation byte here
+  // (4+ continuations, already invalid) decodes expected 1 and stays put so
+  // the fatal decoder reports it.
+  const expected = lead >= 0xf0 ? 4 : lead >= 0xe0 ? 3 : lead >= 0xc0 ? 2 : 1
+  if (back < expected) return bytes.subarray(0, end - 1)
+  return bytes
+}
+
 export function conflictNoticeForRead(
   ctx: Context,
   iu: InternalUrlsService,

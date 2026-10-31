@@ -286,6 +286,21 @@ ${'>>>>>>>' + ' x'}
     expect(text(result)).toMatch(/invalid UTF-8 text/)
   })
 
+  it('backs the capped scan off to a codepoint boundary instead of failing valid UTF-8', async () => {
+    // A 3-byte sequence straddles the 10 MiB cap (E4 B8 land inside the
+    // prefix, AD falls beyond it): the file is valid UTF-8, so the capped
+    // scan must trim the incomplete tail rather than reject the whole file.
+    const bytes = new Uint8Array(10_485_762).fill(0x79)
+    bytes[10_485_758] = 0xe4
+    bytes[10_485_759] = 0xb8
+    bytes[10_485_760] = 0xad
+    const { ctx, fs } = await setup({})
+    fs.rawFiles.set(`abs:${fs.canonical('cjk.bin')}`, bytes)
+    const summary = await call(ctx, 'read', { file_path: 'cjk.bin:conflicts' })
+    expect(summary.isError).not.toBe(true)
+    expect(text(summary)).toContain('No unresolved conflicts')
+  })
+
   it('retires ids when the file was rewritten externally before a conflict:// read', async () => {
     const { ctx, fs } = await setup({ 'a.ts': CONFLICTS })
     await call(ctx, 'read', { file_path: 'a.ts' }) // registers #1
