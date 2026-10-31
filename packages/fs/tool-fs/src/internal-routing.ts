@@ -16,6 +16,7 @@ import {
   ConflictHistory,
   formatConflictSummary,
   formatConflictWarning,
+  formatScanCapNote,
   scanConflictsInContent,
   scanConflictLines,
 } from '@deepseek-ai/dsh-internal-urls/conflict'
@@ -100,6 +101,13 @@ export async function tryReadInternal(
   return { path: resource.url, offset: request.offset, lines: window.lines, totalLines: window.totalLines }
 }
 
+/**
+ * Byte cap for the `<path>:conflicts` whole-file scan. Matches the read
+ * pipeline's stream threshold: past the cap, blocks are not counted or
+ * registered here, and reconciliation leaves them alone.
+ */
+const CONFLICT_SCAN_MAX_BYTES = 10 * 1024 * 1024
+
 /** Read `<path>:conflicts` — scan the whole file, register every block, render a summary. */
 async function readConflictSummary(
   ctx: Context,
@@ -115,18 +123,34 @@ async function readConflictSummary(
   const info = await ctx.fs.stat(target, exec.signal)
   if (info === undefined) throw new FsError(`cannot read "${base}": not found`, 'FS_NOT_FOUND')
   if (info.type !== 'file') throw new FsError(`cannot read "${base}": not a regular file`, 'FS_NOT_REGULAR_FILE')
-  const content = await ctx.fs.readText(target, exec.signal)
-  const blocks = scanConflictsInContent(content)
+  // Bounded scan: a byte cap keeps pathological files cheap, and blocks past
+  // the cap are neither listed nor retired here (reconcilePath preserves them).
+  const truncated = info.size !== undefined && info.size > CONFLICT_SCAN_MAX_BYTES
+  let text: string
+  let truncatedAtLine: number | undefined
+  if (truncated) {
+    const bytes = await ctx.fs.readByteRange(target, { offset: 0, length: CONFLICT_SCAN_MAX_BYTES }, exec.signal)
+    text = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+    truncatedAtLine = text.split('\n').length
+  } else {
+    // Keep readText (not raw bytes) so a binary file still fails with FS_NOT_TEXT.
+    text = await ctx.fs.readText(target, exec.signal)
+  }
+  if (text.startsWith('\uFEFF')) text = text.slice(1)
+  const blocks = scanConflictsInContent(text)
   const history = iu.conflicts(sessionKeyOf(exec))
   const absolutePath = ctx.fs.processPath(target)
+  history.reconcilePath(absolutePath, truncatedAtLine !== undefined ? { blocks, truncatedAtLine } : { blocks })
   const entries = blocks.map(block => history.register({
     ...block,
     absolutePath,
     displayPath: base,
   }))
   const summary = entries.length === 0
-    ? `No unresolved conflicts in ${base}.`
-    : formatConflictSummary(entries, base)
+    ? truncatedAtLine !== undefined
+      ? `No unresolved conflicts before line ${truncatedAtLine} of ${base}.\n${formatScanCapNote(base, truncatedAtLine)}`
+      : 'No unresolved conflicts in ' + base + '.'
+    : formatConflictSummary(entries, base, truncatedAtLine)
   const window = await buildWindow(
     [summary],
     { offset: request.offset, limit: request.limit, maxLineLength: caps.maxLineLength, maxBytes: caps.maxBytes },

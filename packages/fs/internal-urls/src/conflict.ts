@@ -15,6 +15,7 @@
  */
 
 import type { InternalResource, ParsedInternalUrl, ProtocolHandler, ResolveContext, WriteContext } from './types.ts'
+import { FsError } from '@deepseek-ai/dsh-fs'
 
 const OURS_PREFIX = '<<<<<<<'
 const BASE_PREFIX = '|||||||'
@@ -153,7 +154,9 @@ export interface ConflictEntry extends ConflictBlock {
  * Per-session log of conflict regions surfaced by `read`/`:conflicts`. The
  * history is append-only by content identity: re-reading a still-present block
  * reuses its id, so retries never depend on re-reading even after other blocks
- * in the file resolve.
+ * in the file resolve. {@link ConflictHistory.reconcilePath} re-checks ids
+ * against the live file: unchanged blocks follow line shifts, changed or
+ * vanished ones are retired.
  */
 export class ConflictHistory {
   private nextId = 1
@@ -162,6 +165,13 @@ export class ConflictHistory {
   register(input: Omit<ConflictEntry, 'id'>): ConflictEntry {
     for (const existing of this.#entries.values()) {
       if (existing.absolutePath === input.absolutePath && existing.startLine === input.startLine) {
+        // An id is reused only for the same block at the same position: a
+        // changed block must never inherit the old id, or a write aimed at
+        // stale content would splice the wrong region.
+        if (!conflictRegionsEqual(existing, input)) {
+          this.#entries.delete(existing.id)
+          continue
+        }
         const merged: ConflictEntry = { ...input, id: existing.id }
         this.#entries.set(existing.id, merged)
         return merged
@@ -191,6 +201,54 @@ export class ConflictHistory {
   invalidatePath(absolutePath: string): void {
     for (const [id, entry] of this.#entries) {
       if (entry.absolutePath === absolutePath) this.#entries.delete(id)
+    }
+  }
+
+  /**
+   * Re-check this path's entries against a fresh scan of the file: unchanged
+   * blocks follow line shifts (keeping their ids), changed or vanished ones
+   * are retired, and a different block at a recorded position gets a fresh id
+   * on the next `register`. Blocks at or past a capped scan's
+   * `truncatedAtLine` are left untouched — the scan cannot disprove them.
+   */
+  reconcilePath(absolutePath: string, scan: ConflictFileScan): void {
+    const entries = this.entries().filter(entry => entry.absolutePath === absolutePath)
+    const available = new Set(scan.blocks)
+    const matched = new Map<ConflictEntry, ConflictBlock>()
+    // Unchanged blocks at their recorded position keep their ids.
+    for (const entry of entries) {
+      for (const block of available) {
+        if (block.startLine !== entry.startLine || !conflictRegionsEqual(entry, block)) continue
+        matched.set(entry, block)
+        available.delete(block)
+        break
+      }
+    }
+    // Unchanged blocks that shifted follow the nearest equal block.
+    for (const entry of entries) {
+      if (matched.has(entry)) continue
+      let best: ConflictBlock | undefined
+      let bestDistance = Number.POSITIVE_INFINITY
+      for (const block of available) {
+        if (!conflictRegionsEqual(entry, block)) continue
+        const distance = Math.abs(block.startLine - entry.startLine)
+        if (distance >= bestDistance) continue
+        best = block
+        bestDistance = distance
+      }
+      if (best !== undefined) {
+        matched.set(entry, best)
+        available.delete(best)
+      }
+    }
+    for (const entry of entries) {
+      const block = matched.get(entry)
+      if (block === undefined) {
+        if (scan.truncatedAtLine !== undefined && entry.endLine >= scan.truncatedAtLine) continue
+        this.#entries.delete(entry.id)
+        continue
+      }
+      this.#entries.set(entry.id, { ...entry, ...block })
     }
   }
 }
@@ -361,6 +419,87 @@ function buildRecordedRegion(entry: ConflictBlock): string[] {
   out.push(...entry.theirsLines)
   out.push(`${THEIRS_PREFIX}${entry.theirsLabel ? ` ${entry.theirsLabel}` : ''}`)
   return out
+}
+
+/** Result of scanning a file for conflict blocks, with the scan cap when hit. */
+export interface ConflictFileScan {
+  blocks: ConflictBlock[]
+  /**
+   * 1-indexed line at which a byte-capped scan stopped; blocks at or past
+   * this line are neither confirmed nor retired by reconciliation.
+   */
+  truncatedAtLine?: number
+}
+
+/** Region equality: identical recorded marker blocks (labels and side bodies). */
+export function conflictRegionsEqual(a: ConflictBlock, b: ConflictBlock): boolean {
+  const regionA = buildRecordedRegion(a)
+  const regionB = buildRecordedRegion(b)
+  if (regionA.length !== regionB.length) return false
+  return regionA.every((line, index) => line === regionB[index])
+}
+
+/**
+ * Find the registered blocks in a file's text, bounded by the widest
+ * registered block: a line longer than any recorded line (plus a trailing
+ * `\r`) cannot belong to one, and the walk stops once every entry is
+ * confirmed at its recorded start line. Upstream streams the file; the fork
+ * reads the whole text through the bridge, and these bounds keep a
+ * pathological file to one linear pass.
+ */
+function findRegisteredBlocks(text: string, entries: readonly ConflictEntry[]): ConflictBlock[] {
+  const regions = new Set<string>()
+  const unconfirmed = new Map<number, string>()
+  let maxLines = 0
+  let maxLineLength = 0
+  for (const entry of entries) {
+    const region = buildRecordedRegion(entry)
+    const key = region.join('\n')
+    regions.add(key)
+    unconfirmed.set(entry.startLine, key)
+    maxLines = Math.max(maxLines, region.length)
+    for (const line of region) maxLineLength = Math.max(maxLineLength, line.length)
+  }
+  // Recorded lines are LF-normalized; file lines may carry a trailing `\r`.
+  maxLineLength += 1
+
+  const found: ConflictBlock[] = []
+  let candidate: string[] = []
+  let candidateStart = 0
+  /** One line (`null` when over the length bound); true once all are confirmed. */
+  const feed = (raw: string | null, lineNumber: number): boolean => {
+    const line = raw === null ? null : stripTrailingCr(raw)
+    if (line !== null && matchMarker(line, OURS_PREFIX) !== null) {
+      candidate = [line]
+      candidateStart = lineNumber
+      return false
+    }
+    if (candidate.length === 0) return false
+    if (line === null || candidate.length === maxLines) {
+      candidate = []
+      return false
+    }
+    candidate.push(line)
+    if (matchMarker(line, THEIRS_PREFIX) === null) return false
+    const block = scanConflictLines(candidate, candidateStart)[0]
+    candidate = []
+    if (block === undefined) return false
+    const key = buildRecordedRegion(block).join('\n')
+    if (!regions.has(key)) return false
+    found.push(block)
+    if (unconfirmed.get(block.startLine) === key) unconfirmed.delete(block.startLine)
+    return unconfirmed.size === 0
+  }
+  // Match discovery's decoder: a leading BOM never reaches the marker scan.
+  const body = text.startsWith('\uFEFF') ? text.slice(1) : text
+  const lines = body.split('\n')
+  for (let index = 0; index < lines.length; index++) {
+    // A trailing newline leaves a phantom empty element the stream never yields.
+    if (index === lines.length - 1 && lines[index] === '') break
+    const line = lines[index] ?? ''
+    if (feed(line.length > maxLineLength ? null : line, index + 1)) break
+  }
+  return found
 }
 
 function locateRegion(
@@ -541,15 +680,21 @@ export function formatConflictWarning(entries: readonly ConflictEntry[]): string
   return out.join('\n')
 }
 
+/** Note appended when the conflict scan stopped at its byte cap at `line`. */
+export function formatScanCapNote(displayPath: string, line: number): string {
+  return `- note: the conflict scan stopped at the byte cap at line ${line}; blocks from there on are not counted or registered here — read \`${displayPath}\` again with offset ${line} to show and register them.`
+}
+
 /**
  * Render a one-line-per-block index of every registered conflict. Used by the
  * `<path>:conflicts` read selector to give the agent a cheap overview of a
  * heavily-conflicted file without dumping every body.
  */
-export function formatConflictSummary(entries: readonly ConflictEntry[], displayPath: string): string {
+export function formatConflictSummary(entries: readonly ConflictEntry[], displayPath: string, truncatedAtLine?: number): string {
   const lines: string[] = []
   const total = entries.length
   lines.push(`⚠ ${total} unresolved ${total === 1 ? 'conflict' : 'conflicts'} in ${displayPath || '<file>'}`)
+  if (truncatedAtLine !== undefined) lines.push(formatScanCapNote(displayPath, truncatedAtLine))
   const oursLabel = pickLabel(entries, e => e.oursLabel)
   const theirsLabel = pickLabel(entries, e => e.theirsLabel)
   const baseLabel = pickLabel(entries, e => (e.baseLines !== undefined ? e.baseLabel : undefined))
@@ -585,6 +730,40 @@ export interface ConflictFileBridge {
   writeFile(absolutePath: string, content: string, signal?: AbortSignal, sandboxPolicy?: unknown): Promise<void>
 }
 
+/**
+ * Re-check registered ids against the live files — all of them, or only
+ * `absolutePath` when given: unchanged blocks keep their ids across line
+ * shifts, changed or vanished blocks are retired, and a missing file retires
+ * every id it registered.
+ */
+export async function reconcileRegisteredConflicts(
+  history: ConflictHistory,
+  bridge: ConflictFileBridge,
+  absolutePath?: string,
+): Promise<void> {
+  const byPath = new Map<string, ConflictEntry[]>()
+  for (const entry of history.entries()) {
+    if (absolutePath !== undefined && entry.absolutePath !== absolutePath) continue
+    const group = byPath.get(entry.absolutePath)
+    if (group === undefined) byPath.set(entry.absolutePath, [entry])
+    else group.push(entry)
+  }
+  for (const [file, entries] of byPath) {
+    try {
+      const text = await bridge.readFile(file)
+      history.reconcilePath(file, { blocks: findRegisteredBlocks(text, entries) })
+    } catch (error) {
+      if (!isMissingFileError(error)) throw error
+      history.invalidatePath(file)
+    }
+  }
+}
+
+/** Missing-file classification for reconciliation: the ENOENT/ENOTDIR analogs. */
+function isMissingFileError(error: unknown): boolean {
+  return error instanceof FsError && (error.code === 'FS_NOT_FOUND' || error.code === 'FS_NOT_DIRECTORY')
+}
+
 /** Context in which the handler mutates files; carries the session key. */
 interface HandlerWriteContext {
   sessionKey?: string
@@ -615,7 +794,7 @@ export class ConflictProtocolHandler implements ProtocolHandler {
     bridge: ConflictFileBridge
   }) {}
 
-  resolve(url: ParsedInternalUrl, context?: ResolveContext): Promise<InternalResource> {
+  async resolve(url: ParsedInternalUrl, context?: ResolveContext): Promise<InternalResource> {
     const raw = url.rawHref
     const parsed = parseConflictUri(raw)
     if (parsed === null) {
@@ -623,38 +802,55 @@ export class ConflictProtocolHandler implements ProtocolHandler {
     }
     const history = this.deps.historyFor(context?.sessionKey)
     if (parsed.id === '*') {
+      // The wildcard summary claims live state: retire stale ids first.
+      await reconcileRegisteredConflicts(history, this.deps.bridge)
       const entries = history.entries()
       const content = entries.length === 0
         ? 'No conflicts registered in this session yet. Read the conflicted file first to register its conflicts.'
         : formatConflictSummary(entries, 'all files')
-      return Promise.resolve({
+      return {
         url: url.href,
         content,
         contentType: 'text/plain',
         size: Buffer.byteLength(content, 'utf-8'),
         notes: entries.length === 0 ? [] : [`${entries.length} registered conflict${entries.length === 1 ? '' : 's'}`],
-      })
+      }
     }
-    const entry = history.get(parsed.id)
-    if (entry === undefined) {
-      const available = history.entries()
-      const hint = available.length > 0
-        ? ` Registered ids: ${available.map(e => e.id).join(', ')}.`
-        : ' No conflicts are registered in this session yet — read the conflicted file first.'
-      throw new Error(`Conflict #${parsed.id} is not registered in this session.${hint}`)
-    }
+    const entry = await this.requireEntry(history, parsed.id)
     const { lines } = renderConflictRegion(entry, parsed.scope)
     const content = lines.join('\n')
     const scopeNote = parsed.scope !== undefined
       ? `Showing ${parsed.scope} side of conflict #${parsed.id} in ${entry.displayPath}`
       : `Conflict #${parsed.id} in ${entry.displayPath} (file lines ${entry.startLine}-${entry.endLine})`
-    return Promise.resolve({
+    return {
       url: url.href,
       content,
       contentType: 'text/plain',
       size: Buffer.byteLength(content, 'utf-8'),
       notes: [scopeNote, 'Resolve with `write({ path: "conflict://' + String(parsed.id) + '", content })`. Writes replace ONLY the marker block.'],
-    })
+    }
+  }
+
+  /**
+   * Look up a registered id after re-checking its file: unchanged blocks keep
+   * their ids across line shifts, while resolved, stale, or never-shown ids
+   * error. Only the addressed block's file is re-checked — other files keep
+   * their ids until they are addressed in turn.
+   */
+  private async requireEntry(history: ConflictHistory, id: number): Promise<ConflictEntry> {
+    const registered = history.get(id)
+    if (registered !== undefined) {
+      await reconcileRegisteredConflicts(history, this.deps.bridge, registered.absolutePath)
+    }
+    const entry = history.get(id)
+    if (entry === undefined) {
+      const available = history.entries()
+      const hint = available.length > 0
+        ? ` Registered ids: ${available.map(e => e.id).join(', ')}.`
+        : ' No conflicts are registered in this session yet — read the conflicted file first.'
+      throw new Error(`Conflict #${id} is not registered in this session — it may have been resolved, become stale, or no \`read\` has shown its block yet.${hint}`)
+    }
+    return entry
   }
 
   async write(url: ParsedInternalUrl, content: string, context?: WriteContext): Promise<void> {
@@ -676,19 +872,15 @@ export class ConflictProtocolHandler implements ProtocolHandler {
       await this.writeBulk(history, content, cw)
       return
     }
-    const entry = history.get(parsed.id)
-    if (entry === undefined) {
-      const available = history.entries()
-      const hint = available.length > 0
-        ? ` Registered ids: ${available.map(e => e.id).join(', ')}.`
-        : ' No conflicts are registered in this session yet — read the conflicted file first.'
-      throw new Error(`Conflict #${parsed.id} is not registered in this session.${hint}`)
-    }
+    const entry = await this.requireEntry(history, parsed.id)
     await this.resolveEntry(entry, expandContentTokens(content, entry), cw)
   }
 
   /** Apply the same (token-expanded) content to every registered block. */
   private async writeBulk(history: ConflictHistory, content: string, cw: HandlerWriteContext): Promise<void> {
+    // Re-check every registered file first: stale ids are retired before the
+    // bulk body is parsed, and shifted blocks keep their ids.
+    await reconcileRegisteredConflicts(history, this.deps.bridge)
     const entries = history.entries()
     if (entries.length === 0) {
       throw new Error('conflict://* has nothing to resolve: no conflicts are registered in this session yet. Read the conflicted file first.')
@@ -708,7 +900,10 @@ export class ConflictProtocolHandler implements ProtocolHandler {
       if (history.get(id) !== undefined) perId.set(id, match[2] ?? '')
     }
     const shared = sharedLines.join('\n')
-    for (const entry of entries) {
+    for (const original of entries) {
+      // Earlier splices re-check the file and may refresh later entries.
+      const entry = history.get(original.id)
+      if (entry === undefined) continue
       if (perId.has(entry.id)) {
         await this.resolveEntry(entry, expandContentTokens(perId.get(entry.id) ?? '', entry), cw)
       } else if (shared !== '') {
@@ -722,6 +917,10 @@ export class ConflictProtocolHandler implements ProtocolHandler {
     const original = await this.deps.bridge.readFile(entry.absolutePath, signal)
     const splat = spliceConflict(original, entry, replacementBody)
     await this.deps.bridge.writeFile(entry.absolutePath, splat.text, signal, cw.sandboxPolicy)
-    this.deps.historyFor(cw.sessionKey).invalidate(entry.id)
+    const history = this.deps.historyFor(cw.sessionKey)
+    history.invalidate(entry.id)
+    // Re-align the remaining ids with the spliced text: blocks below the
+    // resolved one shift up and keep their ids.
+    history.reconcilePath(entry.absolutePath, { blocks: scanConflictsInContent(splat.text) })
   }
 }
