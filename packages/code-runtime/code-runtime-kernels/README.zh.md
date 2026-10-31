@@ -28,7 +28,7 @@ kind: "package-reference"
 
 两个长期存活的 kernel 子进程共享同一个 host 驱动：
 
-- **Python** —— 一个长寿命 `python3` 子进程，运行[自包含内核](./src/python/runner.ts)（仅标准库，无需 venv/pip）。模块级变量与一个 asyncio 事件循环跨 cell 保留；支持顶层 `await`；最后一个表达式即 cell 的值。
+- **Python** —— 一个长寿命 Python 子进程，运行[自包含内核](./src/python/runner.ts)（仅标准库，无需 venv/pip），从第一个健康的解释器候选启动：先探测 `config.pythonPath`，再探测 PATH 上的每个 `python`/`python3`。模块级变量与一个 asyncio 事件循环跨 cell 保留；支持顶层 `await`；最后一个表达式即 cell 的值。
 - **JavaScript** —— 一个长寿命 `node` 子进程，运行[自包含内核](./src/nodejs/runner.ts)（仅 Node 内置）。持久 `state` 对象与进程全局对象携带跨 cell 的值；每个 cell 以 async 函数体运行，支持顶层 `await`/`return`；`return <json>` 携带完成值。
 
 线上协议、kernel host 驱动（spawn + 握手、串行写入、敌对对端解析——字节级分行，非 JSON 帧会告警并跳过——SIGINT→SIGTERM→SIGKILL 升级、stdin 管道失败结算、退出握手）、会话注册表、绑定校验与输出账本全部共享（`src/core/`），两个语言的语义完全一致。
@@ -63,7 +63,8 @@ kind: "package-reference"
 | 键 | 默认 | 含义 |
 |---|---|---|
 | `languages` | `['python', 'typescript']` | 启用的语言；调用未启用语言会被拒绝。 |
-| `pythonPath` | `python3` | 显式 python 可执行文件（默认走 PATH 发现；缺失时首次 spawn 即失败）。 |
+| `pythonPath` | PATH 发现 | 显式 python 解释器，最先探测；然后按 PATH 顺序探测每个 `python`/`python3`（第一个健康候选胜出；全部失败时携带逐候选原因失败）。 |
+| `pythonProbeTimeoutMs` | `5000` | 解析 python 解释器时每个候选的探测预算（一次 `-c` 版本检查）。 |
 | `nodePath` | `node` | 显式 node 可执行文件（默认走 PATH 发现）。 |
 | `toolTimeoutMs` | `30000` | 协作式工具调用超时（`exec.signal` 变为每次运行的 abort 源）。 |
 | `maxWallMs` | `600000` | 每次运行的墙钟预算；中断按 SIGINT→SIGTERM→SIGKILL 升级。 |
@@ -110,7 +111,7 @@ kind: "package-reference"
 <a id="development"></a>
 ## 开发
 
-`pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、根 `tsdown` 导出（lib/）。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），字节级帧拆分器在 [`src/core/lines.ts`](./src/core/lines.ts)，属主私有落地目录守卫在 [`src/core/staging.ts`](./src/core/staging.ts)（runner 每次 spawn 落地到按 uid 划分的 0700 临时目录并经 pinned fd 复验；目录名被占用时回退到全新私有目录），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/snapshot.spec.ts`](./tests/snapshot.spec.ts) 固定命名空间持久化；[`tests/lines.spec.ts`](./tests/lines.spec.ts) 固定帧拆分器与非 JSON 帧告警；[`tests/python-stdin.spec.ts`](./tests/python-stdin.spec.ts) 固定 `/dev/null` stdin 行为；[`tests/staging-dir.spec.ts`](./tests/staging-dir.spec.ts) 固定落地目录守卫与回退；[`tests/confinement.spec.ts`](./tests/confinement.spec.ts) 固定 sandbox seam 的 confine 包装及其 fail-closed 配置；[`tests/startup.spec.ts`](./tests/startup.spec.ts) 固定 kernel 提前退出的快速失败；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
+`pnpm check`（tsc）、`pnpm test`（vitest，真实 `python3`/`node` 子进程）、根 `tsdown` 导出（lib/）。布局：共享 host 驱动在 [`src/core/`](./src/core/)（协议、kernel host、会话注册表、账本），字节级帧拆分器在 [`src/core/lines.ts`](./src/core/lines.ts)，属主私有落地目录守卫在 [`src/core/staging.ts`](./src/core/staging.ts)（runner 每次 spawn 落地到按 uid 划分的 0700 临时目录并经 pinned fd 复验；目录名被占用时回退到全新私有目录），各语言在 [`src/python/runner.ts`](./src/python/runner.ts)（内嵌源码）与 [`src/nodejs/runner.ts`](./src/nodejs/runner.ts)（编译产物，`node --no-warnings` 启动），插件与工具在 [`src/index.ts`](./src/index.ts)。测试：[`tests/kernels.spec.ts`](./tests/kernels.spec.ts) 通过 `KernelManager` 驱动双内核；[`tests/snapshot.spec.ts`](./tests/snapshot.spec.ts) 固定命名空间持久化；[`tests/lines.spec.ts`](./tests/lines.spec.ts) 固定帧拆分器与非 JSON 帧告警；[`tests/python-stdin.spec.ts`](./tests/python-stdin.spec.ts) 固定 `/dev/null` stdin 行为；[`tests/staging-dir.spec.ts`](./tests/staging-dir.spec.ts) 固定落地目录守卫与回退；[`tests/confinement.spec.ts`](./tests/confinement.spec.ts) 固定 sandbox seam 的 confine 包装及其 fail-closed 配置；[`tests/startup.spec.ts`](./tests/startup.spec.ts) 固定 kernel 提前退出的快速失败；[`tests/python-discovery.spec.ts`](./tests/python-discovery.spec.ts) 固定 PATH 枚举、逐候选探测、解析顺序与聚合的无解释器失败；[`tests/tool.spec.ts`](./tests/tool.spec.ts) 在真实 Cordis 上下文挂载插件并经 `ctx.tools.execute` 执行 `run_kernel_code`。
 
 <a id="model-experience"></a>
 ## 模型体验
