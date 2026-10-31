@@ -6,6 +6,7 @@
 import { ApplyPatchError, type DiffHunk } from './diff.ts'
 import { normalizeForFuzzy, normalizeUnicode } from './normalize.ts'
 import { adjustLinesIndentation } from './patch-indent.ts'
+import { withErrorKind } from '@deepseek-ai/dsh-hashline'
 import {
   type ContextLineResult,
   findClosestSequenceMatch,
@@ -551,11 +552,11 @@ function assertPartialMatchPreservesDiscardedText(
       if (part.length === 0) continue
       newLinesNorm ??= newLines.map(normalizeForFuzzy).join('\n')
       if (!newLinesNorm.includes(part)) {
-        throw new ApplyPatchError(
+        throw withErrorKind(new ApplyPatchError(
           `Refusing partial-line match in ${path} at line ${matchStartIndex + j + 1}: ` +
             `the file line also contains ${JSON.stringify(part)}, which the replacement would silently drop. ` +
             'Provide the complete line in the hunk.',
-        )
+        ), 'no_match')
       }
     }
   }
@@ -568,14 +569,14 @@ function assertPartialMatchPreservesDiscardedText(
 /** Reject 1-indexed line hints before any matching happens. */
 function assertValidLineHints(path: string, hunk: DiffHunk): void {
   if (hunk.oldStartLine !== undefined && hunk.oldStartLine < 1) {
-    throw new ApplyPatchError(
+    throw withErrorKind(new ApplyPatchError(
       `Line hint ${hunk.oldStartLine} is out of range for ${path} (line numbers start at 1)`,
-    )
+    ), 'out_of_range')
   }
   if (hunk.newStartLine !== undefined && hunk.newStartLine < 1) {
-    throw new ApplyPatchError(
+    throw withErrorKind(new ApplyPatchError(
       `Line hint ${hunk.newStartLine} is out of range for ${path} (line numbers start at 1)`,
-    )
+    ), 'out_of_range')
   }
 }
 
@@ -614,13 +615,13 @@ function resolveChangeContext(
       const previews = formatSequenceMatchPreviews(originalLines, result.matchIndices, result.matchCount)
       const strategyHint = result.strategy ? ` Matching strategy: ${result.strategy}.` : ''
       const previewText = previews ? `\n\n${previews}` : ''
-      throw new ApplyPatchError(
+      throw withErrorKind(new ApplyPatchError(
         `Found ${result.matchCount} matches for context '${displayContext}' in ${path}.${strategyHint}` +
           `${previewText}\n\nAdd more surrounding context or additional @@ anchors to make it unique.`,
-      )
+      ), 'no_match')
     } else {
       const displayContext = changeContext.includes('\n') ? changeContext.split('\n').join(' > ') : changeContext
-      throw new ApplyPatchError(`Failed to find context '${displayContext}' in ${path}`)
+      throw withErrorKind(new ApplyPatchError(`Failed to find context '${displayContext}' in ${path}`), 'no_match')
     }
   } else {
     // If oldLines[0] matches the final context, start search at idx (not idx+1)
@@ -652,14 +653,14 @@ function resolveInsertionIndex(path: string, hunk: DiffHunk, originalLines: stri
     // Reject if line hint is out of range for insertion
     // Valid insertion points are 1 to (file length + 1) for 1-indexed hints
     if (lineHintForInsertion < 1) {
-      throw new ApplyPatchError(
+      throw withErrorKind(new ApplyPatchError(
         `Line hint ${lineHintForInsertion} is out of range for insertion in ${path} (line numbers start at 1)`,
-      )
+      ), 'out_of_range')
     }
     if (lineHintForInsertion > originalLines.length + 1) {
-      throw new ApplyPatchError(
+      throw withErrorKind(new ApplyPatchError(
         `Line hint ${lineHintForInsertion} is out of range for insertion in ${path} (file has ${originalLines.length} lines)`,
-      )
+      ), 'out_of_range')
     }
     return Math.max(0, lineHintForInsertion - 1)
   }
@@ -770,10 +771,10 @@ function throwAmbiguousSequenceMatches(
   const previews = formatSequenceMatchPreviews(originalLines, searchResult.matchIndices, searchResult.matchCount)
   const strategyHint = searchResult.strategy ? ` Matching strategy: ${searchResult.strategy}.` : ''
   const previewText = previews ? `\n\n${previews}` : ''
-  throw new ApplyPatchError(
+  throw withErrorKind(new ApplyPatchError(
     `Found ${searchResult.matchCount} matches for the text in ${path}.${strategyHint}` +
       `${previewText}\n\nAdd more surrounding context or additional @@ anchors to make it unique.`,
-  )
+  ), 'no_match')
 }
 
 /** Throw the diagnostic for a hunk whose old lines could not be placed in the file. */
@@ -795,12 +796,12 @@ function throwMatchFailure(
   if (closest.index !== undefined && closest.confidence > 0) {
     const similarityPercent = Math.round(closest.confidence * 100)
     const preview = formatSequenceMatchPreview(originalLines, closest.index)
-    throw new ApplyPatchError(
+    throw withErrorKind(new ApplyPatchError(
       `Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}\n\n` +
         `Closest match (${similarityPercent}% similar) near line ${closest.index + 1}:\n${preview}`,
-    )
+    ), 'no_match')
   }
-  throw new ApplyPatchError(`Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}`)
+  throw withErrorKind(new ApplyPatchError(`Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}`), 'no_match')
 }
 
 /** Record a warning when the match came from an inexact strategy. */
@@ -836,10 +837,10 @@ function throwAmbiguousOccurrences(
 ): never {
   const previews = formatSequenceMatchPreviews(originalLines, searchResult.matchIndices, searchResult.matchCount)
   const previewText = previews ? `:\n\n${previews}` : ''
-  throw new ApplyPatchError(
+  throw withErrorKind(new ApplyPatchError(
     `Found ${searchResult.matchCount} occurrences in ${path}${previewText}\n\n` +
       'Add more context lines to disambiguate.',
-  )
+  ), 'no_match')
 }
 
 /**
@@ -866,10 +867,10 @@ function assertSingleOccurrence(
   if (secondMatch.index !== undefined) {
     const preview1 = formatSequenceMatchPreview(originalLines, found)
     const preview2 = formatSequenceMatchPreview(originalLines, secondMatch.index)
-    throw new ApplyPatchError(
+    throw withErrorKind(new ApplyPatchError(
       `Found 2 occurrences in ${path}:\n\n${preview1}\n\n${preview2}\n\n` +
         'Add more context lines to disambiguate.',
-    )
+    ), 'no_match')
   }
 }
 
@@ -1074,7 +1075,7 @@ export function computeApplyPatchReplacements(
   for (const hunk of hunks) {
     const hint = hunk.oldStartLine ?? hunk.newStartLine
     if (hint !== undefined && (hint < 1 || hint > lines.length + 1)) {
-      throw new ApplyPatchError(`Line hint ${hint} is out of range for ${path}`)
+      throw withErrorKind(new ApplyPatchError(`Line hint ${hint} is out of range for ${path}`), 'out_of_range')
     }
     if (hint !== undefined) {
       cursor = Math.max(cursor, hint - 1)
@@ -1083,7 +1084,7 @@ export function computeApplyPatchReplacements(
       for (const anchor of hunk.changeContext.split('\n')) {
         const found = seekApplyPatchSequence(lines, [anchor], cursor, false)
         if (found === undefined) {
-          throw new ApplyPatchError(`Failed to find context '${anchor}' in ${path}`)
+          throw withErrorKind(new ApplyPatchError(`Failed to find context '${anchor}' in ${path}`), 'no_match')
         }
         cursor = found + 1
       }
@@ -1096,7 +1097,7 @@ export function computeApplyPatchReplacements(
     } else {
       const seeked = seekApplyPatchSequence(lines, hunk.oldLines, cursor, hunk.isEndOfFile)
       if (seeked === undefined) {
-        throw new ApplyPatchError(`Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}`)
+        throw withErrorKind(new ApplyPatchError(`Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}`), 'no_match')
       }
       found = seeked
     }

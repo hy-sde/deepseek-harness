@@ -8,6 +8,7 @@
  * unified-hunk emitter, so the package stays dependency-light.
  * Ported from @oh-my-pi/pi-coding-agent (https://github.com/can1357/oh-my-pi). MIT License. Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük.
  */
+import { withErrorKind } from '@deepseek-ai/dsh-hashline'
 import { findMatch } from './replace.ts'
 import { DEFAULT_FUZZY_THRESHOLD } from './replace.ts'
 import type { BlockContextSource } from './block-context.ts'
@@ -823,7 +824,7 @@ function parseOneHunk(
       oldStartLine = Number(lineHintMatch[1])
       newStartLine = oldStartLine
       if (oldStartLine < 1) {
-        throw new ParseError('Line hint must be >= 1', lineNumber)
+        throw withErrorKind(new ParseError('Line hint must be >= 1', lineNumber), 'out_of_range')
       }
     } else if (TOP_OF_FILE_REGEX.test(normalizedContextValue)) {
       oldStartLine = 1

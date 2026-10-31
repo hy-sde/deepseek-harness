@@ -30,6 +30,7 @@ import type { ToolSdkSchema } from './ts-types.ts'
 import { renderToolsSdkPy } from './py-types.ts'
 import { CATALOG_GUIDANCE, DYN_NAME, catalogSummary, createDynTool } from './catalog.ts'
 import type { CatalogEntry } from './catalog.ts'
+import { errorKindOf, type EditErrorKind } from '@deepseek-ai/dsh-hashline'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -512,6 +513,11 @@ export interface ToolFailure {
   message: string
   /** Internal error class/code used by policy and durable diagnostics. */
   info?: ToolErrorInfo
+  /**
+   * Machine-readable edit rejection kind (oh-my-pi 3c2b968909) attached via
+   * the hashline WeakMap tag; present only on kind-tagged edit failures.
+   */
+  errorKind?: EditErrorKind
 }
 
 /**
@@ -2068,10 +2074,11 @@ function createExecutionToken(): ToolExecutionToken {
 function toolErrorResult(error: unknown): ToolExecutionResult {
   const info = errorInfo(error)
   const message = errorMessage(error)
+  const errorKind = errorKindOf(error)
   return {
     content: [{ type: 'text', text: `Error: ${message}` }],
     isError: true,
-    error: { message, ...info ? { info } : {} },
+    error: { message, ...info ? { info } : {}, ...errorKind !== undefined ? { errorKind } : {} },
   }
 }
 

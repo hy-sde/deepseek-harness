@@ -29,6 +29,7 @@ import {
   stripBom,
 } from './normalize.ts'
 import { DEFAULT_FUZZY_THRESHOLD, findMatch } from './replace.ts'
+import { withErrorKind } from '@deepseek-ai/dsh-hashline'
 import {
   computeApplyPatchReplacements,
   computeReplacements,
@@ -142,29 +143,29 @@ function applyCharacterMatch(
   if (matchOutcome.occurrences && matchOutcome.occurrences > 1) {
     const previews = matchOutcome.occurrencePreviews?.join('\n\n') ?? ''
     const moreMsg = matchOutcome.occurrences > 5 ? ` (showing first 5 of ${matchOutcome.occurrences})` : ''
-    throw new ApplyPatchError(
+    throw withErrorKind(new ApplyPatchError(
       `Found ${matchOutcome.occurrences} occurrences in ${path}${moreMsg}:\n\n${previews}\n\n` +
       'Add more context lines to disambiguate.',
-    )
+    ), 'no_match')
   }
 
   if (matchOutcome.fuzzyMatches && matchOutcome.fuzzyMatches > 1) {
-    throw new ApplyPatchError(
+    throw withErrorKind(new ApplyPatchError(
       `Found ${matchOutcome.fuzzyMatches} high-confidence matches in ${path}. ` +
       'The text must be unique. Please provide more context to make it unique.',
-    )
+    ), 'no_match')
   }
 
   if (!matchOutcome.match) {
     const closest = matchOutcome.closest
     if (closest) {
       const similarityPercent = Math.round(closest.confidence * 100)
-      throw new ApplyPatchError(
+      throw withErrorKind(new ApplyPatchError(
         `Could not find a close enough match in ${path}. ` +
         `Closest match (${similarityPercent}% similar) at line ${closest.startLine}.`,
-      )
+      ), 'no_match')
     }
-    throw new ApplyPatchError(`Failed to find expected lines in ${path}:\n${oldText}`)
+    throw withErrorKind(new ApplyPatchError(`Failed to find expected lines in ${path}:\n${oldText}`), 'no_match')
   }
 
   // Adjust indentation to match what was actually found
@@ -199,7 +200,7 @@ async function readExistingPatchFile(fileSystem: FileSystem, absolutePath: strin
       error instanceof Error
       && (error.message.startsWith('File not found:') || error.message.endsWith(': not found'))
     ) {
-      throw new ApplyPatchError(`File not found: ${path}`)
+      throw withErrorKind(new ApplyPatchError(`File not found: ${path}`), 'file_not_found')
     }
     // node error codes are surfaced only in adapter land; treat ENOENT-style
     // adapter errors generically by message prefix when available.

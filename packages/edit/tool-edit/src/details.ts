@@ -25,8 +25,11 @@ export interface EditToolPerFileDetails {
   path: string
   firstChangedLine?: number
   /**
-   * Machine-readable rejection kind for failed edits (oh-my-pi 3c2b968909),
-   * one of the {@link EditErrorKind} values; absent when the edit applied.
+   * Machine-readable rejection kind (oh-my-pi 3c2b968909), one of the
+   * {@link EditErrorKind} values. Fork surface note: the edit tool reports
+   * failures as thrown errors (message + errorKind via the WeakMap tag), so
+   * this field is reserved for future per-file failure details and is not
+   * currently populated; the kind travels on the thrown Error instead.
    */
   errorKind?: EditErrorKind
   diagnostics?: { summary: string; messages: readonly unknown[] }

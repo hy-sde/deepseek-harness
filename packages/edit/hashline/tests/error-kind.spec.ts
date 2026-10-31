@@ -23,6 +23,7 @@ describe('edit error kinds', () => {
       'out_of_range',
       'ambiguous_boundary',
       'no_change',
+      'no_match',
       'file_not_found',
     ])
     expect(editErrorKinds()).toEqual(EDIT_ERROR_KINDS)

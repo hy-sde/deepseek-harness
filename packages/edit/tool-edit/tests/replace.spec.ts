@@ -424,6 +424,50 @@ describe('tool-edit (apply_patch mode) complete-line exact matching', () => {
   })
 })
 
+describe('tool-edit (apply_patch mode) machine-readable error kinds end-to-end (oh-my-pi 3c2b968909)', () => {
+  // Kind tags ride the thrown ApplyPatchError through the tool framework's
+  // error projection: result.error.errorKind must be populated end-to-end.
+  async function applyEnvelope(content: string, hunkLines: string[]) {
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+    const sample = join(root, 'fixture.txt')
+    await writeFile(sample, content)
+    const input = ['*** Begin Patch', `*** Update File: ${sample}`, ...hunkLines, '*** End Patch', ''].join('\n')
+    const result = await call(ctx, owner, { input })
+    return { result, sample, root }
+  }
+  it('surfaces no_match for unmatched hunk lines', async () => {
+    const { result, sample } = await applyEnvelope('alpha\nbeta\n', ['@@', '-gamma', '+delta'])
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('Failed to find expected lines')
+    expect(result.error?.errorKind, text(result)).toBe('no_match')
+    expect(await readFile(sample, 'utf8')).toBe('alpha\nbeta\n')
+  })
+
+  it('surfaces out_of_range for a line hint before line 1', async () => {
+    const { result } = await applyEnvelope('alpha\n', ['@@ line 0', '-alpha', '+omega'])
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('Line hint must be >= 1')
+    expect(result.error?.errorKind, text(result)).toBe('out_of_range')
+  })
+
+  it('surfaces file_not_found for a missing Update target', async () => {
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+    const input = ['*** Begin Patch', `*** Update File: ${join(root, 'absent.txt')}`, '@@', '-x', '+y', '*** End Patch'].join('\n')
+    const result = await call(ctx, owner, { input })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('File not found')
+    expect(result.error?.errorKind, text(result)).toBe('file_not_found')
+  })
+
+  it('surfaces no_change for an envelope with no hunks', async () => {
+    const { ctx, owner } = await setup({ mode: 'apply_patch' })
+    const result = await call(ctx, owner, { input: ['*** Begin Patch', '*** End Patch'].join('\n') })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('No files were modified')
+    expect(result.error?.errorKind, text(result)).toBe('no_change')
+  })
+})
+
 describe('tool-edit (apply_patch mode) move-only update sections (oh-my-pi 57f70e8c34)', () => {
   const MOVE_ONLY = (fixture: string, moved: string): string =>
     ['*** Begin Patch', `*** Update File: ${fixture}`, `*** Move to: ${moved}`, '*** End Patch'].join('\n')

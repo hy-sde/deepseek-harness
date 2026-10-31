@@ -8043,6 +8043,9 @@ importers:
       '@deepseek-ai/dsh-brand':
         specifier: workspace:*
         version: link:../../util/brand
+      '@deepseek-ai/dsh-hashline':
+        specifier: workspace:*
+        version: link:../../edit/hashline
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values

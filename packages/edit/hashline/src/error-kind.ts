@@ -17,6 +17,7 @@ export const EDIT_ERROR_KINDS = [
   'out_of_range',
   'ambiguous_boundary',
   'no_change',
+  'no_match',
   'file_not_found',
 ] as const
 
@@ -38,5 +39,13 @@ export function withErrorKind<T extends Error>(error: T, kind: EditErrorKind): T
 
 /** The kind attached with {@link withErrorKind}, or `undefined` for untagged errors. */
 export function errorKindOf(error: unknown): EditErrorKind | undefined {
-  return error instanceof Error ? ERROR_KINDS.get(error) : undefined
+  // `instanceof` can throw on hostile thrown values (a Proxy whose
+  // getPrototypeOf trap throws, e.g. the tool framework's hostile-value
+  // sanitizer fixtures); the kind lookup must be total and never become the
+  // failure it was trying to classify.
+  try {
+    return error instanceof Error ? ERROR_KINDS.get(error) : undefined
+  } catch {
+    return undefined
+  }
 }
