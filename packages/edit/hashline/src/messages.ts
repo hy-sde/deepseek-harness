@@ -675,7 +675,6 @@ export function staleUnseenLinesMessage(
   tag: string,
   liveLines: readonly number[],
   liveTag: string,
-  raw: boolean,
 ): string {
   const ranges = formatLineRanges(unseenLines)
   const liveRanges = formatLineRanges(liveLines)
@@ -685,7 +684,8 @@ export function staleUnseenLinesMessage(
     `${HL_FILE_PREFIX}${sectionPath}${HL_FILE_HASH_SEP}${tag}${HL_FILE_SUFFIX} never displayed in full. ` +
     `The file has changed since that tag: those lines are now lines ${liveRanges}, under ` +
     `${HL_FILE_PREFIX}${sectionPath}${HL_FILE_HASH_SEP}${liveTag}${HL_FILE_SUFFIX}. ` +
-    `Read \`${sectionPath}:${selector}${raw ? ':raw' : ''}\` for their full content, then re-issue the edit under ` +
+    `Read \`${sectionPath}:${selector}\` with the read tool's maxLineLength input raised above its default ` +
+    '(e.g. maxLineLength: 1000000) for their full content, then re-issue the edit under ' +
     `${HL_FILE_PREFIX}${sectionPath}${HL_FILE_HASH_SEP}${liveTag}${HL_FILE_SUFFIX} with current line numbers.`
   )
 }

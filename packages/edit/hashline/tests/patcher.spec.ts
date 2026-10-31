@@ -649,8 +649,9 @@ describe('Patcher stale-tag seen guard (oh-my-pi ff0d7262f8, f11dac11be, 2995614
       message = (err as Error).message
     }
     expect(errorKindOf(thrown)).toBe('unseen_lines')
-    expect(message).toContain(`${PATH}:3:raw`)
-    expect(message).not.toContain(`${PATH}:1:raw`)
+    expect(message).toContain(`${PATH}:3`)
+    expect(message).not.toContain(`${PATH}:1`)
+    expect(message).toContain('maxLineLength')
     const liveTag = extractLiveTag(message ?? '')
 
     // Reading live line 3 lands on the handed-back tag (record merges into

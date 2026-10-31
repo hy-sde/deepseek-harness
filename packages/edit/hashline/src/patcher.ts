@@ -878,7 +878,6 @@ export class Patcher {
             canonicalPath,
             matchedSnapshot,
             staleCurrentText,
-            true,
           )
         }
         throw withErrorKind(new Error(wideUnseenLinesMessage(section.path, unseen)), 'unseen_lines')
@@ -911,7 +910,6 @@ export class Patcher {
         canonicalPath,
         matchedSnapshot,
         staleCurrentText,
-        false,
       )
     }
     throw withErrorKind(
@@ -962,7 +960,6 @@ export class Patcher {
     canonicalPath: string,
     taggedSnapshot: Snapshot,
     current: string,
-    raw: boolean,
   ): never {
     const map = currentLineMap(taggedSnapshot.text, current)
     const liveLines: number[] = []
@@ -986,7 +983,7 @@ export class Patcher {
       .filter((line): line is number => line !== undefined)
     const liveTag = this.#recordReplySnapshot(canonicalPath, current, carried)
     throw withErrorKind(
-      new Error(staleUnseenLinesMessage(section.path, unseen, expected, liveLines, liveTag, raw)),
+      new Error(staleUnseenLinesMessage(section.path, unseen, expected, liveLines, liveTag)),
       'unseen_lines',
     )
   }
