@@ -17,6 +17,7 @@ import {
   type DiffHunk,
   generateUnifiedDiffString,
   normalizeCreateContent,
+  parseApplyPatchHunks,
   parseDiffHunks,
   resolveToCwd,
 } from './diff.ts'
@@ -28,7 +29,11 @@ import {
   stripBom,
 } from './normalize.ts'
 import { DEFAULT_FUZZY_THRESHOLD, findMatch } from './replace.ts'
-import { computeReplacements, type Replacement } from './patch-replacements.ts'
+import {
+  computeApplyPatchReplacements,
+  computeReplacements,
+  type Replacement,
+} from './patch-replacements.ts'
 
 export type Operation = 'create' | 'delete' | 'update'
 
@@ -109,7 +114,6 @@ function applyCharacterMatch(
   hunk: DiffHunk,
   fuzzyThreshold: number,
   allowFuzzy: boolean,
-  firstMatch: boolean,
 ): { content: string; warnings: string[] } | undefined {
   const oldText = hunk.oldLines.join('\n')
   const newText = hunk.newLines.join('\n')
@@ -136,9 +140,6 @@ function applyCharacterMatch(
 
   // Check for multiple exact occurrences
   if (matchOutcome.occurrences && matchOutcome.occurrences > 1) {
-    // With first-match binding, repeated text is placed line-based instead:
-    // the first exact or normalized match at or after the previous hunk.
-    if (firstMatch) return undefined
     const previews = matchOutcome.occurrencePreviews?.join('\n\n') ?? ''
     const moreMsg = matchOutcome.occurrences > 5 ? ` (showing first 5 of ${matchOutcome.occurrences})` : ''
     throw new ApplyPatchError(
@@ -148,10 +149,6 @@ function applyCharacterMatch(
   }
 
   if (matchOutcome.fuzzyMatches && matchOutcome.fuzzyMatches > 1) {
-    // Repeats that only match after whitespace/unicode normalization surface
-    // here as fuzzy candidates; they bind to the first unless a single
-    // candidate dominates the scoring.
-    if (firstMatch && !matchOutcome.dominantFuzzy) return undefined
     throw new ApplyPatchError(
       `Found ${matchOutcome.fuzzyMatches} high-confidence matches in ${path}. ` +
       'The text must be unique. Please provide more context to make it unique.',
@@ -236,9 +233,11 @@ function applyHunksToContent(
 ): { content: string; warnings: string[] } {
   const hadFinalNewline = originalContent.endsWith('\n')
 
-  // Detect simple replace pattern: single hunk, no @@ context, no context lines, has old lines to match
-  // Only use character-based matching when there are no hints to disambiguate
-  if (hunks.length === 1) {
+  // Detect simple replace pattern: single hunk, no @@ context, no context
+  // lines, has old lines to match. Only use character-based matching when
+  // there are no hints to disambiguate; Codex envelopes always take the
+  // complete-line ladder instead.
+  if (!firstMatch && hunks.length === 1) {
     const hunk = hunks[0] as DiffHunk
     if (
       hunk.changeContext === undefined &&
@@ -247,9 +246,7 @@ function applyHunksToContent(
       hunk.oldStartLine === undefined && // No line hint to use for positioning
       !hunk.isEndOfFile // No EOF targeting (prefer end of file)
     ) {
-      // Repeated text yields no character match under first-match binding;
-      // placement then falls through to the line pass like Codex.
-      const matched = applyCharacterMatch(originalContent, path, hunk, fuzzyThreshold, allowFuzzy, firstMatch)
+      const matched = applyCharacterMatch(originalContent, path, hunk, fuzzyThreshold, allowFuzzy)
       if (matched !== undefined) {
         const { content, warnings } = matched
         return { content: applyTrailingNewlinePolicy(content, hadFinalNewline), warnings }
@@ -258,6 +255,12 @@ function applyHunksToContent(
   }
 
   let originalLines = originalContent.split('\n')
+
+  // Codex envelopes treat empty content as zero lines, so a pure insertion
+  // lands at index 0 instead of matching the single empty split element.
+  if (firstMatch && originalContent === '') {
+    originalLines = []
+  }
 
   // Track if we have a trailing empty element from the final newline
   // Only strip ONE trailing empty (the newline marker), preserve actual blank lines
@@ -268,8 +271,16 @@ function applyHunksToContent(
     strippedTrailingEmpty = true
   }
 
-  const { replacements, warnings } = computeReplacements(originalLines, path, hunks, allowFuzzy, firstMatch)
+  const { replacements, warnings } = firstMatch
+    ? { replacements: computeApplyPatchReplacements(originalLines, path, hunks), warnings: [] }
+    : computeReplacements(originalLines, path, hunks, allowFuzzy)
   const newLines = applyReplacements(originalLines, replacements)
+
+  // A Codex envelope that deletes every line yields exactly '' — return
+  // before the trailing-newline restore re-adds the stripped marker.
+  if (firstMatch && newLines.length === 0) {
+    return { content: '', warnings }
+  }
 
   // Restore the trailing empty element if we stripped it
   if (strippedTrailingEmpty) {
@@ -393,7 +404,7 @@ async function applyNormalizedPatch(input: PatchInput, options: ApplyPatchOption
   }
   const lineEnding = detectLineEnding(strippedContent)
   const normalizedContent = normalizeToLF(strippedContent)
-  const hunks = parseDiffHunks(input.diff)
+  const hunks = input.firstMatch === true ? parseApplyPatchHunks(input.diff) : parseDiffHunks(input.diff)
 
   if (hunks.length === 0) {
     throw new ApplyPatchError('Diff contains no hunks')
