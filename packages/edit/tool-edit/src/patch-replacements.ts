@@ -1090,24 +1090,38 @@ export function computeApplyPatchReplacements(
       }
     }
     let found: number
-    if (hunk.oldLines.length === 0) {
+    let oldLines = hunk.oldLines
+    let newLines = hunk.newLines
+    if (oldLines.length === 0) {
       // Pure insertion: after the resolved context/hint position, or at the
       // end of the file when the hunk carries no anchor at all.
       found = hunk.changeContext !== undefined || hint !== undefined ? cursor : lines.length
     } else {
-      const seeked = seekApplyPatchSequence(lines, hunk.oldLines, cursor, hunk.isEndOfFile)
+      let seeked = seekApplyPatchSequence(lines, oldLines, cursor, hunk.isEndOfFile)
+      if (seeked === undefined && oldLines[oldLines.length - 1] === '') {
+        // Retry without the trailing empty line, mirroring the JSON path and
+        // upstream Codex (file_update.rs): the envelope strips the file's
+        // trailing newline element, so a trailing empty context line can
+        // never match verbatim. Strip the matching new-side empty line too,
+        // or the replacement would re-add the line that could not match.
+        oldLines = oldLines.slice(0, -1)
+        if (newLines.length > 0 && newLines[newLines.length - 1] === '') {
+          newLines = newLines.slice(0, -1)
+        }
+        seeked = seekApplyPatchSequence(lines, oldLines, cursor, hunk.isEndOfFile)
+      }
       if (seeked === undefined) {
         throw withErrorKind(new ApplyPatchError(`Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}`), 'no_match')
       }
       found = seeked
     }
-    const matched = lines.slice(found, found + hunk.oldLines.length)
+    const matched = lines.slice(found, found + oldLines.length)
     replacements.push({
       startIndex: found,
-      oldLen: hunk.oldLines.length,
-      newLines: adjustLinesIndentation(hunk.oldLines, matched, hunk.newLines),
+      oldLen: oldLines.length,
+      newLines: adjustLinesIndentation(oldLines, matched, newLines),
     })
-    cursor = found + hunk.oldLines.length
+    cursor = found + oldLines.length
   }
   return replacements
 }

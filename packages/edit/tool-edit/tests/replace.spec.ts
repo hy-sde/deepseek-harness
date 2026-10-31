@@ -308,6 +308,15 @@ describe('tool-edit (apply_patch mode) complete-line exact matching', () => {
     return { result, sample, root }
   }
 
+  it('applies a hunk whose trailing context line is empty (trailing-newline artifact)', async () => {
+    // The envelope strips the file's trailing newline element, so a trailing
+    // empty context line (' ') can never match verbatim; the seek retries
+    // without it — mirroring the JSON path and upstream Codex file_update.rs.
+    const { result, sample } = await applyEnvelope('a\nb\n', ['@@', ' a', '+b2', ' '])
+    expect(result.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe('a\nb2\nb\n')
+  })
+
   it('rejects materially unmatched lines without writes', async () => {
     const cases: [before: string, body: string[], message: string][] = [
       [
