@@ -993,10 +993,11 @@ export class Patcher {
 
   /**
    * Record `text` as a reply the model has now seen (oh-my-pi f11dac11be):
-   * unrestricted content (no snapshot, or one without a seen set — a full
-   * read) stays unrestricted; restricted content gains the reply's displayed
-   * lines plus line 0, which no ranged read can display, so a reply that
-   * displayed nothing keeps the snapshot restrictive.
+   * content with no recorded snapshot is treated as restricted (the tool
+   * cannot vouch for a full read); a snapshot without a seen set — a full
+   * read — stays unrestricted. Restricted content gains the reply's
+   * displayed lines plus line 0, which no ranged read can display, so a
+   * reply that displayed nothing keeps the snapshot restrictive.
    */
   #recordReplySnapshot(canonicalPath: string, text: string, displayed: readonly number[] = []): string {
     const existing = this.snapshots.byContent(canonicalPath, text)
