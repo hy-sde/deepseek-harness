@@ -359,6 +359,11 @@ interface ToolFailure {
   message: string
   /** Internal error class/code used by policy and durable diagnostics. */
   info?: ToolErrorInfo
+  /**
+   * Machine-readable edit rejection kind (oh-my-pi 3c2b968909) attached via
+   * the hashline WeakMap tag; present only on kind-tagged edit failures.
+   */
+  errorKind?: EditErrorKind
 }
 ```
 

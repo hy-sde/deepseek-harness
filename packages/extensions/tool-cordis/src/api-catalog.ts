@@ -6411,6 +6411,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface DynamicCordisRunRequest {\n    requestId: ApprovalRequestId;\n    agentId: SessionId;\n    pluginId: CordisDynamicPluginId;\n    packageId: CordisDynamicPackageId;\n    mode: CordisDynamicRunMode;\n    name: string;\n    purpose: string;\n    requiresApproval: boolean;\n}',
   },
   {
+    name: 'EditErrorKind',
+    declaration: 'export type EditErrorKind = (typeof EDIT_ERROR_KINDS)[number];',
+  },
+  {
     name: 'EditGoalRequest',
     declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
   },
@@ -9416,7 +9420,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ToolFailure',
-    declaration: 'export interface ToolFailure {\n    message: string;\n    info?: ToolErrorInfo;\n}',
+    declaration: 'export interface ToolFailure {\n    message: string;\n    info?: ToolErrorInfo;\n    errorKind?: EditErrorKind;\n}',
   },
   {
     name: 'ToolGuard',
