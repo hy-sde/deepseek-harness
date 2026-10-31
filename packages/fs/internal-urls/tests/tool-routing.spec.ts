@@ -254,6 +254,17 @@ ${'>>>>>>>' + ' x'}
     expect(now).not.toContain('<<<<<<<')
   })
 
+  it('rejects a binary file past the scan cap instead of scanning mojibake', async () => {
+    // Past the 10 MiB cap the scan reads raw bytes: a NUL in the binary
+    // sample must still fail with FS_NOT_TEXT, like readText does below
+    // the cap, rather than decode to mojibake and "find" zero conflicts.
+    const binary = '\u0000' + 'y'.repeat(10_485_760)
+    const { ctx } = await setup({ 'blob.bin': binary })
+    const result = await call(ctx, 'read', { file_path: 'blob.bin:conflicts' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toMatch(/binary file/)
+  })
+
   it('retires ids when the file was rewritten externally before a conflict:// read', async () => {
     const { ctx, fs } = await setup({ 'a.ts': CONFLICTS })
     await call(ctx, 'read', { file_path: 'a.ts' }) // registers #1

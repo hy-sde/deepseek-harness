@@ -108,6 +108,12 @@ export async function tryReadInternal(
  */
 const CONFLICT_SCAN_MAX_BYTES = 10 * 1024 * 1024
 
+/**
+ * Binary-sample window for the capped :conflicts scan, matching fs-local's
+ * readText binary sniff (fsio.ts BINARY_SAMPLE_BYTES = 8192).
+ */
+const BINARY_SAMPLE_BYTES = 8192
+
 /** Read `<path>:conflicts` — scan the whole file, register every block, render a summary. */
 async function readConflictSummary(
   ctx: Context,
@@ -130,6 +136,12 @@ async function readConflictSummary(
   let truncatedAtLine: number | undefined
   if (truncated) {
     const bytes = await ctx.fs.readByteRange(target, { offset: 0, length: CONFLICT_SCAN_MAX_BYTES }, exec.signal)
+    // The raw byte path has no readText binary check: mirror fs-local's sniff
+    // so a binary file still fails with FS_NOT_TEXT instead of decoding to
+    // mojibake and reporting a misleading "no unresolved conflicts" success.
+    if (bytes.subarray(0, BINARY_SAMPLE_BYTES).includes(0)) {
+      throw new FsError(`cannot read "${base}": binary file`, 'FS_NOT_TEXT')
+    }
     text = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
     truncatedAtLine = text.split('\n').length
   } else {
