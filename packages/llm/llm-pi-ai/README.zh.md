@@ -104,6 +104,8 @@ profile 的 `models` 列表会替换而非扩展路由的已安装目录；每�
 
 确切模型元数据将 `reasoning.efforts` 按可选强度从低到高排列。配置函数可从该列表中选择，再由 `prepareCall()` 校验具体强度。适配器只接收解析后的控制项。选择 `off` 不保证禁用推理：以省略推理字段表达该值的协议会沿用网关默认行为。所选等级下产生的推理 token 都计入该请求的输出上限。
 
+适配器保留请求已解析的 `maxTokens`；未配置时使用模型的输出能力上限。它不会根据原始历史的估算值缩减该预算：下游压缩可能在提供方收到请求前移除大部分历史。上下文管理与提供方负责实际的输入加输出容量限制；提供方真正达到输出上限时，仍以 `max-tokens` 结束本轮。
+
 对于自托管 Chat Completions 端点，`thinkingTokenBudgetField` 选择推理预算参数，`vllmPriority` 在服务端启用优先级调度时设置整数调度优先级。模板参数接受 `$var: thinking.budget`。`openai-responses` 网关可设置 `supportsMaxOutputTokens: false` 来省略 `max_output_tokens`；Azure 与 Codex 传输会忽略这个共享兼容字段。这些控制均需显式启用；目录拥有的 Anthropic effort 和回退能力不是可配置开关。
 
 ### 运行时更改配置
@@ -258,6 +260,7 @@ pi-ai 事件变成 harness 的推理、文本、工具调用、用量与 finish 
 - **提供方 HTTP 状态不可用**——pi-ai 错误事件不跨提供方暴露稳定 HTTP 状态。
 - **重试策略由提供方自有，而非 SDK 重试**——pi-ai SDK 重试保持禁用，因此持久 agent（智能体）步骤与 `llm/retry` 事件拥有每个可见尝试，直接 `ctx.llm.stream()` 调用仍是单次尝试。
 - **流式 JSON 工具调用参数避免逐 delta 重复解析**——安装的 pi-ai 带有 [`patches/@earendil-works__pi-ai@1.1.0.patch`](../../../patches/@earendil-works__pi-ai@1.1.0.patch)，它移除了每个流适配器中对整段累计参数 JSON 的逐 delta 重新解析（上游 [earendil-works/pi#9265](https://github.com/earendil-works/pi/issues/9265)）；未打补丁时，数 MB 的参数流会在事件循环上消耗 O(n²) CPU，并使进程内所有会话停滞。完成事件提供解析后的参数；Responses 可能在参数完成和输出项完成时分别解析。本适配器只读取 delta 字符串与最终参数。每次升级 pi-ai 时都要重新应用或撤销该补丁。
+- **输出预算需要 pi-ai 补丁**——同一依赖补丁让显式 `maxTokens` 具有决定权，包括按预算控制推理的 Anthropic 与 Bedrock。适配器在分派前提供已解析的输出上限，因此原始历史估算不能静默缩减它。
 
 <a id="dev-note"></a>
 ### 开发备注

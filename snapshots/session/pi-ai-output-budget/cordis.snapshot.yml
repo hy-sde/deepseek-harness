@@ -1,0 +1,20 @@
+- id: llm-deepseek
+  disabled: true
+
+- id: compaction-basic
+  config:
+    auto: false
+
+- id: llm-pi-ai
+  config:
+    providers:
+      snapshot-anthropic:
+        api: anthropic-messages
+        baseURL: !!js process.env.DSH_SNAPSHOT_PI_AI_URL
+        apiKeyEnv: DSH_SNAPSHOT_PI_AI_KEY
+        models:
+          - id: snapshot-output-budget
+            contextWindow: 256
+            maxTokens: 128
+            input: [text]
+            reasoningEfforts: false

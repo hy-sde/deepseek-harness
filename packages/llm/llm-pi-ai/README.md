@@ -104,6 +104,8 @@ A profile's `models` list replaces the route's installed catalog rather than ext
 
 Exact-model metadata lists `reasoning.efforts` from least to greatest selectable effort. A configuration function can select from that list before `prepareCall()` validates the concrete effort. The adapter receives only the resolved controls. Selecting `off` does not guarantee disabled reasoning: a protocol that expresses it by omitting the reasoning field leaves the gateway's default in effect. Reasoning tokens at any selected level count toward the request's output cap.
 
+The adapter preserves the request's resolved `maxTokens`, or uses the model's output capability when none is configured. It does not reduce that budget from an estimate of raw history: downstream compression may remove much of that history before the provider receives it. Context management and the provider enforce the actual input-plus-output capacity; a genuine provider output-limit stop still ends the turn with `max-tokens`.
+
 For self-hosted Chat Completions endpoints, `thinkingTokenBudgetField` selects the reasoning-budget parameter, and `vllmPriority` sets an integer scheduler priority when the server enables priority scheduling. Template arguments accept `$var: thinking.budget`. `openai-responses` gateways can set `supportsMaxOutputTokens: false` to omit `max_output_tokens`; Azure and Codex transports ignore this shared compatibility field. These controls are opt-in; catalog-owned Anthropic effort and fallback capabilities are not configurable switches.
 
 ### Change configuration at runtime
@@ -258,6 +260,7 @@ These limits define where the adapter stops and future work begins. They are cur
 - **Provider HTTP status is unavailable** — pi-ai error events do not expose a stable HTTP status across providers.
 - **Retry policy is provider-owned, not an SDK retry** — pi-ai SDK retries stay disabled so durable agent steps and `llm/retry` events own every visible attempt, and direct `ctx.llm.stream()` calls remain single-attempt.
 - **Streamed JSON tool-call arguments avoid per-delta reparsing** — the installed pi-ai carries [`patches/@earendil-works__pi-ai@1.1.0.patch`](../../../patches/@earendil-works__pi-ai@1.1.0.patch), which removes the per-delta re-parse of the whole accumulated argument JSON in every stream adapter (upstream [earendil-works/pi#9265](https://github.com/earendil-works/pi/issues/9265)); unpatched, a multi-megabyte argument stream costs O(n²) CPU on the event loop and stalls every session in the process. Completion events supply parsed arguments; Responses may parse at both argument completion and output-item completion. This adapter reads only delta strings and finalized arguments. Re-apply or retire the patch on every pi-ai upgrade.
+- **Output budgets require the pi-ai patch** — the same dependency patch makes explicit `maxTokens` authoritative, including budget-based Anthropic and Bedrock reasoning. The adapter supplies the resolved output cap before dispatch, so raw-history estimates cannot silently shrink it.
 
 <a id="dev-note"></a>
 ### Dev Note

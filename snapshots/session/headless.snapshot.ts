@@ -53,6 +53,7 @@ import {
 import { LOADER_SMOKE_TEST_TIMEOUT_MS, runLoaderSmoke } from '@deepseek-ai/dsh-loader-smoke'
 import { resolvePwshPath } from '@deepseek-ai/dsh-pwsh-local'
 import { parseSessionLog, prepareSessionSnapshotFixtureForComparison } from '@deepseek-ai/dsh-llm-replay'
+import { startMockLlmServer, type MockLlmServer } from '../../packages/test-support/llm-mock-server/src/index.ts'
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
 const snapshotsRoot = fileURLToPath(new URL('./', import.meta.url))
@@ -1270,7 +1271,11 @@ describe('headless recorded-session snapshots', () => {
       const locatorRoot = snapshotSpillRoot(join(scenario.dir, fixtureFiles[0] as string))
       const mcpDemo = scenario.name === 'plugin-manager-mcp' ? await startHttpMcpFixture() : undefined
       let result: Awaited<ReturnType<typeof runLoaderSmoke>>
+      let piAiServer: MockLlmServer | undefined
       try {
+        piAiServer = scenario.name === 'pi-ai-output-budget'
+          ? await startMockLlmServer({ sequence: ['success'], successText: 'PONG' })
+          : undefined
         result = await runLoaderSmoke({
           label: `${scenario.name} headless snapshot`,
           tempDirPrefix: 'dsh-log-snap-',
@@ -1312,6 +1317,10 @@ describe('headless recorded-session snapshots', () => {
             NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
             DSH_TELEMETRY_DISABLED: '1',
             ...(mcpDemo === undefined ? {} : { DSH_MCP_DEMO_URL: mcpDemo.url }),
+            ...(piAiServer === undefined ? {} : {
+              DSH_SNAPSHOT_PI_AI_URL: piAiServer.baseURL,
+              DSH_SNAPSHOT_PI_AI_KEY: 'snapshot-key',
+            }),
           },
           prepare: async (cwd) => {
             if (scenario.manifest.workspace?.parent === 'outside-temp') assertWorkspaceOutsideTemp(cwd)
@@ -1331,6 +1340,16 @@ describe('headless recorded-session snapshots', () => {
           },
           inspect: async (cwd) => {
             actualLogs = await persistedSessions(cwd)
+            if (piAiServer !== undefined) {
+              expect(piAiServer.requests).toHaveLength(1)
+              const body = piAiServer.requests[0]!.body as JsonObject
+              expect(body.max_tokens, 'pi-ai must retain the model output cap despite raw context pressure').toBe(128)
+              // The ordinary shipped prompt exceeds this scaled-down model's raw window.
+              expect(JSON.stringify(body.system).length).toBeGreaterThan(256 * 4)
+              expect(finalTextFromSession(actualLogs[0]!.content)).toBe('PONG')
+              const context = records(actualLogs[0]!.content).find(record => record.type === 'request/context')
+              expect((context?.data as JsonObject).contextWindow).toBe(256)
+            }
             if (retainedToolInput !== undefined) {
               verifyToolResultWriterParity(primaryFixture, actualLogs[0]!.content)
             }
@@ -1384,6 +1403,7 @@ describe('headless recorded-session snapshots', () => {
           },
         })
       } finally {
+        await piAiServer?.close()
         await mcpDemo?.close()
         await rm(spillRoot, { recursive: true, force: true })
       }

@@ -416,7 +416,8 @@ export class PiAiAdapter extends LlmAdapter {
       const events = snapshot.models.streamSimple(model, context, {
         ...profileOptions(profile, reasoning, apiKey),
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
-        ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
+        // Raw history may be compressed downstream; it cannot size the response budget.
+        maxTokens: options.maxTokens ?? model.maxTokens,
         ...options.sessionId === undefined ? {} : { sessionId: String(options.sessionId) },
         signal: watchdog.signal,
         // Profile headers are deployment-owned; attribution names are

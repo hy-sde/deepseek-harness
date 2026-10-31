@@ -1,5 +1,5 @@
 diff --git a/dist/api/anthropic-messages.js b/dist/api/anthropic-messages.js
-index 38571b31e143e913c2bf59dad73382982e93664a..950e546197d8e84cb3edfca0012939f1db2488d8 100644
+index 38571b31e143e913c2bf59dad73382982e93664a..abb7afffe54cd76d090e34bc4479336c1885ed65 100644
 --- a/dist/api/anthropic-messages.js
 +++ b/dist/api/anthropic-messages.js
 @@ -553,7 +553,6 @@ export const stream = (model, context, options) => {
@@ -10,10 +10,28 @@ index 38571b31e143e913c2bf59dad73382982e93664a..950e546197d8e84cb3edfca0012939f1
                              stream.push({
                                  type: "toolcall_delta",
                                  contentIndex: index,
+@@ -737,7 +736,7 @@ export const streamSimple = (model, context, options) => {
+     // Undefined means the caller did not request an output cap; let the helper use the model cap.
+     // Do not coerce to 0 here, or the thinking budget would become the entire max_tokens value.
+     const adjusted = adjustMaxTokensForThinking(base.maxTokens, model.maxTokens, options.reasoning, options.thinkingBudgets);
+-    const maxTokens = clampMaxTokensToContext(model, context, adjusted.maxTokens);
++    const maxTokens = options?.maxTokens ?? clampMaxTokensToContext(model, context, adjusted.maxTokens);
+     return stream(model, context, {
+         ...base,
+         maxTokens,
 diff --git a/dist/api/bedrock-converse-stream.js b/dist/api/bedrock-converse-stream.js
-index ca40f1b4a4e99f441503cf364822073a7a6c478a..14c204261b3f6c47f8950cf44f0fb9f86cf2cda7 100644
+index ca40f1b4a4e99f441503cf364822073a7a6c478a..d0d85abe57ab77b733d715eb716b4bebe6fe6b9c 100644
 --- a/dist/api/bedrock-converse-stream.js
 +++ b/dist/api/bedrock-converse-stream.js
+@@ -407,7 +407,7 @@ export const streamSimple = (model, context, options) => {
+         // Undefined means the caller did not request an output cap; let the helper use the model cap.
+         // Do not coerce to 0 here, or the thinking budget would become the entire maxTokens value.
+         const adjusted = adjustMaxTokensForThinking(base.maxTokens, model.maxTokens, options.reasoning, options.thinkingBudgets);
+-        const maxTokens = clampMaxTokensToContext(model, context, adjusted.maxTokens);
++        const maxTokens = options?.maxTokens ?? clampMaxTokensToContext(model, context, adjusted.maxTokens);
+         return stream(model, context, {
+             ...base,
+             maxTokens,
 @@ -461,7 +461,6 @@ function handleContentBlockDelta(event, blocks, output, stream) {
      }
      else if (delta?.toolUse && block?.type === "toolCall") {
@@ -71,3 +89,16 @@ index 7da1c45de8a106a68411cf79bec75f553534a1c7..296d131b59b1cf75f2516c39e85bba72
                  break;
              }
              case "toolcall_end":
+diff --git a/dist/api/simple-options.js b/dist/api/simple-options.js
+index 4e36f350e95fb4743014dcf3c6ab512eab988214..ed656850c75edf83ff8394e4f8bc3c64360f2e01 100644
+--- a/dist/api/simple-options.js
++++ b/dist/api/simple-options.js
+@@ -20,7 +20,7 @@ export function buildBaseOptions(model, context, options, apiKey) {
+     return {
+         temperature: options?.temperature,
+         samplingParams,
+-        maxTokens: clampMaxTokensToContext(model, context, options?.maxTokens ?? model.maxTokens),
++        maxTokens: options?.maxTokens ?? clampMaxTokensToContext(model, context, model.maxTokens),
+         signal: options?.signal,
+         telemetryContext: options?.telemetryContext,
+         apiKey: apiKey || options?.apiKey,

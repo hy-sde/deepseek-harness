@@ -153,6 +153,42 @@ describe('PiAiAdapter provider routing', () => {
     expect(server.requests[0]).not.toHaveProperty('dsh_plugin_packages')
   })
 
+  it.each([
+    { api: 'openai-completions' as const, compat: { maxTokensField: 'max_tokens' as const }, field: 'max_tokens' },
+    { api: 'openai-completions' as const, compat: { maxTokensField: 'max_completion_tokens' as const }, field: 'max_completion_tokens' },
+    { api: 'anthropic-messages' as const, compat: {}, field: 'max_tokens' },
+  ])('preserves output budgets for long raw history on $api ($field)', async ({ api, compat, field }) => {
+    const server = await mockServer([
+      { events: api === 'anthropic-messages' ? anthropicTextEvents : textEvents },
+      { events: api === 'anthropic-messages' ? anthropicTextEvents : textEvents },
+    ])
+    const ctx = new Context()
+    onTestFinished(() => ctx.fiber.dispose())
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(LlmPiAi, {
+      providers: {
+        gateway: {
+          api, baseURL: server.url, apiKeyEnv: 'PI_TEST_KEY', compat,
+          reasoning: 'high',
+          thinkingBudgets: { high: 1024 },
+          models: [{ id: 'model', contextWindow: 8192, maxTokens: 4096, reasoningEfforts: { high: 'high' } }],
+        },
+      },
+    })
+    const messages = [createUserMessage({
+      source: { kind: 'user' },
+      content: [{ type: 'text', text: 'history '.repeat(4000) }],
+    })]
+    for (const maxTokens of [undefined, 2048]) {
+      const result = await assemble(ctx, {
+        provider: 'gateway', model: 'model', messages,
+        ...maxTokens === undefined ? {} : { maxTokens },
+      })
+      expect(result.finish).toEqual({ kind: 'stop' })
+      expect(server.requests.at(-1)).toMatchObject({ [field]: maxTokens ?? 4096 })
+    }
+  })
+
   it('uses a dynamic request effort and reports unsupported efforts before network I/O', async () => {
     const server = await mockServer([{ events: textEvents }, { events: textEvents }])
     const ctx = await harness(server.url, { reasoning: 'max' })
