@@ -8,6 +8,7 @@
  * Ported from @oh-my-pi/hashline (https://github.com/can1357/oh-my-pi). MIT License. Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük.
  */
 import { HL_FILE_HASH_EXAMPLES, HL_FILE_HASH_SEP, HL_FILE_PREFIX, HL_FILE_SUFFIX } from './format.ts'
+import { withErrorKind, type EditErrorKind } from './error-kind.ts'
 import { currentTagAdvice, formatAnchoredContext } from './messages.ts'
 
 const LINE_REF_RE = /^\s*[>+\-*]*\s*(\d+)(?::.*)?\s*$/
@@ -67,6 +68,12 @@ export class MismatchError extends Error {
   readonly anchorLines: readonly number[]
   readonly hashRecognized: boolean
   readonly tagOriginPaths: readonly string[]
+  /**
+   * Machine-readable rejection kind (oh-my-pi 3c2b968909): recognized tag →
+   * `stale_tag`, absent tag → `missing_tag`, tag minted elsewhere in this
+   * session → `unknown_tag`, tag from another file → `other_file_tag`.
+   */
+  readonly kind: EditErrorKind
 
   constructor(details: MismatchDetails) {
     super(MismatchError.formatMessage(details))
@@ -78,6 +85,7 @@ export class MismatchError extends Error {
     this.anchorLines = details.anchorLines ?? []
     this.hashRecognized = details.hashRecognized ?? true
     this.tagOriginPaths = details.tagOriginPaths ?? []
+    this.kind = MismatchError.rejectionKind(details)
   }
 
   get displayMessage(): string {
@@ -116,6 +124,13 @@ export class MismatchError extends Error {
     ]
   }
 
+  private static rejectionKind(details: MismatchDetails): EditErrorKind {
+    if (details.hashRecognized ?? true) return 'stale_tag'
+    if (details.expectedFileHash === '') return 'missing_tag'
+    if ((details.tagOriginPaths ?? []).length === 0) return 'unknown_tag'
+    return 'other_file_tag'
+  }
+
   static formatDisplayMessage(details: MismatchDetails): string {
     return MismatchError.formatMessage(details)
   }
@@ -132,6 +147,9 @@ export class MismatchError extends Error {
 /** Throws when the line reference is out of bounds for the given file. */
 export function validateLineRef(ref: { line: number }, fileLines: string[]): void {
   if (ref.line < 1 || ref.line > fileLines.length) {
-    throw new Error(`Line ${ref.line} does not exist (file has ${fileLines.length} lines)`)
+    throw withErrorKind(
+      new Error(`Line ${ref.line} does not exist (file has ${fileLines.length} lines)`),
+      'out_of_range',
+    )
   }
 }

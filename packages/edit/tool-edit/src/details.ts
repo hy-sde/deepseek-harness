@@ -6,6 +6,8 @@
  * Ported from @oh-my-pi/pi-coding-agent (https://github.com/can1357/oh-my-pi). MIT License. Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük.
  */
 
+import type { EditErrorKind } from '@deepseek-ai/dsh-hashline'
+
 /** One side of a file diff used by tool presentResult cards. */
 export interface FileDiff {
   path: string
@@ -22,6 +24,11 @@ export interface EditToolPerFileDetails {
   diff: string
   path: string
   firstChangedLine?: number
+  /**
+   * Machine-readable rejection kind for failed edits (oh-my-pi 3c2b968909),
+   * one of the {@link EditErrorKind} values; absent when the edit applied.
+   */
+  errorKind?: EditErrorKind
   diagnostics?: { summary: string; messages: readonly unknown[] }
   oldText?: string
   newText?: string

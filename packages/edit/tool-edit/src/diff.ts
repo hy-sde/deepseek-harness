@@ -780,7 +780,12 @@ interface ParseHunkResult {
   linesConsumed: number
 }
 
-function parseOneHunk(lines: string[], lineNumber: number, allowMissingContext: boolean): ParseHunkResult {
+function parseOneHunk(
+  lines: string[],
+  lineNumber: number,
+  allowMissingContext: boolean,
+  recoverLineNumbers: boolean,
+): ParseHunkResult {
   if (lines.length === 0) {
     throw new ParseError('Diff does not contain any lines', lineNumber)
   }
@@ -942,7 +947,9 @@ function parseOneHunk(lines: string[], lineNumber: number, allowMissingContext: 
     throw new ParseError('Hunk does not contain any lines', lineNumber + startIndex)
   }
 
-  stripLineNumberPrefixes(hunk)
+  if (recoverLineNumbers) {
+    stripLineNumberPrefixes(hunk)
+  }
   return { hunk, linesConsumed: parsedLines + startIndex }
 }
 
@@ -1030,7 +1037,21 @@ function extractMarkerPath(line: string): string | undefined {
   return undefined
 }
 
+/** Parse JSON patch hunks, recovering numbered read output when present. */
 export function parseDiffHunks(diff: string): DiffHunk[] {
+  return parseHunks(diff, true)
+}
+
+/**
+ * Parse Codex `apply_patch` hunks. Numeric prefixes stay literal content:
+ * envelope hunk lines are authored content, not numbered read output, so a
+ * patch may legitimately edit lines like `12 old text`.
+ */
+export function parseApplyPatchHunks(diff: string): DiffHunk[] {
+  return parseHunks(diff, false)
+}
+
+function parseHunks(diff: string, recoverLineNumbers: boolean): DiffHunk[] {
   const multiFileCount = countMultiFileMarkers(diff)
   if (multiFileCount > 1) {
     throw new ApplyPatchError(
@@ -1063,7 +1084,7 @@ export function parseDiffHunks(diff: string): DiffHunk[] {
       break
     }
 
-    const { hunk, linesConsumed } = parseOneHunk(lines.slice(i), i + 1, true)
+    const { hunk, linesConsumed } = parseOneHunk(lines.slice(i), i + 1, true, recoverLineNumbers)
     hunks.push(hunk)
     i += linesConsumed
   }

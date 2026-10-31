@@ -662,6 +662,34 @@ export function unseenLinesMessage(
   )
 }
 
+/**
+ * An anchored edit under a stale tag references lines the tagged snapshot
+ * never displayed in full (oh-my-pi ff0d7262f8). Instead of revealing the
+ * stale content, the rejection maps each unseen line to its current line
+ * number and hands back the live tag, so the re-read and the re-issued edit
+ * both address the file as it exists now.
+ */
+export function staleUnseenLinesMessage(
+  sectionPath: string,
+  unseenLines: readonly number[],
+  tag: string,
+  liveLines: readonly number[],
+  liveTag: string,
+  raw: boolean,
+): string {
+  const ranges = formatLineRanges(unseenLines)
+  const liveRanges = formatLineRanges(liveLines)
+  const selector = liveRanges.replace(/, /g, ',')
+  return (
+    `This edit anchors to lines ${ranges} of ${sectionPath} that ` +
+    `${HL_FILE_PREFIX}${sectionPath}${HL_FILE_HASH_SEP}${tag}${HL_FILE_SUFFIX} never displayed in full. ` +
+    `The file has changed since that tag: those lines are now lines ${liveRanges}, under ` +
+    `${HL_FILE_PREFIX}${sectionPath}${HL_FILE_HASH_SEP}${liveTag}${HL_FILE_SUFFIX}. ` +
+    `Read \`${sectionPath}:${selector}${raw ? ':raw' : ''}\` for their full content, then re-issue the edit under ` +
+    `${HL_FILE_PREFIX}${sectionPath}${HL_FILE_HASH_SEP}${liveTag}${HL_FILE_SUFFIX} with current line numbers.`
+  )
+}
+
 /** Op kind of a deferred block edit, for {@link blockSingleLineMessage}. */
 export type BlockOp = 'replace' | 'insert_after' | 'cut' | 'paste_after'
 

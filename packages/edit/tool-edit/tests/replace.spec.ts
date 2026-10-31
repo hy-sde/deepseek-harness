@@ -13,6 +13,7 @@ import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
+import { parseApplyPatch, parseApplyPatchStreaming } from '../src/apply-patch.ts'
 
 const contexts: Context[] = []
 const roots: string[] = []
@@ -293,6 +294,211 @@ describe('tool-edit (replace mode)', () => {
   })
 })
 
+describe('tool-edit (apply_patch mode) complete-line exact matching', () => {
+  // Ported from oh-my-pi crates/pi-edit/tests/apply_patch_exact.rs
+  // (ceeb647e12, cb927599ef, 57f70e8c34): hunks match complete file lines
+  // through Codex normalization (exact, trimEnd, trim, unicode);
+  // materially different lines are rejected without writes.
+  async function applyEnvelope(content: string | null, hunkLines: string[]) {
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+    const sample = join(root, 'fixture.txt')
+    if (content !== null) await writeFile(sample, content)
+    const input = ['*** Begin Patch', `*** Update File: ${sample}`, ...hunkLines, '*** End Patch', ''].join('\n')
+    const result = await call(ctx, owner, { input })
+    return { result, sample, root }
+  }
+
+  it('rejects materially unmatched lines without writes', async () => {
+    const cases: [before: string, body: string[], message: string][] = [
+      [
+        '{\n    "sha": "a",\n    "ref": "b"\n}\n',
+        ['@@', '-    sha="a",', '-    ref="b"', '+    sha="c",', '+    ref="d"'],
+        'Failed to find expected lines',
+      ],
+      [
+        'void configure(int first, int middle, int last);\n',
+        ['@@', '-void configure(int first, int last);', '+void configure(int first, int last, bool enabled);'],
+        'Failed to find expected lines',
+      ],
+      [
+        'def configure(\n    first,\n    middle,\n    last,\n):\n    pass\n',
+        ['@@', ' def configure(', '     first,', '-    last,', '+    final,', ' ):'],
+        'Failed to find expected lines',
+      ],
+      ['// named states\n', ['@@', '-named states', '+79 named states'], 'Failed to find expected lines'],
+      ['69 named states\n', ['@@', '-named states', '+79 named states'], 'Failed to find expected lines'],
+      [
+        'void configure(int first, int middle);\n    run();\n',
+        ['@@ void configure(int first);', '-    run();', '+    stop();'],
+        'Failed to find context',
+      ],
+      ['unrelated header\nold\n', ['@@', ' absent header', '-old', '+new'], 'Failed to find expected lines'],
+    ]
+    for (const [before, body, message] of cases) {
+      const { result, sample } = await applyEnvelope(before, body)
+      expect(result.isError, body.join('\n')).toBe(true)
+      expect(text(result), body.join('\n')).toContain(message)
+      expect(text(result), body.join('\n')).toContain(`in ${sample}`)
+      expect(await readFile(sample, 'utf8'), body.join('\n')).toBe(before)
+    }
+  })
+
+  it('matches only complete lines through Codex normalization passes', async () => {
+    const cases: [before: string, body: string[], expected: string][] = [
+      ['69 named states\n', ['@@', '-69 named states', '+79 named states'], '79 named states\n'],
+      ['old   \n', ['@@', '-old', '+new'], 'new\n'],
+      ['    old\n', ['@@', '-old', '+new'], '    new\n'],
+      ['', ['@@', '+first'], 'first'],
+      ['head', ['@@', '+tail'], 'head\ntail'],
+      [
+        'message = "hello – world"\n',
+        ['@@', '-message = "hello - world"', '+message = "goodbye"'],
+        'message = "goodbye"\n',
+      ],
+      ['old\nold\n', ['@@', '-old', '+first', '@@', '-old', '+second'], 'first\nsecond\n'],
+    ]
+    for (const [before, body, expected] of cases) {
+      const { result, sample } = await applyEnvelope(before, body)
+      expect(result.isError, body.join('\n')).toBe(false)
+      expect(await readFile(sample, 'utf8'), body.join('\n')).toBe(expected)
+    }
+  })
+
+  it('wrong context in a later file rejects the envelope (sequential apply writes earlier files)', async () => {
+    // Fork delta: runApplyPatch applies entries sequentially, so first.txt is
+    // already written when the fixture.txt hunk fails; upstream rejects the
+    // whole envelope atomically before writing anything.
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+    const fixture = join(root, 'fixture.txt')
+    const first = join(root, 'first.txt')
+    await writeFile(fixture, 'void configure(int first, int middle, int last);\n')
+    await writeFile(first, 'before\n')
+    const input = [
+      '*** Begin Patch',
+      `*** Update File: ${first}`,
+      '@@',
+      '-before',
+      '+after',
+      `*** Update File: ${fixture}`,
+      '@@',
+      '-void configure(int first, int last);',
+      '+void configure(int first, int last, bool enabled);',
+      '*** End Patch',
+    ].join('\n')
+    const result = await call(ctx, owner, { input })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain(`Failed to find expected lines in ${fixture}`)
+    expect(await readFile(first, 'utf8')).toBe('after\n')
+    expect(await readFile(fixture, 'utf8')).toBe('void configure(int first, int middle, int last);\n')
+  })
+
+  it('line deletion removes its terminator and preserves other empty lines', async () => {
+    for (const ending of ['\n', '\r\n']) {
+      for (const finalNewline of [false, true]) {
+        for (const [lines, index] of [
+          [['first', 'remove', 'last'], 1],
+          [['remove', 'middle', 'last'], 0],
+          [['first', 'middle', 'remove'], 2],
+          [['remove'], 0],
+          [['first', '', 'remove', '', 'last'], 2],
+        ] as const) {
+          const before = lines.join(ending) + (finalNewline ? ending : '')
+          const remaining = lines.filter((_, i) => i !== index)
+          const expected = remaining.join(ending) + (finalNewline && remaining.length > 0 ? ending : '')
+          const { result, sample } = await applyEnvelope(before, ['@@', '-remove'])
+          expect(result.isError, before).toBe(false)
+          expect(await readFile(sample, 'utf8'), before).toBe(expected)
+        }
+      }
+    }
+  })
+
+  it('deleting an import line does not leave an empty row', async () => {
+    const { result, sample } = await applyEnvelope('from x import (\n    A,\n    B,\n)\n', ['@@', '-    A,'])
+    expect(result.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe('from x import (\n    B,\n)\n')
+
+    const second = await applyEnvelope('from x import (\n    B,\n)\n', ['@@', '-    B,', '+    C,'])
+    expect(second.result.isError).toBe(false)
+    expect(await readFile(second.sample, 'utf8')).toBe('from x import (\n    C,\n)\n')
+  })
+})
+
+describe('tool-edit (apply_patch mode) move-only update sections (oh-my-pi 57f70e8c34)', () => {
+  const MOVE_ONLY = (fixture: string, moved: string): string =>
+    ['*** Begin Patch', `*** Update File: ${fixture}`, `*** Move to: ${moved}`, '*** End Patch'].join('\n')
+
+  it('parses identically in streaming and non-streaming mode', () => {
+    const input = MOVE_ONLY('fixture.txt', 'moved.txt')
+    expect(parseApplyPatch(input)).toEqual(parseApplyPatchStreaming(input))
+  })
+
+  it('preserves source bytes through the move', async () => {
+    for (const [before, expected] of [
+      ['alpha\n', 'alpha\n'],
+      ['alpha', 'alpha'],
+      // Fork delta: the harness text seam strips a leading BOM at decode
+      // (fs-local decodeUtf8 uses the TextDecoder default), so the raw read
+      // already lacks it; the move still persists the read bytes exactly.
+      ['\uFEFFalpha\r\nbeta\r\n', 'alpha\r\nbeta\r\n'],
+      ['', ''],
+    ] as const) {
+      const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+      const sample = join(root, 'fixture.txt')
+      const moved = join(root, 'moved.txt')
+      await writeFile(sample, before)
+      const result = await call(ctx, owner, { input: MOVE_ONLY(sample, moved) })
+      expect(result.isError, before).toBe(false)
+      await expect(readFile(sample, 'utf8'), before).rejects.toThrow()
+      expect(await readFile(moved, 'utf8'), before).toBe(expected)
+    }
+  })
+
+  it('keeps the missing-source, collision and same-path guards', async () => {
+    for (const [source, destination, moved, error] of [
+      [null, null, 'moved.txt', 'File not found'],
+      ['source\n', 'destination\n', 'moved.txt', 'destination already exists.'],
+      ['source\n', null, './fixture.txt', 'same as source'],
+    ] as const) {
+      const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+      const sample = join(root, 'fixture.txt')
+      if (source !== null) await writeFile(sample, source)
+      if (destination !== null) await writeFile(join(root, 'moved.txt'), destination)
+      const result = await call(ctx, owner, { input: MOVE_ONLY(sample, join(root, moved)) })
+      expect(result.isError, moved).toBe(true)
+      expect(text(result), moved).toContain(error)
+      expect(await readFile(sample, 'utf8').catch(() => null), moved).toBe(source)
+      expect(await readFile(join(root, 'moved.txt'), 'utf8').catch(() => null), moved).toBe(destination)
+    }
+  })
+
+  it('a later invalid hunk still applies the move-only section (sequential fork delta)', async () => {
+    const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
+    const sample = join(root, 'fixture.txt')
+    const other = join(root, 'other.txt')
+    const moved = join(root, 'moved.txt')
+    await writeFile(sample, 'alpha\n')
+    await writeFile(other, 'other\n')
+    const input = [
+      '*** Begin Patch',
+      `*** Update File: ${sample}`,
+      `*** Move to: ${moved}`,
+      `*** Update File: ${other}`,
+      '@@',
+      '-missing',
+      '+new',
+      '*** End Patch',
+    ].join('\n')
+    const result = await call(ctx, owner, { input })
+    expect(result.isError).toBe(true)
+    expect(await readFile(other, 'utf8')).toBe('other\n')
+    // Upstream stages the whole envelope and commits nothing; the fork's
+    // sequential apply commits the move before the other.txt hunk fails.
+    expect(await readFile(moved, 'utf8')).toBe('alpha\n')
+    await expect(readFile(sample, 'utf8')).rejects.toThrow()
+  })
+})
+
 describe('tool-edit (replace mode) × LSP writethrough', () => {
   /** Fake LSP seam recording the texts it formatted and diagnosed. */
   function fakeLsp(history: { formatted: string[]; diagnosed: string[] }): unknown {
@@ -397,9 +603,9 @@ describe('path aliases and no-op edits', () => {
 // Ported from oh-my-pi crates/pi-edit/tests/fixtures/apply_patch/core.json
 // (first-match binding, commits 1bf55e7414, b2a8496255, 5d999d5868, 0142429b5d):
 // a context-free hunk whose lines occur more than once binds to the first
-// exact or whitespace/unicode-normalized match at or after the previous hunk,
-// like Codex; looser matches, narrowed variants and matches that would wrap
-// behind the previous hunk still require a unique occurrence.
+// exact or whitespace/unicode-normalized COMPLETE-line match at or after the
+// previous hunk, like Codex (oh-my-pi ceeb647e12): fuzzy, substring and
+// wrap-behind-the-previous-hunk matches are rejected instead of guessed.
 describe('tool-edit (apply_patch mode) first-match binding', () => {
   async function applyEnvelope(content: string, hunkLines: string[]) {
     const { ctx, root, owner } = await setup({ mode: 'apply_patch' })
@@ -425,7 +631,7 @@ describe('tool-edit (apply_patch mode) first-match binding', () => {
   it('first-match binding does not wrap behind the previous hunk', async () => {
     const { result, sample } = await applyEnvelope('x\nx\nz\n', ['@@', '-z', '+Z', '@@', '-x', '+y'])
     expect(result.isError).toBe(true)
-    expect(text(result)).toContain(`Found 2 occurrences in ${sample}`)
+    expect(text(result)).toContain(`Failed to find expected lines in ${sample}`)
     expect(await readFile(sample, 'utf8')).toBe('x\nx\nz\n')
   })
 
@@ -439,7 +645,7 @@ describe('tool-edit (apply_patch mode) first-match binding', () => {
       '+OTHER',
     ])
     expect(result.isError).toBe(true)
-    expect(text(result)).toContain(`Found 2 occurrences in ${sample}`)
+    expect(text(result)).toContain(`Failed to find expected lines in ${sample}`)
     expect(await readFile(sample, 'utf8')).toBe('const timeoutMs = 1000;\nother\nconst timeoutMs = 2000;\n')
   })
 
@@ -450,15 +656,16 @@ describe('tool-edit (apply_patch mode) first-match binding', () => {
       '+const timeoutMs = 5000;',
     ])
     expect(result.isError).toBe(true)
-    expect(text(result)).toContain(`Found 2 occurrences in ${sample}`)
+    expect(text(result)).toContain(`Failed to find expected lines in ${sample}`)
     expect(await readFile(sample, 'utf8')).toBe('const timeoutMs = 1000;\nother\nconst timeoutMs = 2000;\n')
   })
 
-  it('single hunk matching part of a line replaces only that part', async () => {
+  it('single hunk matching part of a line is rejected (complete lines only)', async () => {
     const body = 'function f() {\n    if (isEnabled(featureFlagName) && user.isAdmin()) {\n        run();\n    }\n}\n'
     const { result, sample } = await applyEnvelope(body, ['@@', '-isAdmin()', '+isOwner()'])
-    expect(result.isError).toBe(false)
-    expect(await readFile(sample, 'utf8')).toBe(body.replace('user.isAdmin()', 'user.isOwner()'))
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain(`Failed to find expected lines in ${sample}`)
+    expect(await readFile(sample, 'utf8')).toBe(body)
   })
 
   it('single hunk repeated only after unicode normalization takes the first', async () => {
@@ -481,7 +688,7 @@ describe('tool-edit (apply_patch mode) first-match binding', () => {
       '+const requestTimeoutMilliseconds = 5000;',
     ])
     expect(result.isError).toBe(true)
-    expect(text(result)).toContain(`Found 2 occurrences in ${sample}`)
+    expect(text(result)).toContain(`Failed to find expected lines in ${sample}`)
     expect(await readFile(sample, 'utf8')).toBe(body)
   })
 

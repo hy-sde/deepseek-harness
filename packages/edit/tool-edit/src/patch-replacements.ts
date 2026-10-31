@@ -4,7 +4,7 @@
  * replacements. Split out of patch.ts.
  */
 import { ApplyPatchError, type DiffHunk } from './diff.ts'
-import { normalizeForFuzzy } from './normalize.ts'
+import { normalizeForFuzzy, normalizeUnicode } from './normalize.ts'
 import { adjustLinesIndentation } from './patch-indent.ts'
 import {
   type ContextLineResult,
@@ -913,13 +913,6 @@ export function computeReplacements(
   path: string,
   hunks: DiffHunk[],
   allowFuzzy: boolean,
-  /**
-   * Codex `apply_patch` placement for context-free hunks: bind repeated lines
-   * to the first exact or whitespace/unicode-normalized match at or after the
-   * previous hunk. The JSON `patch` mode passes `false` and keeps the
-   * uniqueness check.
-   */
-  firstMatch: boolean,
 ): { replacements: Replacement[]; warnings: string[] } {
   const replacements: Replacement[] = []
   const warnings: string[] = []
@@ -961,7 +954,7 @@ export function computeReplacements(
       continue
     }
 
-    const { pattern, newSlice, searchResult, fromVariant } = searchHunkPattern(
+    const { pattern, newSlice, searchResult } = searchHunkPattern(
       originalLines,
       hunk,
       lineIndex,
@@ -978,24 +971,10 @@ export function computeReplacements(
 
     pushMatchStrategyWarning(warnings, path, found, searchResult)
 
-    // apply_patch takes the first match at or after the previous hunk, like
-    // Codex's seek_sequence: only its exact and whitespace/unicode-normalized
-    // passes on the hunk's own lines. Looser strategies, narrowed variants and
-    // matches that wrapped behind the cursor still require a unique match.
-    const codexFirstMatch =
-      firstMatch &&
-      !fromVariant &&
-      found >= lineIndex &&
-      (searchResult.strategy === 'exact' ||
-        searchResult.strategy === 'trim-trailing' ||
-        searchResult.strategy === 'trim' ||
-        searchResult.strategy === 'unicode')
-
     // For simple diffs (no context marker, no context lines), reject ambiguous
     // replacements. Skipped when isEndOfFile is set (EOF marker provides
-    // disambiguation) or under Codex first-match binding.
+    // disambiguation).
     if (
-      !codexFirstMatch &&
       hunk.changeContext === undefined &&
       !hunk.hasContextLines &&
       !hunk.isEndOfFile &&
@@ -1029,4 +1008,105 @@ export function computeReplacements(
   throwOnOverlappingReplacements(path, replacements)
 
   return { replacements, warnings }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Codex apply_patch exact matching
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Locate `pattern` in `lines` at or after `start`, preferring the end of the
+ * file when `eof` is set. The comparison ladder is deliberately narrower
+ * than {@link seekSequence}: exact text, trailing-whitespace trim, full trim,
+ * then Unicode punctuation normalization — no comment-prefix, substring,
+ * fuzzy, or narrowed-hunk recovery.
+ *
+ * @returns the match start index, or undefined when no position matches.
+ */
+export function seekApplyPatchSequence(
+  lines: string[],
+  pattern: string[],
+  start: number,
+  eof: boolean,
+): number | undefined {
+  const end = lines.length - pattern.length
+  if (end < 0 || start > end) return undefined
+  const comparisons: Array<(actual: string, expected: string) => boolean> = [
+    (actual, expected) => actual === expected,
+    (actual, expected) => actual.trimEnd() === expected.trimEnd(),
+    (actual, expected) => actual.trim() === expected.trim(),
+    (actual, expected) => normalizeUnicode(actual) === normalizeUnicode(expected),
+  ]
+  const preferred = eof ? end : start
+  for (const from of [preferred, start]) {
+    for (const compare of comparisons) {
+      for (let index = from; index <= end; index++) {
+        let matched = true
+        for (let offset = 0; offset < pattern.length; offset++) {
+          const actual = lines[index + offset]
+          const expected = pattern[offset]
+          if (actual === undefined || expected === undefined || !compare(actual, expected)) {
+            matched = false
+            break
+          }
+        }
+        if (matched) return index
+      }
+    }
+    if (preferred === start) break
+  }
+  return undefined
+}
+
+/**
+ * Compute replacements for a Codex `apply_patch` envelope: each hunk binds to
+ * the first complete-line match at or after the running cursor under the
+ * {@link seekApplyPatchSequence} ladder. The cursor only moves forward, so
+ * the returned replacements are already sorted and disjoint.
+ */
+export function computeApplyPatchReplacements(
+  lines: string[],
+  path: string,
+  hunks: DiffHunk[],
+): Replacement[] {
+  const replacements: Replacement[] = []
+  let cursor = 0
+  for (const hunk of hunks) {
+    const hint = hunk.oldStartLine ?? hunk.newStartLine
+    if (hint !== undefined && (hint < 1 || hint > lines.length + 1)) {
+      throw new ApplyPatchError(`Line hint ${hint} is out of range for ${path}`)
+    }
+    if (hint !== undefined) {
+      cursor = Math.max(cursor, hint - 1)
+    }
+    if (hunk.changeContext !== undefined) {
+      for (const anchor of hunk.changeContext.split('\n')) {
+        const found = seekApplyPatchSequence(lines, [anchor], cursor, false)
+        if (found === undefined) {
+          throw new ApplyPatchError(`Failed to find context '${anchor}' in ${path}`)
+        }
+        cursor = found + 1
+      }
+    }
+    let found: number
+    if (hunk.oldLines.length === 0) {
+      // Pure insertion: after the resolved context/hint position, or at the
+      // end of the file when the hunk carries no anchor at all.
+      found = hunk.changeContext !== undefined || hint !== undefined ? cursor : lines.length
+    } else {
+      const seeked = seekApplyPatchSequence(lines, hunk.oldLines, cursor, hunk.isEndOfFile)
+      if (seeked === undefined) {
+        throw new ApplyPatchError(`Failed to find expected lines in ${path}:\n${hunk.oldLines.join('\n')}`)
+      }
+      found = seeked
+    }
+    const matched = lines.slice(found, found + hunk.oldLines.length)
+    replacements.push({
+      startIndex: found,
+      oldLen: hunk.oldLines.length,
+      newLines: adjustLinesIndentation(hunk.oldLines, matched, hunk.newLines),
+    })
+    cursor = found + hunk.oldLines.length
+  }
+  return replacements
 }
