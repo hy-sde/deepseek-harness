@@ -142,7 +142,13 @@ async function readConflictSummary(
     if (bytes.subarray(0, BINARY_SAMPLE_BYTES).includes(0)) {
       throw new FsError(`cannot read "${base}": binary file`, 'FS_NOT_TEXT')
     }
-    text = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+    // Decode strictly like readText below the cap: invalid UTF-8 is an error
+    // (FS_NOT_TEXT), not silently-replaced mojibake (fsio.ts notTextError).
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+    } catch {
+      throw new FsError(`cannot read "${base}": invalid UTF-8 text`, 'FS_NOT_TEXT')
+    }
     truncatedAtLine = text.split('\n').length
   } else {
     // Keep readText (not raw bytes) so a binary file still fails with FS_NOT_TEXT.

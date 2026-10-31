@@ -26,6 +26,8 @@ const CWD = '/ws'
  * (coherent across the tool's `processPath` and the conflict bridge's `resolve`). */
 class FakeFs extends FileSystem {
   files = new Map<string, string>()
+  /** Raw byte payloads for files whose bytes are not valid UTF-8 (TextEncoder cannot produce them). */
+  rawFiles = new Map<string, Uint8Array>()
 
   canonical(path: string): string {
     return isAbsolute(path) ? path : join(CWD, path)
@@ -43,7 +45,10 @@ class FakeFs extends FileSystem {
     return String(child.targetKey).startsWith(String(parent.targetKey))
   }
   override async stat(target: FsTarget): Promise<FsInfo | undefined> {
-    const content = this.files.get(String(target.targetKey))
+    const key = String(target.targetKey)
+    const raw = this.rawFiles.get(key)
+    if (raw !== undefined) return { version: FsVersion('v1'), type: 'file', size: raw.length }
+    const content = this.files.get(key)
     if (content === undefined) return undefined
     return { version: FsVersion('v1'), type: 'file', size: content.length }
   }
@@ -65,7 +70,10 @@ class FakeFs extends FileSystem {
     return bytes
   }
   override async readByteRange(target: FsTarget, range: { offset: number; length: number }, _signal?: AbortSignal): Promise<Uint8Array> {
-    const bytes = new TextEncoder().encode(this.files.get(String(target.targetKey)) ?? '')
+    const key = String(target.targetKey)
+    const raw = this.rawFiles.get(key)
+    if (raw !== undefined) return raw.subarray(range.offset, range.offset + range.length)
+    const bytes = new TextEncoder().encode(this.files.get(key) ?? '')
     return bytes.subarray(range.offset, range.offset + range.length)
   }
   override async listDir(_target: FsTarget): Promise<FsDirEntry[]> {
@@ -263,6 +271,19 @@ ${'>>>>>>>' + ' x'}
     const result = await call(ctx, 'read', { file_path: 'blob.bin:conflicts' })
     expect(result.isError).toBe(true)
     expect(text(result)).toMatch(/binary file/)
+  })
+
+  it('rejects invalid UTF-8 past the scan cap instead of decoding replacement chars', async () => {
+    // 0xFF is an invalid UTF-8 lead byte (and not NUL, so the binary sniff
+    // passes); the capped scan must decode fatally like readText does below
+    // the cap and fail with FS_NOT_TEXT instead of substituting U+FFFD.
+    const bytes = new Uint8Array(10_485_761).fill(0x79)
+    bytes[0] = 0xff
+    const { ctx, fs } = await setup({})
+    fs.rawFiles.set(`abs:${fs.canonical('bad.bin')}`, bytes)
+    const result = await call(ctx, 'read', { file_path: 'bad.bin:conflicts' })
+    expect(result.isError).toBe(true)
+    expect(text(result)).toMatch(/invalid UTF-8 text/)
   })
 
   it('retires ids when the file was rewritten externally before a conflict:// read', async () => {
