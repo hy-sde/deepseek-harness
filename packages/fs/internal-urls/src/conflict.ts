@@ -22,6 +22,54 @@ const BASE_PREFIX = '|||||||'
 const SEPARATOR = '======='
 const THEIRS_PREFIX = '>>>>>>>'
 
+/**
+ * Byte cap for whole-file conflict scans — the `<path>:conflicts` summary read
+ * and the capped reconciliation reads. Matches the read pipeline's stream
+ * threshold: past the cap, blocks are not counted or registered, and
+ * reconciliation leaves already-registered ones alone.
+ */
+export const CONFLICT_SCAN_MAX_BYTES = 10 * 1024 * 1024
+
+/**
+ * Binary-sample window for capped conflict reads, matching fs-local's
+ * readText binary sniff (fsio.ts BINARY_SAMPLE_BYTES = 8192).
+ */
+export const CONFLICT_BINARY_SAMPLE_BYTES = 8192
+
+/**
+ * Trim a byte prefix back to the last complete UTF-8 codepoint boundary: a
+ * byte-capped read can cut a multi-byte sequence mid-way, and the strict
+ * decoder (fatal: true) would reject the incomplete tail as invalid UTF-8
+ * even though the underlying file is valid.
+ */
+export function trimToCodepointBoundary(bytes: Uint8Array): Uint8Array {
+  let end = bytes.length
+  let back = 0
+  // Walk back over up to 3 continuation bytes (10xxxxxx) to the last lead byte.
+  while (back < 4 && end > 0 && ((bytes[end - 1] ?? 0) & 0xc0) === 0x80) {
+    end -= 1
+    back += 1
+  }
+  if (back === 0) {
+    // The cap can also land immediately after a lead byte with no
+    // continuation bytes in the prefix ('616263E4' from 'abc中'): the
+    // incomplete sequence must be dropped too. Bytes outside the valid
+    // lead range stay so the fatal decoder reports them.
+    const lead = bytes[end - 1] ?? 0
+    if (lead >= 0xc2 && lead <= 0xf4) return bytes.subarray(0, end - 1)
+    return bytes
+  }
+  const lead = bytes[end - 1] ?? 0
+  // Expected sequence length from the lead byte; a continuation byte here
+  // (4+ continuations, already invalid) decodes expected 1 and stays put so
+  // the fatal decoder reports it.
+  const expected = lead >= 0xf0 ? 4 : lead >= 0xe0 ? 3 : lead >= 0xc0 ? 2 : 1
+  // Complete when the walked-back continuations fill the sequence (back
+  // counts continuation bytes; the lead adds one), over-trim otherwise.
+  if (back + 1 < expected) return bytes.subarray(0, end - 1)
+  return bytes
+}
+
 /** One completed conflict block with its marker line numbers and side bodies. */
 export interface ConflictBlock {
   /** 1-indexed line of the `<<<<<<<` marker. */
@@ -740,6 +788,14 @@ export function formatConflictSummary(entries: readonly ConflictEntry[], display
 export interface ConflictFileBridge {
   /** Read the whole current file text at `absolutePath`. */
   readFile(absolutePath: string, signal?: AbortSignal): Promise<string>
+  /**
+   * Read at most `maxLength` bytes of `absolutePath`, stopping at the last
+   * complete codepoint boundary. `truncatedAtLine` is the 1-indexed line the
+   * prefix ends on (the line count of the decoded text), so reconciliation can
+   * preserve blocks it could not see. When absent, reconciliation falls back
+   * to a whole-file `readFile`.
+   */
+  readFileCapped?(absolutePath: string, maxLength: number, signal?: AbortSignal): Promise<{ text: string; truncatedAtLine?: number }>
   /** Replace `absolutePath` with `content` (unconditional atomic write). */
   writeFile(absolutePath: string, content: string, signal?: AbortSignal, sandboxPolicy?: unknown): Promise<void>
 }
@@ -764,8 +820,15 @@ export async function reconcileRegisteredConflicts(
   }
   for (const [file, entries] of byPath) {
     try {
-      const text = await bridge.readFile(file)
-      history.reconcilePath(file, { blocks: findRegisteredBlocks(text, entries) })
+      // Prefer the capped read: conflict:// accesses re-check on every use,
+      // and a whole-file read of a large registered file would pay full
+      // bytes+decode each time. Past-cap blocks are preserved by
+      // reconcilePath via truncatedAtLine.
+      const scan = bridge.readFileCapped === undefined
+        ? { text: await bridge.readFile(file) }
+        : await bridge.readFileCapped(file, CONFLICT_SCAN_MAX_BYTES)
+      const blocks = findRegisteredBlocks(scan.text, entries)
+      history.reconcilePath(file, scan.truncatedAtLine === undefined ? { blocks } : { blocks, truncatedAtLine: scan.truncatedAtLine })
     } catch (error) {
       if (!isMissingFileError(error)) throw error
       history.invalidatePath(file)

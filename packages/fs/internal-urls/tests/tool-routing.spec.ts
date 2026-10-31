@@ -57,7 +57,9 @@ class FakeFs extends FileSystem {
     if (content === undefined) return undefined
     return { version: FsVersion('v1'), type: 'file', size: content.length }
   }
+  readTextCalls = 0
   override async readText(target: FsTarget): Promise<string> {
+    this.readTextCalls += 1
     return this.files.get(String(target.targetKey)) ?? ''
   }
   override async streamText(target: FsTarget): Promise<AsyncIterable<string>> {
@@ -255,6 +257,27 @@ ${'>>>>>>>' + ' x'}
     expect(joined).toContain('No unresolved conflicts before line 10241')
     expect(joined).toContain('byte cap')
     // The capped scan must not retire the block; its id still resolves.
+    const result = await call(ctx, 'write', { file_path: 'conflict://1', content: '@ours' })
+    expect((result.value as { operation: string }).operation).toBe('update')
+    const now = fs.files.get('abs:/ws/big.ts') ?? ''
+    expect(now).toContain('    return 1')
+    expect(now).not.toContain('<<<<<<<')
+  })
+
+  it('reconciles registered blocks through a capped bridge read on conflict:// access', async () => {
+    // Same oversized file as above, but with the block BEFORE the byte cap:
+    // a conflict:// access re-checks registrations first, and the bridge must
+    // take the capped read (stat -> byte range) rather than reading the whole
+    // 10 MiB file through readText. (The eventual resolve itself still reads
+    // the full file to splice the replacement back — that is write work, not
+    // reconciliation.)
+    const filler = `${'x'.repeat(1023)}\n`.repeat(10_240)
+    const { ctx, fs } = await setup({ 'big.ts': CONFLICTS + filler })
+    await call(ctx, 'read', { file_path: 'big.ts', offset: 1, limit: 10 })
+    const before = fs.readTextCalls
+    const region = await call(ctx, 'read', { file_path: 'conflict://1' })
+    expect(region.isError).not.toBe(true)
+    expect(fs.readTextCalls).toBe(before)
     const result = await call(ctx, 'write', { file_path: 'conflict://1', content: '@ours' })
     expect((result.value as { operation: string }).operation).toBe('update')
     const now = fs.files.get('abs:/ws/big.ts') ?? ''

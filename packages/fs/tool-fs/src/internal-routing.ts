@@ -13,12 +13,15 @@ import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import type { InternalUrlsService } from '@deepseek-ai/dsh-internal-urls'
 import {
+  CONFLICT_BINARY_SAMPLE_BYTES,
+  CONFLICT_SCAN_MAX_BYTES,
   ConflictHistory,
   formatConflictSummary,
   formatConflictWarning,
   formatScanCapNote,
   scanConflictsInContent,
   scanConflictLines,
+  trimToCodepointBoundary,
 } from '@deepseek-ai/dsh-internal-urls/conflict'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { buildWindow } from './read-render.ts'
@@ -101,19 +104,6 @@ export async function tryReadInternal(
   return { path: resource.url, offset: request.offset, lines: window.lines, totalLines: window.totalLines }
 }
 
-/**
- * Byte cap for the `<path>:conflicts` whole-file scan. Matches the read
- * pipeline's stream threshold: past the cap, blocks are not counted or
- * registered here, and reconciliation leaves them alone.
- */
-const CONFLICT_SCAN_MAX_BYTES = 10 * 1024 * 1024
-
-/**
- * Binary-sample window for the capped :conflicts scan, matching fs-local's
- * readText binary sniff (fsio.ts BINARY_SAMPLE_BYTES = 8192).
- */
-const BINARY_SAMPLE_BYTES = 8192
-
 /** Read `<path>:conflicts` — scan the whole file, register every block, render a summary. */
 async function readConflictSummary(
   ctx: Context,
@@ -139,7 +129,7 @@ async function readConflictSummary(
     // The raw byte path has no readText binary check: mirror fs-local's sniff
     // so a binary file still fails with FS_NOT_TEXT instead of decoding to
     // mojibake and reporting a misleading "no unresolved conflicts" success.
-    if (bytes.subarray(0, BINARY_SAMPLE_BYTES).includes(0)) {
+    if (bytes.subarray(0, CONFLICT_BINARY_SAMPLE_BYTES).includes(0)) {
       throw new FsError(`cannot read "${base}": binary file`, 'FS_NOT_TEXT')
     }
     // Decode strictly like readText below the cap: invalid UTF-8 is an error
@@ -187,30 +177,6 @@ async function readConflictSummary(
  * the resolution notice. Returns `undefined` when nothing to report or no
  * session key / registry are available.
  */
-/**
- * Trim a byte prefix back to the last complete UTF-8 codepoint boundary: a
- * byte-capped read can cut a multi-byte sequence mid-way, and the strict
- * decoder (fatal: true) would reject the incomplete tail as invalid UTF-8
- * even though the underlying file is valid.
- */
-function trimToCodepointBoundary(bytes: Uint8Array): Uint8Array {
-  let end = bytes.length
-  let back = 0
-  // Walk back over up to 3 continuation bytes (10xxxxxx) to the last lead byte.
-  while (back < 4 && end > 0 && ((bytes[end - 1] ?? 0) & 0xc0) === 0x80) {
-    end -= 1
-    back += 1
-  }
-  if (back === 0) return bytes
-  const lead = bytes[end - 1] ?? 0
-  // Expected sequence length from the lead byte; a continuation byte here
-  // (4+ continuations, already invalid) decodes expected 1 and stays put so
-  // the fatal decoder reports it.
-  const expected = lead >= 0xf0 ? 4 : lead >= 0xe0 ? 3 : lead >= 0xc0 ? 2 : 1
-  if (back < expected) return bytes.subarray(0, end - 1)
-  return bytes
-}
-
 export function conflictNoticeForRead(
   ctx: Context,
   iu: InternalUrlsService,

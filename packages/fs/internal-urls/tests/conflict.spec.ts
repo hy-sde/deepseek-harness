@@ -19,6 +19,7 @@ import {
   scanConflictsInContent,
   scanConflictLines,
   spliceConflict,
+  trimToCodepointBoundary,
 } from '../src/conflict.ts'
 import type { ConflictBlock, ConflictFileBridge, ConflictEntry } from '../src/conflict.ts'
 
@@ -206,6 +207,111 @@ describe('reconcileRegisteredConflicts', () => {
     await reconcileRegisteredConflicts(history, bridge)
     const refreshed = history.get(entries[0]!.id)
     expect(refreshed?.startLine).toBe(3) // BOM stripped, header line above
+  })
+})
+
+describe('reconcileRegisteredConflicts with a capped bridge', () => {
+  /** Bridge honoring the optional capped read and counting both paths. */
+  class CappedBridge {
+    files = new Map<string, string>()
+    cappedCalls = 0
+    fullCalls = 0
+    async readFile(path: string): Promise<string> {
+      this.fullCalls += 1
+      const content = this.files.get(path)
+      if (content === undefined) throw new FsError(`not found: ${path}`, 'FS_NOT_FOUND')
+      return content
+    }
+    async readFileCapped(path: string, maxLength: number): Promise<{ text: string; truncatedAtLine?: number }> {
+      this.cappedCalls += 1
+      const full = await this.readFile(path)
+      this.fullCalls -= 1 // the inner full read is this capped read's fetch
+      if (full.length <= maxLength) return { text: full }
+      const text = full.slice(0, maxLength)
+      return { text, truncatedAtLine: text.split('\n').length }
+    }
+    async writeFile(path: string, content: string): Promise<void> {
+      this.files.set(path, content)
+    }
+  }
+
+  /** Scan `path`'s current content and register every block under it. */
+  function registerBlocks(history: ConflictHistory, files: Map<string, string>, path: string): ConflictEntry[] {
+    const blocks = scanConflictsInContent(files.get(path) ?? '')
+    return blocks.map(block => history.register({ ...block, absolutePath: path, displayPath: path }))
+  }
+
+  it('prefers the capped read and preserves blocks past the cap', async () => {
+    const bridge = new CappedBridge()
+    const path = '/ws/a.ts'
+    // Six short lines, then the block well past a 16-byte cap.
+    bridge.files.set(path, Array.from({ length: 6 }, (_, i) => `line ${i}\n`).join('') + TWO_WAY.join('\n') + '\n')
+    const history = new ConflictHistory()
+    const entries = registerBlocks(history, bridge.files, path)
+    await reconcileRegisteredConflicts(history, bridge)
+    expect(bridge.cappedCalls).toBe(1)
+    expect(bridge.fullCalls).toBe(0)
+    // The capped prefix ends inside the filler lines, so the block sits past
+    // truncatedAtLine and reconciliation must leave it registered.
+    expect(history.get(entries[0]!.id)).not.toBeUndefined()
+  })
+
+  it('still reconciles pre-cap blocks through the capped read', async () => {
+    const bridge = new CappedBridge()
+    const path = '/ws/a.ts'
+    bridge.files.set(path, makeFile([TWO_WAY]))
+    const history = new ConflictHistory()
+    const entries = registerBlocks(history, bridge.files, path)
+    bridge.files.set(path, '// header\n' + TWO_WAY.join('\n') + '\n')
+    await reconcileRegisteredConflicts(history, bridge)
+    const refreshed = history.get(entries[0]!.id)
+    expect(refreshed?.startLine).toBe(2)
+  })
+
+  it('retires every id when the capped read reports the file missing', async () => {
+    const bridge = new CappedBridge()
+    const path = '/ws/a.ts'
+    bridge.files.set(path, makeFile([TWO_WAY]))
+    const history = new ConflictHistory()
+    const entries = registerBlocks(history, bridge.files, path)
+    bridge.files.delete(path)
+    await reconcileRegisteredConflicts(history, bridge)
+    expect(history.get(entries[0]!.id)).toBeUndefined()
+  })
+})
+
+describe('trimToCodepointBoundary', () => {
+  const decode = (bytes: Uint8Array): string => new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+
+  it('drops a bare lead byte cut at the cap', () => {
+    // oh-my-pi reviewer proof: the prefix ends right after the lead byte of
+    // '中' (E4 B8 AD), with no continuation bytes in the prefix.
+    const trimmed = trimToCodepointBoundary(new Uint8Array([0x61, 0x62, 0x63, 0xe4]))
+    expect(decode(trimmed)).toBe('abc')
+  })
+
+  it('keeps a complete trailing multi-byte character', () => {
+    // The sibling proof: back-walking alone over-trimmed this valid tail.
+    const bytes = new Uint8Array([0x61, 0x62, 0x63, 0xe4, 0xb8, 0xad])
+    expect(decode(trimToCodepointBoundary(bytes))).toBe('abc中')
+  })
+
+  it('drops a sequence cut mid-continuation', () => {
+    const trimmed = trimToCodepointBoundary(new Uint8Array([0x61, 0x62, 0x63, 0xe4, 0xb8]))
+    expect(decode(trimmed)).toBe('abc')
+  })
+
+  it('keeps pure ASCII and complete 4-byte tails untouched', () => {
+    expect(decode(trimToCodepointBoundary(new Uint8Array([0x61, 0x62, 0x63])))).toBe('abc')
+    const emoji = new Uint8Array([0x61, 0xf0, 0x9f, 0x98, 0x80])
+    expect(decode(trimToCodepointBoundary(emoji))).toBe('a\u{1F600}')
+    expect(trimToCodepointBoundary(new Uint8Array()).length).toBe(0)
+  })
+
+  it('leaves invalid lead bytes for the fatal decoder to report', () => {
+    // 0xFF is invalid UTF-8 anywhere; trimming it would mask a real error.
+    const bytes = new Uint8Array([0x61, 0xff])
+    expect(trimToCodepointBoundary(bytes)).toBe(bytes)
   })
 })
 
