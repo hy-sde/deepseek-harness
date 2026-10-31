@@ -349,8 +349,8 @@ describe('Patcher seen-line origin', () => {
     expect(mismatch.displayMessage).toContain('*2:b2')
     const currentTag = mismatch.actualFileHash
     // The reply's displayed rows (anchor 2 ± 2 → lines 1-4) register as seen
-    // on the current-content snapshot; line 0 is the provenance marker that
-    // keeps the reply-recorded snapshot restricted even though rows exist
+    // on the current-content snapshot; line 0 (which no read display
+    // includes) keeps the reply-recorded snapshot restricted even though rows exist
     // (oh-my-pi f11dac11be).
     expect([...(snapshots.byHash(PATH, currentTag)?.seenLines ?? [])]).toEqual([1, 2, 3, 4, 0])
 
@@ -654,7 +654,7 @@ describe('Patcher stale-tag seen guard (oh-my-pi ff0d7262f8, f11dac11be, 2995614
     const liveTag = extractLiveTag(message ?? '')
 
     // Reading live line 3 lands on the handed-back tag (record merges into
-    // the provenance snapshot recorded for the live content).
+    // the reply snapshot recorded for the live content).
     expect(snapshots.record(PATH, liveText, [3])).toBe(liveTag)
     await patcher.apply(Patch.parse(`[${PATH}#${liveTag}]\nPUT 3.=3:\n+wide-model`))
     expect(fs.get(PATH)).toBe('head-a\nhead-b\nwide-model\nl2\nl3\nl4\nl5\nl6\n')

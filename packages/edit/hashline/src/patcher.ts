@@ -984,7 +984,7 @@ export class Patcher {
       .filter(line => !unseenSet.has(line))
       .map(line => map.get(line))
       .filter((line): line is number => line !== undefined)
-    const liveTag = this.#recordReplyProvenance(canonicalPath, current, carried)
+    const liveTag = this.#recordReplySnapshot(canonicalPath, current, carried)
     throw withErrorKind(
       new Error(staleUnseenLinesMessage(section.path, unseen, expected, liveLines, liveTag, raw)),
       'unseen_lines',
@@ -998,7 +998,7 @@ export class Patcher {
    * lines plus line 0, which no ranged read can display, so a reply that
    * displayed nothing keeps the snapshot restrictive.
    */
-  #recordReplyProvenance(canonicalPath: string, text: string, displayed: readonly number[] = []): string {
+  #recordReplySnapshot(canonicalPath: string, text: string, displayed: readonly number[] = []): string {
     const existing = this.snapshots.byContent(canonicalPath, text)
     const restricted = existing === null || (existing.seenLines?.size ?? 0) > 0
     if (!restricted) return this.#recordFullSnapshot(canonicalPath, text)
@@ -1037,7 +1037,7 @@ export class Patcher {
     const existing = this.snapshots.byContent(canonicalPath, normalized)
     const restricted = existing === null || (existing.seenLines?.size ?? 0) > 0
     const displayed = restricted ? anchoredContextLines(anchorLines, fileLines) : []
-    const actualFileHash = this.#recordReplyProvenance(canonicalPath, normalized, displayed)
+    const actualFileHash = this.#recordReplySnapshot(canonicalPath, normalized, displayed)
     return new MismatchError({
       path: section.path,
       expectedFileHash: expected,
