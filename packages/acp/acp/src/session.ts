@@ -487,7 +487,7 @@ export class AcpSession {
   }
 
   private assertActive(): void {
-    if (this.closing !== undefined) throw invalidParams(`session is closing: ${this.agent.session.id}`)
+    if (this.closing !== undefined) throw RequestError.resourceNotFound(this.agent.session.id)
   }
 
   private cancelPrompt(detail: string): void {

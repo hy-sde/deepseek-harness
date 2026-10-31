@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.5/acp-session-errors-resource-not-found/guide.md
+/:
+  en: a6946c7dc9599cd6
+  zh: 504436cff64a89f1
+/acp-session-errors-use-resourcenotfound:
+  en: d8f6a325f0e121df
+  zh: 8694bb6f08abc101
+/acp-session-errors-use-resourcenotfound/change:
+  en: 47a15c40334880d9
+  zh: 308c735993964281
+/acp-session-errors-use-resourcenotfound/migration:
+  en: e5e74bac20fc05c7
+  zh: a501ef351dea8be1

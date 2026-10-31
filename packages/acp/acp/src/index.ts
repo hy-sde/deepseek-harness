@@ -117,7 +117,7 @@ export function apply(ctx: Context, config: AcpConfig): void {
 
   const requireSession = (sessionId: SessionId): AcpSession => {
     const record = sessions.get(sessionId)
-    if (record === undefined) throw invalidParams(`unknown session: ${sessionId}`)
+    if (record === undefined) throw RequestError.resourceNotFound(sessionId)
     return record
   }
 
