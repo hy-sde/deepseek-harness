@@ -101,7 +101,7 @@ describe('plain tar range reads', () => {
     const bytes = await fixture('tar-ustar.tar')
     const limits = { ...DEFAULT_ARCHIVE_LIMITS, maxInMemorySize: 512 }
     const corrupt = new Uint8Array(bytes)
-    corrupt[0] ^= 1
+    corrupt[0] = (corrupt[0] ?? 0) ^ 1
     await expect(readTar(memoryByteSource(corrupt), { limits })).rejects.toThrow('corrupt tar archive header')
     await expect(readTar(memoryByteSource(bytes), { limits: { ...limits, maxEntries: 1 } })).rejects.toThrow(
       'too many entries',

@@ -645,7 +645,7 @@ describe('Patcher stale-tag seen guard (oh-my-pi ff0d7262f8, f11dac11be, 2995614
       await patcher.apply(Patch.parse(`[${PATH}#${staleTag}]\nCUT 1.=1`))
       throw new Error('expected rejection')
     } catch (err) {
-      thrown = err
+      thrown = err as Error
       message = (err as Error).message
     }
     expect(errorKindOf(thrown)).toBe('unseen_lines')
@@ -675,7 +675,7 @@ describe('Patcher stale-tag seen guard (oh-my-pi ff0d7262f8, f11dac11be, 2995614
       await patcher.apply(Patch.parse(`[${PATH}#${staleTag}]\nCUT 10.=55`))
       throw new Error('expected rejection')
     } catch (err) {
-      thrown = err
+      thrown = err as Error
       message = (err as Error).message
     }
     expect(errorKindOf(thrown)).toBe('unseen_lines')
