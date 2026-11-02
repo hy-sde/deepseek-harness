@@ -1,0 +1,65 @@
+{
+  "name": "@deepseek-ai/pi-ai",
+  "description": "Trimmed fork of @earendil-works/pi-ai 1.1.0 vendored for the DeepSeek Harness LLM seam (5 providers, 5 APIs)",
+  "version": "1.1.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "vendor/pi-ai"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./models": {
+      "types": "./lib/types/models.d.ts",
+      "default": "./src/models.ts"
+    },
+    "./compat": {
+      "types": "./lib/types/compat.d.ts",
+      "default": "./src/compat.ts"
+    },
+    "./providers/*": {
+      "types": "./lib/types/providers/*.d.ts",
+      "default": "./src/providers/*.ts"
+    },
+    "./api/*": {
+      "types": "./lib/types/api/*.d.ts",
+      "default": "./src/api/*.ts"
+    },
+    "./utils/*": {
+      "types": "./lib/types/utils/*.d.ts",
+      "default": "./src/utils/*.ts"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "src"
+  ],
+  "sideEffects": [
+    "./src/compat.ts"
+  ],
+  "author": "Mario Zechner",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.129.0",
+    "@earendil-works/pi-telemetry": "^1.1.0",
+    "openai": "7.19.0",
+    "partial-json": "0.1.7",
+    "typebox": "1.3.27"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

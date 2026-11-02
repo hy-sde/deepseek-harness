@@ -1,0 +1,12 @@
+{
+	"schemaVersion": 6,
+	"generatedAt": "2026-10-07T22:01:28.515Z",
+	"structureHash": "7ffdf512210f354190d6d3381e37d1c296a36314652dfd4b461c06d9941b34ba",
+	"files": {
+		"anthropic.json": "aa4342dfb96feb1619794113619d6630088d6ac544c547a4f9899a0a7f26419b",
+		"azure.json": "46c4e25b84463c6475e706c581196d2735c35feb9612d2efca0ab932c917d727",
+		"deepseek.json": "10a296fb3e898f7715c80890c8af0af4f5fd58f22dbcd6612fdc5d762157ccdc",
+		"openai-codex.json": "3cc35a7e122e5c77ee8ec30a9a3bd8bd59629997e85ba2cb3f9e0ed62e9a09c0",
+		"openai.json": "f4c1ac9f8f84cb9f2a952b0ceec51c90a38b31b4cdf33200e018ece9d408e95f"
+	}
+}
