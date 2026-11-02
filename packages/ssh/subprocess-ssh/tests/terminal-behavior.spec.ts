@@ -4,7 +4,7 @@ import { once } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import type { SubprocessTerminalSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshSubprocessRuntime } from '../src/index.ts'
 
 const id = 'aa910b47-e7d7-467b-8421-3331569dd02b'

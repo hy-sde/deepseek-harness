@@ -13,7 +13,7 @@ import { validateTypertManifest } from '@deepseek-ai/dsh-typert-loader'
 import { isTypertRemoteMethod } from '@deepseek-ai/dsh-typert-protocol/remote-info'
 import type { TypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol'
 import ts from 'typescript'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 let root: string | undefined
 let context: Context | undefined
@@ -60,7 +60,7 @@ async function writePackage(
 
 function typertSource(pkgName: string, entryName: string): string {
   return [
-    'import { z } from \'zod\'',
+    'import { z } from \'@deepseek-ai/zod\'',
     `export const ${entryName} = () => z.object({ id: z.string() })`,
     'export const TYPERT = {',
     `  package: '${pkgName}',`,
@@ -88,7 +88,7 @@ async function writeRemoteInfoRuntime(base: string): Promise<string> {
 
 function invocationTypertSource(pkgName: string, factoryUrl: string): string {
   return [
-    'import { z } from \'zod\'',
+    'import { z } from \'@deepseek-ai/zod\'',
     `import { createTypertRemoteInfo } from ${JSON.stringify(factoryUrl)}`,
     'const Text = () => z.string()',
     'export const REMOTE_INFO = createTypertRemoteInfo({',
@@ -144,9 +144,9 @@ async function boot(): Promise<Context> {
 
 async function linkZod(base: string): Promise<void> {
   const { symlink } = await import('node:fs/promises')
-  const target = join(base, 'node_modules', 'zod')
-  const source = fileURLToPath(new URL('.', import.meta.resolve('zod/package.json')))
-  await mkdir(join(base, 'node_modules'), { recursive: true })
+  const target = join(base, 'node_modules', '@deepseek-ai/zod')
+  const source = fileURLToPath(new URL('.', import.meta.resolve('@deepseek-ai/zod/package.json')))
+  await mkdir(join(base, 'node_modules', '@deepseek-ai'), { recursive: true })
   await symlink(source, target, process.platform === 'win32' ? 'junction' : 'dir')
 }
 
@@ -327,7 +327,7 @@ describe('typert loader', () => {
     })
     await writePackage(root, '@fixture/pending', {
       typertSource: [
-        'import { z } from \'zod\'',
+        'import { z } from \'@deepseek-ai/zod\'',
         'globalThis.__dshTypertLoaderGate.started()',
         'await globalThis.__dshTypertLoaderGate.wait',
         'export const Pending = () => z.object({ id: z.string() })',

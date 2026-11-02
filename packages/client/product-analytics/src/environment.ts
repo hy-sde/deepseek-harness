@@ -1,7 +1,7 @@
 /** Static Desktop environment fields, independent of account and credential availability. */
 import { cpus, platform, release, totalmem } from 'node:os'
 import { join } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { queryEnvironment, type MissingReason, type QueryOptions, type QueryResult } from './environment-query.ts'
 
 /** Approved scalar attributes; missing fields carry fixed reasons. */

@@ -1,7 +1,7 @@
 /** Native application objects independent of evaluator ownership and persistence. */
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import type { z } from 'zod'
+import type { z } from '@deepseek-ai/zod'
 import type { ActionResult, CapabilitiesResult, FoundAppsResult, HoverResult, Request, ScreenshotResult, ShowResult, WindowsResult } from './protocol.ts'
 
 /** Helper-issued application selection; public app objects bind it to one process lifetime. */

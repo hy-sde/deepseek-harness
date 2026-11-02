@@ -2,7 +2,7 @@
  * Pure folds for durable provider-reported token usage and context occupancy.
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { lastAssistantStreamChunk, type TokenUsage } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-llm-retry/types'
 import { SessionSeq } from '@deepseek-ai/dsh-session'

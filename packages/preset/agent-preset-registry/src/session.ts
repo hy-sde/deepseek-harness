@@ -15,7 +15,7 @@
  */
 
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 const HOST_ID_PATTERN = /^[a-z0-9-]{1,64}$/u
 const CanonicalString = z.string().trim().min(1)

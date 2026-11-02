@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { load } from 'js-yaml'
 import { gt, valid } from 'semver'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { DesktopUploadArtifact, DesktopUploadPlan } from './desktop-upload-plan.ts'
 
 /** File identity computed from bytes, never inferred from COS ETags. */

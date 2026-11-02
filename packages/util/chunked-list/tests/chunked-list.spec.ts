@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { appendChunkedList, chunkedListSchema, iterateChunkedList } from '../src/index.ts'
 import type { ChunkedList } from '../src/index.ts'
 

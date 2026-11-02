@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { SshSubprocessRuntime } from '@deepseek-ai/dsh-subprocess-ssh'
 import { createHelperHarness } from './fixtures/helper.ts'
 import { doneSchema, preparedSchema } from '../src/schemas.ts'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
 

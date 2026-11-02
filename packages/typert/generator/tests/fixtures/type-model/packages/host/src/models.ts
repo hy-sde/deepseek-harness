@@ -143,9 +143,9 @@ export interface SyntaxZoo {
   route: Route<'source', 'target'>
   query: typeof phaseOrder
   instantiatedQuery: typeof genericFactory<string>
-  imported: import('zod').ZodType<string>
-  importedWith: import('zod', { with: { 'resolution-mode': 'import' } }).ZodType<string>
-  importedModule: typeof import('zod')
+  imported: import('@deepseek-ai/zod').ZodType<string>
+  importedWith: import('@deepseek-ai/zod', { with: { 'resolution-mode': 'import' } }).ZodType<string>
+  importedModule: typeof import('@deepseek-ai/zod')
   process: NodeJS.Process
   callable: Callable
   guards: Guards

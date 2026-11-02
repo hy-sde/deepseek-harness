@@ -1,7 +1,7 @@
 /** External browser/Stagehand fixture; DSH registries, tools, and result logging remain real. */
 
 import type { ModelConfig } from '@browserbasehq/stagehand'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 /** Explicit offline configuration; fixture AI calls never access a model provider. */
 export const nativeModel = { modelName: 'openai/gpt-5.4-mini', apiKey: 'fixture-model-key' } as const satisfies ModelConfig

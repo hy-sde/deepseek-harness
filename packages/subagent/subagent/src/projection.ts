@@ -5,7 +5,7 @@
  * @module @deepseek-ai/dsh-subagent/projection
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { foldSubagentDescriptor } from './descriptor.ts'

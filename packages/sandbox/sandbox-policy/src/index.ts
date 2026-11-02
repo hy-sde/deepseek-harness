@@ -22,7 +22,7 @@
 
 import { isAbsolute } from 'node:path'
 import { Context, Service } from '@deepseek-ai/cordis'
-import { z as zod } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-agent'
 import type { SandboxExecutionPolicy, SandboxMode } from '@deepseek-ai/dsh-sandbox'

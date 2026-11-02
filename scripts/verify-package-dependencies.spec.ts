@@ -109,7 +109,7 @@ async function sourceFacts(
   return readPackageDependencyFacts(root, subject, role, new Set([CORDIS, subject.name]), policy())
 }
 
-function generatedHostFixture(mode: 'schema' | 'object'): { root: string; manifestPath: string; source: string } {
+function generatedHostFixture(mode: 'schema' | 'object', zodPeer = true): { root: string; manifestPath: string; source: string } {
   const root = mkdtempSync(join(tmpdir(), 'dsh-generated-host-dependencies-'))
   roots.push(root)
   const manifestPath = 'packages/client/probe/package.json'
@@ -123,9 +123,8 @@ function generatedHostFixture(mode: 'schema' | 'object'): { root: string; manife
       './typert': { types: './lib/typert.host.d.ts', default: './lib/typert.host.js' },
     },
     files: ['lib/typert.host.js', 'lib/typert.host.d.ts'],
-    dependencies: { zod: '^4.0.0' },
-    devDependencies: { [CORDIS]: 'workspace:~' },
-    peerDependencies: { [CORDIS]: 'workspace:~' },
+    devDependencies: { [CORDIS]: 'workspace:~', '@deepseek-ai/zod': 'workspace:~' },
+    peerDependencies: { [CORDIS]: 'workspace:~', ...(zodPeer ? { '@deepseek-ai/zod': 'workspace:~' } : {}) },
   }
   const files = {
     'tsconfig.base.json': JSON.stringify({
@@ -142,6 +141,7 @@ function generatedHostFixture(mode: 'schema' | 'object'): { root: string; manife
     }),
     [manifestPath]: JSON.stringify(manifest),
     'packages/client/probe/src/index.ts': source,
+    'vendor/zod/package.json': JSON.stringify({ name: '@deepseek-ai/zod', version: '4.6.7' }),
   }
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(root, path)), { recursive: true })
@@ -472,53 +472,58 @@ describe('experimental packages and Host build entries', () => {
 })
 
 describe('face-aware source classification', () => {
-  it('keeps generated Host schema imports in dependencies without reading or writing lib', async () => {
+  it('classifies generated Host schema imports as peer-required without reading or writing lib', async () => {
     const { root, manifestPath, source } = generatedHostFixture('schema')
     const before = readFileSync(join(root, manifestPath), 'utf8')
-    const state = await readPackageDependencyState(root, policy())
+    const p = policy({ peerRequiredHostExports: { '@deepseek-ai/zod': ['z'] } })
+    const state = await readPackageDependencyState(root, p)
     const subject = state.facts[0]
     if (subject === undefined) throw new Error('generated Host fixture was not classified')
 
     expect(subject.allSourceUses.has('zod')).toBe(false)
     expect(subject.hostRuntimeExportUses).toContainEqual(expect.objectContaining({
-      packageName: 'zod', specifier: 'zod', exportName: 'z',
+      packageName: '@deepseek-ai/zod', specifier: '@deepseek-ai/zod', exportName: 'z',
       sourcePath: 'packages/client/probe/lib/typert.host.js',
     }))
     const standalone = await readPackageDependencyFacts(root, pkg('@fixture/generated', manifestPath, subject.manifest),
-      subject.role, state.workspaceNames, policy())
+      subject.role, state.workspaceNames, p)
     expect(standalone.hostRuntimeExportUses).toEqual(subject.hostRuntimeExportUses)
     expect(collectPackageDependencyViolations(state)).toEqual([])
     repairPackageDependencyManifest(subject)
-    expect(subject.manifest.dependencies?.zod).toBe('^4.0.0')
-    expect(subject.manifest.devDependencies?.zod).toBeUndefined()
+    expect(subject.manifest.peerDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
+    expect(subject.manifest.devDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
+    expect(subject.manifest.dependencies?.['@deepseek-ai/zod']).toBeUndefined()
 
-    delete subject.manifest.dependencies?.zod
-    subject.manifest.devDependencies = { ...subject.manifest.devDependencies, zod: '^4.0.0' }
+    delete subject.manifest.peerDependencies?.['@deepseek-ai/zod']
     expect(collectPackageDependencyViolations(state)).toContainEqual(
-      expect.stringContaining('must be dependencies-only; found devDependencies'),
+      expect.stringContaining('must be matching peerDependencies + devDependencies'),
     )
     repairPackageDependencyManifest(subject)
-    expect(subject.manifest.dependencies?.zod).toBe('^4.0.0')
-    expect(subject.manifest.devDependencies?.zod).toBeUndefined()
+    expect(subject.manifest.peerDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
+    expect(subject.manifest.devDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
 
-    delete subject.manifest.dependencies?.zod
-    expect(() => { repairPackageDependencyManifest(subject) }).toThrow('undeclared third-party dependency zod')
+    delete subject.manifest.peerDependencies?.['@deepseek-ai/zod']
+    delete subject.manifest.devDependencies?.['@deepseek-ai/zod']
+    repairPackageDependencyManifest(subject)
+    expect(subject.manifest.peerDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
+    expect(subject.manifest.devDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
     expect(existsSync(join(root, 'packages/client/probe/lib'))).toBe(false)
     expect(readFileSync(join(root, manifestPath), 'utf8')).toBe(before)
     expect(readFileSync(join(root, 'packages/client/probe/src/index.ts'), 'utf8')).toBe(source)
   })
 
   it('does not infer a zod runtime dependency from a metadata-only Typert export', async () => {
-    const { root } = generatedHostFixture('object')
+    const { root } = generatedHostFixture('object', false)
     const state = await readPackageDependencyState(root, policy())
     const subject = state.facts[0]
     if (subject === undefined) throw new Error('generated Host fixture was not classified')
 
     expect(subject.hostRuntimeSourceUses.has('zod')).toBe(false)
-    expect(expectedPackageDependencies(subject).get('zod')?.section).toBe('devDependencies')
+    expect(subject.hostRuntimeSourceUses.has('@deepseek-ai/zod')).toBe(false)
+    expect(expectedPackageDependencies(subject).has('@deepseek-ai/zod')).toBe(false)
     repairPackageDependencyManifest(subject)
-    expect(subject.manifest.dependencies?.zod).toBeUndefined()
-    expect(subject.manifest.devDependencies?.zod).toBe('^4.0.0')
+    expect(subject.manifest.dependencies?.['@deepseek-ai/zod']).toBeUndefined()
+    expect(subject.manifest.devDependencies?.['@deepseek-ai/zod']).toBe('workspace:~')
     expect(existsSync(join(root, 'packages/client/probe/lib'))).toBe(false)
   })
 

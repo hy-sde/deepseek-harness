@@ -5,8 +5,8 @@
 
 import { Context, FiberState, Service, type Fiber } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { z as zod } from 'zod'
-import type { ZodType } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import { isAgentLoopRequest } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions } from '@deepseek-ai/dsh-llm'

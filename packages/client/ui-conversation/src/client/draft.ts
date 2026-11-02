@@ -1,5 +1,5 @@
 /** Semantic draft snapshots shared by storage, programmatic input, and editor restoration. */
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { DraftInput, DraftReference, DraftSnapshot, Occurrence } from './contract/draft-editor.ts'
 
 const referenceSchema = z.object({

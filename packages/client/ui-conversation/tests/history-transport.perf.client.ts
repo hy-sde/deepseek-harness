@@ -5,7 +5,7 @@ import { createServer, type Server } from 'node:http'
 import { performance } from 'node:perf_hooks'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
 import { expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import {
   createAssistantMessage,
   createUserMessage,

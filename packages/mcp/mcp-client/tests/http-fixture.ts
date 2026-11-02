@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 /** Keyless stateless Streamable HTTP MCP fixture for integration tests. */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'

@@ -8,7 +8,7 @@
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SubagentError } from './error.ts'
 
 const SESSION_ID_SCHEMA = z.string().min(1)

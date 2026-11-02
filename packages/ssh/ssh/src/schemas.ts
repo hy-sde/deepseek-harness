@@ -1,5 +1,5 @@
 /** Strict JSON validation for SSH helper requests and remote observations. */
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import { SSH_PROTOCOL_VERSION } from './protocol.ts'
 

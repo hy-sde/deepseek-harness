@@ -6,7 +6,7 @@
  * which the Host includes in the preparation error, and exits with code 1. After readiness the
  * loopback listener keeps the process alive until the Host terminates it.
  */
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { Config } from './config.ts'
 import { createTranscriber } from './inference.ts'
 import { startRecognitionServer } from './process-server.ts'

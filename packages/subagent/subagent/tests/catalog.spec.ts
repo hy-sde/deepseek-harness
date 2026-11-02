@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'

@@ -15,7 +15,7 @@ import type {
   InboxTarget,
   InboxWireState,
 } from '@deepseek-ai/dsh-agent'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 /** Wire validation for pending agent input reconstructed from durable inbox splices. */
 export const inboxProjectionSchema = z.object({

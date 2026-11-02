@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { lstat, readFile, readdir } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 /** Native target identifiers accepted by the builder and release workflow. */
 export const SSH_HELPER_TARGETS = ['node24-linux-x64', 'node24-linux-arm64', 'node24-macos-x64', 'node24-macos-arm64'] as const

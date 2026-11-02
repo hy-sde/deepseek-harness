@@ -49,8 +49,8 @@ export const fixtureRoot = resolve(import.meta.dirname, 'fixtures/type-model')
 
 /** Declaration stubs for the fixture's external packages, mounted under each workspace's `node_modules`. */
 const DEPENDENCY_STUBS: Readonly<Record<string, string>> = {
-  'zod/package.json': `${JSON.stringify({ name: 'zod', version: '0.0.0', type: 'module', types: './index.d.ts' })}\n`,
-  'zod/index.d.ts': 'export interface ZodType<Output = unknown> { readonly _output: Output }\n',
+  '@deepseek-ai/zod/package.json': `${JSON.stringify({ name: '@deepseek-ai/zod', version: '0.0.0', type: 'module', types: './index.d.ts' })}\n`,
+  '@deepseek-ai/zod/index.d.ts': 'export interface ZodType<Output = unknown> { readonly _output: Output }\n',
   '@types/node/package.json': `${JSON.stringify({ name: '@types/node', version: '0.0.0', types: './index.d.ts' })}\n`,
   '@types/node/index.d.ts': 'declare namespace NodeJS { interface Process { readonly pid: number } }\n',
 }

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { PersistedPreparedWikiState } from '../agent/wiki-finalizer.ts'
 import type { UpdateMetadata } from '../agent/types.ts'
 import { OPEN_WIKI_DIR } from '../config/constants.ts'

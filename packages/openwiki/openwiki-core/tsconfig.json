@@ -11,5 +11,6 @@
     "noUncheckedIndexedAccess": false
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts"]
+  "exclude": ["src/**/*.test.ts"],
+  "references": [{ "path": "../../../vendor/zod" }]
 }

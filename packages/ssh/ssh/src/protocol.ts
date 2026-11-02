@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { Readable, Writable } from 'node:stream'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 
 /** Wire version shared by the installed helper and client package. */

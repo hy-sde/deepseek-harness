@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process'
 import { appendFile, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 const positiveId = z.string().regex(/^[1-9]\d*$/u)
 const inputsSchema = z.object({ package_run_id: positiveId, package_run_attempt: z.union([positiveId, z.literal('')]).optional() })

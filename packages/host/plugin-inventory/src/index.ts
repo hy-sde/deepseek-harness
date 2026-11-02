@@ -7,7 +7,7 @@ import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type {} from '@deepseek-ai/dsh-app-boot'
 import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 // Typert-generated ./typert and ./remote artifacts import Zod at runtime.
-import type {} from 'zod'
+import type {} from '@deepseek-ai/zod'
 import type {
   AgentPresetPluginGroup,
   PluginEntryId,

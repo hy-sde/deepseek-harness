@@ -6,7 +6,7 @@
  */
 
 import { Context, Service } from '@deepseek-ai/cordis'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type {
   InvocationDescriptor,
   RemoteAccessResourceKind,

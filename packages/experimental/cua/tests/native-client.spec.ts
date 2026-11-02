@@ -3,7 +3,7 @@ import { PassThrough, Writable } from 'node:stream'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { NativeChannel } from '../src/native-client.ts'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { NativeClient, NativeError } from '../src/native-client.ts'
 
 const shared = vi.hoisted(() => ({ create: vi.fn() }))

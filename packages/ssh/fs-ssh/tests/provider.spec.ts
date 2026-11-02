@@ -4,7 +4,7 @@ import { FsError, FsTargetKey, FsVersion, type FsTarget } from '@deepseek-ai/dsh
 import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
 import { RemoteOperationError } from '@deepseek-ai/dsh-ssh/protocol'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshFileSystem } from '../src/index.ts'
 
 type Dispatch = (method: string, params: unknown, signal?: AbortSignal) => Promise<unknown>

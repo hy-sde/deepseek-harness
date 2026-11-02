@@ -4,7 +4,7 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { DirectoryPickerError } from '@deepseek-ai/dsh-host-directory-picker'
 import type {
   DirectoryPickerCapabilities, DirectoryPickerErrorCode,

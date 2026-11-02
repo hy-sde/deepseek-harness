@@ -8,7 +8,7 @@ import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import type { RemoteResult, RemoteStreamHandle, TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
 import { describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { apply, inject } from '../src/client/index.ts'
 import { parseRemoteStreamClientMessage } from '../src/stream-protocol.ts'
 

@@ -6,7 +6,7 @@
  * message count.
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { canonicalHeader, deriveEventMessage, isSurfaceEvent, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SurfaceEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'

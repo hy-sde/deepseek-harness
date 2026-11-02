@@ -10,7 +10,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import path from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import {
   ClaimsPageMissingError,
   ClaimsPersistenceError,

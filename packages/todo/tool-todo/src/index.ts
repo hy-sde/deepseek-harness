@@ -7,8 +7,8 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { z as zod } from 'zod'
-import type { ZodType } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { TodoItem } from './types.ts'
 // Type-only: resolves the required ctx.sessionProjections service declaration.

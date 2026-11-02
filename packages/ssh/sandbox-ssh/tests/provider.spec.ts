@@ -2,7 +2,7 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import { SandboxUnavailableError, type SandboxPolicy } from '@deepseek-ai/dsh-sandbox'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshSandboxProvider } from '../src/index.ts'
 
 const policy: SandboxPolicy = { mode: 'workspace-write', workspaceRoot: '/remote/link/..' }

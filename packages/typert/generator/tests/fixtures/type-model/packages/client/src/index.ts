@@ -5,7 +5,7 @@ import type { AgentPhase } from '@fixture/host'
 import type { HostAgent, Payload } from '@fixture/host'
 
 export type { Box as ReexportedBox } from '@fixture/host'
-export type { ZodType as ReexportedZodType } from 'zod'
+export type { ZodType as ReexportedZodType } from '@deepseek-ai/zod'
 
 /** Client-owned inheritance preserves an explicit generic cross-face edge. */
 export interface ClientAgent extends HostAgent<{ ready: true }> {}

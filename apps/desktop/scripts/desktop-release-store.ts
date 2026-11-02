@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream, constants } from 'node:fs'
 import { copyFile, lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, isAbsolute, join } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 const positiveId = z.string().regex(/^[1-9]\d*$/u)
 const filename = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/u)

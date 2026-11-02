@@ -1,10 +1,10 @@
 /** Derive native field/enum admission and the wire schema from model and Host-only Zod definitions. */
 import { readFile, writeFile } from 'node:fs/promises'
-import { z } from 'zod'
-import type { JSONSchema } from 'zod/v4/core'
+import { z } from '@deepseek-ai/zod'
+import type { core } from '@deepseek-ai/zod'
 import { NativeOnlyOperations, NativeResourceParameters, Request } from '@deepseek-ai/dsh-cua/protocol'
 
-type Schema = JSONSchema.JSONSchema
+type Schema = core.JSONSchema.JSONSchema
 
 function object(schema: Schema | boolean | undefined): Schema {
   if (schema === undefined || typeof schema === 'boolean') throw new Error('CUA protocol requires an object schema at this position')

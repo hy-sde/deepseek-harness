@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { DesktopCosOperationError, desktopPublicationFailure } from '../scripts/desktop-publication-failure.ts'
 import { DesktopPublishError } from '../scripts/desktop-publish.ts'
 

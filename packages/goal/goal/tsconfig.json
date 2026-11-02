@@ -18,6 +18,9 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../../vendor/zod"
+    },
+    {
       "path": "../../util/brand"
     },
     {

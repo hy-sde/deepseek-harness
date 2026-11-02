@@ -1,5 +1,5 @@
 /** Fold of `ask_user_question` tool events into the answerable question set, and its Session projection. */
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SessionLogOffset, TOOL_OUTCOME_UNKNOWN } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionLogOffset as SessionLogOffsetType } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'

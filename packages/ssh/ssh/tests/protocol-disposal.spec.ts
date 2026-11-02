@@ -1,6 +1,6 @@
 import { PassThrough, Writable } from 'node:stream'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshRpcPeer } from '../src/protocol.ts'
 
 describe('SSH protocol disposal during output backpressure', () => {

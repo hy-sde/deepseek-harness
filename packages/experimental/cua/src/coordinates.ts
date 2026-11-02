@@ -1,6 +1,6 @@
 /** Agent-owned mapping from observed screenshot pixels or integer ratios to native window points. */
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { CuaAppHandle, CuaOperation, CuaWindowInfo } from './types.ts'
 import { NativeError } from './native-client.ts'
 

@@ -10,7 +10,7 @@
  * @module @deepseek-ai/dsh-session-projection-cache/src/spec
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { isJsonValue } from '@deepseek-ai/dsh-util-values'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'

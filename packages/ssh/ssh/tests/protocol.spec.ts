@@ -1,7 +1,7 @@
 import { PassThrough } from 'node:stream'
 import { once } from 'node:events'
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshRpcPeer, RemoteOperationError } from '../src/protocol.ts'
 
 describe('SSH helper protocol', () => {

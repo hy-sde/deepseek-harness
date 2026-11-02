@@ -16,8 +16,8 @@
  * @module @deepseek-ai/dsh-graph-projection/projection
  */
 
-import { z } from 'zod'
-import type { ZodType } from 'zod'
+import { z } from '@deepseek-ai/zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SessionEventMap, SessionSeqCursor } from '@deepseek-ai/dsh-session/types'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'

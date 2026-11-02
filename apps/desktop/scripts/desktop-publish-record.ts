@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { appendFile, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { DesktopPublishEvent } from './desktop-publish.ts'
 
 /**

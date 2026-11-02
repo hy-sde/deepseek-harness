@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { artifactManifestSchema, fileDigest, runtimeReportSchema, SSH_HELPER_TARGETS, verifyPayload, type ArtifactManifest } from './artifact.ts'
 import { extractHelper } from '../verify-ssh-helper-artifact.ts'
 

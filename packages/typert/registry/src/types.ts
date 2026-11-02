@@ -4,7 +4,7 @@
  * @module @deepseek-ai/dsh-typert-registry/types
  */
 
-import type { z } from 'zod'
+import type { z } from '@deepseek-ai/zod'
 import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol'
 
 /** Independently compiled side that produced a contribution. */

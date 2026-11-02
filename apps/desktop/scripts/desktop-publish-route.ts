@@ -1,5 +1,5 @@
 /** Validate a completed packaging attempt and route publication back to its original runner. */
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { desktopPublishQualificationError } from './desktop-publish-qualification.mjs'
 
 const positive = z.number().int().positive()

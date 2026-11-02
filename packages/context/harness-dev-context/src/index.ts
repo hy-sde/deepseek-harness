@@ -11,7 +11,7 @@
 
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
-import { z as zod } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-web-app'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'

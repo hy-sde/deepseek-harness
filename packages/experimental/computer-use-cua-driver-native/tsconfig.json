@@ -8,6 +8,7 @@
   "references": [
     { "path": "../../../vendor/cordis" },
     { "path": "../../../vendor/schemastery" },
+    { "path": "../../../vendor/zod" },
     { "path": "../../computer-use/computer-use" },
     { "path": "../../core/tools" },
     { "path": "../../core/system-prompt" },

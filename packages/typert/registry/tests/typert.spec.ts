@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import TypertRegistry, {
   typertEndpoint,
   typertKey,

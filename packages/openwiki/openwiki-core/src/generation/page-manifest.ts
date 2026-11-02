@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { normalizeWikiPagePath } from '../claims/brains/code/paths.ts'
 import { ClaimsStore } from '../claims/brains/code/store.ts'
 import { PAGE_MANIFEST_PATH } from '../config/constants.ts'

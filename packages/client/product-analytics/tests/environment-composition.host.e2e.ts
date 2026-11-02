@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { platform } from 'node:os'
 import { expect, it } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { runLoaderSmoke, LOADER_SMOKE_TEST_TIMEOUT_MS } from '@deepseek-ai/dsh-loader-smoke'
 
 it('adds real system metadata to the existing event through Loader and OTLP', async () => {

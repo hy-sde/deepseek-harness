@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { PassThrough, Writable } from 'node:stream'
 import { setTimeout as delay } from 'node:timers/promises'
 import type { SubprocessHandle, SubprocessOutcome, SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { NativeClientConfig, NativeChannel } from '@deepseek-ai/dsh-cua/native-client'
 export type { NativeChannel } from '@deepseek-ai/dsh-cua/native-client'
 

@@ -10,7 +10,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { SubprocessHandle, SubprocessSpawnSpec, SubprocessTerminalHandle } from '@deepseek-ai/dsh-subprocess'
 import { logSpillFailure, OutputCollector, prepareManagedProcessBinding, type SpillFailureReporter } from '@deepseek-ai/dsh-subprocess-local/output'
 import { doneSchema, outputSnapshotFrameLimit, spawnSchema, type SshProcessId, type SshStreamEndpoint } from './schemas.ts'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SSH_STREAM_TLS_OPTIONS } from './stream-security.ts'
 import { SshRpcPeer } from './protocol.ts'
 

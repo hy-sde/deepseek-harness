@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { prepareDesktopPublication } from './publish-desktop-ci.ts'
 import { readDesktopUploadCredentials } from './desktop-publish-config.ts'
 import { desktopPublishCos } from './desktop-publish-cos.ts'

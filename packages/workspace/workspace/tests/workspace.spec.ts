@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import type { z } from '@deepseek-ai/zod'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

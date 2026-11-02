@@ -19,8 +19,8 @@
  * @module @deepseek-ai/dsh-session-turn-outline/projection
  */
 
-import { z } from 'zod'
-import type { ZodType } from 'zod'
+import { z } from '@deepseek-ai/zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import { SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { TurnOutlineEntry, TurnOutlineState } from './types.ts'

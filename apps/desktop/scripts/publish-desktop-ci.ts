@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { appendFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { readDesktopPublishConfig, readDesktopUploadCredentials } from './desktop-publish-config.ts'
 import { desktopReleasesRoot } from './retain-desktop-ci.ts'
 import { retainedDesktopPath, verifyRetainedDesktopRelease } from './desktop-release-store.ts'

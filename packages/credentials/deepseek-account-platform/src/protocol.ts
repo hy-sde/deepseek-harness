@@ -1,5 +1,5 @@
 /** Validated platform HTTP messages and restricted browser destinations. */
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { AccountBonusOrderId, SignInErrorCode } from '@deepseek-ai/dsh-deepseek-account/types'
 
 /** Protocol errors expose a stable code, never a response body or authorization URL. */

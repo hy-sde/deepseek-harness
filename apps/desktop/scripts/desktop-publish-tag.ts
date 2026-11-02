@@ -1,6 +1,6 @@
 /** Create immutable Desktop release tags using the explicitly supplied GitHub App installation token. */
 import { valid } from 'semver'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { desktopReleaseTag } from './desktop-release-tag.ts'
 
 const refSchema = z.object({ object: z.object({ type: z.string(), sha: z.string().regex(/^[a-f0-9]{40}$/u) }) })

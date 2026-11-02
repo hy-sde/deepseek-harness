@@ -13,6 +13,9 @@
       "path": "../../../vendor/schemastery"
     },
     {
+      "path": "../../../vendor/zod"
+    },
+    {
       "path": "../../api/remotes/tsconfig.client.json"
     },
     {

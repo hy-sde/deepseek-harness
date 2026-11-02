@@ -23,7 +23,7 @@ import {
   type TypertResource,
 } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import TypertGatewayService, { type TypertRemoteEventDispatch } from '@deepseek-ai/dsh-api-gateway'
 import { callResources, eventResources } from '../src/access.ts'
 import { provideBrowserCredentials } from './browser-credentials.ts'

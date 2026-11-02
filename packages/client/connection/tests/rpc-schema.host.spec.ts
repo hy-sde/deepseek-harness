@@ -8,7 +8,7 @@ import {
   rpcResultSchema,
   serverResponseSchema,
 } from '../src/rpc-schema.ts'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 describe('Connection RPC schema', () => {
   it('brands any validated string correlation id', () => {

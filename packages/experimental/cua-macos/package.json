@@ -46,7 +46,7 @@
     "@deepseek-ai/dsh-user-questions": "workspace:*"
   },
   "dependencies": {
-    "zod": "4.6.7",
+    "@deepseek-ai/zod": "workspace:~",
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/dsh-cua": "workspace:*"
   },

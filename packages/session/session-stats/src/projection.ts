@@ -23,7 +23,7 @@
  * @module @deepseek-ai/dsh-session-stats/projection
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { assistantStreamFirstTokenTime } from '@deepseek-ai/dsh-llm'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 

@@ -7,7 +7,7 @@
 
 import { McpServer, type CallToolResult } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 function createFixtureServer(): McpServer {
   const server = new McpServer(

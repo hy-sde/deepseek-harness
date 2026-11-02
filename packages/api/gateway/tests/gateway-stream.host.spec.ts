@@ -37,7 +37,7 @@ import TypertGatewayService, {
   type TypertRemoteEventInvocation,
   type TypertRemoteEventOutcome,
 } from '@deepseek-ai/dsh-api-gateway'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type {
   RemoteEventClientId,
   RemoteEventInvocationFrame,

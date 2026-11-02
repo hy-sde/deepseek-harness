@@ -262,6 +262,9 @@ importers:
       '@deepseek-ai/dsh-working-directory':
         specifier: workspace:*
         version: link:packages/session/working-directory
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:vendor/zod
       '@stylistic/eslint-plugin':
         specifier: ^5.10.0
         version: 5.10.0(eslint@10.5.0(jiti@2.7.0)(supports-color@9.4.0))
@@ -397,9 +400,6 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.6)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   apps/cli:
     dependencies:
@@ -1364,15 +1364,15 @@ importers:
       '@deepseek-ai/dsh-zstd-frame':
         specifier: workspace:*
         version: link:../packages/util/zstd
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../vendor/zod
       '@xterm/headless':
         specifier: ^6.0.0
         version: 6.0.0
       playwright:
         specifier: ^1.49.0
         version: 1.61.1
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   native/landlock-run:
     devDependencies:
@@ -1521,9 +1521,9 @@ importers:
 
   packages/api/account-controller:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -1583,12 +1583,12 @@ importers:
       '@deepseek-ai/dsh-util-crypto':
         specifier: workspace:*
         version: link:../../util/crypto
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/api/job-controller:
     dependencies:
@@ -1598,9 +1598,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -1629,15 +1626,15 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:*
         version: link:../../typert/registry
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/api/remote-access:
     dependencies:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -1660,6 +1657,9 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:*
         version: link:../../typert/registry
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/api/remotes:
     dependencies:
@@ -1787,9 +1787,9 @@ importers:
       '@deepseek-ai/dsh-user-questions':
         specifier: workspace:*
         version: link:../../interaction/user-questions
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/api/session-controller:
     dependencies:
@@ -1802,12 +1802,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       mime-types:
         specifier: ^3.0.2
         version: 3.0.2
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -1950,9 +1950,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -1999,9 +1999,6 @@ importers:
       '@xterm/headless':
         specifier: ^6.0.0
         version: 6.0.0
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -2051,6 +2048,9 @@ importers:
       '@deepseek-ai/dsh-working-directory':
         specifier: workspace:*
         version: link:../../session/working-directory
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/api/wiki-controller:
     dependencies:
@@ -2060,9 +2060,9 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -2079,9 +2079,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -2131,9 +2131,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -2171,6 +2168,9 @@ importers:
       '@deepseek-ai/dsh-util-workspace-path':
         specifier: workspace:*
         version: link:../../util/workspace-path
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/ast/tool-ast:
     dependencies:
@@ -2478,15 +2478,15 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       execa:
         specifier: ^10.0.1
         version: 10.0.1
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -2563,15 +2563,15 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       minisearch:
         specifier: ^7.2.0
         version: 7.2.0
       semver:
         specifier: ^7.8.5
         version: 7.8.5
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -3700,9 +3700,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -3728,6 +3725,9 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/client/file-upload:
     dependencies:
@@ -3737,9 +3737,6 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -3765,6 +3762,9 @@ importers:
       '@deepseek-ai/dsh-util-crypto':
         specifier: workspace:*
         version: link:../../util/crypto
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/client/hmr:
     dependencies:
@@ -3857,9 +3857,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -3900,6 +3897,9 @@ importers:
       '@deepseek-ai/dsh-settings':
         specifier: workspace:*
         version: link:../../settings/settings
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/client/resources:
     devDependencies:
@@ -4437,6 +4437,9 @@ importers:
       '@deepseek-ai/dsh-workspace':
         specifier: workspace:*
         version: link:../../workspace/workspace
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@lexical/headless':
         specifier: ^0.49.0
         version: 0.49.0(typescript@6.0.3)
@@ -4464,9 +4467,6 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/client/ui-countdown:
     devDependencies:
@@ -5281,9 +5281,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -5330,6 +5327,9 @@ importers:
       '@deepseek-ai/dsh-util-crypto':
         specifier: workspace:*
         version: link:../../util/crypto
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -6544,6 +6544,9 @@ importers:
       '@deepseek-ai/dsh-util-crypto':
         specifier: workspace:*
         version: link:../../util/crypto
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -6562,9 +6565,6 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/client/ui-sidebar-terminal:
     devDependencies:
@@ -7289,6 +7289,9 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../host/webserver
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@tanstack/react-virtual':
         specifier: 3.14.10
         version: 3.14.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -7301,9 +7304,6 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/code-runtime/code-runtime-kernels:
     dependencies:
@@ -7649,9 +7649,9 @@ importers:
 
   packages/context/harness-dev-context:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -7689,9 +7689,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -7768,9 +7768,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -7826,9 +7826,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -7921,9 +7921,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -8165,9 +8165,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -8350,9 +8350,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -8562,9 +8562,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -8633,9 +8633,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -8997,9 +8997,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -9190,9 +9190,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -9254,6 +9251,9 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:*
         version: link:../../typert/registry
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -9381,12 +9381,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@trycua/cua-driver':
         specifier: 0.28.0
         version: 0.28.0
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -9464,9 +9464,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -9567,9 +9567,9 @@ importers:
       '@deepseek-ai/dsh-cua':
         specifier: workspace:*
         version: link:../cua
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -10101,12 +10101,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       sherpa-onnx-node:
         specifier: 1.13.8
         version: 1.13.8
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -10808,9 +10808,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -10923,9 +10923,9 @@ importers:
 
   packages/feedback/command-feedback:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -10963,9 +10963,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -11415,9 +11415,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -11634,9 +11634,9 @@ importers:
 
   packages/graph/graph-projection:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -11888,9 +11888,9 @@ importers:
 
   packages/host/plugin-inventory:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -11990,9 +11990,9 @@ importers:
       '@deepseek-ai/dsh-util-crypto':
         specifier: workspace:*
         version: link:../../util/crypto
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12024,9 +12024,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12117,9 +12117,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12264,9 +12264,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12274,6 +12271,9 @@ importers:
       '@deepseek-ai/dsh-attachment':
         specifier: workspace:*
         version: link:../../attachment/attachment
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/llm/llm-deepseek:
     dependencies:
@@ -12503,9 +12503,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12626,9 +12626,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12847,6 +12847,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../core/tools
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@modelcontextprotocol/node':
         specifier: 2.0.0
         version: 2.0.0(@modelcontextprotocol/server@2.2.0)(hono@4.13.7)
@@ -12859,9 +12862,6 @@ importers:
       '@modelcontextprotocol/server-filesystem':
         specifier: ^2026.8.31
         version: 2026.8.31(supports-color@9.4.0)(zod@4.6.7)
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/mcp/mcp-resources:
     dependencies:
@@ -12965,12 +12965,12 @@ importers:
 
   packages/openwiki/openwiki-core:
     dependencies:
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -13057,9 +13057,9 @@ importers:
       '@deepseek-ai/dsh-brand':
         specifier: workspace:*
         version: link:../../util/brand
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -13140,12 +13140,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       js-yaml:
         specifier: ^4.3.2
         version: 4.3.2
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -13331,9 +13331,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -13399,12 +13399,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@js-temporal/polyfill':
         specifier: 0.5.1
         version: 0.5.1
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -14009,9 +14009,9 @@ importers:
 
   packages/session/session-projection:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -14028,9 +14028,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -14053,9 +14053,9 @@ importers:
 
   packages/session/session-stats:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -14160,9 +14160,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -14262,9 +14262,9 @@ importers:
 
   packages/session/session-turn-outline:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -14323,9 +14323,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15096,9 +15096,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15121,9 +15121,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15140,9 +15140,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15313,9 +15313,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15341,9 +15341,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15392,9 +15392,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15556,12 +15556,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       '@modelcontextprotocol/sdk':
         specifier: ^1.31.0
         version: 1.31.0(supports-color@9.4.0)(zod@4.6.7)
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -15858,9 +15858,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -16461,9 +16461,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -16523,9 +16523,9 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:*
         version: link:../registry
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/typert/loader:
     dependencies:
@@ -16548,31 +16548,27 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:*
         version: link:../registry
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/typert/protocol:
     dependencies:
       '@deepseek-ai/dsh-brand':
         specifier: workspace:*
         version: link:../../util/brand
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
 
   packages/typert/registry:
-    dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -16580,6 +16576,9 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../protocol
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
 
   packages/util/atomic-write:
     devDependencies:
@@ -16595,9 +16594,9 @@ importers:
 
   packages/util/chunked-list:
     dependencies:
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -17119,9 +17118,9 @@ importers:
       '@deepseek-ai/dsh-brand':
         specifier: workspace:*
         version: link:../../util/brand
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../../../vendor/zod
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -17819,6 +17818,8 @@ importers:
       '@deepseek-ai/cosmokit':
         specifier: link:../cosmokit
         version: link:../cosmokit
+
+  vendor/zod: {}
 
   website:
     devDependencies:

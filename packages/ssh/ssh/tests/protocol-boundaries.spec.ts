@@ -1,7 +1,7 @@
 import { once } from 'node:events'
 import { PassThrough, Readable, Writable } from 'node:stream'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshRpcPeer } from '../src/protocol.ts'
 
 function frame(value: unknown): Buffer {

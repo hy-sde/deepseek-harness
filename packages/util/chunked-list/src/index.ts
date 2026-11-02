@@ -3,7 +3,7 @@
  * @module @deepseek-ai/dsh-chunked-list
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 const CHUNK_CAPACITY = 64
 

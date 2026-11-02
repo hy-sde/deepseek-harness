@@ -3,7 +3,7 @@ import { duplexPair, type Duplex } from 'node:stream'
 import { getEventListeners } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { SshSubprocessRuntime } from '../src/index.ts'
 

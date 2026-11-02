@@ -5,7 +5,7 @@
  * @module @deepseek-ai/dsh-workspace/src/spec
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'

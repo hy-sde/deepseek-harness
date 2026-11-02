@@ -1,6 +1,6 @@
 /** Lazy assembly of generated Remote definitions using caller-supplied Zod; no runtime imports. */
 
-import type { z } from 'zod'
+import type { z } from '@deepseek-ai/zod'
 import type {
   InvocationDescriptor,
   TypertClientRemote,

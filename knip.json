@@ -61,9 +61,6 @@
       "project": [
         "src/**/*.ts",
         "tests/**/*.ts"
-      ],
-      "ignoreDependencies": [
-        "zod"
       ]
     },
     "packages/host/directory-picker-native": {
@@ -437,11 +434,6 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/llm/llm": {
-      "ignoreDependencies": [
-        "zod"
-      ]
-    },
     "packages/llm/llm-deepseek": {
       "entry": [
         "tests/**/*.spec.ts",
@@ -480,11 +472,6 @@
       "project": [
         "src/**/*.ts",
         "tests/**/*.ts"
-      ]
-    },
-    "packages/context/session-reference": {
-      "ignoreDependencies": [
-        "zod"
       ]
     },
     "packages/session/session-checkpoint-policy": {
@@ -563,9 +550,6 @@
       "project": [
         "src/**/*.ts",
         "tests/**/*.ts"
-      ],
-      "ignoreDependencies": [
-        "zod"
       ]
     },
     "packages/examples/jsonrpc-demo": {

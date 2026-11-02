@@ -4,7 +4,7 @@
  * @module @deepseek-ai/dsh-subagent/catalog
  */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { appendChunkedList, chunkedListSchema, iterateChunkedList } from '@deepseek-ai/dsh-chunked-list'
 import type { ChunkedList } from '@deepseek-ai/dsh-chunked-list'
 import type {

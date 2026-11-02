@@ -1,7 +1,7 @@
 /** Read public deployment settings independently from upload and GitHub App secrets. */
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 
 const singleLine = z.string().min(1).regex(/^[^\r\n\0]+$/u, 'expected a single-line value')
 const absolutePath = singleLine.refine(isAbsolute, 'expected an absolute path')

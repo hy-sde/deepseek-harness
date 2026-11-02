@@ -1,7 +1,7 @@
 /** Resolve publication settings from the original machine's retained package before deployment approval. */
 import { appendFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { desktopReleasesRoot } from './retain-desktop-ci.ts'
 import { verifyRetainedDesktopRelease } from './desktop-release-store.ts'
 import { resolveDesktopPublishRoute } from './desktop-publish-route.ts'

@@ -1,5 +1,5 @@
 import { Service } from '@deepseek-ai/cordis'
-import type { ZodType } from 'zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import type { AgentPhase, Box, Entity, Flags, Payload, Present, SyntaxZoo } from './models.ts'
 
 export { AgentPhase } from './models.ts'

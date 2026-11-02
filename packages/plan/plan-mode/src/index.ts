@@ -23,8 +23,8 @@
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import { brandString } from '@deepseek-ai/dsh-brand'
-import { z as zod } from 'zod'
-import type { ZodType } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'

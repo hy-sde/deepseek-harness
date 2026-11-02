@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { Readable, Writable } from 'node:stream'
 
 const Reply = z.union([

@@ -1,6 +1,6 @@
 /** JSON validation shared by model tool admission and the native object facade. */
 import { Buffer } from 'node:buffer'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { CuaAppHandle, CuaSnapshotId } from './types.ts'
 
 const id = z.number().int().positive().max(2 ** 32 - 1)

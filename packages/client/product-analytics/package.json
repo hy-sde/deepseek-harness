@@ -51,7 +51,8 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/zod": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
@@ -66,7 +67,8 @@
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",
     "@deepseek-ai/dsh-otel": "workspace:*",
     "@deepseek-ai/dsh-app-boot": "workspace:*",
-    "@deepseek-ai/dsh-loader-smoke": "workspace:*"
+    "@deepseek-ai/dsh-loader-smoke": "workspace:*",
+    "@deepseek-ai/zod": "workspace:~"
   },
   "files": [
     "locale/*.json",
@@ -80,7 +82,6 @@
   ],
   "dependencies": {
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "@deepseek-ai/schemastery": "workspace:~",
-    "zod": "4.6.7"
+    "@deepseek-ai/schemastery": "workspace:~"
   }
 }

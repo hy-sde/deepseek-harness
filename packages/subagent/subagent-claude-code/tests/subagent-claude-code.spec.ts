@@ -362,7 +362,7 @@ describe('task admission and package contracts', () => {
     )
     // The fork pins zod 4.6.7 workspace-wide (pnpm-workspace.yaml overrides +
     // unified manifests); upstream's manifest pins 4.4.3.
-    expect(manifest.dependencies).toHaveProperty('zod', '4.6.7')
+    expect(manifest.dependencies).toHaveProperty('@deepseek-ai/zod', 'workspace:~')
     expect(manifest.dependencies).not.toHaveProperty('@deepseek-ai/dsh-subagent-codex')
 
     const sdkRoot = dirname(fileURLToPath(

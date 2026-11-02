@@ -18,7 +18,7 @@
  */
 
 import { Context, Service } from '@deepseek-ai/cordis'
-import type { ZodType } from 'zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type {
   Session,

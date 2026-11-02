@@ -1,6 +1,6 @@
 /** Runtime validation for Connection RPC envelopes. */
 
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { ClientRequest, RpcId, RpcMessage, ServerResponse } from './rpc.ts'
 
 /** Correlation id after wire validation. */

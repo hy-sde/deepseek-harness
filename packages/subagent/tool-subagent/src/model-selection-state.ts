@@ -1,6 +1,6 @@
 /** Durable per-session state for the user-controlled model-selection opt-in. */
 
-import { z as zod } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'

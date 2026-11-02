@@ -9,7 +9,7 @@ import type { Volatile } from '@deepseek-ai/cosmokit'
 import { Context, FiberState, Service } from '@deepseek-ai/cordis'
 import { randomUUID } from 'node:crypto'
 import z from '@deepseek-ai/schemastery'
-import { z as zod } from 'zod'
+import { z as zod } from '@deepseek-ai/zod'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type {
   Agent,

@@ -6,7 +6,7 @@
 
 import type { Context, Events } from '@deepseek-ai/cordis'
 import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { ZodType } from 'zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import type { TypertOwnedValue } from './owned-value.ts'
 
 declare const LOOKUP_HOST: unique symbol

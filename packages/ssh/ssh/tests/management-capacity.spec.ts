@@ -1,7 +1,7 @@
 /** Independent request capacities keep helper health and cleanup available under ordinary load. */
 import { PassThrough } from 'node:stream'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SSH_MAX_PROCESS_HANDLES, SSH_MAX_TEXT_STREAMS, SshRpcPeer } from '../src/protocol.ts'
 
 const frameBytes = 128 * 1024

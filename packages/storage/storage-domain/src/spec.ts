@@ -8,7 +8,7 @@
  * @module @deepseek-ai/dsh-storage-domain/src/spec
  */
 
-import type { ZodType } from 'zod'
+import type { ZodType } from '@deepseek-ai/zod'
 import { UNIT_NAME_RE, type KvUnitDescriptor } from '@deepseek-ai/dsh-storage'
 
 /** Global singleton declaration: schema plus the value used before the first write. */

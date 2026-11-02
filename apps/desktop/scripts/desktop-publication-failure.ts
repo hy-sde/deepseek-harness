@@ -1,5 +1,5 @@
 /** Safe failure details shared by publication diagnostics and durable journals. */
-import { ZodError } from 'zod'
+import { ZodError } from '@deepseek-ai/zod'
 import { DesktopPublishError } from './desktop-publish.ts'
 
 const publicCodes = new Set(['AccessDenied', 'InternalError', 'NoSuchBucket', 'BadDigest', 'SignatureDoesNotMatch',

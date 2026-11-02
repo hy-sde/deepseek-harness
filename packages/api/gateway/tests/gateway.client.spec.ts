@@ -3,7 +3,7 @@ import { RemoteError, typertOwnedValue } from '@deepseek-ai/dsh-typert-protocol'
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Fiber } from '@deepseek-ai/cordis'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { RemoteMock } from '@deepseek-ai/dsh-remote-mock'
 import { openConnectionWebSocket } from '@deepseek-ai/dsh-client-connection/src/client/socket.ts'
 import {

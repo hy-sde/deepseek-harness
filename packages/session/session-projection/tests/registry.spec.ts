@@ -9,7 +9,7 @@
 
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import SessionStore, {
   SESSION_FORMAT_VERSION,
   Session,

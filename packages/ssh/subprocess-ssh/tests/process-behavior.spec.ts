@@ -2,7 +2,7 @@
 import { duplexPair, type Duplex, type Readable } from 'node:stream'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { SshRpcPeer } from '../../ssh/src/protocol.ts'
 import { outputSnapshotFrameLimit } from '../../ssh/src/schemas.ts'

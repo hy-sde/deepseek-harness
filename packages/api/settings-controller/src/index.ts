@@ -17,7 +17,7 @@ import type {
 } from '@deepseek-ai/dsh-settings/types'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { CredentialsController } from './credentials.ts'
 import type { SettingsDocumentOpenValue } from './types.ts'
 

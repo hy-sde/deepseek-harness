@@ -1,6 +1,6 @@
 /** Short handshake against an actual executable, with bounded process ownership. */
 import { spawn } from 'node:child_process'
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 import { SshRpcPeer, SSH_PROTOCOL_VERSION } from '../../packages/ssh/ssh/src/protocol.ts'
 import { helloSchema } from '../../packages/ssh/ssh/src/schemas.ts'
 

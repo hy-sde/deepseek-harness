@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '@deepseek-ai/zod'
 /** Real SDK negotiation, subscription, and cancellation through the connection supervisor. */
 
 import { describe, expect, it, onTestFinished, vi } from 'vitest'

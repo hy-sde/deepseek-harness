@@ -165,7 +165,7 @@ describe('WorkspaceAnalyzer', { timeout: 60_000 }, () => {
     }))
     expect(host?.graph.nodes.some(node => node.kind === 'reference'
       && node.target.kind === 'external'
-      && node.target.module === 'zod'
+      && node.target.module === '@deepseek-ai/zod'
       && node.target.name === 'ZodType')).toBe(true)
     expect(host?.graph.nodes.some(node => node.kind === 'reference'
       && node.target.kind === 'external'
@@ -1703,7 +1703,7 @@ describe('FaceModelEmitter', { timeout: 60_000 }, () => {
     writeFileSync(consumerPath, [
       'import { Payload } from \'./host.js\'',
       'import type { Payload as SourcePayload } from \'@fixture/host\'',
-      'import type { z } from \'zod\'',
+      'import type { z } from \'@deepseek-ai/zod\'',
       'const precise: () => z.ZodType<SourcePayload> = Payload',
       'void precise',
       '',
@@ -1721,7 +1721,7 @@ describe('FaceModelEmitter', { timeout: 60_000 }, () => {
         noEmit: true,
         skipLibCheck: false,
         target: ts.ScriptTarget.ES2024,
-        // zod 4.6.7 (the fork's workspace-wide pin) references the DOM-global
+        // zod 4.6.7 (vendored as @deepseek-ai/zod) references the DOM-global
         // URL inside its own declaration files, so lib.dom must be on the
         // program for skipLibCheck:false to stay clean; upstream's 4.4.3 pin
         // needs only lib.es2024 here.
