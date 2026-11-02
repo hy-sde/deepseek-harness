@@ -2043,7 +2043,7 @@ export interface Config extends ProtocolConfig, ModelListingConfig {
 ## `@deepseek-ai/dsh-llm-pi-ai`
 
 - `inject`: `llm`
-- `refs`: `AnthropicMessagesCompat` (`@earendil-works/pi-ai`) · `Api` (`@earendil-works/pi-ai`) · `CacheRetention` (`@earendil-works/pi-ai`) · `Model` (`@earendil-works/pi-ai`) · `ModelThinkingLevel` (`@earendil-works/pi-ai`) · `OpenAICompletionsCompat` (`@earendil-works/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@earendil-works/pi-ai`) · `Transport` (`@earendil-works/pi-ai`) · `Volatile` (`@deepseek-ai/cordis`)
+- `refs`: `AnthropicMessagesCompat` (`@deepseek-ai/pi-ai`) · `Api` (`@deepseek-ai/pi-ai`) · `CacheRetention` (`@deepseek-ai/pi-ai`) · `Model` (`@deepseek-ai/pi-ai`) · `ModelThinkingLevel` (`@deepseek-ai/pi-ai`) · `OpenAICompletionsCompat` (`@deepseek-ai/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@deepseek-ai/pi-ai`) · `Transport` (`@deepseek-ai/pi-ai`) · `Volatile` (`@deepseek-ai/cordis`)
 - `source`: [`packages/llm/llm-pi-ai/src/config.ts:222`](../packages/llm/llm-pi-ai/src/config.ts)
 
 ```ts config-catalog

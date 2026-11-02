@@ -36,7 +36,7 @@ import type {
   MutableModels,
   SimpleStreamOptions,
   ThinkingLevel,
-} from '@earendil-works/pi-ai'
+} from '@deepseek-ai/pi-ai'
 import {
   attributionHeaders,
   contentHasImage,

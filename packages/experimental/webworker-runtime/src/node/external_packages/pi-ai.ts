@@ -1,7 +1,7 @@
 /**
- * `@earendil-works/pi-ai` stub, including its `/providers/all` and `/api/*.lazy`
+ * `@deepseek-ai/pi-ai` stub, including its `/providers/all` and `/api/*.lazy`
  * subpaths. The package is Node-only (no `require`/`browser` conditions, Node
- * builtins plus five cloud SDKs in its transport layer) and `llm-pi-ai` imports it
+ * builtins plus cloud SDKs in its transport layer) and `llm-pi-ai` imports it
  * statically at module scope, so the row cannot mount without it.
  *
  * Every symbol `llm-pi-ai` imports by name is present: a missing CommonJS symbol
@@ -13,7 +13,7 @@
  */
 import { notImplementedFail } from '../notImplementedFail.ts'
 
-const MODULE = '@earendil-works/pi-ai'
+const MODULE = '@deepseek-ai/pi-ai'
 
 /** Provider factory (unavailable). */
 export const createProvider = notImplementedFail(MODULE, 'createProvider')
@@ -35,14 +35,7 @@ export const builtinModels = notImplementedFail(MODULE, 'builtinModels')
  * installed pi-ai identifiers so the adapter can attach authentication metadata.
  */
 const BUILTIN_PROVIDER_IDS: readonly string[] = [
-  'amazon-bedrock', 'ant-ling', 'anthropic', 'azure', 'baseten', 'cerebras',
-  'cloudflare-ai-gateway', 'cloudflare-workers-ai', 'deepseek', 'fireworks', 'github-copilot',
-  'google', 'google-vertex', 'groq', 'huggingface', 'kimi-coding', 'minimax', 'minimax-cn',
-  'mistral', 'moonshotai', 'moonshotai-cn', 'nvidia', 'openai', 'openai-codex', 'opencode',
-  'opencode-go', 'openrouter', 'qwen-token-plan', 'qwen-token-plan-cn',
-  'qwen-token-plan-individual', 'together',
-  'vercel-ai-gateway', 'xai', 'xiaomi', 'xiaomi-token-plan-ams', 'xiaomi-token-plan-cn',
-  'xiaomi-token-plan-sgp', 'zai', 'zai-coding-cn',
+  'anthropic', 'azure', 'deepseek', 'openai', 'openai-codex',
 ]
 
 /**

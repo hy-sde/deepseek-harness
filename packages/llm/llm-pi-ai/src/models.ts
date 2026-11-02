@@ -1,6 +1,6 @@
 /** pi-ai model helpers assembled from public narrow entry points. */
 
-import { builtinModels } from '@earendil-works/pi-ai/providers/all'
+import { builtinModels } from '@deepseek-ai/pi-ai/providers/all'
 import type {
   Api,
   CreateModelsOptions,
@@ -10,7 +10,7 @@ import type {
   Provider,
   ProviderAuth,
   ProviderStreams,
-} from '@earendil-works/pi-ai'
+} from '@deepseek-ai/pi-ai'
 import type { LlmResolvedModelInfo } from '@deepseek-ai/dsh-llm'
 import { THINKING_LEVELS } from './catalog.ts'
 

@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import type { Provider } from '@earendil-works/pi-ai'
-import { builtinProviders } from '@earendil-works/pi-ai/providers/all'
+import type { Provider } from '@deepseek-ai/pi-ai'
+import { builtinProviders } from '@deepseek-ai/pi-ai/providers/all'
 import { generateProviderData, resolverEnv } from '../scripts/gen-provider-data.ts'
 import { catalogProvider } from '../src/catalog.ts'
 import { PROVIDER_DATA } from '../src/provider-data.generated.ts'
@@ -48,26 +48,21 @@ describe('provider metadata', () => {
 
   it('finds short-circuit credential pairs and federation fields missed by findEnvKeys', async () => {
     const data = await generateProviderData()
-    expect(data['amazon-bedrock']!.env).toContain('AWS_SECRET_ACCESS_KEY')
     expect(data['anthropic']!.env).toEqual([
       'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_OAUTH_TOKEN', 'ANTHROPIC_API_KEY',
       'ANTHROPIC_FEDERATION_RULE_ID', 'ANTHROPIC_ORGANIZATION_ID',
       'ANTHROPIC_IDENTITY_TOKEN_FILE', 'ANTHROPIC_SERVICE_ACCOUNT_ID', 'ANTHROPIC_WORKSPACE_ID',
     ])
-    expect(data['google-vertex']!.env).toContain('GOOGLE_APPLICATION_CREDENTIALS')
-    expect(data['cloudflare-ai-gateway']!.env).toEqual(['CLOUDFLARE_API_KEY', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_GATEWAY_ID'])
-    expect(data['cloudflare-workers-ai']!.env).toEqual(['CLOUDFLARE_API_KEY', 'CLOUDFLARE_ACCOUNT_ID'])
+    expect(data['openai']!.env).toEqual(['OPENAI_API_KEY'])
+    expect(data['openai-codex']!.env).toEqual([])
   })
 
   it('uses fixed catalog endpoints and keeps dynamic or model-specific endpoints distinct', () => {
     expect(PROVIDER_DATA.openai.defaultBaseURL).toBe('https://api.openai.com/v1')
-    expect(PROVIDER_DATA.radius.defaultBaseURL).toBe('https://radius.pi.dev/v1')
+    expect(PROVIDER_DATA['openai-codex'].defaultBaseURL).toBe('https://chatgpt.com/backend-api')
     expect(PROVIDER_DATA.azure.defaultBaseURL).toBeUndefined()
     expect(PROVIDER_DATA.azure.baseURLEnv).toEqual(['AZURE_OPENAI_BASE_URL', 'AZURE_OPENAI_RESOURCE_NAME'])
-    expect(PROVIDER_DATA['cloudflare-ai-gateway'].defaultBaseURL).toBeUndefined()
-    expect(PROVIDER_DATA['cloudflare-ai-gateway'].baseURLEnv).toEqual(['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_GATEWAY_ID'])
-    expect(PROVIDER_DATA['amazon-bedrock'].defaultBaseURL).toBeUndefined()
-    expect(PROVIDER_DATA.opencode.defaultBaseURL).toBeUndefined()
+    expect(PROVIDER_DATA.deepseek.defaultBaseURL).toBe('https://api.deepseek.com')
   })
 
   it('does not execute authentication when returning metadata at runtime', () => {

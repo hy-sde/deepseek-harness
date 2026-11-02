@@ -1,4 +1,4 @@
-import type { Credential } from '@earendil-works/pi-ai'
+import type { Credential } from '@deepseek-ai/pi-ai'
 import type { PiAiAuthInjection } from '../src/adapter.ts'
 
 /**

@@ -21,6 +21,9 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../../vendor/pi-ai"
+    },
+    {
       "path": "../../api/gateway/tsconfig.host.json"
     },
     {

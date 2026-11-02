@@ -55,7 +55,7 @@ describe('the replacement table', () => {
 
   it('answers a prefixed subpath with the module its exact key answers', () => {
     const table = createNodeBuiltins()
-    expect(REPLACED_PREFIXES['@earendil-works/pi-ai/']?.()).toBe(table['@earendil-works/pi-ai']?.())
+    expect(REPLACED_PREFIXES['@deepseek-ai/pi-ai/']?.()).toBe(table['@deepseek-ai/pi-ai']?.())
   })
 })
 

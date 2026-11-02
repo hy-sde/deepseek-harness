@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 // boundary: one ships a chat model, one ships only a classifier model, and one
 // lists no model of any type (the posture of a deployment whose pi-ai stub has
 // no catalog data, such as the browser-worker preview).
-vi.mock('@earendil-works/pi-ai/providers/all', async importOriginal => ({
-  ...await importOriginal<typeof import('@earendil-works/pi-ai/providers/all')>(),
+vi.mock('@deepseek-ai/pi-ai/providers/all', async importOriginal => ({
+  ...await importOriginal<typeof import('@deepseek-ai/pi-ai/providers/all')>(),
   builtinProviders: () => ['chat-provider', 'classifier-provider', 'uncataloged-provider'].map(id => ({ id })),
   getBuiltinModels: (provider: string) => provider === 'chat-provider' ? [{ id: 'chat-model' }] : [],
   getAllBuiltinModels: (provider: string) => {

@@ -1,6 +1,6 @@
 /** Installed provider defaults for configuration surfaces. */
 
-import type { Provider } from '@earendil-works/pi-ai'
+import type { Provider } from '@deepseek-ai/pi-ai'
 import type { LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'
 import { PROVIDER_DATA } from './provider-data.generated.ts'
 

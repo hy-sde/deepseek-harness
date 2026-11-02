@@ -19,10 +19,10 @@
  * @module dsh-llm-pi-ai/provider
  */
 
-import type { Api, ApiKeyAuth, Model, Provider, ProviderStreams } from '@earendil-works/pi-ai'
-import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy'
-import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy'
-import { openAIResponsesApi } from '@earendil-works/pi-ai/api/openai-responses.lazy'
+import type { Api, ApiKeyAuth, Model, Provider, ProviderStreams } from '@deepseek-ai/pi-ai'
+import { anthropicMessagesApi } from '@deepseek-ai/pi-ai/api/anthropic-messages.lazy'
+import { openAICompletionsApi } from '@deepseek-ai/pi-ai/api/openai-completions.lazy'
+import { openAIResponsesApi } from '@deepseek-ai/pi-ai/api/openai-responses.lazy'
 import { catalogProvider, PiAiCatalogError } from './catalog.ts'
 import { createProvider } from './models.ts'
 

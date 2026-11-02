@@ -11,8 +11,8 @@
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, isContextWindowExceededError, isQuotaExceededError, LlmError, QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import type { FinishReason, StreamChunk, TokenUsage, ToolCallId } from '@deepseek-ai/dsh-llm'
-import { isContextOverflow } from '@earendil-works/pi-ai/utils/overflow'
-import type { AssistantMessage, AssistantMessageEvent, Usage as PiUsage } from '@earendil-works/pi-ai'
+import { isContextOverflow } from '@deepseek-ai/pi-ai/utils/overflow'
+import type { AssistantMessage, AssistantMessageEvent, Usage as PiUsage } from '@deepseek-ai/pi-ai'
 import { toPiReplayState } from './replay.ts'
 
 /**

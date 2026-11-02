@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import type { AssistantMessageEvent, Model } from '@earendil-works/pi-ai'
-import { stream as streamAnthropic } from '@earendil-works/pi-ai/api/anthropic-messages'
-import { stream as streamCompletions } from '@earendil-works/pi-ai/api/openai-completions'
-import { stream as streamResponses } from '@earendil-works/pi-ai/api/openai-responses'
+import type { AssistantMessageEvent, Model } from '@deepseek-ai/pi-ai'
+import { stream as streamAnthropic } from '@deepseek-ai/pi-ai/api/anthropic-messages'
+import { stream as streamCompletions } from '@deepseek-ai/pi-ai/api/openai-completions'
+import { stream as streamResponses } from '@deepseek-ai/pi-ai/api/openai-responses'
 import { BlockAssembler } from '@deepseek-ai/dsh-llm'
 import { toStreamChunks } from '../src/stream.ts'
-import { normalizeContext } from '@earendil-works/pi-ai/utils/transcript'
+import { normalizeContext } from '@deepseek-ai/pi-ai/utils/transcript'
 import { anthropicFrame as frame, anthropicMessageStart, closeMockServers, mockServer } from './mock-server.ts'
 
 afterEach(closeMockServers)

@@ -12,15 +12,13 @@
  * @module dsh-llm-pi-ai/catalog
  */
 
-import { builtinProviders, getAllBuiltinModels, getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
-import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'
+import { builtinProviders, getAllBuiltinModels, getBuiltinModels } from '@deepseek-ai/pi-ai/providers/all'
+import type { BuiltinProvider } from '@deepseek-ai/pi-ai/providers/all'
 import type {
   AnthropicMessagesCompat,
   Api,
-  BedrockCompat,
   ChatTemplateKwargValue,
   KnownApi,
-  MistralConversationsCompat,
   Model,
   ModelCost,
   ModelThinkingLevel,
@@ -28,7 +26,7 @@ import type {
   OpenAIResponsesCompat,
   Provider,
   ThinkingLevelMap,
-} from '@earendil-works/pi-ai'
+} from '@deepseek-ai/pi-ai'
 
 /**
  * Pricing for a model the installed catalog does not describe. The harness
@@ -306,15 +304,6 @@ const ANTHROPIC_COMPAT_GATE = {
   allowedFallbackModels: 'offer',
 } as const satisfies Record<keyof AnthropicMessagesCompat, CompatDisposition>
 
-/** Disposition of every `BedrockCompat` field; a drift gate like the one above. */
-const BEDROCK_COMPAT_GATE = {
-  supportsStrictMode: 'offer',
-} as const satisfies Record<keyof BedrockCompat, CompatDisposition>
-
-/** Disposition of every `MistralConversationsCompat` field. */
-const MISTRAL_COMPAT_GATE = {
-  supportsMidConvoSystemMessages: 'withhold',
-} as const satisfies Record<keyof MistralConversationsCompat, CompatDisposition>
 
 /**
  * Every wire protocol pi-ai gives a compat type. Derived from `Model.compat`'s
@@ -335,13 +324,11 @@ type ApiWithCompat = { [K in KnownApi]: NonNullable<Model<K>['compat']> extends 
  * models declare.
  */
 const COMPAT_GATES: Readonly<Record<ApiWithCompat, Readonly<Record<string, CompatDisposition>>>> = {
-  'mistral-conversations': MISTRAL_COMPAT_GATE,
   'openai-completions': COMPLETIONS_COMPAT_GATE,
   'openai-responses': RESPONSES_COMPAT_GATE,
   'azure-openai-responses': RESPONSES_COMPAT_GATE,
   'openai-codex-responses': RESPONSES_COMPAT_GATE,
   'anthropic-messages': ANTHROPIC_COMPAT_GATE,
-  'bedrock-converse-stream': BEDROCK_COMPAT_GATE,
 }
 
 /**
@@ -363,9 +350,6 @@ type OfferedCompatField =
   | OfferedIn<typeof COMPLETIONS_COMPAT_GATE>
   | OfferedIn<typeof RESPONSES_COMPAT_GATE>
   | OfferedIn<typeof ANTHROPIC_COMPAT_GATE>
-  | OfferedIn<typeof BEDROCK_COMPAT_GATE>
-  // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Include gates whose current offering is empty.
-  | OfferedIn<typeof MISTRAL_COMPAT_GATE>
 
 /**
  * pi-ai wire-compatibility switches, set on the route (its models' default) or
@@ -481,7 +465,7 @@ export type EveryOfferedFieldIsDocumented = AssertNever<Exclude<OfferedCompatFie
 type AssertTrue<T extends true> = T
 
 /** Every compat type a gate classifies, merged so one `Pick` reaches all offered fields. */
-type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & AnthropicMessagesCompat & BedrockCompat & MistralConversationsCompat
+type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & AnthropicMessagesCompat
 
 /**
  * Proof that each documented field carries its upstream type, not a hand-copied
@@ -779,7 +763,7 @@ function resolveModelReasoning(
 }
 
 /** The compat block a materialized model carries, whichever protocol it speaks. */
-type ModelCompat = OpenAICompletionsCompat | OpenAIResponsesCompat | AnthropicMessagesCompat | BedrockCompat | MistralConversationsCompat
+type ModelCompat = OpenAICompletionsCompat | OpenAIResponsesCompat | AnthropicMessagesCompat
 
 /**
  * Resolve one model's compat block from the profile's switches.

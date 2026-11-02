@@ -7,7 +7,7 @@
  * @module dsh-llm-pi-ai/login
  */
 
-import type { AuthEvent, AuthPrompt, AuthType, Provider } from '@earendil-works/pi-ai'
+import type { AuthEvent, AuthPrompt, AuthType, Provider } from '@deepseek-ai/pi-ai'
 import type { Context } from '@deepseek-ai/cordis'
 import type { AuthorizationMethod, AuthorizationPrompt, AuthorizationSession } from '@deepseek-ai/dsh-authorization'
 import { isCredentialKeySegment } from '@deepseek-ai/dsh-credentials'

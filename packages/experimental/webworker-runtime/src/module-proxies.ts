@@ -78,7 +78,7 @@ export const MODULE_PROXIES: Record<string, string> = {
   'execa': './node/external_packages/execa.ts',
   'got': './node/external_packages/got.ts',
   '@vscode/ripgrep': './node/external_packages/ripgrep.ts',
-  '@earendil-works/pi-ai': './node/external_packages/pi-ai.ts',
+  '@deepseek-ai/pi-ai': './node/external_packages/pi-ai.ts',
   // Node internal modules for callers without `--expose-internals`.
   'node-addon-require-builtin': './node/external_packages/node-addon-require-builtin.ts',
   // Constructible fakes whose methods are never reached.
@@ -88,5 +88,5 @@ export const MODULE_PROXIES: Record<string, string> = {
 
 /** pi-ai subpaths (`/providers/all`, `/api/*.lazy`) share the one structural stub. */
 export const MODULE_PROXY_PREFIXES: Record<string, string> = {
-  '@earendil-works/pi-ai/': './node/external_packages/pi-ai.ts',
+  '@deepseek-ai/pi-ai/': './node/external_packages/pi-ai.ts',
 }

@@ -24,6 +24,7 @@ The Cordis framework and its foundation libraries are source-vendored into this 
 | `@deepseek-ai/cordis-plugin-timer` | `@cordisjs/plugin-timer` | [vendor/timer](vendor/timer/) | MIT |
 | `@deepseek-ai/cordis-plugin-hmr` | `@cordisjs/plugin-hmr` | [vendor/hmr](vendor/hmr/) | MIT |
 | `@deepseek-ai/cordis-plugin-logger-console` | `@cordisjs/plugin-logger-console` | [vendor/logger-console](vendor/logger-console/) | MIT |
+| `@deepseek-ai/pi-ai` | `@earendil-works/pi-ai` | [vendor/pi-ai](vendor/pi-ai/) | MIT |
 
 ## Runtime npm dependencies
 
@@ -38,7 +39,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`@babel/code-frame`](https://github.com/babel/babel) | MIT |
 | [`@browserbasehq/stagehand`](https://github.com/browserbase/stagehand) | MIT |
 | [`@deepseek-ai/libreoffice-kit`](https://github.com/deepseek-ai/dsh-libreoffice-kit) | MPL-2.0 |
-| [`@earendil-works/pi-ai`](https://github.com/earendil-works/pi) | MIT |
+| [`@earendil-works/pi-telemetry`](https://github.com/earendil-works/pi) | MIT |
 | [`@eslint-community/regexpp`](https://github.com/eslint-community/regexpp) | MIT |
 | [`@fortune-sheet/core`](https://github.com/ruilisi/fortune-sheet) | MIT |
 | [`@fortune-sheet/react`](https://github.com/ruilisi/fortune-sheet) | MIT |
@@ -119,8 +120,10 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`node-addon-require-builtin`](https://www.npmjs.com/package/node-addon-require-builtin) | MIT |
 | [`node-pty`](https://github.com/microsoft/node-pty) | MIT |
 | [`open`](https://github.com/sindresorhus/open) | MIT |
+| [`openai`](https://github.com/openai/openai-node) | Apache-2.0 |
 | [`p-limit`](https://github.com/sindresorhus/p-limit) | MIT |
 | [`papaparse`](https://github.com/mholt/PapaParse) | MIT |
+| [`partial-json`](https://github.com/promplate/partial-json-parser-js) | MIT |
 | [`pdfjs-dist`](https://github.com/mozilla/pdf.js) | Apache-2.0 |
 | [`picomatch`](https://github.com/micromatch/picomatch) | MIT |
 | [`playwright-core`](https://github.com/microsoft/playwright) | Apache-2.0 |
@@ -138,6 +141,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`tar`](https://github.com/isaacs/node-tar) | BlueOak-1.0.0 |
 | [`tsx`](https://github.com/privatenumber/tsx) | MIT |
 | [`turndown`](https://github.com/mixmark-io/turndown) | MIT |
+| [`typebox`](https://github.com/sinclairzx81/typebox) | MIT |
 | [`typescript`](https://github.com/microsoft/TypeScript) | Apache-2.0 |
 | [`undici`](https://github.com/nodejs/undici) | MIT |
 | [`use-sync-external-store`](https://github.com/facebook/react) | MIT |
@@ -149,7 +153,6 @@ External packages installed for runtime use or distributed inside the prebuilt b
 
 pnpm applies local patches to the following packages at install time, so shipped artifacts carry modified copies; each patch file is the complete record of the modification:
 
-- `@earendil-works/pi-ai@1.1.0` — [`patches/@earendil-works__pi-ai@1.1.0.patch`](patches/@earendil-works__pi-ai@1.1.0.patch)
 - `@electron/osx-sign@1.3.3` — [`patches/@electron__osx-sign@1.3.3.patch`](patches/@electron__osx-sign@1.3.3.patch)
 - `@fortune-sheet/core@1.0.4` — [`patches/@fortune-sheet__core@1.0.4.patch`](patches/@fortune-sheet__core@1.0.4.patch)
 - `@fortune-sheet/react@1.0.4` — [`patches/@fortune-sheet__react@1.0.4.patch`](patches/@fortune-sheet__react@1.0.4.patch)

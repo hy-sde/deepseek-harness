@@ -7,7 +7,7 @@ const streamSimple = vi.hoisted(() => vi.fn())
 // `src/provider.ts`, so the table's lazy api module is the SDK boundary this
 // test can observe. A catalog route dispatches through pi-ai's own provider and
 // would not see this mock.
-vi.mock('@earendil-works/pi-ai/api/openai-completions.lazy', () => ({
+vi.mock('@deepseek-ai/pi-ai/api/openai-completions.lazy', () => ({
   openAICompletionsApi: () => ({ stream: streamSimple, streamSimple }),
 }))
 

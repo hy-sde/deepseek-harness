@@ -1,4 +1,4 @@
-import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
+import { getBuiltinModels } from '@deepseek-ai/pi-ai/providers/all'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
@@ -80,44 +80,44 @@ describe('request-level dynamic profiles', () => {
     vi.stubEnv('PI_DYNAMIC_KEY', '')
     const dir = await home()
     const server = await mockServer([{ events: textEvents }, { events: textEvents }])
-    const known = getBuiltinModels('openrouter').find(model => model.api === 'openai-completions')!
-    const stored = { providers: { openrouter: {
+    const known = getBuiltinModels('azure').find(model => model.api === 'openai-completions')!
+    const stored = { providers: { azure: {
       apiKeyEnv: 'PI_DYNAMIC_KEY', baseURL: server.url,
       models: [{ id: known.id }, { id: '111' }],
     } } }
     await writeFile(join(dir, '.credentials.yaml'), 'version: 1\nrefs:\n  PI_DYNAMIC_KEY: fake-key\n', { mode: 0o600 })
     const ctx = await boot(dir, stored)
-    const failure = 'llm-pi-ai: provider "openrouter" model "111" needs an api; '
+    const failure = 'llm-pi-ai: provider "azure" model "111" needs an api; '
       + 'the installed catalog does not describe it, so set the route\'s api to the wire protocol its endpoint speaks'
 
-    expect(ctx.llm.listProviders()).toEqual([{ id: 'openrouter', name: 'openrouter' }])
+    expect(ctx.llm.listProviders()).toEqual([{ id: 'azure', name: 'azure' }])
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
-      provider: 'openrouter', displayName: 'openrouter', settingsNs: 'llm-pi-ai',
-      settingsPath: ['providers', 'openrouter'], declared: false,
-      defaultBaseURL: 'https://openrouter.ai/api/v1', nativeAuth: { env: ['OPENROUTER_API_KEY'], oauth: true },
+      provider: 'azure', displayName: 'azure', settingsNs: 'llm-pi-ai',
+      settingsPath: ['providers', 'azure'], declared: false,
+      defaultBaseURL: undefined, baseURLEnv: ['AZURE_OPENAI_BASE_URL', 'AZURE_OPENAI_RESOURCE_NAME'], nativeAuth: { env: ['AZURE_OPENAI_API_KEY'], oauth: false },
       error: failure,
     })
-    expect((await ctx.llm.listModels('openrouter')).map(model => model.id)).toEqual([known.id])
-    const bad = await assemble(ctx, { provider: 'openrouter', model: '111', messages: [] })
+    expect((await ctx.llm.listModels('azure')).map(model => model.id)).toEqual([known.id])
+    const bad = await assemble(ctx, { provider: 'azure', model: '111', messages: [] })
     expect(bad.finish).toMatchObject({ kind: 'error', failure: { code: 'INVALID_CONFIG', message: failure } })
     expect(server.requests).toHaveLength(0)
-    const good = await assemble(ctx, { provider: 'openrouter', model: known.id, messages: [] })
+    const good = await assemble(ctx, { provider: 'azure', model: known.id, messages: [] })
     expect(good.message.content).toEqual([{ type: 'text', text: 'hello' }])
 
     await configurations.get(ctx)!.update({ providers: { deepseek: { apiKeyEnv: 'PI_DYNAMIC_KEY', baseURL: server.url } } })
-    expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['openrouter', 'deepseek'])
+    expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['azure', 'deepseek'])
     const beforeRejected: unknown = configurations.get(ctx)!.entry.options.config
-    await expect(configurations.get(ctx)!.update({ providers: { openrouter: { displayName: 'Edited' } } })).rejects.toThrow(failure)
+    await expect(configurations.get(ctx)!.update({ providers: { azure: { displayName: 'Edited' } } })).rejects.toThrow(failure)
     expect(configurations.get(ctx)!.entry.options.config).toEqual(beforeRejected)
 
     const diagnostics: Array<string | undefined> = []
     ctx.on('llm/adapters-updated', () => {
-      diagnostics.push(ctx.llm.listConfigurableProviders().find(entry => entry.provider === 'openrouter')?.error)
+      diagnostics.push(ctx.llm.listConfigurableProviders().find(entry => entry.provider === 'azure')?.error)
     })
-    await configurations.get(ctx)!.update({ providers: { openrouter: { api: 'openai-completions' } } })
+    await configurations.get(ctx)!.update({ providers: { azure: { api: 'openai-completions' } } })
     expect(diagnostics).toEqual([undefined])
-    expect(ctx.llm.listProviders()[0]).toEqual({ id: 'openrouter', name: 'openrouter' })
-    const repaired = await assemble(ctx, { provider: 'openrouter', model: '111', messages: [] })
+    expect(ctx.llm.listProviders()[0]).toEqual({ id: 'azure', name: 'azure' })
+    const repaired = await assemble(ctx, { provider: 'azure', model: '111', messages: [] })
     expect(repaired.message.content).toEqual([{ type: 'text', text: 'hello' }])
     expect(server.requests).toHaveLength(2)
   })
@@ -159,7 +159,7 @@ describe('request-level dynamic profiles', () => {
     // before any route exists, each addressed inside the providers dict and
     // described by the endpoint and environment variables it uses unconfigured.
     const directory = ctx.llm.listConfigurableProviders()
-    expect(directory.length).toBeGreaterThan(30)
+    expect(directory.length).toBe(5)
     expect(directory).toContainEqual({
       provider: 'openai',
       displayName: 'openai',

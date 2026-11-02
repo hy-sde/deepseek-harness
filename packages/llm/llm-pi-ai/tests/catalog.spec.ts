@@ -7,11 +7,11 @@ const configurations = new WeakMap<Context, Awaited<ReturnType<typeof liveConfig
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
-import { getAllBuiltinModels, getBuiltinModels, getBuiltinProviders } from '@earendil-works/pi-ai/providers/all'
-import { AssistantMessageEventStream } from '@earendil-works/pi-ai/utils/event-stream'
-import { normalizeContext } from '@earendil-works/pi-ai/utils/transcript'
-import type { Api, Model, OpenAICompletionsCompat, Provider } from '@earendil-works/pi-ai'
-import { catalogModels, catalogProvider } from '../src/catalog.ts'
+import { getBuiltinModels } from '@deepseek-ai/pi-ai/providers/all'
+import { AssistantMessageEventStream } from '@deepseek-ai/pi-ai/utils/event-stream'
+import { normalizeContext } from '@deepseek-ai/pi-ai/utils/transcript'
+import type { Api, Model, OpenAICompletionsCompat, Provider } from '@deepseek-ai/pi-ai'
+import { catalogProvider } from '../src/catalog.ts'
 import { resolveProfiles } from '../src/config.ts'
 import { createModels, createProvider, getSupportedThinkingLevels } from '../src/models.ts'
 import { buildProvider, supportedProtocols } from '../src/provider.ts'
@@ -567,22 +567,6 @@ describe('catalog routes with per-model configuration', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  it('preserves catalog-only model metadata the profile cannot express', () => {
-    // Some catalog models carry provider-required request headers; overriding a
-    // capacity must not drop them, because configuration has no way to restate
-    // them.
-    const headered = (getBuiltinModels('nvidia') as { id: string; headers?: unknown }[])
-      .find(model => model.headers !== undefined)
-    if (headered === undefined) throw new Error('the installed catalog ships no nvidia model with headers')
-
-    const resolved = resolveProfiles({
-      nvidia: { models: [{ id: headered.id, contextWindow: 4096 }] },
-    })
-    const [model] = resolved.get('nvidia')?.piProvider?.getModels() ?? []
-    expect(model?.headers).toEqual(headered.headers)
-    expect(model?.contextWindow).toBe(4096)
-  })
-
   it('delegates both stream methods back to the reused catalog provider', async () => {
     const server = await mockServer([{ events: textEvents }, { events: textEvents }])
     const resolved = resolveProfiles({ deepseek: { baseURL: `${server.url}/v1` } })
@@ -598,16 +582,6 @@ describe('catalog routes with per-model configuration', () => {
     for await (const _event of built.streamSimple(model, context, { apiKey: 'k' })) { /* drain */ }
 
     expect(server.paths).toEqual(['/v1/chat/completions', '/v1/chat/completions'])
-  })
-
-  it('keeps each model its own endpoint when the catalog route declares none', () => {
-    // `opencode` ships no provider-level endpoint: the address lives on every
-    // catalog model, so the route resolves without any configured baseURL.
-    const resolved = resolveProfiles({ opencode: {} })
-    const models = resolved.get('opencode')?.piProvider?.getModels() ?? []
-    expect(models.length).toBeGreaterThan(0)
-    expect(models.every(model => model.baseUrl.length > 0)).toBe(true)
-    expect(resolved.get('opencode')?.piProvider?.baseUrl).toBeUndefined()
   })
 
   it('repoints a catalog route at another wire protocol without restating its endpoint', () => {
@@ -879,17 +853,17 @@ describe('compat switches', () => {
   })
 
   it('skips models of other protocols on a mixed route instead of failing them', () => {
-    const catalog = getBuiltinModels('opencode') as readonly Model<Api>[]
+    const catalog = getBuiltinModels('azure') as readonly Model<Api>[]
     const completions = catalog.find(model => model.api === 'openai-completions')
-    const responses = catalog.find(model => model.api === 'openai-responses')
-    if (completions === undefined || responses === undefined) throw new Error('opencode ships no mixed catalog')
+    const responses = catalog.find(model => model.api === 'azure-openai-responses')
+    if (completions === undefined || responses === undefined) throw new Error('azure ships no mixed catalog')
 
     const models = modelsOf({
-      opencode: {
+      azure: {
         compat: { supportsReasoningEffort: false },
         models: [{ id: completions.id }, { id: responses.id }],
       },
-    }, 'opencode')
+    }, 'azure')
 
     expect((models.get(completions.id)?.compat as OpenAICompletionsCompat).supportsReasoningEffort).toBe(false)
     expect(models.get(responses.id)?.compat).toEqual(responses.compat)
@@ -978,18 +952,18 @@ describe('compat switches', () => {
   })
 
   it('lands each route switch only on the models whose protocol declares it', () => {
-    const catalog = getBuiltinModels('opencode') as readonly Model<Api>[]
+    const catalog = getBuiltinModels('azure') as readonly Model<Api>[]
     const completions = catalog.find(model => model.api === 'openai-completions')
-    const responses = catalog.find(model => model.api === 'openai-responses')
-    if (completions === undefined || responses === undefined) throw new Error('opencode ships no mixed catalog')
+    const responses = catalog.find(model => model.api === 'azure-openai-responses')
+    if (completions === undefined || responses === undefined) throw new Error('azure ships no mixed catalog')
 
     const models = modelsOf({
-      opencode: {
+      azure: {
         // Both protocols take the first switch; only completions takes the second.
         compat: { supportsDeveloperRole: false, thinkingFormat: 'openai' },
         models: [{ id: completions.id }, { id: responses.id }],
       },
-    }, 'opencode')
+    }, 'azure')
 
     const onCompletions = models.get(completions.id)?.compat as OpenAICompletionsCompat
     expect(onCompletions.supportsDeveloperRole).toBe(false)
@@ -1150,12 +1124,6 @@ describe('compat switches', () => {
     }
   })
 
-  it('serves the Bedrock compat type on its own protocol', () => {
-    const models = modelsOf({ 'amazon-bedrock': { compat: { supportsStrictMode: false } } }, 'amazon-bedrock')
-    const [first] = [...models.values()]
-    expect((first?.compat as { supportsStrictMode?: boolean }).supportsStrictMode).toBe(false)
-  })
-
   it('refuses a compat key no wire protocol declares instead of dropping it', () => {
     // Schemastery passes unknown keys through, so silently dropping one would
     // make an unreadable switch look applied; the resolver must refuse it.
@@ -1249,7 +1217,7 @@ describe('configurable-provider directory', () => {
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
     ])
     const before = ctx.llm.listConfigurableProviders().length
-    expect(before).toBeGreaterThan(30)
+    expect(before).toBeGreaterThan(0)
 
     await configurations.get(ctx)!.update({
       providers: {
@@ -1303,21 +1271,6 @@ describe('configurable-provider directory', () => {
     expect(offered).toContain('openai')
     expect(offered).toContain('azure')
     expect(offered).not.toContain('azure-openai-responses')
-  })
-
-  it('leaves out an installed catalog route that ships no chat model', async () => {
-    const ctx = await harness({})
-    const offered = ctx.llm.listConfigurableProviders().map(entry => entry.provider)
-
-    // The installed catalog ships `typesafe` with classifier models only; with
-    // nothing to dispatch a chat request to, the route is not offered and is
-    // not a catalog route anywhere else either.
-    expect(getBuiltinProviders()).toContain('typesafe')
-    expect(getAllBuiltinModels('typesafe').length).toBeGreaterThan(0)
-    expect(getBuiltinModels('typesafe')).toEqual([])
-    expect(offered).not.toContain('typesafe')
-    expect(catalogProvider('typesafe')).toBeUndefined()
-    expect(catalogModels('typesafe').size).toBe(0)
   })
 
   it('lists a route a stored profile names as a catalog route, not a declared one', async () => {

@@ -5,8 +5,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
-import type { Provider } from '@earendil-works/pi-ai'
-import { builtinProviders } from '@earendil-works/pi-ai/providers/all'
+import type { Provider } from '@deepseek-ai/pi-ai'
+import { builtinProviders } from '@deepseek-ai/pi-ai/providers/all'
 
 interface ProviderData {
   env: readonly string[]
@@ -97,7 +97,7 @@ export async function generateProviderData(providers: readonly Provider[] = buil
     catch (error) {
       // compat is a temporary upstream surface. Import it only as a last
       // resort, with a synthetic dictionary that never reads process.env.
-      const fallback = (await import('@earendil-works/pi-ai/compat')).findEnvKeys(
+      const fallback = (await import('@deepseek-ai/pi-ai/compat')).findEnvKeys(
         provider.id, new Proxy<Record<string, string>>({}, { get: () => 'probe-value' }),
       )
       if (fallback === undefined || fallback.length === 0) throw new Error(`${provider.id}: no auth metadata fallback`, { cause: error })
@@ -126,7 +126,7 @@ export async function generateProviderData(providers: readonly Provider[] = buil
  */
 export async function syncProviderData(check: boolean, cached = false): Promise<void> {
   const source = '/** Generated from the installed pi-ai catalog. Run pnpm gen-provider-data; do not edit. */\n\n'
-    + "import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'\n"
+    + "import type { BuiltinProvider } from '@deepseek-ai/pi-ai/providers/all'\n"
     + "import type { LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'\n\n"
     + "type ProviderData = Pick<LlmConfigurableProvider, 'defaultBaseURL' | 'baseURLEnv'> & { env: readonly string[] }\n\n"
     + '/** Catalog endpoints and environment names; no credentials are evaluated at runtime. */\n'

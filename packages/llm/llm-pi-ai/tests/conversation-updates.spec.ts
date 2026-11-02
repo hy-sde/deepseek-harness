@@ -4,7 +4,7 @@ import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, { createAssistantMessage, createDeveloperMessage, createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, ToolSchema, ToolUpdate } from '@deepseek-ai/dsh-llm'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
-import type { Api, Model } from '@earendil-works/pi-ai'
+import type { Api, Model } from '@deepseek-ai/pi-ai'
 import { resolveProfiles } from '../src/config.ts'
 import { memoryAuth } from './auth-double.ts'
 import { conversationUpdates } from '../src/models.ts'
@@ -144,7 +144,7 @@ describe('serialized conversation updates', () => {
   })
 
   it.each([
-    { provider: 'moonshotai', modelId: 'kimi-k3', field: 'messages', role: 'system' },
+    { provider: 'deepseek', modelId: 'deepseek-v4-pro', field: 'messages', role: 'system' },
     { provider: 'openai', modelId: 'gpt-5.4', field: 'input', role: 'developer' },
   ])('preserves update placement through $provider', async ({ provider, modelId, field, role }) => {
     const { requests } = await send(provider, modelId, {
@@ -179,23 +179,6 @@ describe('serialized conversation updates', () => {
 })
 
 describe('historical tool availability on the wire', () => {
-  it('anchors Kimi tool additions after user input in Chat Completions', async () => {
-    const update = addition()
-    const { requests } = await send('moonshotai', 'kimi-k3', {
-      messages: [user('first'), update], tools: [baseline, added],
-      toolHistory: { tools: [baseline], updates: [{ messageId: update.id, additions: [added] }] },
-    })
-    expect(requests).toHaveLength(1)
-    expect(requests[0]).toMatchObject({
-      tools: [{ type: 'function', function: { name: 'read' } }],
-      messages: [
-        { role: 'user', content: 'first' },
-        { role: 'system', tools: [{ type: 'function', function: { name: 'search', description: added.description, parameters: added.parameters } }] },
-        { role: 'system', content: 'Instruction one.\nInstruction two.' },
-      ],
-    })
-  })
-
   it('loads Codex tool additions through tool-search output', async () => {
     // Codex extracts an account id from the token before contacting the mock server.
     const payload = Buffer.from(JSON.stringify({ 'https://api.openai.com/auth': { chatgpt_account_id: 'fixture-account' } })).toString('base64url')

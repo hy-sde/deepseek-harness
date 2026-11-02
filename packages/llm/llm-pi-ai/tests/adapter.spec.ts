@@ -13,7 +13,7 @@ import LlmRuntime, { createToolResultMessage, createUserMessage, CONTEXT_WINDOW_
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
+import { getBuiltinModels } from '@deepseek-ai/pi-ai/providers/all'
 import { DEFAULT_MAX_REQUEST_IMAGE_BYTES, resolveProfiles } from '../src/config.ts'
 import { memoryAuth } from './auth-double.ts'
 import { assemble } from './assemble.ts'

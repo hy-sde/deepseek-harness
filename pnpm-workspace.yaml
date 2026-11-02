@@ -39,11 +39,6 @@ allowBuilds:
   lefthook: true
   # Cross-platform boundary for the persistent PTY backend, including ConPTY on Windows.
   node-pty: true
-  # Pulled in by @earendil-works/pi-ai (optional LLM API backend). pnpm lists
-  # them only because they ship lifecycle scripts, but those are no-ops we don't
-  # need, so we deny them — install still succeeds.
-  '@google/genai': false
-  protobufjs: false
   node-addon-require-builtin: false
   # JSONL durability calls MoveFileExW with write-through publication on Windows.
   # Consumers pin 3.1.1: Koffi 3.3.2's source build fails under GCC 13 when
@@ -77,9 +72,9 @@ minimumReleaseAgeExclude:
   - '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.5'
   - '@deepseek-ai/libreoffice-kit-win32-x64@0.1.5'
   - '@deepseek-ai/libreoffice-kit-wasm@0.1.5'
-  # Fresh pi-ai releases carry the model catalog updates that are the whole
-  # point of bumping it; waiting out the release age would defeat that.
-  - '@earendil-works/pi-ai@1.1.0'
+  # Fresh @earendil-works/pi-telemetry releases (type-only dep of the vendored
+  # pi-ai fork) ride the upstream release train; waiting out the release age
+  # would defeat that.
   - '@earendil-works/pi-telemetry@1.1.0'
   # This addon release recognizes the Electron 44.7.0 Node/V8 fingerprint used by Desktop.
   - node-addon-native-custom-loader@0.1.9
@@ -127,7 +122,6 @@ minimumReleaseAgeExclude:
   # Desktop packaging requires this Electron fingerprint with node-addon-require-builtin 0.1.9.
   - electron@44.7.0
 patchedDependencies:
-  '@earendil-works/pi-ai@1.1.0': patches/@earendil-works__pi-ai@1.1.0.patch
   '@electron/osx-sign@1.3.3': patches/@electron__osx-sign@1.3.3.patch
   '@fortune-sheet/core@1.0.4': patches/@fortune-sheet__core@1.0.4.patch
   '@fortune-sheet/react@1.0.4': patches/@fortune-sheet__react@1.0.4.patch
