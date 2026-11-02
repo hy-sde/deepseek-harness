@@ -59,7 +59,7 @@ import {
 	type UnsupportedStrictSchemaKeywordCheck,
 } from "./constrained-sampling.ts";
 import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.ts";
-import { adjustMaxTokensForThinking, buildBaseOptions, clampMaxTokensToContext } from "./simple-options.ts";
+import { adjustMaxTokensForThinking, buildBaseOptions, clampMaxTokensToContext, MIN_ANSWER_TOKENS } from "./simple-options.ts";
 import { transformMessages } from "./transform-messages.ts";
 
 /**
@@ -952,6 +952,16 @@ export const streamSimple: StreamFunction<"anthropic-messages", SimpleStreamOpti
 			...base,
 			thinkingEnabled: true,
 			effort,
+		} satisfies AnthropicOptions);
+	}
+	// Honor an explicit caller cap as the TOTAL response ceiling (answer + thinking), matching
+	// the local maxTokens fold below. Anthropic requires budget_tokens >= 1024 and
+	// budget_tokens < max_tokens, so a cap below 2 * MIN_ANSWER_TOKENS cannot fit a valid
+	// budget — drop thinking instead of sending a request the API rejects with 400.
+	if (options?.maxTokens !== undefined && options.maxTokens < MIN_ANSWER_TOKENS * 2) {
+		return stream(model, context, {
+			...base,
+			thinkingEnabled: false,
 		} satisfies AnthropicOptions);
 	}
 
