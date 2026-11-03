@@ -26,6 +26,7 @@ The Cordis framework and its foundation libraries are source-vendored into this 
 | `@deepseek-ai/cordis-plugin-logger-console` | `@cordisjs/plugin-logger-console` | [vendor/logger-console](vendor/logger-console/) | MIT |
 | `@deepseek-ai/pi-ai` | `@earendil-works/pi-ai` | [vendor/pi-ai](vendor/pi-ai/) | MIT |
 | `@deepseek-ai/zod` | `zod` | [vendor/zod](vendor/zod/) | MIT |
+| `@deepseek-ai/effect` | `effect` | [vendor/effect](vendor/effect/) | MIT |
 
 ## Runtime npm dependencies
 

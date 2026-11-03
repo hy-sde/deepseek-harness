@@ -21,7 +21,7 @@
  * @module @deepseek-ai/dsh-tool-call-timeout-policy
  */
 
-import { Cause, Effect, Exit, Scheduler } from 'effect'
+import { Cause, Effect, Exit, Scheduler } from '@deepseek-ai/effect'
 import type { Context } from '@deepseek-ai/cordis'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import type { ToolExecutionResult } from '@deepseek-ai/dsh-tools'

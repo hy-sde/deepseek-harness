@@ -4,7 +4,7 @@
  */
 
 import { timeoutOf } from '@deepseek-ai/dsh-timeout'
-import { Effect, Scheduler } from 'effect'
+import { Effect, Scheduler } from '@deepseek-ai/effect'
 
 /**
  * Effect's default scheduler dispatches on `setImmediate`; the sync scheduler

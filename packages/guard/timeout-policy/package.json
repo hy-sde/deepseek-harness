@@ -41,6 +41,6 @@
     "@deepseek-ai/cordis": "workspace:~"
   },
   "dependencies": {
-    "effect": "4.0.0-rc.118"
+    "@deepseek-ai/effect": "workspace:~"
   }
 }

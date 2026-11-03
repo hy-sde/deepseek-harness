@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~",
-    "effect": "4.0.0-rc.118"
+    "@deepseek-ai/effect": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-web": "workspace:*",
