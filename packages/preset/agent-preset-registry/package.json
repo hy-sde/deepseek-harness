@@ -66,7 +66,7 @@
     "@deepseek-ai/dsh-app-boot": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "@deepseek-ai/zod": "workspace:~",
-    "js-yaml": "^4.3.2"
+    "js-yaml": "4.3.2"
   },
   "devDependencies": {
     "@deepseek-ai/cordis-plugin-group": "workspace:~",

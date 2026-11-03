@@ -64,7 +64,7 @@
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "execa": "^10.0.1",
-    "yaml": "^2.9.0",
+    "yaml": "2.9.0",
     "@deepseek-ai/zod": "workspace:~",
     "@deepseek-ai/dsh-util-values": "workspace:*"
   },
@@ -90,7 +90,7 @@
     }
   },
   "devDependencies": {
-    "chokidar": "^4.0.3",
+    "chokidar": "5.0.0",
     "@deepseek-ai/dsh-package-manifest": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",

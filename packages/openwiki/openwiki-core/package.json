@@ -38,7 +38,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "yaml": "^2.9.0",
+    "yaml": "2.9.0",
     "@deepseek-ai/zod": "workspace:~"
   },
   "devDependencies": {
