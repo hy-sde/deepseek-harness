@@ -297,6 +297,7 @@
     { "path": "./vendor/logger-console" },
     { "path": "./vendor/pi-ai" },
     { "path": "./vendor/zod" },
+    { "path": "./vendor/effect" },
     { "path": "./packages/util/brand" },
     { "path": "./packages/util/package-manifest" },
     { "path": "./packages/util/plugin-market-index" },

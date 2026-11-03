@@ -112,6 +112,7 @@
       "@deepseek-ai/cordis-plugin-logger-console": ["./vendor/logger-console/src"],
       "@deepseek-ai/pi-ai": ["./vendor/pi-ai/src"],
       "@deepseek-ai/zod": ["./vendor/zod/src"],
+      "@deepseek-ai/effect": ["./vendor/effect/src"],
       "@deepseek-ai/node-addon-system/landlock-run": ["./native/system/packages/entry/src/index.ts"],
       "@deepseek-ai/node-addon-system/flock": ["./native/system/packages/entry/src/flock.ts"],
       "@deepseek-ai/dsh-tool-call-timeout-policy": ["./packages/guard/timeout-policy/src"],

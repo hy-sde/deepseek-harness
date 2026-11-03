@@ -4485,9 +4485,6 @@ importers:
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: workspace:*
         version: link:../ui-slots
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -7103,9 +7100,6 @@ importers:
       '@testing-library/react':
         specifier: ^16.1.0
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -8187,9 +8181,9 @@ importers:
 
   packages/debug/dap:
     dependencies:
-      effect:
-        specifier: 4.0.5
-        version: 4.0.5
+      '@deepseek-ai/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -11341,9 +11335,9 @@ importers:
       '@deepseek-ai/dsh-atomic-write':
         specifier: workspace:*
         version: link:../../util/atomic-write
-      effect:
-        specifier: 4.0.0-rc.118
-        version: 4.0.0-rc.118
+      '@deepseek-ai/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
     devDependencies:
       '@deepseek-ai/dsh-subprocess':
         specifier: workspace:*
@@ -11747,9 +11741,9 @@ importers:
 
   packages/guard/timeout-policy:
     dependencies:
-      effect:
-        specifier: 4.0.0-rc.118
-        version: 4.0.0-rc.118
+      '@deepseek-ai/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12709,12 +12703,12 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      effect:
-        specifier: 4.0.5
-        version: 4.0.5
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -16717,9 +16711,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
-      effect:
-        specifier: 4.0.0-rc.118
-        version: 4.0.0-rc.118
+      '@deepseek-ai/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
     devDependencies:
       '@deepseek-ai/dsh-subprocess':
         specifier: workspace:*
@@ -16944,12 +16938,12 @@ importers:
 
   packages/web/web-search-public:
     dependencies:
+      '@deepseek-ai/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      effect:
-        specifier: 4.0.0-rc.118
-        version: 4.0.0-rc.118
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -17694,6 +17688,8 @@ importers:
         version: 1.1.0
 
   vendor/cosmokit: {}
+
+  vendor/effect: {}
 
   vendor/group:
     dependencies:
@@ -22197,12 +22193,6 @@ packages:
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
-
-  effect@4.0.0-rc.118:
-    resolution: {integrity: sha512-hxhpCd+swzrtu9lnyPpEFre2ODQzJ9qxgyL1oHIEY8NKnW4PxTbM1XzplMZXiAsLD62HO+KJc41Nqxr9T791ZQ==}
-
-  effect@4.0.5:
-    resolution: {integrity: sha512-BY4/28NlpOd99yzmV741xbVGmp+1U7tks4oB7F/Png64bTa5tm5eCA6W0RiXsnuLDDoJpjfVSo4Dnq4BZb/89Q==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -29499,10 +29489,6 @@ snapshots:
       safer-buffer: 2.1.2
 
   ee-first@1.1.1: {}
-
-  effect@4.0.0-rc.118: {}
-
-  effect@4.0.5: {}
 
   ejs@3.1.10:
     dependencies:
