@@ -3,7 +3,7 @@ import { z } from '@deepseek-ai/zod'
 
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { InMemoryTransport, type Transport } from '@modelcontextprotocol/client'
+import { InMemoryTransport, type Transport } from '@deepseek-ai/mcp-client'
 import { McpServer } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'

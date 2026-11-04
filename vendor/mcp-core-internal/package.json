@@ -1,0 +1,53 @@
+{
+  "name": "@deepseek-ai/mcp-core-internal",
+  "description": "Vendored trimmed fork of @modelcontextprotocol/core-internal 2.2.0 for the DeepSeek Harness MCP seam (Node-only client surface: Client connect/list/call, stdio + streamable-HTTP transports)",
+  "version": "2.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "vendor/mcp-core-internal"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./public": {
+      "types": "./lib/types/exports/public/index.d.ts",
+      "default": "./lib/types/exports/public/index.js"
+    },
+    "./validators/ajv": {
+      "types": "./lib/types/validators/ajvProvider.d.ts",
+      "default": "./lib/types/validators/ajvProvider.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/types/**/*.js",
+    "lib/types/**/*.js.map",
+    "src"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@deepseek-ai/mcp-core": "workspace:~",
+    "@deepseek-ai/zod": "workspace:~",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "content-type": "^1.0.5",
+    "json-schema-typed": "^8.0.2"
+  },
+  "author": "Anthropic, PBC (https://anthropic.com)",
+  "license": "MIT / Apache-2.0",
+  "devDependencies": {
+    "@types/content-type": "^1.1.8"
+  }
+}

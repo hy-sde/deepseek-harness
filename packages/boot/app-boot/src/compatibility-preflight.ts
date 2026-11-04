@@ -5,8 +5,8 @@ import { dirname, extname, isAbsolute, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
-import { load } from 'js-yaml'
+import { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { resolvePluginResource } from './package-meta.ts'
 import { barePackageName } from './profile-resolution/resolver.ts'
 import type {} from './profile-resolution/service.ts'
@@ -151,7 +151,7 @@ function preflight(
     includes.add(filename)
     try {
       let data: unknown
-      try { data = load(readFileSync(filename, 'utf8'), { schema: entryListSchema }) }
+      try { data = load(readFileSync(filename, 'utf8'), { entryList: true }) }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT' || config.initial === undefined) return undefined
         data = config.initial

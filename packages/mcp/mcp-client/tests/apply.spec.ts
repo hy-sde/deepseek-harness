@@ -37,12 +37,12 @@ const { mockConnect, mockClose, mockListTools, mockCallTool, mockSetNotification
   return { mockConnect, mockClose, mockListTools, mockCallTool, mockSetNotificationHandler, MockClient }
 })
 
-vi.mock('@modelcontextprotocol/client', () => ({
+vi.mock('@deepseek-ai/mcp-client', () => ({
   Client: MockClient,
   StreamableHTTPClientTransport: vi.fn(),
 }))
 
-vi.mock('@modelcontextprotocol/client/stdio', () => ({
+vi.mock('@deepseek-ai/mcp-client/stdio', () => ({
   StdioClientTransport: vi.fn(),
 }))
 

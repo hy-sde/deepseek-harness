@@ -6,8 +6,7 @@ import { readFileSync } from 'node:fs'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed, onTestFinished, vi } from 'vitest'
-import * as yaml from 'js-yaml'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import type {} from '@deepseek-ai/dsh-experimental-agent-team'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import {
@@ -27,7 +26,7 @@ const INSTALL_ANCHORS = [
 const MODE = webSnapshotMode()
 
 function profileEntries(path: string): unknown[] {
-  const parsed = yaml.load(readFileSync(path, 'utf8'), { schema: entryListSchema })
+  const parsed = yaml.load(readFileSync(path, 'utf8'), { entryList: true })
   if (!Array.isArray(parsed)) throw new Error(`profile layer at ${path} must be a list`)
   return parsed
 }

@@ -1,7 +1,7 @@
 /** Parse and validate one recorded-session snapshot manifest. */
 
 import { isAbsolute } from 'node:path'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 
 /** Public `dsh` profile used to control a recorded-session scenario. */
 export type SnapshotProfile = 'headless' | 'sdk' | 'sdk-minimal' | 'acp' | 'web'
@@ -201,7 +201,7 @@ function positiveIndexes(value: unknown, label: string): number[] {
 export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): SnapshotManifest {
   let parsed: unknown
   try {
-    parsed = yaml.load(source, { schema: yaml.JSON_SCHEMA })
+    parsed = yaml.load(source, {})
   } catch (error) {
     throw new Error(`session-snapshot: ${path}: invalid YAML: ${String(error)}`)
   }

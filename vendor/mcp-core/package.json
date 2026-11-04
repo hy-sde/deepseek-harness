@@ -1,0 +1,41 @@
+{
+  "name": "@deepseek-ai/mcp-core",
+  "description": "Vendored trimmed fork of @modelcontextprotocol/core 2.2.0 for the DeepSeek Harness MCP seam (Node-only client surface: Client connect/list/call, stdio + streamable-HTTP transports)",
+  "version": "2.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "vendor/mcp-core"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./internal": {
+      "types": "./lib/types/internal.d.ts",
+      "default": "./lib/types/internal.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/types/**/*.js",
+    "lib/types/**/*.js.map",
+    "src"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@deepseek-ai/zod": "workspace:~"
+  },
+  "author": "Anthropic, PBC (https://anthropic.com)",
+  "license": "MIT / Apache-2.0"
+}

@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { JSON_SCHEMA, load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { readCurrentSessionFormatVersion } from './gen-session-format-catalog.ts'
 import { parseHistoricalPersistenceSnapshot, parsePersistenceSnapshot } from './persistence-changes.ts'
 import { persistenceFormatFactArtifacts } from './persistence-format-facts.ts'
@@ -52,7 +52,7 @@ function machineBlock(document: string, label: string): string {
     throw new Error(`${label}: historical source references must omit line numbers`)
   }
   const frontmatter = /^---\n([\s\S]*?)\n---(?:\n|$)/u.exec(document)?.[1]
-  const metadata: unknown = frontmatter === undefined ? undefined : load(frontmatter, { schema: JSON_SCHEMA })
+  const metadata: unknown = frontmatter === undefined ? undefined : load(frontmatter, {})
   if (metadata === null || typeof metadata !== 'object' || !('kind' in metadata) || metadata.kind !== 'persistence-format') {
     throw new Error(`${label}: expected persistence-format frontmatter kind`)
   }
@@ -74,7 +74,7 @@ function parseSource(source: unknown, label: string): PersistenceFormatSource {
 
 function parseRecord(block: string, version: number): PersistenceFormatRecord {
   const label = `v${version}`
-  const record = fields(load(block, { schema: JSON_SCHEMA }), ['schemaVersion', 'sessionFormatVersion', 'source', 'roots'], label)
+  const record = fields(load(block, {}), ['schemaVersion', 'sessionFormatVersion', 'source', 'roots'], label)
   if (record.schemaVersion !== 1) throw new Error(`${label}: unsupported persistence format record schema version`)
   if (record.sessionFormatVersion !== version) throw new Error(`${label}: record sessionFormatVersion must match its filename`)
   if (record.roots === null || typeof record.roots !== 'object' || Array.isArray(record.roots)) throw new Error(`${label}: roots must be a mapping`)

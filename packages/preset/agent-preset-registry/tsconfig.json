@@ -67,6 +67,9 @@
     },
     {
       "path": "../../interaction/user-approval"
+    },
+    {
+      "path": "../../util/yaml"
     }
   ]
 }

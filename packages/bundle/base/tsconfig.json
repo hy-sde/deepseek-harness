@@ -16,6 +16,9 @@
     },
     {
       "path": "../../settings/settings"
+    },
+    {
+      "path": "../../util/yaml"
     }
   ]
 }

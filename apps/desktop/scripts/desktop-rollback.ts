@@ -1,5 +1,5 @@
 /** Restore historical update feeds without uploading binaries or moving release tags. */
-import { load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { z } from '@deepseek-ai/zod'
 import type { DesktopUploadPlan } from './desktop-upload-plan.ts'
 import { desktopArtifactDigest, type DesktopPublishOperations, type DesktopRemoteObject } from './desktop-publish.ts'

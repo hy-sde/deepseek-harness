@@ -1,0 +1,53 @@
+{
+  "name": "@deepseek-ai/mcp-client",
+  "description": "Vendored trimmed fork of @modelcontextprotocol/client 2.2.0 for the DeepSeek Harness MCP seam (Node-only client surface: Client connect/list/call, stdio + streamable-HTTP transports)",
+  "version": "2.2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "vendor/mcp-client"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./stdio": {
+      "types": "./lib/types/stdio.d.ts",
+      "default": "./lib/types/stdio.js"
+    },
+    "./_shims": {
+      "types": "./lib/types/shimsNode.d.ts",
+      "default": "./lib/types/shimsNode.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/types/**/*.js",
+    "lib/types/**/*.js.map",
+    "src"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@deepseek-ai/mcp-core": "workspace:~",
+    "@deepseek-ai/mcp-core-internal": "workspace:~",
+    "cross-spawn": "^7.0.5",
+    "eventsource-parser": "^3.0.0",
+    "jose": "^6.1.3",
+    "pkce-challenge": "^5.0.0"
+  },
+  "author": "Anthropic, PBC (https://anthropic.com)",
+  "license": "MIT / Apache-2.0",
+  "devDependencies": {
+    "@types/cross-spawn": "^6.0.6"
+  }
+}

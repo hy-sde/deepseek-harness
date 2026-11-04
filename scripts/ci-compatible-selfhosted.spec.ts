@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { runInNewContext } from 'node:vm'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import { describe, expect, it } from 'vitest'
 
 interface Step {

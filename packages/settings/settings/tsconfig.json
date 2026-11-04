@@ -23,7 +23,6 @@
     {
       "path": "../../util/values"
     },
-
     {
       "path": "../../core/session"
     },
@@ -32,6 +31,9 @@
     },
     {
       "path": "../../../vendor/loader"
+    },
+    {
+      "path": "../../util/yaml"
     }
   ]
 }

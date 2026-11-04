@@ -1,7 +1,7 @@
 /** Resume Desktop publication by reconciling object bytes before changing update feeds. */
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { gt, valid } from 'semver'
 import { z } from '@deepseek-ai/zod'
 import type { DesktopUploadArtifact, DesktopUploadPlan } from './desktop-upload-plan.ts'

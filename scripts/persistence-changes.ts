@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { JSON_SCHEMA, load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { canonicalizeSchema, reachableSchemaTypes, schemaDigest } from './persistence-schema-model.ts'
 import { matchingSourceCompatibility, sourceKindGroups, validSourceCompatibility } from './persistence-source-policy.ts'
 import type { CanonicalSchema, PersistenceRoot, PersistenceSchemaInventory, SchemaNode, SchemaTupleElement } from './persistence-schema-model.ts'
@@ -528,11 +528,11 @@ export function classifyPersistenceChange(before: PersistenceRoot | null, after:
 
 function parseDocument(source: string, filename: string, allowIncomplete = false): PersistenceChangeRecord {
   const frontmatter = /^---\n([\s\S]*?)\n---\n/u.exec(source)
-  if (frontmatter === null || record(load(frontmatter[1] as string, { schema: JSON_SCHEMA }), filename).kind !== 'persistence-change') throw new Error(`${filename}: kind must be persistence-change`)
+  if (frontmatter === null || record(load(frontmatter[1] as string, {}), filename).kind !== 'persistence-change') throw new Error(`${filename}: kind must be persistence-change`)
   const openings = [...source.matchAll(/^```yaml persistence-change\s*$/gmu)]
   const block = /^```yaml persistence-change[^\S\n]*\n([\s\S]*?)^```[^\S\n]*$/mu.exec(source)
   if (openings.length !== 1 || block === null) throw new Error(`${filename}: expected exactly one persistence-change block`)
-  const input = record(load(block[1] as string, { schema: JSON_SCHEMA }), filename)
+  const input = record(load(block[1] as string, {}), filename)
   keys(input, ['schemaVersion', 'id', 'baseline', 'changes'], filename)
   if (input.schemaVersion !== 1) throw new Error(`${filename}: unsupported acknowledgement schema version`)
   const id = identifier(input.id, filename)

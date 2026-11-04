@@ -1,7 +1,7 @@
 /** Prepare a symlink-free executable runtime payload with shared workspace module instances. */
 import { cp, lstat, readFile, readdir, realpath, rm, unlink } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 
 function isHoistedLocations(value: unknown): value is Record<string, string[]> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

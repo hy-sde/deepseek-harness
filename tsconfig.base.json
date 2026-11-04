@@ -113,6 +113,15 @@
       "@deepseek-ai/pi-ai": ["./vendor/pi-ai/src"],
       "@deepseek-ai/zod": ["./vendor/zod/src"],
       "@hy-sde-org/effect": ["./vendor/effect/src"],
+      "@deepseek-ai/mcp-client": ["./vendor/mcp-client/src"],
+      "@deepseek-ai/mcp-client/stdio": ["./vendor/mcp-client/src/stdio.ts"],
+      "@deepseek-ai/mcp-client/_shims": ["./vendor/mcp-client/src/shimsNode.ts"],
+      "@deepseek-ai/mcp-core": ["./vendor/mcp-core/src"],
+      "@deepseek-ai/mcp-core/internal": ["./vendor/mcp-core/src/internal.ts"],
+      "@deepseek-ai/mcp-core-internal": ["./vendor/mcp-core-internal/src"],
+      "@deepseek-ai/mcp-core-internal/public": ["./vendor/mcp-core-internal/src/exports/public/index.ts"],
+      "@deepseek-ai/mcp-core-internal/validators/ajv": ["./vendor/mcp-core-internal/src/validators/ajvProvider.ts"],
+      "@deepseek-ai/zod/v4": ["./vendor/zod/src/index.ts"],
       "@deepseek-ai/node-addon-system/landlock-run": ["./native/system/packages/entry/src/index.ts"],
       "@deepseek-ai/node-addon-system/flock": ["./native/system/packages/entry/src/flock.ts"],
       "@deepseek-ai/dsh-tool-call-timeout-policy": ["./packages/guard/timeout-policy/src"],
@@ -611,7 +620,8 @@
       "@deepseek-ai/dsh-workflow-ptc": ["./packages/workflow/workflow-ptc/src"],
       "@deepseek-ai/dsh-working-directory": ["./packages/session/working-directory/src"],
       "@deepseek-ai/dsh-workspace": ["./packages/workspace/workspace/src"],
-      "@deepseek-ai/dsh-workspace-changes": ["./packages/deliverables/workspace-changes/src"]
+      "@deepseek-ai/dsh-workspace-changes": ["./packages/deliverables/workspace-changes/src"],
+      "@deepseek-ai/dsh-yaml": ["./packages/util/yaml/src"]
       // END generated package aliases
     }
   }

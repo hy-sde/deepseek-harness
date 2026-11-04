@@ -32,7 +32,7 @@
     "@deepseek-ai/dsh-llm-replay": "workspace:*",
     "@deepseek-ai/dsh-loader-smoke": "workspace:*",
     "@deepseek-ai/dsh-session-format": "workspace:*",
-    "js-yaml": "4.3.2",
+    "@deepseek-ai/dsh-yaml": "workspace:~",
     "vitest": "^4.1.11"
   },
   "peerDependencies": {
@@ -54,7 +54,6 @@
     "@deepseek-ai/dsh-subagent": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@deepseek-ai/dsh-user-questions": "workspace:*",
-    "@types/js-yaml": "^4.0.9",
     "@deepseek-ai/dsh-http-proxy": "workspace:*"
   }
 }

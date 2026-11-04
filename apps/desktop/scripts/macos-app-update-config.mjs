@@ -2,7 +2,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { dump, load } from 'js-yaml'
+import { dump, load } from '@deepseek-ai/dsh-yaml'
 
 const CONFIG_FILENAME = 'app-update.yml'
 import { resolveDesktopUpdateChannel } from './desktop-auto-update-environment.mjs'

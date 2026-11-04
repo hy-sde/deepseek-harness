@@ -16,6 +16,9 @@
     },
     {
       "path": "../tool-agent-team"
+    },
+    {
+      "path": "../../util/yaml"
     }
   ]
 }

@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { createInstalledUpdateRun } from '../scripts/installed-update-qualification.ts'
 import { planInstalledUpdateDistribution } from '../scripts/installed-update-distribution.ts'
 

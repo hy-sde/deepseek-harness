@@ -5,7 +5,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
-import yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import { expect, it } from 'vitest'
 import { assertInstalledTree, createPackedInstallation } from './packed-installation.ts'
 

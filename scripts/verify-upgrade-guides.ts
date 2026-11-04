@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { JSON_SCHEMA, load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -29,7 +29,7 @@ function guideViolations(source: string, language: typeof LANGUAGES[keyof typeof
 
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/u.exec(source)
   if (frontmatter === null) return [...violations, 'must start with YAML frontmatter']
-  const metadata = load(frontmatter[1] as string, { schema: JSON_SCHEMA })
+  const metadata = load(frontmatter[1] as string, {})
   if (typeof metadata !== 'object' || metadata === null || Array.isArray(metadata)) return [...violations, 'frontmatter must be a YAML object']
   const fields = metadata as Record<string, unknown>
   const keys = Object.keys(fields).sort()

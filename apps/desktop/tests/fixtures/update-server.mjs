@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
-import { dump } from 'js-yaml'
+import { dump } from '@deepseek-ai/dsh-yaml'
 
 /**
  * Allocate a private listener with request barriers and no remote publication.

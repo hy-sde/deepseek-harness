@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { runInNewContext } from 'node:vm'
-import { load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { describe, expect, it } from 'vitest'
 import { gatesForMode } from '../run-gates.ts'
 

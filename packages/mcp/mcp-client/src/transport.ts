@@ -6,9 +6,9 @@
  * @module
  */
 
-import type { Transport } from '@modelcontextprotocol/client'
-import { StdioClientTransport } from '@modelcontextprotocol/client/stdio'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import type { Transport } from '@deepseek-ai/mcp-client'
+import { StdioClientTransport } from '@deepseek-ai/mcp-client/stdio'
+import { StreamableHTTPClientTransport } from '@deepseek-ai/mcp-client'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type { Config } from './index.ts'
 

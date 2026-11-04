@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
-import yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import { expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '..')

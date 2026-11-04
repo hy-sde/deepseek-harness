@@ -10,10 +10,10 @@ import { pathToFileURL } from 'node:url'
 import { existsSync, readFileSync } from 'node:fs'
 import { inspect, parseEnv } from 'node:util'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import { Context, type Fiber, type FiberState } from '@deepseek-ai/cordis'
 import Loader, { type Entry, type EntryGroup, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import Include, { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import Include, { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import Group from '@deepseek-ai/cordis-plugin-group'
 import { dshHomePath, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { createLaunchEnvironmentSnapshot, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
@@ -260,13 +260,6 @@ export function loadLayeredEnv(
 }
 
 const bootstrapIncludes = new WeakMap<Context, Entry>()
-
-// The include's YAML dialect (`!!js` scalars become expression nodes the
-// Loader interpolates against each entry's injection-ready context), imported
-// from the include itself so patch parsing and config dumping can never drift
-// from what the include mounts. User patch layers share it so they may
-// reference `process.env`.
-const userPatchesSchema = entryListSchema
 
 /** What a caller of {@link recomposeProfile} already did and requires. */
 export interface ProfileRecompositionOptions {
@@ -578,7 +571,7 @@ function parsePatchList(
 ): PatchOptions[] {
   let parsed: unknown
   try {
-    parsed = yaml.load(content, { schema: userPatchesSchema })
+    parsed = yaml.load(content, { entryList: true })
   } catch (error) {
     throw new Error(`${binName}: failed to parse ${label} ${file}: ${String(error)}`)
   }
@@ -647,7 +640,7 @@ export function renderConfigDump(
   }
   let parsed: unknown
   try {
-    parsed = yaml.load(content, { schema: entryListSchema })
+    parsed = yaml.load(content, { entryList: true })
   } catch (error) {
     throw new Error(`${binName}: failed to parse config ${absoluteConfigPath}: ${String(error)}`)
   }
@@ -709,7 +702,7 @@ function groupedDump(
   const flush = (): void => {
     if (currentLabel === undefined || group.length === 0) return
     lines.push(`# == ${currentLabel}`)
-    lines.push(yaml.dump(group, { schema: entryListSchema, noRefs: true }).trimEnd())
+    lines.push(yaml.dump(group, { entryList: true, noRefs: true }).trimEnd())
     group = []
   }
   for (let index = 0; index < composed.length; index += 1) {

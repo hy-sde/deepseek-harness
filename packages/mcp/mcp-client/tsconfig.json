@@ -40,6 +40,9 @@
     },
     {
       "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../../vendor/mcp-client"
     }
   ]
 }

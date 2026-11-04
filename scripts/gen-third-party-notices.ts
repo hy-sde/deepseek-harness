@@ -10,7 +10,7 @@
 
 import { existsSync, globSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import { parse as parseToml, type TomlTableWithoutBigInt, type TomlValueWithoutBigInt } from 'smol-toml'
 import parseSpdx from 'spdx-expression-parse'
 import primaryRuntimeLock from './primary-runtime/lock.json' with { type: 'json' }
@@ -86,6 +86,9 @@ const OVERRIDES: Record<string, { license?: string; repo?: string }> = {
   // relicensing, so the effective terms are per-contribution.
   '@modelcontextprotocol/server-everything': { license: 'MIT / Apache-2.0', repo: 'https://github.com/modelcontextprotocol/servers' },
   '@modelcontextprotocol/server-filesystem': { license: 'MIT / Apache-2.0', repo: 'https://github.com/modelcontextprotocol/servers' },
+  // The published manifest carries an scp-style repository url (no protocol),
+  // which the naive `https://github.com/` prefix turns into a dead link.
+  'cross-spawn': { repo: 'https://github.com/moxystudio/node-cross-spawn' },
   // No repository field in the published manifest.
   'node-addon-require-builtin': { repo: 'https://www.npmjs.com/package/node-addon-require-builtin' },
   // No `license` field in the published manifest; the tarball's LICENSE.txt is the MIT text.
@@ -467,7 +470,7 @@ export function parseVendoredRows(text: string): VendoredRow[] {
  * disclosed, so a row that stops matching the table format is a hard error
  * rather than a package that quietly vanishes from the notices.
  */
-function collectVendored(): (VendoredRow & { sourceDirectory: string })[] {
+function collectVendored(): (VendoredRow & { sourceDirectory: string; license: string })[] {
   const rows = parseVendoredRows(readFileSync(resolve(root, 'vendor/README.md'), 'utf8'))
   const onDisk = new Map<string, string>()
   for (const entry of readdirSync(resolve(root, 'vendor'), { withFileTypes: true })) {
@@ -485,10 +488,10 @@ function collectVendored(): (VendoredRow & { sourceDirectory: string })[] {
     const dir = onDisk.get(row.npmName)
     if (dir === undefined) throw new Error(`gen-third-party-notices: vendored package ${row.npmName} from vendor/README.md has no vendor/ directory.`)
     const license = readManifest(`vendor/${dir}/package.json`).license
-    if (license !== 'MIT') {
-      throw new Error(`gen-third-party-notices: vendored ${row.npmName} declares license ${JSON.stringify(license)}; the vendored section assumes MIT throughout.`)
+    if (license !== 'MIT' && license !== 'MIT / Apache-2.0') {
+      throw new Error(`gen-third-party-notices: vendored ${row.npmName} declares license ${JSON.stringify(license)}; the vendored section assumes MIT or the upstream's recorded MIT / Apache-2.0 relicensing.`)
     }
-    return { ...row, sourceDirectory: `vendor/${dir}` }
+    return { ...row, sourceDirectory: `vendor/${dir}`, license: license ?? 'MIT' }
   })
 }
 
@@ -781,11 +784,11 @@ The complete npm transitive closure, including the Landlock launcher workspace, 
 
 ## Vendored source (\`vendor/\`)
 
-The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the \`@deepseek-ai\` scope. All are MIT-licensed; each directory preserves its upstream \`LICENSE\` file. Exact upstream commits and local modifications are recorded in [\`vendor/README.md\`](vendor/README.md).
+The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the \`@deepseek-ai\` scope. Each directory preserves its upstream \`LICENSE\` file; rows record the per-package license, with \`MIT / Apache-2.0\` marking upstreams mid MIT→Apache-2.0 relicensing where unconsented contributions remain MIT. Exact upstream commits and local modifications are recorded in [\`vendor/README.md\`](vendor/README.md).
 
 | Package | Upstream name | Source | License |
 | --- | --- | --- | --- |
-${vendored.map(row => `| \`${row.npmName}\` | \`${row.upstreamName}\` | [${row.sourceDirectory}](${row.sourceDirectory}/) | MIT |`).join('\n')}
+${vendored.map(row => `| \`${row.npmName}\` | \`${row.upstreamName}\` | [${row.sourceDirectory}](${row.sourceDirectory}/) | ${row.license} |`).join('\n')}
 
 ## Runtime npm dependencies
 

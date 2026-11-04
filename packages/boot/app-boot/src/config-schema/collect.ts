@@ -3,10 +3,10 @@
 import { readFile, realpath } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import Loader, { EntryGroup, ModuleLoader, isJsExpr, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
 import Group from '@deepseek-ai/cordis-plugin-group'
-import Include, { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import Include, { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import type { Profile, RuntimeResolution } from '../profile.ts'
 import { installRuntimeInterception } from '../profile-resolution/resolver.ts'
 import { buildConfigSchemaDocument } from './document.ts'
@@ -148,10 +148,10 @@ export async function collectConfigSchemas(
       }
       if (content !== undefined) {
         try {
-          source = extension === '.json' ? JSON.parse(content) : yaml.load(content, { schema: entryListSchema })
+          source = extension === '.json' ? JSON.parse(content) : yaml.load(content, { entryList: true })
         } catch (error) {
           // Parser messages can quote configuration values; retain only the file and location.
-          const at = error instanceof yaml.YAMLException ? ` at line ${error.mark.line + 1}, column ${error.mark.column + 1}` : ''
+          const at = error instanceof Error ? error.message.match(/ at line \d+, column \d+/)?.[0] ?? '' : ''
           throw new Error(`invalid ${extension === '.json' ? 'JSON' : 'YAML'} include ${filename}${at}`)
         }
       }

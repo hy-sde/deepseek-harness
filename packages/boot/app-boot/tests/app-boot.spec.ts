@@ -834,7 +834,7 @@ describe('loadOverlayPatches', () => {
     expect(loadOverlayPatches(NAME, valid)).toEqual([{ id: 'target', config: { value: { __jsExpr: 'process.env.VALUE' } } }])
     expect(() => loadOverlayPatches(NAME, join(dir, 'missing.yml'))).toThrow(`${NAME}: failed to read overlay`)
     const malformed = join(dir, 'malformed.yml')
-    writeFileSync(malformed, ': bad')
+    writeFileSync(malformed, 'broken: [')
     expect(() => loadOverlayPatches(NAME, malformed)).toThrow(`${NAME}: failed to parse overlay`)
     const mapping = join(dir, 'mapping.yml')
     writeFileSync(mapping, 'id: target\n')
@@ -1146,7 +1146,7 @@ describe('boot', () => {
 
   it.each([
     ['missing', undefined, 'config file not found'],
-    ['malformed', 'invalid: [unclosed\n', 'unexpected end'],
+    ['malformed', 'invalid: [unclosed\n', 'end with a ]'],
     ['non-array', 'entries: []\n', 'top-level array'],
   ])('rejects a %s root configuration', async (_kind, content, message) => {
     const dir = tmp()

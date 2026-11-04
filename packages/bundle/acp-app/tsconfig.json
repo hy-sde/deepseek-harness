@@ -13,6 +13,9 @@
     },
     {
       "path": "../../boot/cmdline"
+    },
+    {
+      "path": "../../util/yaml"
     }
   ]
 }

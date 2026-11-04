@@ -11,7 +11,7 @@ The complete npm transitive closure, including the Landlock launcher workspace, 
 
 ## Vendored source (`vendor/`)
 
-The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the `@deepseek-ai` scope. All are MIT-licensed; each directory preserves its upstream `LICENSE` file. Exact upstream commits and local modifications are recorded in [`vendor/README.md`](vendor/README.md).
+The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the `@deepseek-ai` scope. Each directory preserves its upstream `LICENSE` file; rows record the per-package license, with `MIT / Apache-2.0` marking upstreams mid MIT→Apache-2.0 relicensing where unconsented contributions remain MIT. Exact upstream commits and local modifications are recorded in [`vendor/README.md`](vendor/README.md).
 
 | Package | Upstream name | Source | License |
 | --- | --- | --- | --- |
@@ -27,6 +27,9 @@ The Cordis framework and its foundation libraries are source-vendored into this 
 | `@deepseek-ai/pi-ai` | `@earendil-works/pi-ai` | [vendor/pi-ai](vendor/pi-ai/) | MIT |
 | `@deepseek-ai/zod` | `zod` | [vendor/zod](vendor/zod/) | MIT |
 | `@hy-sde-org/effect` | `effect` | [vendor/effect](vendor/effect/) | MIT |
+| `@deepseek-ai/mcp-client` | `@modelcontextprotocol/client` | [vendor/mcp-client](vendor/mcp-client/) | MIT / Apache-2.0 |
+| `@deepseek-ai/mcp-core` | `@modelcontextprotocol/core` | [vendor/mcp-core](vendor/mcp-core/) | MIT / Apache-2.0 |
+| `@deepseek-ai/mcp-core-internal` | `@modelcontextprotocol/core-internal` | [vendor/mcp-core-internal](vendor/mcp-core-internal/) | MIT / Apache-2.0 |
 
 ## Runtime npm dependencies
 
@@ -52,7 +55,6 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`@lexical/plain-text`](https://github.com/facebook/lexical) | MIT |
 | [`@lexical/text`](https://github.com/facebook/lexical) | MIT |
 | [`@lexical/utils`](https://github.com/facebook/lexical) | MIT |
-| [`@modelcontextprotocol/client`](https://github.com/modelcontextprotocol/typescript-sdk) | MIT |
 | [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk) | MIT |
 | [`@noble/hashes`](https://github.com/paulmillr/noble-hashes) | MIT |
 | [`@octokit/webhooks`](https://github.com/octokit/webhooks.js) | MIT |
@@ -78,6 +80,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`@yarnpkg/parsers`](https://github.com/yarnpkg/berry) | BSD-2-Clause |
 | [`acorn`](https://github.com/acornjs/acorn) | MIT |
 | [`ajv`](https://github.com/ajv-validator/ajv) | MIT |
+| [`ajv-formats`](https://github.com/ajv-validator/ajv-formats) | MIT |
 | [`anser`](https://github.com/IonicaBizau/anser) | MIT |
 | [`big.js`](https://github.com/MikeMcl/big.js) | MIT |
 | [`buffer`](https://github.com/feross/buffer) | MIT |
@@ -88,9 +91,10 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`clsx`](https://github.com/lukeed/clsx) | MIT |
 | [`commander`](https://github.com/tj/commander.js) | MIT |
 | [`compression`](https://github.com/expressjs/compression) | MIT |
+| [`content-type`](https://github.com/jshttp/content-type) | MIT |
+| [`cross-spawn`](https://github.com/moxystudio/node-cross-spawn) | MIT |
 | [`diff`](https://github.com/kpdecker/jsdiff) | BSD-3-Clause |
 | [`dompurify`](https://github.com/cure53/DOMPurify) | (MPL-2.0 OR Apache-2.0) |
-| [`effect`](https://github.com/Effect-TS/effect) | MIT |
 | [`electron-updater`](https://github.com/electron-userland/electron-builder) | MIT |
 | [`eventsource-parser`](https://github.com/rexxars/eventsource-parser) | MIT |
 | [`exceljs`](https://github.com/exceljs/exceljs) | MIT |
@@ -101,7 +105,8 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`hosted-git-info`](https://github.com/npm/hosted-git-info) | ISC |
 | [`immer`](https://github.com/immerjs/immer) | MIT |
 | [`ipaddr.js`](https://github.com/whitequark/ipaddr.js) | MIT |
-| [`js-yaml`](https://github.com/nodeca/js-yaml) | MIT |
+| [`jose`](https://github.com/panva/jose) | MIT |
+| [`json-schema-typed`](https://github.com/RemyRylan/json-schema-typed) | BSD-2-Clause |
 | [`katex`](https://github.com/KaTeX/KaTeX) | MIT |
 | [`koffi`](https://github.com/Koromix/koffi) | MIT |
 | [`lexical`](https://github.com/facebook/lexical) | MIT |
@@ -128,6 +133,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`partial-json`](https://github.com/promplate/partial-json-parser-js) | MIT |
 | [`pdfjs-dist`](https://github.com/mozilla/pdf.js) | Apache-2.0 |
 | [`picomatch`](https://github.com/micromatch/picomatch) | MIT |
+| [`pkce-challenge`](https://github.com/crouchcd/pkce-challenge) | MIT |
 | [`playwright-core`](https://github.com/microsoft/playwright) | Apache-2.0 |
 | [`react`](https://github.com/facebook/react) | MIT |
 | [`react-dom`](https://github.com/facebook/react) | MIT |
@@ -214,8 +220,9 @@ External packages **directly declared** for development, tests, types, or toolin
 | [`@types/babel__code-frame`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/big.js`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/compression`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
+| [`@types/content-type`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
+| [`@types/cross-spawn`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/hosted-git-info`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
-| [`@types/js-yaml`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/jsdom`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/mdast`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/mime-types`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |

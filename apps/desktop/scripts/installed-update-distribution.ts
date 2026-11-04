@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { dump, load } from 'js-yaml'
+import { dump, load } from '@deepseek-ai/dsh-yaml'
 import { readInstalledUpdateRun } from './installed-update-qualification.ts'
 
 /** A local immutable object, with its final test-only destination and digest. */

@@ -25,6 +25,9 @@
     },
     {
       "path": "../../util/http-proxy"
+    },
+    {
+      "path": "../../util/yaml"
     }
   ]
 }

@@ -1,28 +1,11 @@
-import { EntryGroup, EntryTree, isJsExpr, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
+import { EntryGroup, EntryTree, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
 import { Context, Service } from '@deepseek-ai/cordis'
 import { extname } from 'node:path'
 import { access, constants, readFile, rename, writeFile } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 
-const JsExpr = new yaml.Type('tag:yaml.org,2002:js', {
-  kind: 'scalar',
-  resolve: (data) => typeof data === 'string',
-  construct: (data) => ({ __jsExpr: data }),
-  predicate: isJsExpr,
-  represent: (data) => data['__jsExpr'],
-})
-
-/**
- * The entry-list YAML dialect: `!!js` scalars round-trip as expression nodes
- * the Loader evaluates at entry activation. Exported so config tooling
- * (`dsh --dump-config`) parses and prints exactly the dialect this include
- * mounts.
- */
-export const entryListSchema = yaml.JSON_SCHEMA.extend(JsExpr)
-
-const schema = entryListSchema
 
 const writable: Record<string, string> = {
   '.json': 'application/json',
@@ -215,7 +198,7 @@ export class Include extends EntryTree {
     if (!forced && this.content === content) return false
     let data: any
     if (this.type === 'application/yaml') {
-      data = yaml.load(content, { schema: entryListSchema })
+      data = yaml.load(content, { entryList: true })
     } else if (this.type === 'application/json') {
       data = JSON.parse(content)
     } else {
@@ -291,7 +274,7 @@ export class Include extends EntryTree {
       throw new Error(`cannot overwrite readonly config`)
     }
     if (this.type === 'application/yaml') {
-      this.content = yaml.dump(config, { schema })
+      this.content = yaml.dump(config, { entryList: true })
     } else if (this.type === 'application/json') {
       this.content = JSON.stringify(config, null, 2)
     }

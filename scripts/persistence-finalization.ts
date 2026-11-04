@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { JSON_SCHEMA, load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import type { PersistenceHistory, PersistenceHistoryEntry } from './persistence-changes.ts'
 import type { PersistenceRoot, PersistenceSchemaInventory } from './persistence-schema-model.ts'
 
@@ -94,7 +94,7 @@ function status(root: string, path: string): number | undefined {
   if (openings.length === 0) return undefined
   const blocks = [...source.matchAll(/^```yaml session-format-finalization[ \t]*\n([\s\S]*?)^```[ \t]*$/gmu)]
   if (openings.length !== 1 || blocks.length !== 1) throw new Error(`${path}: expected one closed session-format-finalization record`)
-  const value = object(load((blocks[0] as RegExpMatchArray)[1] as string, { schema: JSON_SCHEMA }), path)
+  const value = object(load((blocks[0] as RegExpMatchArray)[1] as string, {}), path)
   const version = value.latestFinalizedVersion
   if (Object.keys(value).join(',') !== 'latestFinalizedVersion'
     || typeof version !== 'number' || !Number.isSafeInteger(version) || version < 0) {

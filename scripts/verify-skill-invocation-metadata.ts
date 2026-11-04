@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 
 const ROOT = resolve(import.meta.dirname, '..')
 

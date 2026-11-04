@@ -8,7 +8,7 @@
 import { existsSync, globSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { load as loadYaml } from 'js-yaml'
+import { load as loadYaml } from '@deepseek-ai/dsh-yaml'
 import {
   isPublicExperimentalPackageDirectory,
   isExperimentalPackageName,
@@ -164,8 +164,8 @@ export function readWorkspaceManifests(repositoryRoot: string): WorkspaceManifes
     || !config.packages.every((member: unknown): member is string => typeof member === 'string' && member.length > 0)) {
     throw new Error('pnpm-workspace.yaml: packages must be a non-empty list of workspace patterns')
   }
-  const patterns = config.packages.filter(member => !member.startsWith('!')).map(member => `${member}/package.json`)
-  const exclude = config.packages.filter(member => member.startsWith('!')).map(member => `${member.slice(1)}/package.json`)
+  const patterns = config.packages.filter((member: string) => !member.startsWith('!')).map((member: string) => `${member}/package.json`)
+  const exclude = config.packages.filter((member: string) => member.startsWith('!')).map((member: string) => `${member.slice(1)}/package.json`)
   const paths = globSync(patterns, {
     cwd: repositoryRoot,
     exclude: ['**/node_modules/**', '**/.git/**', ...exclude],

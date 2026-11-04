@@ -2,8 +2,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
-import * as yaml from 'js-yaml'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 
 describe('Inspector profile bundle', () => {
   it('publishes one layer containing both inspectors', () => {
@@ -19,7 +18,7 @@ describe('Inspector profile bundle', () => {
       '@deepseek-ai/dsh-experimental-session-inspector': 'workspace:*',
     })
     expect(yaml.load(readFileSync(new URL(`../${manifest.dsh.bundle.patch}`, import.meta.url), 'utf8'), {
-      schema: entryListSchema,
+      entryList: true,
     })).toEqual([{ insert: [
       {
         id: 'experimental-inspector', name: '@deepseek-ai/dsh-experimental-inspector',

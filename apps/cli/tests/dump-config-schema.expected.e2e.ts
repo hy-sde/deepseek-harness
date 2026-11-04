@@ -3,8 +3,7 @@
 import { existsSync, mkdtempSync, realpathSync } from 'node:fs'
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { Ajv2020 } from 'ajv/dist/2020.js'
-import * as yaml from 'js-yaml'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import * as yaml from '@deepseek-ai/dsh-yaml'
 import type { ConfigSchemaDump } from '@deepseek-ai/dsh-app-boot'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -74,7 +73,14 @@ async function installNativeInclude(fixture: Fixture): Promise<void> {
   await writeFile(join(directory, 'package.json'), JSON.stringify({
     name, version: '1.0.3', type: 'module', exports: './index.js',
     peerDependencies: { '@deepseek-ai/cordis': '*', '@deepseek-ai/cordis-plugin-loader': '*' },
-    dependencies: { 'js-yaml': '*' },
+    dependencies: { '@deepseek-ai/dsh-yaml': '*' },
+  }))
+  const yamlName = '@deepseek-ai/dsh-yaml'
+  const yamlDirectory = join(fixture.profile, 'node_modules', yamlName)
+  await mkdir(yamlDirectory, { recursive: true })
+  await copyFile(join(repoRoot, 'packages/util/yaml/lib/index.js'), join(yamlDirectory, 'index.js'))
+  await writeFile(join(yamlDirectory, 'package.json'), JSON.stringify({
+    name: yamlName, version: '0.2.1-rc.5', type: 'module', exports: './index.js',
   }))
   const path = join(fixture.profile, 'package.json')
   const manifest = JSON.parse(await readFile(path, 'utf8')) as { dependencies: Record<string, string> }
@@ -162,7 +168,7 @@ describe.skipIf(!builtArtifactsExist)('dsh --dump-config-schema assembled output
     const composed = await dump(fixture, [], '--dump-config')
     const validator = new Ajv2020({ strict: false, validateFormats: false })
     const validate = validator.compile(document)
-    expect(validate(yaml.load(composed.stdout, { schema: entryListSchema })), JSON.stringify(validate.errors)).toBe(true)
+    expect(validate(yaml.load(composed.stdout, { entryList: true })), JSON.stringify(validate.errors)).toBe(true)
     expect(validate([{ name: `${packageName}/namespace`, config: { attempts: 'wrong' } }])).toBe(false)
     const patch = validator.compile({ $schema: document.$schema, $defs: document.$defs, $ref: '#/$defs/patchList' })
     expect(patch([{ id: 'schema-class', config: { enabled: 'wrong' } }])).toBe(false)

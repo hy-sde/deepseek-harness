@@ -3,7 +3,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { JSON_SCHEMA, load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { classifyPersistenceChange, parseHistoricalPersistenceSnapshot } from './persistence-changes.ts'
 import type { PersistenceTypeChange } from './persistence-changes.ts'
 import { canonicalizeSchema, schemaDigest } from './persistence-schema-model.ts'
@@ -125,7 +125,7 @@ function machineBlock(source: string, label: string): string {
     throw new Error(`${label}: historical source references must omit line numbers`)
   }
   const metadata = /^---\n([\s\S]*?)\n---(?:\n|$)/u.exec(source)?.[1]
-  const frontmatter: unknown = metadata === undefined ? undefined : load(metadata, { schema: JSON_SCHEMA })
+  const frontmatter: unknown = metadata === undefined ? undefined : load(metadata, {})
   if (frontmatter === null || typeof frontmatter !== 'object' || !('kind' in frontmatter) || frontmatter.kind !== 'persistence-release') {
     throw new Error(`${label}: expected persistence-release frontmatter kind`)
   }
@@ -135,7 +135,7 @@ function machineBlock(source: string, label: string): string {
 }
 
 function parseRecord(source: string, release: PersistenceRelease, previous: string | null): PersistenceReleaseRecord {
-  const input = object(load(source, { schema: JSON_SCHEMA }), ['schemaVersion', 'tag', 'previous', 'sessionFormatVersion', 'changes'], release.tag)
+  const input = object(load(source, {}), ['schemaVersion', 'tag', 'previous', 'sessionFormatVersion', 'changes'], release.tag)
   if (input.schemaVersion !== 1) throw new Error(`${release.tag}: unsupported persistence release record schema version`)
   for (const field of ['tag', 'sessionFormatVersion'] as const) {
     if (input[field] !== release[field]) throw new Error(`${release.tag}: record ${field} does not match manifest`)

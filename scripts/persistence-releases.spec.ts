@@ -3,7 +3,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { dump } from 'js-yaml'
+import { dump } from '@deepseek-ai/dsh-yaml'
 import { afterEach, describe, expect, it } from 'vitest'
 import { parsePersistenceSnapshot } from './persistence-changes.ts'
 import { canonicalizeSchema, schemaDigest } from './persistence-schema-model.ts'

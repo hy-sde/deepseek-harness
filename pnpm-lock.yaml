@@ -263,6 +263,9 @@ importers:
       '@deepseek-ai/dsh-working-directory':
         specifier: workspace:*
         version: link:packages/session/working-directory
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:packages/util/yaml
       '@deepseek-ai/zod':
         specifier: workspace:~
         version: link:vendor/zod
@@ -275,9 +278,6 @@ importers:
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/jsdom':
         specifier: ^28.0.3
         version: 28.0.3
@@ -329,9 +329,6 @@ importers:
       istanbul-lib-report:
         specifier: ^3.0.1
         version: 3.0.1
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
       jscpd:
         specifier: ^5.1.2
         version: 5.1.2
@@ -731,15 +728,15 @@ importers:
       '@deepseek-ai/dsh-workflow-ptc':
         specifier: workspace:*
         version: link:../../packages/workflow/workflow-ptc
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../packages/util/yaml
       '@deepseek-ai/schemastery':
         specifier: link:../../vendor/schemastery
         version: link:../../vendor/schemastery
       commander:
         specifier: ^15.0.0
         version: 15.0.0
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
       node-addon-require-builtin:
         specifier: ^0.1.9
         version: 0.1.9
@@ -900,9 +897,6 @@ importers:
       '@deepseek-ai/dsh-zstd-frame':
         specifier: workspace:*
         version: link:../../packages/util/zstd
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/ws':
         specifier: 8.18.1
         version: 8.18.1
@@ -964,6 +958,9 @@ importers:
       '@deepseek-ai/dsh-home-paths':
         specifier: workspace:*
         version: link:../../packages/util/home-paths
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../packages/util/yaml
       '@deepseek-ai/node-addon-system':
         specifier: workspace:~
         version: link:../../native/system/packages/entry
@@ -973,9 +970,6 @@ importers:
       '@electron/notarize':
         specifier: 2.5.0
         version: 2.5.0(supports-color@9.4.0)
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/node':
         specifier: ^22.20.1
         version: 22.20.1
@@ -1000,9 +994,6 @@ importers:
       extract-zip:
         specifier: ^2.0.1
         version: 2.0.1(supports-color@9.4.0)
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
       koffi:
         specifier: 3.1.1
         version: 3.1.1
@@ -2317,15 +2308,15 @@ importers:
       '@deepseek-ai/dsh-package-manifest':
         specifier: workspace:*
         version: link:../../util/package-manifest
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
       '@eslint-community/regexpp':
         specifier: ^4.12.2
         version: 4.12.2
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
       node-addon-require-builtin:
         specifier: ^0.1.9
         version: 0.1.9
@@ -2363,9 +2354,6 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/semver':
         specifier: ^7.8.0
         version: 7.8.0
@@ -2390,9 +2378,9 @@ importers:
       '@deepseek-ai/dsh-atomic-write':
         specifier: workspace:*
         version: link:../../util/atomic-write
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -2412,9 +2400,6 @@ importers:
       '@deepseek-ai/dsh-hmr':
         specifier: workspace:*
         version: link:../hmr
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
 
   packages/boot/hmr:
     dependencies:
@@ -8619,9 +8604,9 @@ importers:
       '@deepseek-ai/cordis-plugin-include':
         specifier: workspace:~
         version: link:../../../vendor/include
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
 
   packages/experimental/api-speech-to-text:
     dependencies:
@@ -9441,9 +9426,6 @@ importers:
       '@deepseek-ai/cordis-plugin-include':
         specifier: workspace:~
         version: link:../../../vendor/include
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
 
   packages/experimental/cua:
     dependencies:
@@ -9879,9 +9861,9 @@ importers:
       '@deepseek-ai/cordis-plugin-include':
         specifier: workspace:~
         version: link:../../../vendor/include
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
 
   packages/experimental/plugin-market-bundle:
     dependencies:
@@ -10510,9 +10492,6 @@ importers:
       '@deepseek-ai/cordis-plugin-include':
         specifier: workspace:~
         version: link:../../../vendor/include
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
 
   packages/experimental/webhook:
     dependencies:
@@ -10611,9 +10590,9 @@ importers:
       '@deepseek-ai/dsh-session-format-v3-to-v4':
         specifier: workspace:*
         version: link:../../session/session-format-v3-to-v4
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
       picomatch:
         specifier: ^4.0.7
         version: 4.0.7
@@ -10621,9 +10600,6 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
@@ -12802,12 +12778,12 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/mcp-client':
+        specifier: workspace:~
+        version: link:../../../vendor/mcp-client
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
-      '@modelcontextprotocol/client':
-        specifier: 2.2.0
-        version: 2.2.0
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -13120,27 +13096,24 @@ importers:
       '@deepseek-ai/dsh-skill-filesystem':
         specifier: workspace:*
         version: link:../../skill/skill-filesystem
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
 
   packages/preset/agent-preset-registry:
     dependencies:
       '@deepseek-ai/dsh-app-boot':
         specifier: workspace:*
         version: link:../../boot/app-boot
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
       '@deepseek-ai/zod':
         specifier: workspace:~
         version: link:../../../vendor/zod
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -13202,9 +13175,6 @@ importers:
       '@deepseek-ai/dsh-user-approval':
         specifier: workspace:*
         version: link:../../interaction/user-approval
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
 
   packages/preset/persona:
     dependencies:
@@ -16187,15 +16157,15 @@ importers:
 
   packages/test-support/client-runtime:
     dependencies:
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
       '@testing-library/dom':
         specifier: ^10.4.1
         version: 10.4.2
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.6)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
@@ -16290,9 +16260,6 @@ importers:
       '@deepseek-ai/dsh-web-app':
         specifier: workspace:*
         version: link:../../bundle/web-app
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -16398,9 +16365,9 @@ importers:
       '@deepseek-ai/dsh-session-format':
         specifier: workspace:*
         version: link:../../session/session-format
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../util/yaml
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.6)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
@@ -16447,9 +16414,6 @@ importers:
       '@deepseek-ai/dsh-user-questions':
         specifier: workspace:*
         version: link:../../interaction/user-questions
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
 
   packages/todo/tool-todo:
     dependencies:
@@ -16700,6 +16664,12 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+
+  packages/util/yaml:
+    dependencies:
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
 
   packages/util/zstd:
     devDependencies:
@@ -17746,9 +17716,9 @@ importers:
       '@deepseek-ai/cosmokit':
         specifier: link:../cosmokit
         version: link:../cosmokit
-      js-yaml:
-        specifier: 4.3.2
-        version: 4.3.2
+      '@deepseek-ai/dsh-yaml':
+        specifier: workspace:~
+        version: link:../../packages/util/yaml
 
   vendor/loader:
     dependencies:
@@ -17779,6 +17749,62 @@ importers:
       supports-color:
         specifier: ^9.4.0
         version: 9.4.0
+
+  vendor/mcp-client:
+    dependencies:
+      '@deepseek-ai/mcp-core':
+        specifier: workspace:~
+        version: link:../mcp-core
+      '@deepseek-ai/mcp-core-internal':
+        specifier: workspace:~
+        version: link:../mcp-core-internal
+      cross-spawn:
+        specifier: ^7.0.5
+        version: 7.0.6
+      eventsource-parser:
+        specifier: ^3.0.0
+        version: 3.1.0
+      jose:
+        specifier: ^6.1.3
+        version: 6.2.3
+      pkce-challenge:
+        specifier: ^5.0.0
+        version: 5.0.1
+    devDependencies:
+      '@types/cross-spawn':
+        specifier: ^6.0.6
+        version: 6.0.6
+
+  vendor/mcp-core:
+    dependencies:
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../zod
+
+  vendor/mcp-core-internal:
+    dependencies:
+      '@deepseek-ai/mcp-core':
+        specifier: workspace:~
+        version: link:../mcp-core
+      '@deepseek-ai/zod':
+        specifier: workspace:~
+        version: link:../zod
+      ajv:
+        specifier: ^8.17.1
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      content-type:
+        specifier: ^1.0.5
+        version: 1.0.5
+      json-schema-typed:
+        specifier: ^8.0.2
+        version: 8.0.2
+    devDependencies:
+      '@types/content-type':
+        specifier: ^1.1.8
+        version: 1.1.9
 
   vendor/pi-ai:
     dependencies:
@@ -19519,10 +19545,6 @@ packages:
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
 
-  '@modelcontextprotocol/client@2.2.0':
-    resolution: {integrity: sha512-LxCou/CSYQ6dwEnjhLZY0KnEuc8V4UJ3IEQCl/uR2yHobSQIEdJKUlKLRYRF5i5FqRGHy1eK7une3aAWDHLtig==}
-    engines: {node: '>=20'}
-
   '@modelcontextprotocol/core@2.2.0':
     resolution: {integrity: sha512-iLhmprRmWI8EcosOA3wVvww22z02NkgqhV4fBH6f/odQBsi7xnJc0HGmi21yWO+/iKw2yzqVE127Zhna5/+JXw==}
     engines: {node: '>=20'}
@@ -20713,6 +20735,12 @@ packages:
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
+  '@types/content-type@1.1.9':
+    resolution: {integrity: sha512-Hq9IMnfekuOCsEmYl4QX2HBrT+XsfXiupfrLLY8Dcf3Puf4BkBOxSbWYTITSOQAhJoYPBez+b4MJRpIYL65z8A==}
+
+  '@types/cross-spawn@6.0.6':
+    resolution: {integrity: sha512-fXRhhUkG4H3TQk5dBhQ7m/JDdSNHKwR2BBia62lhwEIq9xGiQKLxd6LymNhn47SjXhsUEPmxi+PKw2OkW4LLjA==}
+
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
 
@@ -20841,9 +20869,6 @@ packages:
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
-
-  '@types/js-yaml@4.0.9':
-    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/jsdom@28.0.3':
     resolution: {integrity: sha512-/HQ2uFoetFTXuye8vzIcHw2z6Fwi7Hi/qcgC+RoS9NCyewiqxhVGqlG+ViGB6lkax481R6dmhf1I7lIGlzJStQ==}
@@ -21310,6 +21335,11 @@ packages:
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv@6.15.0:
     resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
@@ -26932,16 +26962,6 @@ snapshots:
 
   '@mixmark-io/domino@2.2.0': {}
 
-  '@modelcontextprotocol/client@2.2.0':
-    dependencies:
-      '@modelcontextprotocol/core': 2.2.0
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.1.0
-      jose: 6.2.3
-      pkce-challenge: 5.0.1
-      zod: 4.6.7
-
   '@modelcontextprotocol/core@2.2.0':
     dependencies:
       zod: 4.6.7
@@ -26957,7 +26977,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 1.19.17(hono@4.13.7)
       ajv: 8.20.0
-      ajv-formats: 3.0.1
+      ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -27847,6 +27867,12 @@ snapshots:
     dependencies:
       '@types/node': 22.20.1
 
+  '@types/content-type@1.1.9': {}
+
+  '@types/cross-spawn@6.0.6':
+    dependencies:
+      '@types/node': 26.4.1
+
   '@types/d3-array@3.2.2': {}
 
   '@types/d3-axis@3.0.6':
@@ -28002,8 +28028,6 @@ snapshots:
   '@types/http-cache-semantics@4.2.0': {}
 
   '@types/http-errors@2.0.5': {}
-
-  '@types/js-yaml@4.0.9': {}
 
   '@types/jsdom@28.0.3':
     dependencies:
@@ -28501,8 +28525,8 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  ajv-formats@3.0.1:
-    dependencies:
+  ajv-formats@3.0.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
 
   ajv@6.15.0:

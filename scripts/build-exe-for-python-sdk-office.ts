@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, sep } from 'node:path'
 import { downloadRuntimeNpmPackage, type RuntimeNpmArchive } from './primary-runtime/prepare.ts'
-import { load as parseYaml } from 'js-yaml'
+import { load as parseYaml } from '@deepseek-ai/dsh-yaml'
 import { officePackageDirectories } from './libreoffice-packages.mjs'
 
 /** pkg applies these exclusions to dependency `files` as well as root asset globs. */

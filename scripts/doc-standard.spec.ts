@@ -10,7 +10,7 @@
 
 import { existsSync, globSync, readFileSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
-import { JSON_SCHEMA, load } from 'js-yaml'
+import { load } from '@deepseek-ai/dsh-yaml'
 import { describe, expect, it } from 'vitest'
 import { readCurrentSessionFormatVersion } from './gen-session-format-catalog.ts'
 
@@ -171,7 +171,7 @@ function validateSessionFormatRelease(source: string, currentWriterVersion: numb
   if (openings.length !== 1) throw new Error('Expected exactly one session-format-release record')
   const block = /^```yaml session-format-release[ \t]*\n([\s\S]*?)^```[ \t]*$/mu.exec(normalized)
   if (block === null) throw new Error('Expected a closed session-format-release record')
-  const metadata: unknown = load(block[1]!, { schema: JSON_SCHEMA })
+  const metadata: unknown = load(block[1]!, {})
   if (metadata === null || typeof metadata !== 'object' || Array.isArray(metadata)) {
     throw new Error('Session format release record must be a mapping')
   }

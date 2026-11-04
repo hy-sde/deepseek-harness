@@ -3,8 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { bindScopeParent, createScope, scopeOf, scopeParentOf, type Scope, type ScopeKey, type ScopeParentBinding } from '@deepseek-ai/dsh-scope'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
-import { dump } from 'js-yaml'
+import { dump } from '@deepseek-ai/dsh-yaml'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 // Type-only: the optional `settings` service this registry keeps off the generated pages.
 import type {} from '@deepseek-ai/dsh-settings'
@@ -223,7 +222,7 @@ export class AgentPresetRegistry extends TypertRemoteService {
     }
     const { id, name, description, plugins } = record.config
     // The Loader's own dialect, so `!!js` conditions read as declared rather than as expression objects.
-    const content = dump(plugins, { schema: entryListSchema, noRefs: true, lineWidth: -1 })
+    const content = dump(plugins, { entryList: true, noRefs: true, lineWidth: -1 })
     return Promise.resolve({
       agentPreset: id, content, ...(name === undefined ? {} : { name }), ...(description === undefined ? {} : { description }),
     })

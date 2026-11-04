@@ -6,7 +6,7 @@ import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { dump } from 'js-yaml'
+import { dump } from '@deepseek-ai/dsh-yaml'
 
 /**
  * Hash an executable without modifying or buffering the complete file.

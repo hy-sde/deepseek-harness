@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { dump } from 'js-yaml'
+import { dump } from '@deepseek-ai/dsh-yaml'
 import { afterEach, describe, expect, it } from 'vitest'
 import { loadPersistenceFormats, runPersistenceFormats } from './persistence-formats.ts'
 import { parseHistoricalPersistenceSnapshot } from './persistence-changes.ts'
@@ -297,7 +297,7 @@ describe('complete persistence format references', () => {
     const to = variant === 'unknown-key' ? `  unknown: ${digest}\n` : variant === 'invalid-digest' ? '  SessionHeader: invalid\n'
       : variant === 'duplicate-key' ? from + from : 'roots: []\n'
     editPair(root, 1, from, to)
-    expect(() => loadPersistenceFormats(root)).toThrow(variant === 'duplicate-key' ? 'duplicated mapping key'
+    expect(() => loadPersistenceFormats(root)).toThrow(variant === 'duplicate-key' ? 'Map keys must be unique'
       : variant === 'not-a-mapping' ? 'roots must be a mapping' : 'invalid recorded root')
   })
 
