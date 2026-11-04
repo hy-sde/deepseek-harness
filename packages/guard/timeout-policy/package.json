@@ -41,6 +41,6 @@
     "@deepseek-ai/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/effect": "workspace:~"
+    "@hy-sde-org/effect": "workspace:~"
   }
 }

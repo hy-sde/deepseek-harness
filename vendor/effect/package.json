@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/effect",
+  "name": "@hy-sde-org/effect",
   "description": "Trimmed fork of effect 4.0.5 vendored for the DeepSeek Harness effect seam (Effect/Cause/Data/Exit/Deferred/Scheduler combinator core; Schema/Stream/Channel/Layer/Request/Metric/scheduling subsystems dropped)",
   "version": "4.0.5",
   "publishConfig": {

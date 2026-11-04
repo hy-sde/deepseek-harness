@@ -8182,7 +8182,7 @@ importers:
 
   packages/debug/dap:
     dependencies:
-      '@deepseek-ai/effect':
+      '@hy-sde-org/effect':
         specifier: workspace:~
         version: link:../../../vendor/effect
     devDependencies:
@@ -11336,7 +11336,7 @@ importers:
       '@deepseek-ai/dsh-atomic-write':
         specifier: workspace:*
         version: link:../../util/atomic-write
-      '@deepseek-ai/effect':
+      '@hy-sde-org/effect':
         specifier: workspace:~
         version: link:../../../vendor/effect
     devDependencies:
@@ -11742,7 +11742,7 @@ importers:
 
   packages/guard/timeout-policy:
     dependencies:
-      '@deepseek-ai/effect':
+      '@hy-sde-org/effect':
         specifier: workspace:~
         version: link:../../../vendor/effect
     devDependencies:
@@ -12704,12 +12704,12 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
-      '@deepseek-ai/effect':
-        specifier: workspace:~
-        version: link:../../../vendor/effect
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@hy-sde-org/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -16712,7 +16712,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
-      '@deepseek-ai/effect':
+      '@hy-sde-org/effect':
         specifier: workspace:~
         version: link:../../../vendor/effect
     devDependencies:
@@ -16939,12 +16939,12 @@ importers:
 
   packages/web/web-search-public:
     dependencies:
-      '@deepseek-ai/effect':
-        specifier: workspace:~
-        version: link:../../../vendor/effect
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      '@hy-sde-org/effect':
+        specifier: workspace:~
+        version: link:../../../vendor/effect
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~

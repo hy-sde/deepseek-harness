@@ -32,7 +32,7 @@
     "@deepseek-ai/dsh-timeout": "workspace:*"
   },
   "dependencies": {
-    "@deepseek-ai/effect": "workspace:~"
+    "@hy-sde-org/effect": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
