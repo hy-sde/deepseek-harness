@@ -939,6 +939,23 @@ describe('mapStopReason / mapUsage', () => {
   })
 
   it.each([
+    'context ~132687.39410667788 tokens exceeds the model window 131072 (model=GLM-5.3-Flash-EXL3), with 0 compressible range(s) still visible',
+    'context ~133433 tokens (down from ~133464.92725129708 before preflight) exceeds the model window 131072 (model=GLM-5.3-Flash-EXL3)',
+  ])('recognizes preflight context overflow across delivery styles: %s', (message) => {
+    const http = `413: ${JSON.stringify({ type: 'server_error', code: 'preflight_compress_failed', message, retryable: false })}`
+    for (const errorMessage of [http, message]) {
+      expect(mapStopReason(assistant({ stopReason: 'error', errorMessage })))
+        .toEqual({ kind: 'error', failure: { code: CONTEXT_WINDOW_EXCEEDED_CODE, message: errorMessage } })
+    }
+  })
+
+  it('does not treat every preflight compression failure as context overflow', () => {
+    const errorMessage = '503: {"code":"preflight_compress_failed","message":"summary provider timed out","retryable":true}'
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage })))
+      .toMatchObject({ kind: 'error', failure: { code: 'SERVER' } })
+  })
+
+  it.each([
     'other side closed',
     'HTTP2 request did not get a response',
     'WebSocket closed unexpectedly',

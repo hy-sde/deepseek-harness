@@ -73,6 +73,14 @@ const EXCEEDS_MODEL_CONTEXT = new RegExp(
   'i',
 )
 
+/** Preflight estimates exceeding the input budget, before or after compression. */
+const PREFLIGHT_CONTEXT_OVERFLOW = new RegExp(
+  String.raw`\bcontext\s+~?[\d,]+(?:\.\d+)?\s+tokens`
+  + String.raw`(?:\s+\(down from\s+~?[\d,]+(?:\.\d+)?\s+before preflight\))?`
+  + String.raw`\s+exceeds\s+the\s+model\s+window\s+[\d,]+\b`,
+  'i',
+)
+
 /**
  * Recognize the context-overflow wording used by OpenAI-compatible providers
  * and library adapters. Adapters pass all available provider code, type, and
@@ -90,6 +98,7 @@ export function isContextWindowExceededError(detail: string): boolean {
     || TOO_LARGE_FOR_CONTEXT.test(detail)
     || /\b(?:input|prompt|request)\s+(?:is\s+)?too\s+(?:long|large)\s+for\s+(?:this|the)\s+model\b/i.test(detail)
     || EXCEEDS_MODEL_CONTEXT.test(detail)
+    || PREFLIGHT_CONTEXT_OVERFLOW.test(detail)
 }
 
 /**

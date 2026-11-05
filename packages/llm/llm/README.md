@@ -92,6 +92,8 @@ const configure = (maxTokens: number): ConfigureCall =>
 
 Every stream ends in exactly one terminal `finish` chunk: `{ kind: 'error', failure }` on failure, `{ kind: 'aborted', failure }` on cancellation. Failures carry stable codes such as `NO_ADAPTER`, `MISSING_CREDENTIAL`, `AUTH`, `RATE_LIMIT`, and `CONTEXT_WINDOW_EXCEEDED`; consumers route on the code, never on message text. `QUOTA` is provider-neutral exhaustion, while `ACCOUNT_QUOTA` is reserved for a first-party account balance that the current product can replenish. A request naming an unregistered provider fails with `NO_ADAPTER`, and a malformed credential fails with `INVALID_CREDENTIAL` instead of surfacing as an opaque fetch error. This service never re-runs a request: retrying is the job of `dsh-llm-retry` at the agent's failed-step extension point.
 
+`isContextWindowExceededError` also recognizes proxy preflight diagnostics that explicitly report a token count exceeding the model window, including estimates after compression. Both HTTP-wrapped and in-band forms normalize to `CONTEXT_WINDOW_EXCEEDED`. An HTTP 413 or `preflight_compress_failed` code alone is insufficient; unrelated payload-size and compression-service failures retain their own classification. Classification does not enable compaction or bypass a proxy retry cooldown.
+
 -----
 
 <a id="understand-the-implementation"></a>
