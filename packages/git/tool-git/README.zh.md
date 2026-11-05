@@ -66,7 +66,7 @@ kind: "package-reference"
 
 - `reviewProvider` — 评审扇出的子代理提供方 id（默认 `spawn`）。
 - `maxReviewers` — 最大并行评审者运行数（默认 4）。
-- `maxReviewerDiffChars` — 每个评审者的 diff 窗口上限（默认 25k）。
+- `maxReviewerDiffChars` — 每个评审者全部内联 diff 的字符上限（默认 40,000），不是每个文件的上限。超过上限时，通过 `spillStore` 完整保存切片；评审者收到产物定位符、读取说明及逐文件行范围。
 - `maxDiffChars` — 分析 diff 上限（默认 60k）。
 - `worktreeRoot` — `worktree` 的池根目录（默认 `~/.treehouse`）。
 - `worktreeBaseBranch` — `worktree acquire` 的默认切出分支（默认：从 origin HEAD／当前分支推断）。
@@ -75,6 +75,8 @@ kind: "package-reference"
 - `worktreeMaxSlots` — 每个仓库工作树池的总槽位上限（默认 0 = 不限制；达到上限后仍可复用可证明空闲的槽位，仅拒绝新建槽位）。
 
 本部署的 agent preset 行挂载 `reviewProvider: spawn` 与 `maxReviewers: 4`。
+
+超限评审任务需要 [`dsh-spill-local`](../../spill/spill-local/README.zh.md) 等 `spillStore` 提供方。缺少提供方或写入失败时，受影响的评审者会在启动前失败；工具不会改用截断内容或超限内联输入。产物保留由 spill 提供方负责。
 
 <a id="export-shape"></a>
 ## 导出形状
@@ -92,7 +94,7 @@ kind: "package-reference"
 
 #### Token effect
 
-工具可见时每个请求有固定的 schema 成本。`commit` 返回有界 diff（以 `maxDiffChars` 封顶）；评审者提示携带受 `maxReviewerDiffChars` 约束的有界 diff 窗口，因此扇出上下文不会无限增长。
+工具可见时每个请求有固定的 schema 成本。`commit` 返回有界 diff（以 `maxDiffChars` 封顶）。评审者收到至多 `maxReviewerDiffChars` 个内联 diff 字符，或产物引用及文件行范围；后续有界读取仍会增加上下文。评审说明要求读取相关声明及调用方，而非不加区分地读取整个文件。
 
 #### KV Cache effect
 
@@ -118,7 +120,7 @@ Token 增长随 diff 与 `commit_apply` 的 `created` 列表扩大；两者均�
 - **工具内部无隐藏模型会话** — 提交评审质量是模型自身的协商；工具面只强制结构，不评判摘要的语义。
 - **覆盖按文件粒度，hunks 可选** — 计划必须把每个已暂存文件计划一次；hunk 选择是文件*内*的细化，不放松覆盖要求。
 - **锁文件自动归位，不可规划** — 它们从不进入骨架；`commit_apply` 依据所属 manifest 决定归入哪一组。
-- **`review` 把未评审视为 reject** — 评审者传输失败（或空切片）拒绝批准，而非猜测。
+- **评审完整性** — 没有完成评审的子代理时返回 `reject`。部分失败会出现在 `errors` 中，但不会单独导致拒绝；将结论视为完整评审之前，应确认 `errors` 为空。
 - **无 force-push、amend、rebase 动词** — 服务面是提交／评审子集；编辑器与交互式历史改写仍在界外。
 
 <a id="dev-note"></a>

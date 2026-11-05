@@ -11335,6 +11335,12 @@ importers:
       '@deepseek-ai/dsh-orchestration-policy':
         specifier: workspace:*
         version: link:../../orchestration/policy
+      '@deepseek-ai/dsh-spill':
+        specifier: workspace:*
+        version: link:../../spill/spill
+      '@deepseek-ai/dsh-spill-local':
+        specifier: workspace:*
+        version: link:../../spill/spill-local
       '@deepseek-ai/dsh-subagent':
         specifier: workspace:*
         version: link:../../subagent/subagent

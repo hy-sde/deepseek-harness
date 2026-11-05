@@ -61,7 +61,7 @@ Why leases and not processes: DSH agents are host children, so a durable lease i
 
 - `reviewProvider` — subagent provider id for reviewer fan-out (default `spawn`).
 - `maxReviewers` — max parallel reviewer runs (default 4).
-- `maxReviewerDiffChars` — per-reviewer diff window cap (default 25k).
+- `maxReviewerDiffChars` — total inline diff character cap per reviewer (default 40,000), not per file. Larger slices are saved intact through `spillStore`; the reviewer receives the artifact locator, retrieval guidance, and per-file line ranges.
 - `maxDiffChars` — analysis diff cap (default 60k).
 - `worktreeRoot` — pool root directory for `worktree` (default `~/.treehouse`).
 - `worktreeBaseBranch` — default cut branch for `worktree acquire` (default: inferred from origin HEAD / current branch).
@@ -70,6 +70,8 @@ Why leases and not processes: DSH agents are host children, so a durable lease i
 - `worktreeMaxSlots` — cap on total pooled worktrees per repository (default 0 = unlimited; reuse of a provably idle slot is still allowed at the cap, only cutting a new slot is refused).
 
 The agent preset rows in this deployment mount `reviewProvider: spawn` and `maxReviewers: 4`.
+
+Oversized reviewer assignments require a `spillStore` provider such as [`dsh-spill-local`](../../spill/spill-local/README.md). A missing provider or failed write fails the affected reviewer before it starts; the tool never substitutes truncated or oversized inline input. Artifact retention belongs to the spill provider.
 
 ## Export shape
 
@@ -85,7 +87,7 @@ The generated [`commit`, `commit_apply`, `review`, and `worktree` schemas](../..
 
 #### Token effect
 
-Fixed schema cost per request while the tools are visible. `commit` returns a bounded diff (capped by `maxDiffChars`); reviewer prompts carry bounded diff windows (`maxReviewerDiffChars`) so fan-out context does not grow without limit.
+Fixed schema cost per request while the tools are visible. `commit` returns a bounded diff (capped by `maxDiffChars`). Reviewers receive at most `maxReviewerDiffChars` inline diff characters, or an artifact reference and file ranges; later bounded reads still add context. Review instructions require relevant declarations and callers, not indiscriminate full-file reads.
 
 #### KV Cache effect
 
@@ -110,7 +112,7 @@ Append-only; newly visible content follows the reusable request prefix and does 
 - **No hidden model session inside the tools** — commit review quality is the model's own negotiation; the tool surface enforces structure, not semantic judgment of summaries.
 - **Coverage is file-granular, hunks are optional** — the plan must plan every staged file once; hunk selectors refine *within* a file but do not relax coverage.
 - **Lock files are auto-placed, not planable** — they never appear in the skeleton; `commit_apply` decides their group from the owning manifest.
-- **`review` treats unreviewed as reject** — a reviewer transport failure (or an empty slice) refuses approval rather than guessing.
+- **Review completeness** — no completed reviewers means `reject`. Partial failures appear in `errors` but do not by themselves force rejection; check that `errors` is empty before treating a verdict as complete.
 - **No force-push, no amend, no rebase verbs** — the service surface is the commit/review subset; editors and interactive history rewriting remain outside.
 
 **Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.

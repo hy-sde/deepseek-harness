@@ -18,6 +18,9 @@
       "path": "../../../packages/llm/llm"
     },
     {
+      "path": "../../spill/spill"
+    },
+    {
       "path": "../../../packages/subagent/subagent"
     },
     {
