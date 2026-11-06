@@ -18,6 +18,7 @@ import { LEARNED_FILE } from '@deepseek-ai/dsh-memory'
 import * as Memory from '@deepseek-ai/dsh-memory'
 import * as ToolMemory from '@deepseek-ai/dsh-tool-memory'
 import { mineOutcomeOf, mineScoreOf, mineSignalsOf } from '../src/session-history.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const CWD = '/ws/mine'
 
@@ -70,7 +71,7 @@ const agent = { session: { header: { id: 's1', cwd: CWD } } }
 
 let callCounter = 0
 async function call(ctx: Context, name: string, args: unknown) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`call-${++callCounter}`),
     name,

@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/util/yaml/README.md
+/:
+  en: bc74e0771bd1156b
+  zh: 1feb21ecadd3e671
+/dsh-yaml:
+  en: 2cf43588162de561
+  zh: 683ccfaf8c836c1b
+/dsh-yaml/summary:
+  en: 1922e15404e52abf
+  zh: edb89fcaa6ba1593
+/dsh-yaml/table-of-contents:
+  en: cd2a60a905c978d6
+  zh: cc71d387d0cbd442
+/dsh-yaml/use-this-package:
+  en: fb9acefaa53709af
+  zh: 1a23f60721de9ca5
+/dsh-yaml/api:
+  en: 6bce7725765b0b3b
+  zh: 5d381f35f65c6785
+/dsh-yaml/model-experience:
+  en: 925d6c4a6804bfdc
+  zh: 48505b595197f960
+/dsh-yaml/model-experience/kv-cache-effect:
+  en: 27a96b48cc80083c
+  zh: 8471a23cc0f82952
+/dsh-yaml/known-limitations-and-deferred-work:
+  en: 09451660f02e3f1c
+  zh: 41cbbaad89379368
+/dsh-yaml/known-limitations-and-deferred-work/dev-note:
+  en: c479b3f344867abd
+  zh: 952154a0da74ddf5

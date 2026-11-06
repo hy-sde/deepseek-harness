@@ -39,7 +39,7 @@ import { formatProviderError, normalizeProviderError } from "../utils/error-body
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { shortHash } from "../utils/hash.ts";
 import { headersToRecord } from "../utils/headers.ts";
-import { parseStreamingJson } from "../utils/json-parse.ts";
+import { parseToolCallArguments } from "../utils/json-parse.ts";
 import { getPiUserAgent } from "../utils/pi-user-agent.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
@@ -398,6 +398,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 				type?: string;
 				function?: { name?: string; arguments?: string };
 				custom?: { name?: string; input?: string };
+				extra_content?: { google?: { thought_signature?: string } };
 			};
 
 			let textBlock: TextContent | null = null;
@@ -461,7 +462,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 							});
 						}
 					} else {
-						block.arguments = parseStreamingJson(block.partialArgs);
+						Object.assign(block, parseToolCallArguments(block.partialArgs));
 					}
 					// Finalize in-place and strip the scratch buffers so replay only
 					// carries parsed arguments.
@@ -647,6 +648,12 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 							const name = toolCall.function?.name ?? toolCall.custom?.name;
 							if (!block.name && name) {
 								block.name = name;
+							}
+
+							// Gemini OpenAI-compatible endpoints require this signature on replay.
+							const geminiThoughtSignature = toolCall.extra_content?.google?.thought_signature;
+							if (typeof geminiThoughtSignature === "string" && geminiThoughtSignature.length > 0) {
+								block.thoughtSignature = geminiThoughtSignature;
 							}
 
 							let delta = "";
@@ -1369,6 +1376,9 @@ export function convertMessages(
 							},
 						};
 					}
+					const geminiThoughtSignature = tc.thoughtSignature && !parseLegacyEncryptedReasoningDetail(tc.thoughtSignature)
+						? tc.thoughtSignature
+						: undefined;
 					return {
 						id: tc.id,
 						type: "function",
@@ -1376,6 +1386,7 @@ export function convertMessages(
 							name: tc.name,
 							arguments: JSON.stringify(tc.arguments),
 						},
+						...(geminiThoughtSignature && { extra_content: { google: { thought_signature: geminiThoughtSignature } } }),
 					};
 				});
 			}

@@ -55,6 +55,9 @@
     },
     {
       "path": "../../client/ui-conversation/tsconfig.client.json"
+    },
+    {
+      "path": "../../core/agent"
     }
   ]
 }

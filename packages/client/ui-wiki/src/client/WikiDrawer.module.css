@@ -48,8 +48,10 @@
   cursor: pointer;
 }
 
-.tab:hover {
-  background: var(--dsw-alias-button-floating-hover);
+@media (hover: hover) {
+  .tab:hover {
+    background: var(--dsw-alias-button-floating-hover);
+  }
 }
 
 .tabActive {
@@ -69,8 +71,10 @@
   border-radius: 6px;
 }
 
-.close:hover {
-  background: var(--dsw-alias-button-floating-hover);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--dsw-alias-button-floating-hover);
+  }
 }
 
 .errorBanner {
@@ -151,9 +155,11 @@
   cursor: pointer;
 }
 
-.action:hover {
-  background: var(--dsw-alias-button-floating-hover);
-  color: var(--dsw-alias-label-primary);
+@media (hover: hover) {
+  .action:hover {
+    background: var(--dsw-alias-button-floating-hover);
+    color: var(--dsw-alias-label-primary);
+  }
 }
 
 .sectionTitle {
@@ -186,8 +192,10 @@
   cursor: pointer;
 }
 
-.pageRow:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .pageRow:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .pageName {
@@ -229,8 +237,10 @@
   cursor: pointer;
 }
 
-.back:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .back:hover {
+    text-decoration: underline;
+  }
 }
 
 .pageTitle {
@@ -254,9 +264,11 @@
   border-radius: 6px;
 }
 
-.danger:hover {
-  background: var(--dsw-alias-interactive-bg-hover-danger);
-  color: var(--dsw-alias-state-error-primary);
+@media (hover: hover) {
+  .danger:hover {
+    background: var(--dsw-alias-interactive-bg-hover-danger);
+    color: var(--dsw-alias-state-error-primary);
+  }
 }
 
 .tagRow {
@@ -315,8 +327,10 @@
   cursor: pointer;
 }
 
-.linkedRow:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .linkedRow:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .linkedPage {

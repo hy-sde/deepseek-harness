@@ -19,6 +19,7 @@ import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import { OMP_NATIVE_ENV, nativeFamilyOf, resolveOmpNativeBinary, sqliteSuffixOf } from '../src/read-native.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 
@@ -36,7 +37,7 @@ const session = {
 
 let callCounter = 0
 function call(name: string, args: unknown) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: testToolSignal,
     callId: ToolCallId(`call-${++callCounter}`),
     name,

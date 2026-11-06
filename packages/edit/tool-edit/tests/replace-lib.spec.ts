@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
@@ -14,6 +15,7 @@ import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolEdit from '@deepseek-ai/dsh-tool-edit'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const contexts: Context[] = []
 const roots: string[] = []
@@ -27,19 +29,21 @@ function agent(ctx: Context, cwd: string): Agent {
   const scope = ctx.plugin(() => { })
   const session = Session.create(id, [], { version: 4, id, createdAt: 0, cwd, isSeeded: false })
   const value: Agent = { id, options: {}, session, inbox: createInboxStub(), status: 'idle', ctx: scope.ctx,
+    model: { current: () => undefined, select: () => {} },
     send: () => { }, followup: () => { }, steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),
     inject: () => { }, cancel() { }, runMaintenance: task => task(new AbortController().signal), whenIdle: () => Promise.resolve() }
   ctx.agents.register(value)
   return value
 }
 function call(ctx: Context, owner: Agent | undefined, args: unknown) {
-  return ctx.tools.execute({ signal: new AbortController().signal, callId: ToolCallId(`so-lib-e2e-${++callNumber}`), name: 'edit', arguments: args, ...owner === undefined ? {} : { agent: owner } })
+  return executeToolFixture(ctx, { signal: new AbortController().signal, callId: ToolCallId(`so-lib-e2e-${++callNumber}`), name: 'edit', arguments: args, ...owner === undefined ? {} : { agent: owner } })
 }
 async function setup() {
   const root = await mkdtemp(join(tmpdir(), 'so-lib-e2e-'))
   roots.push(root)
   const ctx = new Context(); contexts.push(ctx)
-  await ctx.plugin(SystemPrompt); await ctx.plugin(ToolRuntime); await ctx.plugin(AgentRegistry)
+  await ctx.plugin(SystemPrompt); await ctx.plugin(ToolRuntime)
+  await ctx.plugin(SessionProjectionRegistry); await ctx.plugin(AgentRegistry)
   await ctx.plugin(LocalFileSystem, { cwd: root }); await ctx.plugin(FsPolicy)
   await ctx.plugin(ToolEdit, {})
   return { ctx, root, owner: agent(ctx, root) }

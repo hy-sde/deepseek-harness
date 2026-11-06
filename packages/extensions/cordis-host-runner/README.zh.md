@@ -23,6 +23,7 @@ kind: "package-reference"
 -----
 
 <a id="use-this-package"></a>
+
 ## 使用本包
 
 需要检查注册表或程序侧动态包生命周期时挂载此插件。浏览器生命周期消费者还需要 Client runner 和 UI 包。内置 Creator 流程使用已安装 bundle，不使用此定义注册表。
@@ -43,6 +44,7 @@ kind: "package-reference"
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-cordis-host-runner)是每个受支持字段的穷尽式真源。
 
 <a id="client-inspection"></a>
+
 ### Client 检查
 
 装载 Gateway 时，没有活动事件流的 Client 查询在发送前就会失败。此检查不订阅断连：已发送的查询仍沿用原期限。没有 Gateway 的独立事件传输保持相同的超时行为。
@@ -64,6 +66,7 @@ Client 查询在 `clientInspectTimeoutMs` 内接受首个有效页面响应。�
 -----
 
 <a id="understand-the-implementation"></a>
+
 ## 理解实现
 
 <details>
@@ -96,6 +99,7 @@ runner 基于两项职责划分。**注册表与沙箱是同一个服务。** `D
 -----
 
 <a id="further-exploration"></a>
+
 ## 进一步探索
 
 当包级约定不够用时阅读以下页面。它们从 runner 逐步进入调用它的工具、应答它的浏览器半与生成的表面。
@@ -110,6 +114,7 @@ runner 基于两项职责划分。**注册表与沙箱是同一个服务。** `D
 -----
 
 <a id="model-experience"></a>
+
 ## 模型体验
 
 ### 转达给所属会话的运行结果、拒绝与诊断
@@ -142,6 +147,7 @@ runner 基于两项职责划分。**注册表与沙箱是同一个服务。** `D
 - **`@deepseek-ai/zod` 是生成的 Typert 契约面的运行时依赖，不是 `src` 的依赖**——`./typert` 与 `./remote` 解析到未打包的 `lib` 文件，其中带有裸的 `import { z } from '@deepseek-ai/zod'`，所以即使 `src` 里没有任何代码 import zod，本包也要声明它。
 
 <a id="dev-note"></a>
+
 ### 开发备注
 
 <details>

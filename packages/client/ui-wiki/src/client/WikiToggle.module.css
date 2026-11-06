@@ -16,9 +16,11 @@
   white-space: nowrap;
 }
 
-.toggle:hover {
-  background: var(--dsw-alias-button-floating-hover);
-  color: var(--dsw-alias-label-primary);
+@media (hover: hover) {
+  .toggle:hover {
+    background: var(--dsw-alias-button-floating-hover);
+    color: var(--dsw-alias-label-primary);
+  }
 }
 
 .rail {

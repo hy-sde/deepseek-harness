@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { resolve } from 'node:path'
 import { Context, Service } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import type {
@@ -19,6 +20,7 @@ import {
   parseDebugArgs,
   summarizeDebugCall,
 } from '@deepseek-ai/dsh-tool-debug'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const WORKSPACE = resolve('/virtual/debug-workspace')
 const PROGRAM = resolve(WORKSPACE, 'prog.py')
@@ -370,13 +372,14 @@ async function mount(capabilities: DapCapabilities = ALL_CAPABILITIES, config: T
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(NativeToolExecutor)
   await ctx.plugin(StubDap, capabilities)
   await ctx.plugin(ToolDebug, config)
   return { ctx, dap: ctx.get('dap') as unknown as StubDap }
 }
 
 function call(ctx: Context, args: unknown) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: testSignal,
     callId: `d-${++seq}` as never,
     name: 'debug',
@@ -440,6 +443,7 @@ describe('tool-debug execution over the dispatch table', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    await ctx.plugin(NativeToolExecutor)
     const stub = new StubDap(ctx)
     // Override just the selection for this test.
     stub.selectLaunchAdapter = async () => ({ kind: 'unavailable', adapterName: 'debugpy', command: 'debugpy' }) as never

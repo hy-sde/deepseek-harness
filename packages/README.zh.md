@@ -22,6 +22,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 -----
 
 <a id="package-groups"></a>
+
 ## 包分组
 
 每个包只属于一个组；新包加入现有组，新组则更新其自身 README 与本表。
@@ -95,11 +96,12 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`client/`](client/README.zh.md) | web GUI 浏览器半侧：shell、协议层、对象服务、slot、`ui-*` 插件 |
 | [`examples/`](examples/README.zh.md) | 演示装配：无执行器/无 UI 的 agent spine 与 logseq 日记示例 |
 | [`test-support/`](test-support/README.zh.md) | 测试基础设施（testkit、回放、Loader 冒烟测试） |
-| [`util/`](util/README.zh.md) | 组间共享的低层零依赖工具（`Branded<B>`、home／路径辅助函数、超时、留存） |
+| [`util/`](util/README.zh.md) | 组间共享的低层工具与纯数据包列表（`Branded<B>`、home／路径辅助函数、超时、留存、官方组合包列表） |
 
 -----
 
 <a id="release-expectations"></a>
+
 ## 发布预期
 
 产品组承担维护职责，但其公开 API 仍处于预稳定阶段。[实验性状态](experimental/README.zh.md#status)独立于发布、安装和可选交付。非实验运行时包必须被产品使用或在[包分类策略](../scripts/product-package-policy.ts)中明确列出；SDK、构建、测试与声明基础设施分别分类。
@@ -107,6 +109,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 -----
 
 <a id="dependencies"></a>
+
 ## 依赖
 
 依赖图由工具生成：[docs/module-graph.md](../docs/module-graph.zh.md)（`pnpm run gen-module-graph`，CI 中有新鲜度门禁）。
@@ -116,6 +119,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 -----
 
 <a id="package-readme-contracts"></a>
+
 ## 包 README 约定
 
 每个包 README 都覆盖用途、配置、扩展点与[模型体验](../docs/cookbook/adding-a-package.zh.md#4-write-the-package-readme)，列入模型无关[省略允许清单](../scripts/verify-package-readme-model-experience.ts)的包除外。它还要包含 `## Known Limitations and Deferred Work`，或列入其[允许清单](../scripts/verify-package-readme-limitations.ts)。包约定——导出、服务访问、测试——见 [packages/AGENTS.md](AGENTS.md)。
@@ -123,6 +127,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 -----
 
 <a id="dev-note"></a>
+
 ## 开发备注
 
 <details>

@@ -52,3 +52,6 @@ native/system/test/bin/
 .codebase-memory/
 openwiki/.last-update.json
 openwiki/.page-manifest.json
+
+# Generated company-signed CUA release record.
+/packages/experimental/cua-macos/cua-helper.json

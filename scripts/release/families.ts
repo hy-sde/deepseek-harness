@@ -16,7 +16,7 @@ import {
   readClientBuildRecord,
 } from '../client-build-environment.ts'
 import { validateTarballPayload } from '../publication-payload.ts'
-import { ON_DEMAND_BUNDLES } from '../../packages/boot/app-boot/src/official-bundle-packages.ts'
+import { ON_DEMAND_BUNDLES } from '../../packages/util/official-bundles/src/bundles.ts'
 
 /**
  * Dependency sections a consumer must publish after, because npm resolves them
@@ -133,7 +133,10 @@ export abstract class ReleaseFamily {
       const name = requireString(manifest, 'name', normalized)
       const version = requireString(manifest, 'version', normalized)
       if (name === WORKSPACE_ROOT_PACKAGE) throw new Error(`${normalized} selected the workspace root`)
-      if (!name.startsWith('@deepseek-ai/')) throw new Error(`${normalized} must name an @deepseek-ai package`)
+      // Fork: vendor members may publish under either scope — @deepseek-ai/* for
+      // the deepseek-published vendors and @hy-sde-org/* for forks published from
+      // the hy-sde npm org (e.g. vendor/effect's @hy-sde-org/effect).
+      if (!name.startsWith('@deepseek-ai/') && !name.startsWith('@hy-sde-org/')) throw new Error(`${normalized} must name an @deepseek-ai or @hy-sde-org package`)
       if (seen.has(name)) throw new Error(`${name} appears twice in release family ${this.id}`)
       seen.add(name)
       members.push({
@@ -442,7 +445,7 @@ class VendorFamily extends ReleaseFamily {
    * @returns `vendor-<unscoped name>-v`.
    */
   tagPrefixFor(member: ReleaseMember): string {
-    return `${this.tagPrefix}${member.name.replace('@deepseek-ai/', '')}-v`
+    return `${this.tagPrefix}${member.name.replace(/^@[^/]+\//, '')}-v`
   }
 
   /**

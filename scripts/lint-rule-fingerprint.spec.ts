@@ -87,9 +87,9 @@ describe('Oxlint repository rule fingerprint', () => {
   it('pins every override field', () => {
     // The fork ships extra overrides between the shared profile overrides
     // (indexes 0-5, which the profiles below still reference) and the upstream
-    // fixture carve-outs: fs-archive vendor relaxations and a ui-chat scoping
+    // fixture carve-outs: fs-archive vendor relaxations and two ui-chat scopings
     // for oxlint's project service (see the .oxlintrc.json comments).
-    expect(overrides).toHaveLength(11)
+    expect(overrides).toHaveLength(12)
   })
 
   it.each(Object.entries(profiles))('pins the %s rule profile', (_name, profile) => {

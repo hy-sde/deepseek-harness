@@ -16,7 +16,15 @@ import LlmRuntime from '@deepseek-ai/dsh-llm'
 import SessionStore from '@deepseek-ai/dsh-session'
 import SessionTitleService, { type Config as SessionTitleConfig } from '@deepseek-ai/dsh-session-title'
 import SystemPrompt, { type Config as SystemPromptConfig } from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { type Config as ToolsConfig } from '@deepseek-ai/dsh-tools'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
+/** The tool registry no longer takes a config (executors mount instead); kept for demo config compat. */
+type ToolsConfig = {
+  /** Removed. Mount a native, PTC, or catalog tool executor plugin instead of configuring the registry. */
+  mode?: never
+  /** Moved to the PTC tool executor configuration (`dsh-tool-executor-ptc`). */
+  maxParallelSubCalls?: never
+}
 import SkillRegistry, { type Config as SkillRegistryConfig } from '@deepseek-ai/dsh-skill'
 import * as SkillFileSystem from '@deepseek-ai/dsh-skill-filesystem'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
@@ -104,7 +112,7 @@ export interface Config {
   personaSuffix?: SystemPromptConfig['personaSuffix']
   /** The explicit model-facing tool order (see dsh-system-prompt's `Config`). */
   toolOrder?: SystemPromptConfig['toolOrder']
-  /** The tool registry's config — its presentation `mode` (see dsh-tools' `Config`). */
+  /** Unused since executors mount via agent-tool-presentation; kept for config compat. */
   tools?: ToolsConfig
   /** Host filesystem resolution and overwrite-diff limits. */
   filesystem?: FileSystemConfig
@@ -256,6 +264,7 @@ export function apply(ctx: Context, config: Config): void {
     ...config.toolOrder !== undefined ? { toolOrder: config.toolOrder } : {},
   })
   ctx.plugin(ToolRuntime, config.tools ?? {})
+  ctx.plugin(NativeToolExecutor)
   ctx.plugin(LocalFileSystem, config.filesystem ?? {})
   const skillsEnabled = config.skills?.enabled ?? true
   if (skillsEnabled) {

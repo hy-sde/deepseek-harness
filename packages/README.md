@@ -95,7 +95,7 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`client/`](client/README.md) | Web-GUI browser half: shell, wire, object services, slots, `ui-*` plugins |
 | [`examples/`](examples/README.md) | Demo assemblies: the executor-less/UI-less agent spine and the logseq diary example |
 | [`test-support/`](test-support/README.md) | Test infrastructure (testkits, replay, Loader smokes) |
-| [`util/`](util/README.md) | Low-level zero-dependency utilities shared across groups (`Branded<B>`, home/path helpers, timeout, retention) |
+| [`util/`](util/README.md) | Low-level utilities and data-only package lists shared across groups (`Branded<B>`, home/path helpers, timeout, retention, official bundle lists) |
 
 -----
 

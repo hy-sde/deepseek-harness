@@ -19,6 +19,7 @@ import {
   sliceByWeight,
   gitDiffSection,
 } from '../src/review.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 let dir: string
 let ctx: Context
@@ -37,7 +38,7 @@ function runGit(args: string[]): string {
 const agent = { session: { header: { id: 's1', cwd: '' } } } as never
 
 async function call(name: string, args: unknown): Promise<{ value: unknown }> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`rev-${++counter}`),
     name,
@@ -232,7 +233,7 @@ describe('review tool with fabricated reviewers', () => {
     const result = await call('review', { target: 'staged', focus: ['src'], maxReviewers: 1 })
     expect(result.value).toMatchObject({ verdict: 'ship', errors: [], diffTruncated: false })
     expect(save).toHaveBeenCalledTimes(1)
-    const ref = await save.mock.results[0]!.value
+    const ref = (await save.mock.results[0]!.value) as { locator: string }
     const captured = await readFile(ref.locator, 'utf8')
     expect(captured).toBe(expected)
     const prompt = reviewerPrompts[0]!

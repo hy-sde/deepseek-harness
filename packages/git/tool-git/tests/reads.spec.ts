@@ -22,6 +22,7 @@ import * as Git from '@deepseek-ai/dsh-git'
 import VcsPlugin from '@deepseek-ai/dsh-vcs'
 import toolGitPackage from '@deepseek-ai/dsh-tool-git'
 import { openReads } from '../src/reads.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 let dir: string
 let shimDir: string
@@ -46,7 +47,7 @@ async function write(path: string, content: string): Promise<void> {
 const agent = { session: { header: { id: 's1', cwd: '' } } } as never
 
 async function call(name: string, args: unknown): Promise<{ value: unknown }> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`call-${++counter}`),
     name,

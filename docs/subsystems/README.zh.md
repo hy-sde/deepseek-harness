@@ -5,7 +5,7 @@
 每个子系统一页，覆盖 DeepSeek Harness 的全部子系统：它是什么、它操作哪些数据结构，以及——当它由某个 `ctx` 服务或事件作用域支撑时——一段生成的 **Cordis API** 小节，承载其服务与事件参考。本目录与 [architecture.md](../architecture.zh.md) 互补：后者描述跨子系统的*行为*（服务映射、会话/轮次/步骤生命周期、事件分类体系）；这里的每一页是单个子系统词汇与接线的参考。
 
 | 页面 | 负责内容 |
-| --- | --- |
+|---|---|
 | [boot.md](boot.zh.md) | 当前 profile 插件管理与 launcher 重载协调 |
 | [core.md](core.zh.md) | `packages/core` 如何控制 agent loop（智能体循环）：逐包的循环说明、agent 创建与所有权（`AgentHandle`）、`Agent` 句柄的投递/取消/拦截约定，以及全仓通用类型模式（`…Map → derived-union`、品牌化 id） |
 | [llm-streaming.md](llm-streaming.zh.md) | `packages/llm` 的对话类型——`Message`/`ContentBlock`、组装完成的模型请求、`StreamChunk` wire protocol 和适配器约定（adapter contract）、`BlockAssembler`，以及 `LlmAdapter` 提供方约定 |
@@ -21,6 +21,7 @@
 | [session.md](session.zh.md) | 完整的 `SessionEventMap` 变体目录、`TurnEndReason`、`deriveMessages()`、执行封闭与独立事件 |
 | [working-directory.md](working-directory.zh.md) | Session 执行目录、持久化变更、恢复与用户上下文 |
 | [worktrees.md](worktrees.zh.md) | 现有权限下的实验性 Git 分支与检出目录创建 |
+| [forge.md](forge.zh.md) | 实验性代码托管变更请求：提供方契约、共享状态轮询与 Session 绑定 |
 | [persistence.md](persistence.zh.md) | 持久性 seam：`SessionPersistence`、JSONL 提供方、`session/flush`、崩溃恢复、`SessionHeader` |
 | [settings.md](settings.zh.md) | 用户设置 seam：`SettingsNamespace` 注册、分层解析（默认值 → 组合 `base` → 用户文档）、owner scope、热提交 |
 | [credentials.md](credentials.zh.md) | 凭据 seam：配置中的 `CredentialRef` 引用（绝不含值）、按操作解析、对 UI 安全的 `CredentialInfo`、提供方来源层 |
@@ -37,7 +38,7 @@
 | [office-to-pdf.md](office-to-pdf.zh.md) | 已授权的 Office 到 PDF 转换、原生/WASM 引擎与有界共享复用 |
 | [attachment.md](attachment.zh.md) | 持久图片标识与元数据、校验输入、经校验读取，以及 `AttachmentStore` seam |
 | [browser.md](browser.zh.md) | 无头浏览器自动化 seam：启动、隐身、导航、ARIA 树快照与 PNG 截图 |
-| [shell.md](shell.zh.md) | shell 执行器 seam：`ShellExecRequest`/`Spec`、`ShellRunResult`、后台 `ShellProcess` 句柄 |
+| [shell.md](shell.zh.md) | bash 执行器 seam：`ShellExecRequest`/`Spec`、`ShellRunResult`、后台 `ShellProcess` 句柄 |
 | [subprocess.md](subprocess.zh.md) | 子进程 seam：完全显式的 `SubprocessSpawnSpec`、基于偏移的输出读取器、不含分类的 `SubprocessOutcome`，以及受管 `DSH_*` 环境词汇 |
 | [ssh.md](ssh.zh.md) | POSIX SSH 连接与远程文件系统、子进程和沙箱提供方 |
 | [terminal.md](terminal.zh.md) | 持久化终端 ID、后端/会话约定、发送就绪状态、有界读取与 owner 可见快照 |
@@ -56,6 +57,7 @@
 | [voice-input.md](voice-input.zh.md) | 实验性具名语音识别、临时音频和受版本保护的草稿插入 |
 | [translation.md](translation.zh.md) | 实验性免登录文本翻译与显式 Provider 请求 |
 | [agent-team.md](agent-team.zh.md) | Agent Teams：隐式 Lead 身份、具名 continuable teammate、直接 peer inbox 投递 与共享任务 DAG |
+| [liveshare.md](liveshare.zh.md) | 可选的 LiveShare bundle：嵌套分享模式、fork 的上限与持久性、上限安装，以及共享会话外部驱动轮次所受的约束 |
 | [claude-code-mods.md](claude-code-mods.zh.md) | 经实验性桥接运行的 Claude Code 模组：与 Claude Code 不同的每个事件、`$` 成员、链规则、绘制特性与示例模组 |
 | [web.md](web.zh.md) | Web 访问 seam：`WebSearchRequest`/`Result`、`WebFetchRequest`/`Result`、`WebFetchBody`、提供方可用性、`WebError` |
 | [spill.md](spill.zh.md) | spill 存储 seam：`SaveTextSpill`、`SpillOwner`/`SpillSource`、`SpillRef`、品牌类型 `SpillLocator` |
@@ -71,8 +73,8 @@
 | [web-client.md](web-client.zh.md) | 浏览器架构：启动、Remote 通信、配对的 Client model、UI 适配器、Conversation 组装、slot 与重连语义 |
 | [client-modules.md](client-modules.zh.md) | Web 插件表：`dsh.client` 声明、`WebBootGraph` 协议格式组合、bundle 路由与 index 挂接点 |
 | [slots.md](slots.zh.md) | 类型化 Web UI 组合：声明所有权、cardinality 与 scope、框架与功能注入、props 推导及已交付的层级结构 |
-| [client-resources.md](client-resources.zh.md) | 客户端资源模型：`dsh-resource://<type>/…` 地址、协议提供者与 `ResourceProtocolMap`、`useResource` 全局钩子及其状态、pin 与释放 |
-| [sidebar-right.md](sidebar-right.zh.md) | 右侧 Sidebar：资源与导航地址、标签类型注册与路由、`ctx.sidebarRight` 导航服务、窗格标签槽与所有者 props、资源模型与 Workspace Files 服务 |
+| [client-resources.md](client-resources.zh.md) | 客户端资源模型：`dsh-resource://<type>/…` 地址、协议提供方与 `ResourceProtocolMap`、`useResource` 全局钩子及其状态、钉住与释放 |
+| [sidebar-right.md](sidebar-right.zh.md) | 右侧 Sidebar：资源地址与导航地址、tab 类型注册与路由、`ctx.sidebarRight` 导航服务、pane-tab slot 与 owner props、资源模型及 Workspace Files 服务 |
 | [graph.md](graph.zh.md) | 代理图服务：graph-control 中的持久图行、graph-stream 中的流投影、graph-wakes 中的监督唤醒语义，以及 `view_agent_graph`/`update_agent_graph` 工具面 |
 | [memory-extraction.md](memory-extraction.zh.md) | 尽力而为的记忆抽取管线：会话事件消费、带模型体验接线的 LLM 抽取与建议性来源轨迹输出 |
 | [conversation.md](conversation.zh.md) | 目标无关的会话事件组装：上下文标识、位置数据、回放路径、视图构建器与目标自有的渲染节点 |

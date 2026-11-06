@@ -6,6 +6,8 @@ import { AZURE_CLASSIFIER_MODELS, AZURE_IMAGE_MODELS, AZURE_MODELS } from "./pro
 import { DEEPSEEK_CLASSIFIER_MODELS, DEEPSEEK_IMAGE_MODELS, DEEPSEEK_MODELS } from "./providers/deepseek.models.ts";
 import { OPENAI_CLASSIFIER_MODELS, OPENAI_IMAGE_MODELS, OPENAI_MODELS } from "./providers/openai.models.ts";
 import { OPENAI_CODEX_CLASSIFIER_MODELS, OPENAI_CODEX_IMAGE_MODELS, OPENAI_CODEX_MODELS } from "./providers/openai-codex.models.ts";
+import { MOONSHOTAI_CLASSIFIER_MODELS, MOONSHOTAI_IMAGE_MODELS, MOONSHOTAI_MODELS } from "./providers/moonshotai.models.ts";
+import { OPENCODE_GO_CLASSIFIER_MODELS, OPENCODE_GO_IMAGE_MODELS, OPENCODE_GO_MODELS } from "./providers/opencode-go.models.ts";
 
 export const MODELS: {
 	readonly "anthropic": typeof ANTHROPIC_MODELS;
@@ -13,12 +15,16 @@ export const MODELS: {
 	readonly "deepseek": typeof DEEPSEEK_MODELS;
 	readonly "openai": typeof OPENAI_MODELS;
 	readonly "openai-codex": typeof OPENAI_CODEX_MODELS;
+	readonly "moonshotai": typeof MOONSHOTAI_MODELS;
+	readonly "opencode-go": typeof OPENCODE_GO_MODELS;
 } = {
 	"anthropic": ANTHROPIC_MODELS,
 	"azure": AZURE_MODELS,
 	"deepseek": DEEPSEEK_MODELS,
 	"openai": OPENAI_MODELS,
 	"openai-codex": OPENAI_CODEX_MODELS,
+	"moonshotai": MOONSHOTAI_MODELS,
+	"opencode-go": OPENCODE_GO_MODELS,
 };
 
 export const IMAGE_MODELS: {
@@ -27,12 +33,16 @@ export const IMAGE_MODELS: {
 	readonly "deepseek": typeof DEEPSEEK_IMAGE_MODELS;
 	readonly "openai": typeof OPENAI_IMAGE_MODELS;
 	readonly "openai-codex": typeof OPENAI_CODEX_IMAGE_MODELS;
+	readonly "moonshotai": typeof MOONSHOTAI_IMAGE_MODELS;
+	readonly "opencode-go": typeof OPENCODE_GO_IMAGE_MODELS;
 } = {
 	"anthropic": ANTHROPIC_IMAGE_MODELS,
 	"azure": AZURE_IMAGE_MODELS,
 	"deepseek": DEEPSEEK_IMAGE_MODELS,
 	"openai": OPENAI_IMAGE_MODELS,
 	"openai-codex": OPENAI_CODEX_IMAGE_MODELS,
+	"moonshotai": MOONSHOTAI_IMAGE_MODELS,
+	"opencode-go": OPENCODE_GO_IMAGE_MODELS,
 };
 
 export const CLASSIFIER_MODELS: {
@@ -41,10 +51,14 @@ export const CLASSIFIER_MODELS: {
 	readonly "deepseek": typeof DEEPSEEK_CLASSIFIER_MODELS;
 	readonly "openai": typeof OPENAI_CLASSIFIER_MODELS;
 	readonly "openai-codex": typeof OPENAI_CODEX_CLASSIFIER_MODELS;
+	readonly "moonshotai": typeof MOONSHOTAI_CLASSIFIER_MODELS;
+	readonly "opencode-go": typeof OPENCODE_GO_CLASSIFIER_MODELS;
 } = {
 	"anthropic": ANTHROPIC_CLASSIFIER_MODELS,
 	"azure": AZURE_CLASSIFIER_MODELS,
 	"deepseek": DEEPSEEK_CLASSIFIER_MODELS,
 	"openai": OPENAI_CLASSIFIER_MODELS,
 	"openai-codex": OPENAI_CODEX_CLASSIFIER_MODELS,
+	"moonshotai": MOONSHOTAI_CLASSIFIER_MODELS,
+	"opencode-go": OPENCODE_GO_CLASSIFIER_MODELS,
 };

@@ -15,8 +15,10 @@
   border-radius: 6px;
 }
 
-.line:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .line:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .bullet {
@@ -75,9 +77,14 @@
   gap: 2px;
 }
 
-.line:hover .actions,
 .actions:has(button) {
   display: flex;
+}
+
+@media (hover: hover) {
+  .line:hover .actions {
+    display: flex;
+  }
 }
 
 .action {
@@ -92,9 +99,11 @@
   border-radius: 4px;
 }
 
-.action:hover {
-  background: var(--dsw-alias-button-floating-hover);
-  color: var(--dsw-alias-label-primary);
+@media (hover: hover) {
+  .action:hover {
+    background: var(--dsw-alias-button-floating-hover);
+    color: var(--dsw-alias-label-primary);
+  }
 }
 
 .children {

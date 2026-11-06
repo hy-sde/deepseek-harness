@@ -165,12 +165,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { Context as CordisContext } from '@deepseek-ai/cordis'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 type ToolOutcome = { status: string } & Record<string, unknown>
 
 /** One registry dispatch returning the parsed tool output value. */
 async function runTool(ctx: CordisContext, signal: AbortSignal, name: string, args: unknown): Promise<ToolOutcome> {
-  const result = await ctx.tools.execute({ signal, callId: ToolCallId(`it-${Math.random()}`), name, arguments: args })
+  const result = await executeToolFixture(ctx, { signal, callId: ToolCallId(`it-${Math.random()}`), name, arguments: args })
   if (result.error) throw new Error(`tool ${name} failed: ${result.error.message}`)
   const text = result.content.filter(b => b.type === 'text').map(b => 'text' in b ? b.text : '').join('')
   return JSON.parse(text) as { status: string; [k: string]: unknown }

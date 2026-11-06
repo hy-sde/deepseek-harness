@@ -413,6 +413,11 @@ export interface ToolCall {
 	thoughtSignature?: string; // Google-specific: opaque signature for reusing thought context
 	/** OpenAI Responses namespace for calls to dynamically loaded or namespaced tools. */
 	namespace?: string;
+	/**
+	 * Set when the model's complete arguments text was not a valid JSON object. `arguments` is then `{}`.
+	 * Describes the problem and includes the text the model sent; tool argument validation fails with it.
+	 */
+	argumentsError?: string;
 }
 
 export interface Usage {
@@ -893,6 +898,8 @@ export interface OpenAIResponsesCompat {
 	supportsExplicitPromptCacheMode?: boolean;
 	/** Whether the provider accepts the `max_output_tokens` parameter. Some Codex-protocol gateways reject it. Default: true. */
 	supportsMaxOutputTokens?: boolean;
+	/** Whether the exact model transport supports effort-only system messages and thinking binding controls. Default: false. */
+	supportsMidConvoEffort?: boolean;
 }
 
 /** Compatibility settings for Anthropic Messages-compatible APIs. */

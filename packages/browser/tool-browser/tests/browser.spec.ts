@@ -20,6 +20,7 @@ import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import Browser from '@deepseek-ai/dsh-browser'
 import toolBrowserPackage from '@deepseek-ai/dsh-tool-browser'
 import { resolveCwd, trimAria, stringifyResult } from '../src/browser.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const CHROME_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -37,7 +38,7 @@ let counter = 0
 const agent = { session: { header: { id: 'b1', cwd: '' } } } as never
 
 async function call(args: unknown): Promise<{ value: unknown }> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`br-${++counter}`),
     name: 'browser',

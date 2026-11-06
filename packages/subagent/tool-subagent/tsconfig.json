@@ -33,9 +33,6 @@
       "path": "../../session/session-projection"
     },
     {
-      "path": "../../core/scope"
-    },
-    {
       "path": "../../llm/llm"
     },
     {

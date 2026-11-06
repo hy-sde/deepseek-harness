@@ -65,8 +65,10 @@
   white-space: nowrap;
 }
 
-.btn:hover:not(:disabled) {
-  border-color: var(--dsw-alias-border-l2);
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    border-color: var(--dsw-alias-border-l2);
+  }
 }
 
 .btn:disabled {
@@ -80,8 +82,10 @@
   color: var(--dsw-alias-bg-base);
 }
 
-.btnPrimary:hover:not(:disabled) {
-  filter: brightness(1.08);
+@media (hover: hover) {
+  .btnPrimary:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
 }
 
 /* Rail chip: a compact clock whose button starts / restarts, with a small
@@ -109,9 +113,11 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-.railPrimary:hover,
-.railGear:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .railPrimary:hover,
+  .railGear:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .railGear {

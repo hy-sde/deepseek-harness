@@ -7,6 +7,8 @@ import modelDataManifest from "./data/.manifest.json" with { type: "json" };
 import { deepseekProvider } from "./deepseek.ts";
 import { openaiProvider } from "./openai.ts";
 import { openaiCodexProvider } from "./openai-codex.ts";
+import { moonshotaiProvider } from "./moonshotai.ts";
+import { opencodeGoProvider } from "./opencode-go.ts";
 
 
 /** Providers present in the generated catalog. `KnownProvider` additionally
@@ -102,6 +104,8 @@ export function builtinProviders(): Provider[] {
 		deepseekProvider(),
 		openaiProvider(),
 		openaiCodexProvider(),
+		moonshotaiProvider(),
+		opencodeGoProvider(),
 	];
 }
 

@@ -10,13 +10,14 @@ import { Context } from '@deepseek-ai/cordis'
 import { provideWorkingDirectoryFixture } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import { FileSystem, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
-import type { FsDirEntry, FsEditOutcome, FsEditRequest, FsInfo, FsPathInfo, FsTarget, FsWriteIntent, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
+import type { FsDeleteOutcome, FsDirEntry, FsEditOutcome, FsEditRequest, FsInfo, FsMoveOutcome, FsPathInfo, FsTarget, FsWriteIntent, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as InternalUrls from '@deepseek-ai/dsh-internal-urls'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import { isAbsolute, join } from 'node:path'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 
@@ -92,7 +93,11 @@ class FakeFs extends FileSystem {
     this.files.set(String(target.targetKey), after)
     return { version: FsVersion('v3'), before: content, after }
   }
+  override async patchText(): Promise<FsEditOutcome> { throw new Error('not supported in this test fake') }
+  override async deleteFile(): Promise<FsDeleteOutcome> { throw new Error('not supported in this test fake') }
+  override async moveFile(): Promise<FsMoveOutcome> { throw new Error('not supported in this test fake') }
 }
+
 
 // Markers are built at runtime so no source line begins `<<<<<<<`/`=======`
 // (git's `diff --check` treats column-0 markers as leftover merge conflicts);
@@ -128,7 +133,7 @@ let callCounter = 0
 const agent = { session: { header: { id: 's1', cwd: CWD } } }
 
 async function call(ctx: Context, name: string, args: unknown) {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: testToolSignal,
     callId: ToolCallId(`call-${++callCounter}`),
     name,

@@ -41,6 +41,8 @@ import {
 import {
   type CwdPathMode,
   type NormalizeContext,
+  type NormalizeOptions,
+  collectJobTokens,
   extractSnapshotSpillPaths,
   normalizeSessionLog,
   normalizeSessionSnapshots,
@@ -984,8 +986,23 @@ function preserveNormalizedVolatiles(
 function normalizedRefreshRecord(
   record: Record<string, unknown>,
   context: NormalizeContext,
+  jobTokens?: ReadonlyMap<string, string>,
 ): Record<string, unknown> {
-  return JSON.parse(normalizeSessionLog(`${JSON.stringify(record)}\n`, context)) as Record<string, unknown>
+  // Legacy identity mode is the comparison contract, but its background-job
+  // tokenization was designed as a whole-log pass: the token map is built from
+  // `job/registered`/`job/settled` records and then applied to every string in
+  // the log, message text included. Normalizing one record at a time splits
+  // those apart — a text record normalizes with an empty token map and keeps
+  // the raw id while its sibling job record borrows the canonical token, and
+  // the write-back can no longer reconcile the two. Pass the log-wide token
+  // map collected over the complete fresh log so both sides see the same
+  // tokenization.
+  const options: NormalizeOptions = jobTokens === undefined ? {} : { jobTokenMap: jobTokens }
+  return JSON.parse(normalizeSessionLog(
+    `${JSON.stringify(record)}\n`,
+    context,
+    options,
+  )) as Record<string, unknown>
 }
 
 /**
@@ -1074,6 +1091,7 @@ function normalizedStringMappings(
   existingRecords: Record<string, unknown>[],
   freshContext: NormalizeContext,
   existingContext: NormalizeContext,
+  jobTokens?: ReadonlyMap<string, string>,
 ): Map<string, string> | undefined {
   const excludedStrings = new Set<string>()
   for (const record of [...freshRecords, ...existingRecords]) {
@@ -1098,8 +1116,8 @@ function normalizedStringMappings(
       if (!collectNormalizedStringMappings(
         record,
         existingRecord,
-        normalizedRefreshRecord(freshRecords[recordIndex] as Record<string, unknown>, freshContext),
-        normalizedRefreshRecord(existingRecord, existingContext),
+        normalizedRefreshRecord(freshRecords[recordIndex] as Record<string, unknown>, freshContext, jobTokens),
+        normalizedRefreshRecord(existingRecord, existingContext, jobTokens),
         excludedStrings,
         forward,
         reverse,
@@ -1139,12 +1157,14 @@ export function stabilizeRefreshLog(
   const existingRecords = logicalRecords(parseJsonlRecords(existing))
   const records = parseJsonlRecords(stable)
   const existingContext = fixtureContext(existing)
+  const jobTokens = collectJobTokens(fresh)
   const stringMappings = normalizedStringMappings(
     records,
     freshRecords,
     existingRecords,
     freshContext,
     existingContext,
+    jobTokens,
   )
   let existingIndex = 0
   let previousEventTime: unknown
@@ -1167,8 +1187,8 @@ export function stabilizeRefreshLog(
         record = preserveNormalizedVolatiles(
           record,
           existingRecord,
-          normalizedRefreshRecord(freshRecords[i] as Record<string, unknown>, freshContext),
-          normalizedRefreshRecord(existingRecord, existingContext),
+          normalizedRefreshRecord(freshRecords[i] as Record<string, unknown>, freshContext, jobTokens),
+          normalizedRefreshRecord(existingRecord, existingContext, jobTokens),
           stringMappings,
         ) as Record<string, unknown>
         records[i] = record

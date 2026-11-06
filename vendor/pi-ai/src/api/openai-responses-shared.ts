@@ -32,7 +32,7 @@ import type {
 } from "../types.ts";
 import type { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { shortHash } from "../utils/hash.ts";
-import { parseStreamingJson } from "../utils/json-parse.ts";
+import { parseToolCallArguments } from "../utils/json-parse.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 import { getSystemMessageText, renderSystemMessageUpdate } from "../utils/text.ts";
 import { resolveTranscript, resolveTranscriptTools } from "../utils/transcript.ts";
@@ -129,6 +129,8 @@ export interface ConvertResponsesMessagesOptions {
 	supportsAdditionalTools?: boolean;
 	supportsToolSearch?: boolean;
 	toolOptions?: ConvertResponsesToolsOptions;
+	/** Effort to append as a trailing configuration_update item, or undefined to skip it. */
+	configurationUpdateEffort?: string;
 }
 
 export interface ConvertResponsesToolsOptions {
@@ -150,6 +152,13 @@ export function convertResponsesMessages<TApi extends Api>(
 ): ResponseInput {
 	const normalizedContext = resolveTranscript(context, options?.supportsMidConvoSystemMessages);
 	const messages: ResponseInput = [];
+
+	const pushConfigurationUpdate = (effort: string) => {
+		messages.push({
+			type: "configuration_update",
+			reasoning: { effort: effort },
+		} as ResponseInput[number]);
+	};
 
 	const normalizeIdPart = (part: string): string => {
 		const sanitized = part.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -328,6 +337,13 @@ export function convertResponsesMessages<TApi extends Api>(
 				}
 			}
 			if (output.length === 0) continue;
+			if (
+				options?.configurationUpdateEffort !== undefined &&
+				isSameModel &&
+				msg.providerThinkingLevel !== undefined
+			) {
+				pushConfigurationUpdate(msg.providerThinkingLevel);
+			}
 			messages.push(...output);
 		} else if (msg.role === "toolResult") {
 			const [callId] = msg.toolCallId.split("|");
@@ -350,6 +366,7 @@ export function convertResponsesMessages<TApi extends Api>(
 		if (!isLeadingSystemMessage) msgIndex++;
 	}
 
+	if (options?.configurationUpdateEffort !== undefined) pushConfigurationUpdate(options.configurationUpdateEffort);
 	return messages;
 }
 
@@ -662,7 +679,6 @@ export async function processResponsesStream<TApi extends Api>(
 			if (!slot || slot.block.partialJson === undefined) continue;
 			const previousPartialJson = slot.block.partialJson;
 			slot.block.partialJson = event.arguments;
-			slot.block.arguments = parseStreamingJson(slot.block.partialJson);
 
 			if (event.arguments.startsWith(previousPartialJson)) {
 				const delta = event.arguments.slice(previousPartialJson.length);
@@ -712,7 +728,7 @@ export async function processResponsesStream<TApi extends Api>(
 				slot?.type === "toolCall" &&
 				slot.block.partialJson !== undefined
 			) {
-				slot.block.arguments = parseStreamingJson(item.arguments || slot.block.partialJson || "{}");
+				Object.assign(slot.block, parseToolCallArguments(item.arguments || slot.block.partialJson));
 				if (item.namespace !== undefined) slot.block.namespace = item.namespace;
 				// Finalize in-place and strip the scratch buffer so replay only
 				// carries parsed arguments.

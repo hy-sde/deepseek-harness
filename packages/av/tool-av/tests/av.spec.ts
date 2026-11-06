@@ -26,6 +26,7 @@ import {
 } from '../src/av.ts'
 import { buildAvPromptSection } from '../src/prompt.ts'
 import type { AvToolConfig } from '../src/av.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const dirs: string[] = []
 let ctx: Context
@@ -103,7 +104,7 @@ esac
 const agent = { session: { header: { id: 'av1', cwd: '' } } } as never
 
 async function call<T>(name: string, args: unknown): Promise<T> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`av-${++counter}`),
     name,

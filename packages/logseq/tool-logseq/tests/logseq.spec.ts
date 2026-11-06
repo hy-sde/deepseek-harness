@@ -16,6 +16,7 @@ import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { applyLogseqTools, LogseqCliError } from '../src/logseq.ts'
 import { parseOutput, renderItems, renderValue } from '../src/logseq.ts'
 import { buildLogseqPromptSection } from '../src/prompt.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const dirs: string[] = []
 let ctx: Context
@@ -82,7 +83,7 @@ async function realLogseqAvailable(): Promise<boolean> {
 const agent = { session: { header: { id: 'lg1', cwd: '' } } } as never
 
 async function call<T>(name: string, args: unknown): Promise<T> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`logseq-${++counter}`),
     name,

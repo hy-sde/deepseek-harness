@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh",
   "description": "dsh CLI: profile launch, plugin management, and configuration inspection",
-  "version": "0.2.1-rc.5",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },
@@ -45,7 +45,9 @@
     "@deepseek-ai/dsh-experimental-auto-review": "workspace:*",
     "@deepseek-ai/dsh-experimental-badge-skill-bundle": "workspace:*",
     "@deepseek-ai/dsh-experimental-cot-translation-bundle": "workspace:*",
+    "@deepseek-ai/dsh-experimental-forge-bundle": "workspace:*",
     "@deepseek-ai/dsh-experimental-inspector-profile": "workspace:*",
+    "@deepseek-ai/dsh-experimental-liveshare": "workspace:*",
     "@deepseek-ai/dsh-experimental-plugin-market-bundle": "workspace:*",
     "@deepseek-ai/dsh-experimental-ralph-bundle": "workspace:*",
     "@deepseek-ai/dsh-experimental-session-search": "workspace:*",
@@ -72,8 +74,10 @@
     "@deepseek-ai/dsh-mcp-resources": "workspace:*",
     "@deepseek-ai/dsh-memory": "workspace:*",
     "@deepseek-ai/dsh-memory-extraction": "workspace:*",
+    "@deepseek-ai/dsh-official-bundles": "workspace:*",
     "@deepseek-ai/dsh-orchestration-policy": "workspace:*",
     "@deepseek-ai/dsh-persona": "workspace:*",
+    "@deepseek-ai/dsh-personalized-recommendations": "workspace:*",
     "@deepseek-ai/dsh-plan-mode": "workspace:*",
     "@deepseek-ai/dsh-plugin-manager": "workspace:*",
     "@deepseek-ai/dsh-pwsh-local": "workspace:*",
@@ -127,11 +131,12 @@
     "@deepseek-ai/dsh-tool-web": "workspace:*",
     "@deepseek-ai/dsh-tool-workflow": "workspace:*",
     "@deepseek-ai/dsh-tool-workspace-dependencies": "workspace:*",
-    "@deepseek-ai/dsh-yaml": "workspace:~",
     "@deepseek-ai/dsh-web-app": "workspace:*",
     "@deepseek-ai/dsh-workflow-ptc": "workspace:*",
+    "@deepseek-ai/dsh-yaml": "workspace:~",
     "@deepseek-ai/schemastery": "workspace:~",
     "commander": "^15.0.0",
+    "js-yaml": "^4.3.2",
     "node-addon-require-builtin": "^0.1.9"
   },
   "devDependencies": {
@@ -182,11 +187,13 @@
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tool-ralph": "workspace:*",
     "@deepseek-ai/dsh-tool-subagent-report": "workspace:*",
+    "@deepseek-ai/dsh-tool-testkit": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@deepseek-ai/dsh-user-approval": "workspace:*",
     "@deepseek-ai/dsh-webhook": "workspace:*",
     "@deepseek-ai/dsh-webhook-github": "workspace:*",
     "@deepseek-ai/dsh-zstd-frame": "workspace:*",
+    "@types/js-yaml": "^4.0.9",
     "@types/ws": "8.18.1",
     "ajv": "^8.20.0",
     "execa": "^10.0.1",
@@ -199,5 +206,8 @@
     },
     "./lib/*": "./lib/*",
     "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=24.9.0"
   }
 }

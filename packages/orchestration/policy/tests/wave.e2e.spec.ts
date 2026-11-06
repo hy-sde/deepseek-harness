@@ -25,6 +25,7 @@ import * as Git from '@deepseek-ai/dsh-git'
 import toolGitPackage from '@deepseek-ai/dsh-tool-git'
 import * as toolSubagentPackage from '@deepseek-ai/dsh-tool-subagent'
 import policyPackage from '../src/index.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 interface Fixture {
   dir: string
@@ -121,7 +122,7 @@ async function parentAgent(ctx: Context, cwd: string): Promise<Agent> {
 }
 
 async function call(ctx: Context, name: string, args: Record<string, unknown>, agent?: Agent): Promise<{ value: unknown; text: string }> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`wave-${name}-${Math.random().toString(16).slice(2, 8)}`),
     name,

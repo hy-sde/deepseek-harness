@@ -1,6 +1,6 @@
 /**
  * Integration tests: the REAL local subprocess service plus the PACKAGED `@ast-grep/cli` native
- * binary, exercised through `ctx.tools.execute()` with the real local filesystem, sandbox-policy
+ * binary, exercised through `executeToolFixture(ctx, )` with the real local filesystem, sandbox-policy
  * and observation-policy seams. These verify the WORLD — actual files are structurally matched
  * and rewritten, `ast_edit` apply goes through `ctx.fs` (observation/version guard), hostile
  * patterns stay inert argv, and engine failures classify into the `AST_*` vocabulary. The binary
@@ -22,6 +22,7 @@ import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
 import SandboxPolicy from '@deepseek-ai/dsh-sandbox-policy'
 import SandboxedFileSystem from '@deepseek-ai/dsh-fs-sandbox'
 import * as ToolAst from '@deepseek-ai/dsh-tool-ast'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 
@@ -30,7 +31,7 @@ let ctx: Context
 
 let callCounter = 0
 function call(name: string, args: unknown, agentObj?: object) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: testToolSignal,
     callId: ToolCallId(`it-${++callCounter}`),
     name,
@@ -186,7 +187,7 @@ describe('ast tools over the real subprocess service + the packaged ast-grep', (
         await sandboxCtx.plugin(SandboxedFileSystem, { cwd: sandboxDir })
         await sandboxCtx.plugin(FsPolicy)
         await sandboxCtx.plugin(ToolAst, {})
-        const result = await sandboxCtx.tools.execute({
+        const result = await executeToolFixture(sandboxCtx, {
           signal: testToolSignal,
           callId: ToolCallId(`sbx-${++callCounter}`),
           name: 'ast_edit',
@@ -211,7 +212,7 @@ describe('ast tools over the real subprocess service + the packaged ast-grep', (
     it('classifies a pre-aborted registry call without spawning', async () => {
       const controller = new AbortController()
       controller.abort()
-      const result = await ctx.tools.execute({
+      const result = await executeToolFixture(ctx, {
         signal: controller.signal,
         callId: ToolCallId(`abort-${++callCounter}`),
         name: 'ast_grep',

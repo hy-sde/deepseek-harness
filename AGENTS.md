@@ -26,30 +26,24 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   ssh/                  SSH execution providers
   terminal/             persistent terminals
   ptc-runtime/          PTC execution
-  code-runtime/         persistent code kernels
-  sandbox/              process confinement
-  av/                   Automic Vault audit and hardening tools
+  code-runtime/         code kernels; sandbox/ process confinement
+  av/                   Automic Vault audit + hardening
   deliverables/         turn deliverables
-  git/                  agentic git service + tools
-  vcs/                  native VCS service
+  git/, vcs/             agentic git + native VCS services
   fs/                   filesystem access
-  edit/                 file-edit tools (hashline)
+  edit/, ast/            hashline edits + ast-grep search/edit
   lsp/                  language servers
-  ast/                  ast-grep search/edit tools
-  debug/                DAP debug seam + tool
-  codebase-memory/      codebase knowledge-graph tools
+  debug/                DAP debug seam; codebase-memory/ knowledge graph
   skill/                skill loading
   web/                  search/fetch tools
-  computer-use/         computer interaction
-  browser-use/          browser interaction
+  computer-use/, browser-use/ computer/browser interaction
   browser/              browser service + tool
   compaction/           context compaction
   context/              request context
   memory/               long-horizon agent memory
   subagent/             delegated agents
   jobs/                 background jobs
-  graph/                Agent Graph supervision
-  orchestration/        fan-out orchestration policy
+  graph/                Agent Graph supervision + orchestration policy
   bundle/               profile bundles
   workflow/             workflow execution
   todo/                 todo_write tool
@@ -60,15 +54,12 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   guard/                loop/tool guards
   extensions/           runtime self-modification
   session/              durable sessions
-  session-query/        browsing/search/export
-  agentsview/           session-intelligence queries
+  session-query/        session browsing/search/export; agentsview/ intelligence queries
   attachment/           binary attachments
   spill/                output spill
-  storage/              non-session storage
-  workspace/            workspace entities
+  storage/              non-session storage; workspace/ workspace entities
   feedback/             human feedback
-  telemetry/            shared Cordis OTel channels
-  identity/             anonymous identity
+  telemetry/            shared Cordis OTel channels; identity/ anonymous identity
   settings/             user settings
   credentials/          credentials/authorization
   acp/                  automation-only ACP
@@ -77,10 +68,9 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   sdk/                  JSON-RPC SDK
   host/                 GUI host
   client/               GUI client
-  document/             Host Office-to-PDF conversion
+  document/             Office-to-PDF conversion
   mcp/                  external tools
-  logseq/               Logseq CLI + wiki-graph tools
-  openwiki/             OpenWiki generation tools
+  logseq/, openwiki/     Logseq CLI + wiki-graph; OpenWiki generation
   experimental/         evaluated capabilities without a product-support commitment
   examples/             demo assemblies
   test-support/         test infrastructure
@@ -99,7 +89,7 @@ Package groups: [packages/README.md](packages/README.md). [Experimental status](
 ## Commands
 
 ```sh
-pnpm install            # pnpm workspaces, node ^22.19 || >=24
+pnpm install            # pnpm workspaces, node >=24.9
 pnpm run clean           # remove build outputs and safe residue from deleted packages
 pnpm run test           # unit tests
 pnpm run test:coverage  # CI coverage gate: per-file 100% on packages/*/*/src
@@ -147,12 +137,13 @@ Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and 
 ## Conventions
 
 - Packages use `@deepseek-ai/dsh-<name>`; vendor is [rescoped](docs/rescope.md) and `private: true`. Harness packages declare `@deepseek-ai/cordis` in `peerDependencies`/`devDependencies`. Workspace dependency sections use DSH `workspace:*`, vendor/native `workspace:~` ([rules](.agents/notes/implemented/process/2026-08-10-npm-release-sequences.md)).
-- ESM everywhere (`"type": "module"`). Use package names across packages and `.ts` in local relative imports. Config subprocesses run built `lib/` under plain Node; source regressions use their declared launcher ([testing policy](docs/testing.md#test-subprocess-launch-modes)). The `dsh` CLI source launch runs through tsx's ESM-only hook (`node --import tsx/esm`); modules it reaches must stay ESM (no CJS-only exports) — Node's native TypeScript modes are unavailable across the engines range ([source-launch contract](.agents/notes/implemented/architecture/2026-07-29-dsh-source-launch-tsx-esm.md)). Raw/Web `cordis.yml` bare plugins must appear in their resolver manifest's `dependencies`; `verify-cordis-config` enforces it.
-- **Registrations are effects**: every contribution goes through `ctx.effect()` / `ctx.on()`; a registry's `register()` returns the disposer.
+- ESM everywhere (`"type": "module"`). Use package names across packages and `.ts` in local relative imports. Config subprocesses run built `lib/` under plain Node; source regressions use their declared launcher ([testing policy](docs/testing.md#test-subprocess-launch-modes)). The `dsh` CLI source launch runs through tsx's ESM-only hook (`node --import tsx/esm`); modules it reaches must stay ESM (no CJS-only exports) ([source-launch contract](.agents/notes/implemented/architecture/2026-07-29-dsh-source-launch-tsx-esm.md)). Raw/Web `cordis.yml` bare plugins must appear in their resolver manifest's `dependencies`; `verify-cordis-config` enforces it.
+- **Registrations are effects**: every contribution goes through `ctx.effect()` / `ctx.on()`; a registry's `register()` returns the disposer, directly or through its documented registration handle.
 - **Typed events use declaration merging** and merge-extensible maps. Event JSDoc needs `@mode` and payload `@param`. Public service methods document parameters and non-void returns. `SessionEventMap` members are required-on-read unless the envelope carries `ignorable: true`. Bump `SESSION_FORMAT_VERSION` only when existing discriminators cannot prevent unsafe interpretation; same-version changes require safe reader behavior ([review](.agents/notes/implemented/process/2026-10-08-session-reader-compatibility-review.md)).
 - **Switch on discriminant tags.** Closed unions end in `assertNever`; merge-extensible unions fall through a documented default.
 - **Waterfall listeners MUST call `next()`** to delegate; returning without it short-circuits the chain ([semantics](docs/cordis-primer.md#cordis-waterfall-semantics)).
 - **Model-visible ⟺ logged**: anything that reaches a model request must be reconstructable from the session log; a new model-visible input requires a session event.
+- **Session projections:** follow [dsh-session-projection](.agents/skills/dsh-session-projection/SKILL.md) when creating, extending, or reviewing one, or migrating a fold helper to one.
 - **Plugins, not loop changes**: new behavior goes on documented extension points; changing `agent-loop` requires updating docs/architecture.md.
 - **A capability seam comprises Service Definition / Service Provider / Consumer roles.** It is complete, never one role; split only when roles evolve independently ([glossary](docs/glossary.md#capability-seam)).
 - **Prefer maintained dependencies over hand-rolling** when they genuinely delete owned code and tests ([policy](.agents/notes/implemented/process/2026-07-26-dependencies-over-hand-rolling.md)).
@@ -172,14 +163,15 @@ Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and 
 - **Tests describe behavior, not correctness.** Change obsolete behavior with its tests; explain why in the PR.
 - **Create Agent Notes only for durable decision rationale;** mechanical/local edits are exempt, including local UI changes ([scope](.agents/notes/README.md#when-to-write-one)). Archived notes are frozen: never edit or treat them as current authority ([archive policy](.agents/notes/README.md#archiving-and-deletion)).
 - **Official plugin artwork:** use [dsh-official-plugin-artwork](.agents/skills/dsh-official-plugin-artwork/SKILL.md) for official and official experimental plugin icons; obtain designer approval before landing new glyphs.
-- **Client UI copy is locale-owned.** Route product text through typed dictionaries and `t` or localized primitive props; `verify-client-ui-i18n` rejects hardcoded copy ([decision](.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.md)).
+- **Client UI copy is locale-owned.** Route product text through typed dictionaries and `t` or localized primitive props; `verify-client-ui-i18n` rejects hardcoded copy ([decision](.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.md)). English copy, including plugin titles, uses sentence case ([rule](.agents/skills/dsh-prose-standard/SKILL.md#required-coverage-by-prose-location)).
 - **Testing policy** — [docs/testing.md](docs/testing.md). Every non-trivial model- or product-user-visible change updates a keyless recorded-session snapshot; [snapshot ownership](snapshots/AGENTS.md) reserves the top-level tree for session-driven cases and keeps other expected output owner-local. Fixtures replay on macOS/Linux; fix fixtures, not normalizers.
 - **Design each tool's UI presentation up front.** Host presenters stay pure; Web cards derive from raw events and persisted result metadata ([cookbook](docs/cookbook/adding-a-tool.md)).
 - **Plan unit, e2e, and snapshot coverage** for capability seams, lifecycle paths, and transcript output; include missing snapshot-harness support in the same change.
 - **Both SDKs project the loop.** Agent-loop, session-lifecycle, and `SessionEventMap` changes update the TypeScript and Python SDK expected outputs in the same PR; `pnpm run test` covers neither ([surfaces](docs/testing.md#when-a-snapshot-test-is-required)).
 - **Choose PR history deliberately.** Split independent changes and fix the introducing PR before propagation. Standalone/stack branches may merge-forward or rebase. Rewrites use `--force-with-lease`, abort on remote movement, never raw `--force`; preserve an in-progress merge-forward checkpoint before taking a newer base ([rationale](.agents/notes/implemented/process/2026-08-02-native-github-stacks-and-optional-rebases.md)).
-- **Upstream merges consult the decision ledger first.** Before resolving a conflict, page the durable agent's `decision` entries for the key/package; after resolving, append the outcome with `requestId = ledger:<merge>:<key>` ([convention](.agents/notes/implemented/process/2026-10-02-merge-decision-ledger.md)).
+- **Upstream merges consult the decision ledger first**: page `decision` entries for the key/package before resolving; append outcomes with `requestId = ledger:<merge>:<key>` ([convention](.agents/notes/implemented/process/2026-10-02-merge-decision-ledger.md)).
 - **Labels:** one PR `kind/*`, all material `area/*`, and native Issue Type ([taxonomy](.agents/notes/implemented/process/2026-08-08-unified-github-label-taxonomy.md)).
+- **PR descriptions:** write and update every PR description with [dsh-pr-description](.agents/skills/dsh-pr-description/SKILL.md).
 - TODO markers: `FIXME`/`TODO`/`XXX` by urgency ([semantics](docs/development.md)).
 - Files end with exactly one trailing newline; `git diff --cached --check` (pre-commit) gates it.
 
@@ -201,4 +193,4 @@ Docs accompany every code change: update affected README and JSDoc contracts tog
 
 ## Vendoring policy
 
-`vendor/` packages are pinned source copies (manifest with upstream SHAs in [vendor/README.md](vendor/README.md)). Update via the sync procedure there; re-apply or retire the logged local modifications; rerun `pnpm run test && pnpm run build`.
+`vendor/` packages are pinned source copies ([manifest](vendor/README.md)). Follow its sync procedure; re-apply or retire logged local modifications; rerun `pnpm run test && pnpm run build`.

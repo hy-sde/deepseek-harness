@@ -15,13 +15,16 @@
       "path": "../../../vendor/zod"
     },
     {
-      "path": "../cua"
-    },
-    {
       "path": "../../subprocess/subprocess"
     },
     {
       "path": "../../util/atomic-write"
+    },
+    {
+      "path": "../cua/tsconfig.host.json"
+    },
+    {
+      "path": "../../../vendor/schemastery"
     }
   ]
 }

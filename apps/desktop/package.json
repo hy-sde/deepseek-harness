@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-desktop",
   "description": "Electron desktop shell for a bundled dsh runtime and external plugins",
-  "version": "0.2.1-rc.5",
+  "version": "0.2.2-rc.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -40,7 +40,8 @@
     "upload:win:x64": "tsx scripts/upload-target.ts win-x64",
     "upload:latest:mac:arm64": "tsx scripts/upload-target.ts mac-arm64 --latest",
     "upload:latest:mac:x64": "tsx scripts/upload-target.ts mac-x64 --latest",
-    "upload:latest:win:x64": "tsx scripts/upload-target.ts win-x64 --latest"
+    "upload:latest:win:x64": "tsx scripts/upload-target.ts win-x64 --latest",
+    "purge:latest": "tsx scripts/upload-target.ts --latest --purge-only"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
@@ -54,16 +55,21 @@
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/dsh-client-product-analytics": "workspace:*",
     "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-file-actions": "workspace:*",
     "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
     "@deepseek-ai/dsh-client-ui-settings-general": "workspace:*",
     "@deepseek-ai/dsh-client-ui-sidebar-browser": "workspace:*",
     "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
     "@deepseek-ai/dsh-deepseek-account": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-official-bundles": "workspace:*",
+    "@deepseek-ai/dsh-plugin-manager": "workspace:*",
+    "@deepseek-ai/dsh-util-file-drag": "workspace:*",
     "@deepseek-ai/dsh-yaml": "workspace:~",
     "@deepseek-ai/node-addon-system": "workspace:~",
     "@electron/get": "^5.1.0",
     "@electron/notarize": "2.5.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.20.1",
     "@types/semver": "^7.8.0",
     "@types/ws": "^8.18.1",
@@ -72,12 +78,18 @@
     "electron": "^44.7.0",
     "electron-builder": "^26.17.0",
     "extract-zip": "^2.0.1",
+    "js-yaml": "^4.3.2",
     "koffi": "3.1.1",
     "pnpm": "12.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sharp": "0.35.5",
+    "tencentcloud-sdk-nodejs-teo": "4.1.330",
     "typescript": "^6.0.3",
-    "vite": "^6.4.3"
+    "vite": "^6.4.3",
+    "zod": "4.4.3"
+  },
+  "author": {
+    "name": "Hangzhou DeepSeek Artificial Intelligence Co., Ltd."
   }
 }

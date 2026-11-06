@@ -17,6 +17,8 @@ Read an existing file before overwriting it with write (the default fs-observati
 
 Read a file before editing it (the default fs-observation-policy requires it), unless you just created or edited it in this session.
 
+Prefer apply_patch over separate edit calls for changes across files or separated regions. Give every hunk enough surrounding context lines to match one place in the current file. The whole patch is checked first (syntax, hunk matching, missing files) and a rejected patch changes nothing; once applying starts, operations run in order, stop at the first failure, and are not rolled back, so re-read affected files before retrying when needed.
+
 Use the glob tool — not shell find — to discover files by path pattern.
 
 Use the grep tool — not shell grep or rg — to search file contents. Results are ranked so git-modified files come first (marked [M in git]). A capped grep returns the first 50 matches plus a continuation cursor — pass the cursor back unchanged with the same pattern/path/include to fetch the next page; read the top match instead of paging deep. Use read on a matched file for surrounding context.
@@ -31,7 +33,7 @@ create_goal may infer goal intent from a direct human request in any language. A
 
 Use the workflow tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.
 
-Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run.
+Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run. When only waiting for their results remains, end your turn instead of sleeping or polling; the next result starts a new turn.
 
 <!-- system/message change 1 -->
 
@@ -56,6 +58,8 @@ Read an existing file before overwriting it with write (the default fs-observati
 
 Read a file before editing it (the default fs-observation-policy requires it), unless you just created or edited it in this session.
 
+Prefer apply_patch over separate edit calls for changes across files or separated regions. Give every hunk enough surrounding context lines to match one place in the current file. The whole patch is checked first (syntax, hunk matching, missing files) and a rejected patch changes nothing; once applying starts, operations run in order, stop at the first failure, and are not rolled back, so re-read affected files before retrying when needed.
+
 Use the glob tool — not shell find — to discover files by path pattern.
 
 Use the grep tool — not shell grep or rg — to search file contents. Results are ranked so git-modified files come first (marked [M in git]). A capped grep returns the first 50 matches plus a continuation cursor — pass the cursor back unchanged with the same pattern/path/include to fetch the next page; read the top match instead of paging deep. Use read on a matched file for surrounding context.
@@ -70,7 +74,7 @@ create_goal may infer goal intent from a direct human request in any language. A
 
 Use the workflow tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.
 
-Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run.
+Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run. When only waiting for their results remains, end your turn instead of sleeping or polling; the next result starts a new turn.
 
 ## Writing code for run_code
 
@@ -91,6 +95,15 @@ Program-only SDK bindings:
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
 interface ToolArgsMap {
+  /** Create, update, delete, or move UTF-8 text files with one Codex-style patch; prefer it over multiple edit calls when a change spans several files or separated regions. */
+  apply_patch: {
+    /** Codex patch text: start with *** Begin Patch and end with *** End Patch. Use *** Add File: path with + lines; *** Update File: path, optionally followed by *** Move to: path, with @@ or @@ context and space-prefixed context, + added, or - removed lines; *** End of File anchors the last hunk to the file end. Use *** Delete File: path to delete. Paths are relative to the Session working directory. */
+    input: string;
+    /** The narrowest wider sandbox mode for a one-shot retry of the exact operation the sandbox just denied; the retry asks the user for approval. */
+    sandbox_permissions?: "workspace-write" | "danger-full-access";
+    /** Required with sandbox_permissions: one sentence for the user explaining why this exact file operation needs the wider access. Use the language of the user’s current request. */
+    justification?: string;
+  } & Record<string, JsonValue>;
   /** Structurally rewrite source files by AST pattern. By default it PREVIEWS the proposed hunks without writing anything; set apply: true to write the files. Supports ast-grep pattern syntax: `$NAME` captures one node referenced in the rewrite as `$NAME`. Every matched node is rewritten; there is no interactive selection. */
   ast_edit: {
     /** AST pattern to match, in ast-grep syntax. Must be non-empty. */
@@ -159,11 +172,6 @@ interface ToolArgsMap {
     sandbox_permissions?: "workspace-write" | "danger-full-access";
     /** Required with sandbox_permissions: one sentence for the user explaining why this exact file operation needs the wider access. Use the language of the user’s current request. */
     justification?: string;
-  } & Record<string, JsonValue>;
-  /** Use only in plan mode. Present your plan for the user's review and, on approval, leave plan mode. The user may approve (carry out the plan from your next step) or keep planning — their feedback comes back in the tool result; revise and present again. */
-  exit_plan_mode: {
-    /** The complete plan, as markdown, starting with a # heading that names it. */
-    plan: string;
   } & Record<string, JsonValue>;
   /** Read the current session goal, including the id and revision that update_goal requires. */
   get_goal: Record<string, JsonValue>;
@@ -346,6 +354,27 @@ interface ToolArgsMap {
 }
 
 interface ToolOutputMap {
+  apply_patch: {
+    phase: "commit";
+    cancelled: boolean;
+    operations: ({
+      index: number;
+      kind: "add" | "update" | "delete" | "move";
+      path: string;
+      destination?: string;
+      patchLine: number;
+      status: "completed" | "failed" | "unknown" | "skipped";
+      code?: string;
+      message?: string;
+      hunkLine?: number;
+      changes?: ({
+        path: string;
+        before: string | null;
+        after: string | null;
+      })[];
+    })[];
+    affectedPaths: string[];
+  };
   ast_edit: {
     files: ({
       path: string;
@@ -429,9 +458,6 @@ interface ToolOutputMap {
     path: string;
     before: string;
     after: string;
-  };
-  exit_plan_mode: {
-    approved: boolean;
   };
   get_goal: {
     goal: null;
@@ -617,6 +643,7 @@ interface ToolOutputMap {
       url: string;
       title?: string;
       snippet?: string;
+      summary?: string;
       publishedAt?: string;
     }[];
     truncated: boolean;

@@ -1,6 +1,6 @@
 import { parse as partialParse } from "partial-json";
 
-const VALID_JSON_ESCAPES = new Set(['"', "\\", "/", "b", "f", "n", "r", "t", "u"]);
+const VALID_JSON_ESCAPES = new Set(['"', "\\", "/", "b", "f", "n", "r", "t"]);
 
 function isControlCharacter(char: string): boolean {
 	const codePoint = char.codePointAt(0);
@@ -101,6 +101,32 @@ export function parseJsonWithRepair<T>(json: string): T {
  * @param partialJson The partial JSON string from streaming
  * @returns Parsed object or empty object if parsing fails
  */
+/**
+ * Parses a finished tool call's arguments text into validated arguments.
+ *
+ * Unlike {@link parseStreamingJson}, this never keeps a partially parsed prefix: once the call is
+ * finished, text that is not a valid JSON object means the model sent malformed arguments. In that
+ * case `arguments` is `{}` and `argumentsError` describes the problem, including the text the
+ * model sent, so tool validation can report it back to the model.
+ */
+export function parseToolCallArguments(json: string | undefined): { arguments: Record<string, unknown>; argumentsError?: string } {
+	if (!json?.trim())
+		return { arguments: {} }
+	try {
+		const parsed: unknown = parseJsonWithRepair(json)
+		if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+			throw new Error("Tool arguments must be a JSON object")
+		}
+		return { arguments: parsed as Record<string, unknown> }
+	}
+	catch (error) {
+		return {
+			arguments: {},
+			argumentsError: `${error instanceof Error ? error.message : String(error)}\n\nReceived arguments:\n${json}`,
+		}
+	}
+}
+
 export function parseStreamingJson<T = Record<string, unknown>>(partialJson: string | undefined): T {
 	if (!partialJson || partialJson.trim() === "") {
 		return {} as T;

@@ -19,6 +19,7 @@ import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import * as Git from '@deepseek-ai/dsh-git'
 import toolGitPackage from '@deepseek-ai/dsh-tool-git'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 let dir: string
 let pool: string
@@ -39,7 +40,7 @@ async function writeRelative(base: string, path: string, content: string): Promi
 const agent = { session: { header: { id: 's1', cwd: '' } } } as never
 
 async function call(args: unknown): Promise<{ value: unknown }> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`call-${++counter}`),
     name: 'worktree',

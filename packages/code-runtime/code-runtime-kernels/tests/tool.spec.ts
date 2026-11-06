@@ -2,7 +2,7 @@
  * Tool-surface tests for `@deepseek-ai/dsh-code-runtime-kernels`: a REAL Cordis
  * context with the REAL tool runtime, mounting this plugin's `apply` exactly
  * like a deployment row would, then executing the registered `run_kernel_code`
- * through `ctx.tools.execute()` (the same dispatch model the model faces).
+ * through `executeToolFixture(ctx, )` (the same dispatch model the model faces).
  * Plus pure unit tests for the hostile-peer frame parser and the
  * presentation/meta projectors.
  */
@@ -24,12 +24,13 @@ import {
   runKernelCodeMeta,
 } from '../src/index.ts'
 import * as Kernels from '../src/index.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 let callCounter = 0
 
 function call(name: string, args: unknown) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: testToolSignal,
     callId: ToolCallId(`it-${++callCounter}`),
     name,

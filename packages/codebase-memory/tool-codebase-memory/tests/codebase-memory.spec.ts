@@ -16,6 +16,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { applyCodebaseMemoryTools, CodebaseMemoryCliError, renderPayload } from '../src/codebase-memory.ts'
 import { buildCodebaseMemoryPromptSection } from '../src/prompt.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const dirs: string[] = []
 let ctx: Context
@@ -99,7 +100,7 @@ async function realCbmAvailable(): Promise<string | null> {
 const agent = { session: { header: { id: 'cbm1', cwd: '' } } } as never
 
 async function call<T>(name: string, args: unknown): Promise<T> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`cbm-${++counter}`),
     name,

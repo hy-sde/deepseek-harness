@@ -24,6 +24,7 @@ import {
   type StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 
@@ -37,7 +38,7 @@ async function composePrefix(ctx: Context, cwd: string): Promise<Message[]> {
   const agent = await ctx.agentLoop.create(SessionId('agent-spine-prefix'), {}, { cwd })
   const signal = new AbortController().signal
   const decision = await agentEvents(ctx, agent).waterfall(
-    'agent/pre-step', { messages: [], turn: 1, step: 1, signal },
+    'agent/pre-step', { messages: [], turn: 1, step: 1, signal, modelSelection: { provider: 'seed', model: 'seed' } },
     () => Promise.resolve({ kind: 'enter', messages: [] }),
   )
   if (decision.kind === 'enter') {
@@ -637,13 +638,14 @@ describe('dsh-agent-spine-demo bundle', () => {
       run: () => ({ cancel: () => {}, done: Promise.resolve({ status: 'completed' }) }),
     })
     const wait = vi.spyOn(ctx.jobs, 'wait')
-    await ctx.tools.execute({
+    await executeToolFixture(ctx, {
       signal: testToolSignal,
       callId: ToolCallId('task-config-forwarding'),
       name: 'job_output',
       arguments: { job_id: id, wait: true },
     })
-    expect(wait).toHaveBeenCalledWith(id, 7, undefined, testToolSignal)
+    // 0.2.2 tool-jobs combines the execution signal with the call signal before waiting.
+    expect(wait).toHaveBeenCalledWith(id, 7, undefined, expect.any(AbortSignal))
 
     await ctx.fiber.dispose()
   })
@@ -690,7 +692,7 @@ describe('dsh-agent-spine-demo bundle', () => {
       includeRuntimeContext: false,
       personaPrefix: 'You are merged.',
       toolOrder: ['zulu'],
-      tools: { mode: 'native' as const },
+      tools: {},
       dshHome: '/tmp/dsh-home',
       sessionTitle: { fallbackMaxWords: 3, fallbackMaxBytes: 24, maxTitleBytes: 60 },
       workspaceContext: false as const,

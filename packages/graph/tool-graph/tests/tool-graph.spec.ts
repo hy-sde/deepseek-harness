@@ -25,6 +25,7 @@ import { createAgentGraphController } from '../src/controller.ts'
 import { registerAgentGraphTools, type ToolCallIdentity } from '../src/tools.ts'
 import toolGraphPackage from '../src/index.ts'
 import type { AgentGraphController } from '../src/controller.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const GRAPH = 'graph_g1'
 const ROOT = 'session-root'
@@ -551,7 +552,7 @@ describe('plugin composition', () => {
       isSeeded: false,
     })
     const agent = { session } as never
-    const result = await ctx.tools.execute({
+    const result = await executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId('call-composed'),
       name: 'view_agent_graph',
@@ -581,7 +582,7 @@ describe('plugin composition', () => {
       isSeeded: false,
     })
     const agent = { session } as never
-    const result = await ctx.tools.execute({
+    const result = await executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId('call-no-host'),
       name: 'view_agent_graph',
@@ -609,7 +610,7 @@ describe('plugin composition', () => {
       isSeeded: false,
     })
     const agent = { session } as never
-    const result = await ctx.tools.execute({
+    const result = await executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId('call-other'),
       name: 'view_agent_graph',

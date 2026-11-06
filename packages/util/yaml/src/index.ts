@@ -10,6 +10,11 @@ export interface JsExpr {
   __jsExpr: string
 }
 
+/**
+ * Check whether a parsed value is a {@link JsExpr} node.
+ * @param value - the parsed scalar value to test.
+ * @returns true when the value carries the `__jsExpr` marker with a string payload.
+ */
 export function isJsExpr(value: unknown): value is JsExpr {
   return typeof value === 'object' && value !== null && '__jsExpr' in value && typeof (value as JsExpr).__jsExpr === 'string'
 }
@@ -39,6 +44,9 @@ export const jsExprTag: ScalarTag = {
   },
 }
 
+/**
+ * Options for {@link load} and {@link loadAll}.
+ */
 export interface YamlLoadOptions {
   /**
    * Register the entry-list `!!js` expression dialect (see {@link jsExprTag}).
@@ -62,8 +70,13 @@ export interface YamlLoadOptions {
  * surface these messages in diagnostics that must not leak configuration
  * values. The retained line still carries the `at line N, column M` location.
  */
-// oxlint-disable-next-line typescript/no-explicit-any -- js-yaml parity: callers read properties off the parsed document.
-export function load(source: string, options?: YamlLoadOptions): any {
+/**
+ * Parse a YAML document.
+ * @param source - the YAML document text to parse.
+ * @param options - parser options; `entryList` registers the `!!js` dialect.
+ * @returns the parsed document as `unknown`, `undefined` for empty input, or `null` for a comment-only document.
+ */
+export function load(source: string, options?: YamlLoadOptions): unknown {
   if (source.trim() === '') return undefined
   const documents = parseAllDocuments(source, options?.entryList ? { customTags: [jsExprTag] } : undefined)
   if (documents.length > 1) throw new SyntaxError('expected a single document in the stream, but found more')
@@ -81,8 +94,13 @@ export function load(source: string, options?: YamlLoadOptions): any {
  * document behavior. Parse failures are rethrown with only the message's
  * first line, like {@link load}.
  */
-// oxlint-disable-next-line typescript/no-explicit-any -- js-yaml parity: per-document results mirror js-yaml's loadAll.
-export function loadAll(source: string, options?: YamlLoadOptions): any[] {
+/**
+ * Parse every document in a YAML stream.
+ * @param source - the YAML stream text to parse.
+ * @param options - parser options; `entryList` registers the `!!js` dialect.
+ * @returns every parsed document as `unknown`; content-less documents map to `undefined`.
+ */
+export function loadAll(source: string, options?: YamlLoadOptions): unknown[] {
   const documents = parseAllDocuments(source, options?.entryList ? { customTags: [jsExprTag] } : undefined)
   for (const document of documents) throwOnParseLog(document)
   return documents
@@ -108,6 +126,9 @@ function throwOnParseLog(document: Document): void {
   throw new SyntaxError(first.message.split('\n', 1)[0])
 }
 
+/**
+ * Options for {@link dump}.
+ */
 export interface YamlDumpOptions {
   /**
    * Register the entry-list `!!js` expression dialect (see {@link jsExprTag}).
@@ -129,6 +150,12 @@ export interface YamlDumpOptions {
  * Serialize a value as YAML. The js-yaml-compatible replacement for
  * `yaml.dump(value, { schema, ... })`. Single-quote style is forced to match
  * the output the js-yaml era produced.
+ */
+/**
+ * Serialize a value as YAML.
+ * @param value - the value to serialize.
+ * @param options - serializer options; `entryList` writes `!!js` scalars back.
+ * @returns the YAML text.
  */
 export function dump(value: unknown, options?: YamlDumpOptions): string {
   return stringify(value, {

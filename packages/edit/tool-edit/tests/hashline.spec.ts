@@ -21,6 +21,7 @@ import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { computeHashlineSectionDiff } from '../src/hashline/diff.ts'
 import { carriedSeenLines } from '../src/hashline/execute.ts'
 import type { FileReader } from '../src/session.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const contexts: Context[] = []
 const roots: string[] = []
@@ -38,6 +39,7 @@ function agent(ctx: Context, cwd: string): Agent {
   const value: Agent = {
     id,
     options: {},
+    model: { current: () => undefined, select: () => {} },
     session,
     inbox: createInboxStub(),
     status: 'idle',
@@ -55,7 +57,7 @@ function agent(ctx: Context, cwd: string): Agent {
 }
 
 function call(ctx: Context, owner: Agent, args: unknown) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`tool-edit-hashline-${++callNumber}`),
     name: 'edit',
@@ -71,6 +73,7 @@ async function setup(config: ToolEdit.Config = {}, options: { lsp?: unknown } = 
   contexts.push(ctx)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(LocalFileSystem, { cwd: root })
   if (options.lsp !== undefined) ctx.provide('lsp', options.lsp as never)
@@ -208,7 +211,7 @@ describe('tool-edit (hashline) × tool-fs read × fs-observation-policy', () => 
   }
 
   async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
-    return ctx.tools.execute({
+    return executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId(`tool-edit-firsttry-${++callNumber}`),
       name,
@@ -288,7 +291,7 @@ describe('tool-edit (hashline mode) × edit-result seen-line registration', () =
   }
 
   async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
-    return ctx.tools.execute({
+    return executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId(`tool-edit-seenlines-${++callNumber}`),
       name,
@@ -477,7 +480,7 @@ describe('tool-edit (hashline mode) × column-cut wide lines (upstream #15649)',
   }
 
   async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
-    return ctx.tools.execute({
+    return executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId(`tool-edit-widelines-${++callNumber}`),
       name,
@@ -650,7 +653,7 @@ describe('tool-edit (hashline mode) × carried read seen lines', () => {
   }
 
   async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
-    return ctx.tools.execute({
+    return executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId(`tool-edit-carried-${++callNumber}`),
       name,

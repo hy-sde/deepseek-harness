@@ -2,7 +2,8 @@
  * Guarantee tests for the tool-schema catalog generator (`scripts/gen-tool-catalog.ts`).
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import ScheduleService from '@deepseek-ai/dsh-schedule'
 import {
   assertManifestComplete,
   assertToolsHarvested,
@@ -26,7 +27,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     const catalog = await collectToolCatalog()
     const names = catalog.flatMap(entry => entry.schemas.map(s => s.name)).sort()
     expect(names).toEqual([
-      'agentsview', 'ask_user_question', 'ast_edit', 'ast_grep',
+      'agentsview', 'apply_patch', 'ask_user_question', 'ast_edit', 'ast_grep',
       'av_catalog', 'av_doctor', 'av_list', 'av_scan',
       'bash', 'bash', 'browser', 'codebase_delete_project',
       'codebase_detect_changes', 'codebase_get_architecture', 'codebase_get_code_snippet', 'codebase_get_graph_schema',
@@ -43,15 +44,16 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'logseq_show', 'logseq_upsert', 'lsp', 'memory_edit',
       'mine_sessions', 'openwiki_begin', 'openwiki_finish', 'openwiki_next_page',
       'openwiki_submit_page', 'openwiki_submit_plan', 'plugin_manager', 'plugin_market',
-      'present', 'pwsh', 'pwsh', 'ralph',
+      'present', 'propose_action', 'pwsh', 'pwsh', 'ralph',
       'read', 'read_image', 'read_mcp_resource', 'recall',
       'reflect', 'report', 'retain', 'review',
-      'run_code', 'run_kernel_code', 'schedule_create', 'schedule_delete',
-      'schedule_list', 'schedule_update', 'send_message', 'send_message',
+      'run_code', 'run_kernel_code', 'schedule_create', 'schedule_edit',
+      'schedule_list', 'schedule_view', 'send_message', 'send_message',
       'session_event_read', 'session_event_search', 'session_event_trace', 'session_search',
       'session_trace', 'skill', 'spawn_teammate', 'stagehand_act',
       'stagehand_extract', 'stagehand_navigate', 'stagehand_observe', 'stagehand_screenshot',
-      'stagehand_tabs', 'str_replace_editor', 'subagent', 'team_task_create',
+      'stagehand_tabs', 'str_replace_editor', 'subagent', 'subagent_oar',
+      'team_task_create',
       'team_task_get', 'team_task_list', 'team_task_update', 'terminal_close',
       'terminal_list', 'terminal_open', 'terminal_read', 'terminal_send',
       'terminal_signal', 'todo_write', 'update_agent_graph', 'update_goal',
@@ -85,6 +87,8 @@ describe('gen-tool-catalog collectToolCatalog', () => {
 
   it('attributes each harvested tool with its registering plugin source', async () => {
     const catalog = await collectToolCatalog()
+    const ptc = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-executor-ptc')
+    expect(ptc?.sources.run_code).toBe('packages/core/tool-executor-ptc/src/ptc.ts')
     const bash = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-bash')
     expect(bash?.sources.bash).toBe('packages/shell/tool-bash/src/index.ts')
     const control = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-subagent-control')
@@ -93,6 +97,21 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
       send_message: 'packages/subagent/tool-subagent-control/src/index.ts',
     })
+  })
+
+  it('lists Schedule prompt dependencies and reads delivery limits from Schedule Config', async () => {
+    const config = vi.spyOn(ScheduleService, 'Config').mockReturnValue({ newSessionIntervalSeconds: 900 })
+    try {
+      const catalog = await collectToolCatalog()
+      const schedule = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-schedule')
+      expect(schedule?.requires).toEqual(['ctx.tools', 'ctx.schedule', 'ctx.systemPrompt'])
+      expect(config).toHaveBeenCalledWith({})
+      expect(schedule?.schemas.find(schema => schema.name === 'schedule_create')?.parameters).toMatchObject({
+        properties: { target: { description: expect.stringContaining('at most once every 15 minutes') as string } },
+      })
+    } finally {
+      config.mockRestore()
+    }
   })
 
   it('harvests search tools without depending on the generator process PATH', async () => {

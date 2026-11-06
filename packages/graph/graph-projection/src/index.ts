@@ -24,6 +24,6 @@ export const inject = ['sessionProjections']
  * fiber, so unloading removes the key.
  * @param ctx - registrant context carrying the projection registry.
  */
-export function apply(ctx: Context): void {
-  ctx.sessionProjections.register(graphProjectionDefinition)
+export async function apply(ctx: Context): Promise<void> {
+  await ctx.sessionProjections.register(graphProjectionDefinition)
 }

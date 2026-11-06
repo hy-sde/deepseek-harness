@@ -12,9 +12,10 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { FileSystem, FsError, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
-import type { FsDirEntry, FsInfo, FsPathInfo, FsTarget, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
+import type { FsDeleteOutcome, FsDirEntry, FsEditOutcome, FsInfo, FsMoveOutcome, FsPathInfo, FsTarget, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import { encodeArchive } from '@deepseek-ai/dsh-fs-archive'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 const ENCODER = new TextEncoder()
@@ -78,7 +79,11 @@ class ByteFs extends FileSystem {
     this.files.set(String(target.targetKey), ENCODER.encode(after))
     return { version: FsVersion('v3'), before: content, after }
   }
+  override async patchText(): Promise<FsEditOutcome> { throw new Error('not supported in this test fake') }
+  override async deleteFile(): Promise<FsDeleteOutcome> { throw new Error('not supported in this test fake') }
+  override async moveFile(): Promise<FsMoveOutcome> { throw new Error('not supported in this test fake') }
 }
+
 
 async function setup() {
   const ctx = new Context()
@@ -94,7 +99,7 @@ async function setup() {
 
 let callCounter = 0
 function call(ctx: Context, name: string, args: unknown) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal: testToolSignal,
     callId: ToolCallId(`call-${++callCounter}`),
     name,

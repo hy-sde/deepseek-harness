@@ -12,7 +12,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { CountdownCell } from './CountdownCell.tsx'
-import { en, zh, type CountdownKey } from './locales.ts'
+import { de, en, es, fr, ja, pt, ru, zh, type CountdownKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -32,7 +32,7 @@ export const inject = ['slots', 'locale']
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register('countdown', { zh, en }), 'ui-countdown: sidebar timer dictionaries')
+  ctx.effect(() => ctx.locale.register('countdown', { zh, en, ja, es, fr, de, ru, pt }), 'ui-countdown: sidebar timer dictionaries')
   ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',
     id: 'countdown',

@@ -17,6 +17,8 @@ Read an existing file before overwriting it with write (the default fs-observati
 
 Read a file before editing it (the default fs-observation-policy requires it), unless you just created or edited it in this session.
 
+Prefer apply_patch over separate edit calls for changes across files or separated regions. Give every hunk enough surrounding context lines to match one place in the current file. The whole patch is checked first (syntax, hunk matching, missing files) and a rejected patch changes nothing; once applying starts, operations run in order, stop at the first failure, and are not rolled back, so re-read affected files before retrying when needed.
+
 Use the glob tool — not shell find — to discover files by path pattern.
 
 Use the grep tool — not shell grep or rg — to search file contents. Results are ranked so git-modified files come first (marked [M in git]). A capped grep returns the first 50 matches plus a continuation cursor — pass the cursor back unchanged with the same pattern/path/include to fetch the next page; read the top match instead of paging deep. Use read on a matched file for surrounding context.
@@ -29,4 +31,4 @@ create_goal may infer goal intent from a direct human request in any language. A
 
 Use the workflow tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.
 
-Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run.
+Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run. When only waiting for their results remains, end your turn instead of sleeping or polling; the next result starts a new turn.

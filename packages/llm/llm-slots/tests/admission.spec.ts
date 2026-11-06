@@ -27,7 +27,7 @@ function blockedSource(trigger: Promise<void>): AsyncIterable<StreamChunk> {
 
 /** Run one model call through the waterfall and collect its chunks. */
 async function consume(ctx: Context, chunks: AsyncIterable<StreamChunk>): Promise<StreamChunk[]> {
-  const stream = ctx.waterfall(ctx as never, 'llm/stream', options, () => chunks)
+  const stream = ctx.waterfall(ctx as never, 'llm/stream', options, () => chunks) as AsyncIterable<StreamChunk>
   const consumed: StreamChunk[] = []
   for await (const chunk of stream) consumed.push(chunk)
   return consumed
@@ -117,7 +117,7 @@ describe('llm-slots admission plugin', () => {
         throw new Error('downstream exploded')
       },
     }
-    const stream = ctx.waterfall(ctx as never, 'llm/stream', options, () => throwing)
+    const stream = ctx.waterfall(ctx as never, 'llm/stream', options, () => throwing) as AsyncIterable<StreamChunk>
     await expect((async () => {
       const out: StreamChunk[] = []
       for await (const chunk of stream) out.push(chunk)
@@ -160,7 +160,7 @@ async function consumeWithSignal(ctx: Context, controller: AbortController): Pro
     'llm/stream',
     { ...options, signal: controller.signal },
     () => source([textDelta(0, 'cancel'), finish]),
-  )
+  ) as AsyncIterable<StreamChunk>
   const consumed: StreamChunk[] = []
   for await (const chunk of stream) consumed.push(chunk)
   return consumed

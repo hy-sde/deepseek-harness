@@ -878,6 +878,7 @@ describe('dsh-subagent-dsh-sdk provider', () => {
   it('requires an explicit absolute Harness home for nested dsh runtimes', async () => {
     const ctx = new Context()
     await mountWorkingDirectoryFixture(ctx)
+    if (ctx.get('sessionProjections') === undefined) await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SubagentRuntime)
     await expect(ctx.plugin(sdk, {
       providerName: 'sdk',
@@ -898,6 +899,7 @@ describe('dsh-subagent-dsh-sdk provider', () => {
   ])('rejects an invalid $field at load', async ({ field, override }) => {
     const ctx = new Context()
     await mountWorkingDirectoryFixture(ctx)
+    if (ctx.get('sessionProjections') === undefined) await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SubagentRuntime)
     await expect(ctx.plugin(sdk, {
       providerName: 'sdk',

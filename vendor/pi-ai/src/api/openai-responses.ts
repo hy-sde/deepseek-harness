@@ -37,6 +37,29 @@ const CHATGPT_USAGE_URL = "https://chatgpt.com/settings/usage";
  * OpenAI API keys start with `sk-`; a different credential sent directly to OpenAI
  * is a Sign in with ChatGPT access token.
  */
+/**
+ * Fixed reasoning.effort sent in request parameters while configuration_update items carry the
+ * actual per-turn thinking level.
+ */
+const CONFIGURATION_UPDATE_REQUEST_EFFORT = "medium";
+
+/** Effort to send in configuration_update items, or undefined to send it as reasoning.effort. */
+function getConfigurationUpdateEffort(
+	model: Model<"openai-responses">,
+	options: OpenAIResponsesOptions | undefined,
+	compat: Required<OpenAIResponsesCompat>,
+): string | undefined {
+	if (
+		!compat.supportsMidConvoEffort ||
+		!options?.reasoningEffort ||
+		// Sign in with ChatGPT rejects configuration_update items.
+		isChatGPTSignIn(model, options.apiKey)
+	) {
+		return undefined;
+	}
+	return model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort;
+}
+
 function isChatGPTSignIn(model: Model<"openai-responses">, apiKey: string | undefined): boolean {
 	return (
 		model.provider === "openai" &&
@@ -91,6 +114,7 @@ function getCompat(model: Model<"openai-responses">): Required<OpenAIResponsesCo
 		supportsToolSearch: model.compat?.supportsToolSearch ?? false,
 		supportsExplicitPromptCacheMode: model.compat?.supportsExplicitPromptCacheMode ?? false,
 		supportsMaxOutputTokens: model.compat?.supportsMaxOutputTokens ?? true,
+		supportsMidConvoEffort: model.compat?.supportsMidConvoEffort ?? false,
 	};
 }
 
@@ -134,12 +158,15 @@ export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> 
 
 	// Start async processing
 	(async () => {
+		const compat = getCompat(model);
+		const configurationUpdateEffort = getConfigurationUpdateEffort(model, options, compat);
 		const output: AssistantMessage = {
 			role: "assistant",
 			content: [],
 			api: model.api as Api,
 			provider: model.provider,
 			model: model.id,
+			...(configurationUpdateEffort === undefined ? {} : { providerThinkingLevel: configurationUpdateEffort }),
 			usage: {
 				input: 0,
 				output: 0,
@@ -170,7 +197,7 @@ export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> 
 				options?.fetch,
 				cacheSessionId,
 			);
-			let params = buildParams(model, normalizedContext, options, compat, grammarToolInputProperties);
+			let params = buildParams(model, normalizedContext, options, compat, grammarToolInputProperties, configurationUpdateEffort);
 			const nextParams = await options?.onPayload?.(params, model);
 			if (nextParams !== undefined) {
 				params = nextParams as ResponseCreateParamsStreaming;
@@ -308,6 +335,7 @@ function buildParams(
 		getDeclaredTools(context.messages),
 		compat.supportsOpenAIGrammarTools,
 	),
+	configurationUpdateEffort: string | undefined = undefined,
 ) {
 	const transcriptTools = resolveTranscriptTools(
 		context.messages,
@@ -322,6 +350,7 @@ function buildParams(
 			supportsStrictMode: compat.supportsStrictMode,
 			supportsOpenAIGrammarTools: compat.supportsOpenAIGrammarTools,
 		},
+		configurationUpdateEffort,
 	});
 
 	const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
@@ -363,9 +392,10 @@ function buildParams(
 	const reasoningEffort = options?.reasoningEffort ?? (options?.reasoningSummary ? "medium" : undefined);
 	if (model.reasoning) {
 		if (reasoningEffort) {
-			const effort = options?.reasoningEffort
+			const requestedEffort = options?.reasoningEffort
 				? (model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort)
 				: reasoningEffort;
+			const effort = configurationUpdateEffort === undefined ? requestedEffort : CONFIGURATION_UPDATE_REQUEST_EFFORT;
 			params.reasoning = {
 				effort: effort as NonNullable<typeof params.reasoning>["effort"],
 				summary: options?.reasoningSummary || "auto",

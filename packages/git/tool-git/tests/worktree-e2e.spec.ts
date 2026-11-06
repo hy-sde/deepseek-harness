@@ -29,6 +29,7 @@ import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import * as Git from '@deepseek-ai/dsh-git'
 import toolGitPackage from '@deepseek-ai/dsh-tool-git'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const contexts: Context[] = []
 let repo1: string
@@ -73,7 +74,7 @@ function agent(id: string, repo = repo1): FakeAgent {
 }
 
 async function call(ctx: Context, agentValue: FakeAgent, args: unknown): Promise<{ value: unknown }> {
-  const result = await ctx.tools.execute({
+  const result = await executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`call-${++counter}`),
     name: 'worktree',

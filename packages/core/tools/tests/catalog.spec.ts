@@ -9,6 +9,10 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { JsonSchemaNode, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import { executeModelToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import { CatalogToolExecutor } from '@deepseek-ai/dsh-tool-executor-catalog'
+import { ToolExecutorUnavailableError } from '@deepseek-ai/dsh-tools'
+import * as agentToolPresentation from '@deepseek-ai/dsh-agent-tool-presentation'
 
 const testToolSignal = new AbortController().signal
 
@@ -25,7 +29,8 @@ type Mode = 'native' | 'ptc' | 'catalog'
 async function setup(options: { mode?: Mode; toolOrder?: string[] } = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, { ...options.toolOrder ? { toolOrder: options.toolOrder } : {} })
-  await ctx.plugin(ToolRuntime, { mode: options.mode ?? 'catalog' })
+  await ctx.plugin(ToolRuntime)
+  await ctx.plugin(agentToolPresentation, { mode: options.mode ?? 'catalog' })
   return { ctx, tools: ctx.tools, systemPrompt: ctx.systemPrompt }
 }
 
@@ -70,7 +75,7 @@ async function runDyn(
   args: Record<string, unknown>,
   extras: { agent?: Agent } = {},
 ): Promise<JsonValue> {
-  const result = await ctx.tools.execute({
+  const result = await executeModelToolFixture(ctx, {
     signal: testToolSignal,
     callId: ToolCallId('call-dyn'),
     name: DYN_NAME,
@@ -204,7 +209,7 @@ describe('`dyn` transport round-trips', () => {
     const { ctx } = await setup()
     registerDevice(ctx)
     registerEager(ctx, 'echo')
-    const result = await ctx.tools.execute({
+    const result = await executeModelToolFixture(ctx, {
       signal: testToolSignal,
       callId: ToolCallId('call-dyn-docs'),
       name: DYN_NAME,
@@ -217,7 +222,7 @@ describe('`dyn` transport round-trips', () => {
 
   it('docs on an unknown name with zero mounted devices reports no devices at all', async () => {
     const { ctx } = await setup()
-    const missing = await ctx.tools.execute({
+    const missing = await executeModelToolFixture(ctx, {
       signal: testToolSignal,
       callId: ToolCallId('call-dyn-docs-2'),
       name: DYN_NAME,
@@ -268,7 +273,7 @@ describe('`dyn` transport round-trips', () => {
     scope.ctx.tools.restrict({ deny: ['hidden-device'] })
     const value = await runDyn(ctx, { op: 'search' }, { agent }) as { entries: { name: string }[] }
     expect(value.entries.map(entry => entry.name)).toEqual(['public-device'])
-    const denied = await ctx.tools.execute({
+    const denied = await executeModelToolFixture(ctx, {
       signal: testToolSignal,
       callId: ToolCallId('call-hidden'),
       name: 'hidden-device',
@@ -284,7 +289,7 @@ describe('catalog mode execution collapse', () => {
   it('a model-direct call to a device is denied before policy with a dyn route hint', async () => {
     const { ctx } = await setup()
     registerDevice(ctx)
-    const result = await ctx.tools.execute({
+    const result = await executeModelToolFixture(ctx, {
       signal: testToolSignal,
       callId: ToolCallId('call-direct'),
       name: 'device-tool',
@@ -299,7 +304,7 @@ describe('catalog mode execution collapse', () => {
   it('a nested (parent-token) call to a device bypasses the collapse', async () => {
     const { ctx } = await setup()
     registerDevice(ctx)
-    const outer = await ctx.tools.execute({
+    const outer = await executeModelToolFixture(ctx, {
       signal: testToolSignal,
       callId: ToolCallId('call-outer'),
       name: DYN_NAME,
@@ -313,16 +318,16 @@ describe('catalog mode execution collapse', () => {
     const { ctx, systemPrompt } = await setup({ mode: 'native' })
     registerDevice(ctx)
     const { scope, agent } = await mintAgentScope(ctx)
-    const dispose = scope.ctx.tools.presentAs('catalog')
+    const dispose = scope.ctx.tools.setExecutor(new CatalogToolExecutor(scope.ctx))
     const scoped = await systemPrompt.assemble({ scope: agent })
     // Device tools are WITHHELD from the wire by design: only the eager set
     // (empty here) plus the `dyn` transport appear; devices live in the section.
     expect(scoped.tools.map(tool => tool.name)).toEqual([DYN_NAME])
     expect(scoped.sections.some(section => section.name === 'tools:catalog')).toBe(true)
     dispose()
-    const restored = await systemPrompt.assemble({ scope: agent })
-    expect(restored.tools.map(tool => tool.name)).toEqual(['device-tool'])
-    expect(restored.sections.some(section => section.name === 'tools:catalog')).toBe(false)
+    // The disposed selection stays unavailable by design: a program cannot fall
+    // through to a different executor after disposing one.
+    await expect(systemPrompt.assemble({ scope: agent })).rejects.toThrow(ToolExecutorUnavailableError)
   })
 
   it('a scoped device registration is withheld for that scope only, harmless elsewhere', async () => {

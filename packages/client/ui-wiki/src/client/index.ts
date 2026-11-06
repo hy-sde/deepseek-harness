@@ -22,7 +22,7 @@ import { wikiStore } from './store.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { WikiDrawer } from './WikiDrawer.tsx'
 import { WikiToggle } from './WikiToggle.tsx'
-import { en, zh, type WikiKey } from './locales.ts'
+import { de, en, es, fr, ja, pt, ru, zh, type WikiKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -40,7 +40,7 @@ export const inject = ['slots', 'locale', 'remote', 'remote.wiki']
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register('wiki', { zh, en }), 'ui-wiki: drawer dictionaries')
+  ctx.effect(() => ctx.locale.register('wiki', { zh, en, ja, es, fr, de, ru, pt }), 'ui-wiki: drawer dictionaries')
   const bind = (): void => {
     const wiki = (ctx.get('remote') as ClientRemote).wiki
     void wikiStore.bind(new WikiClient(wiki))

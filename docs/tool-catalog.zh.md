@@ -23,39 +23,41 @@
 | `@deepseek-ai/dsh-plugin-market` | `plugin_market` | `ctx.tools`, `ctx.pluginMarket` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-mcp-resources` | `list_mcp_resource_templates`, `list_mcp_resources`, `read_mcp_resource` | `ctx.tools`, `ctx.mcpResources` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-experimental-browser-use-stagehand-native` | `stagehand_act`、`stagehand_extract`、`stagehand_navigate`、`stagehand_observe`、`stagehand_screenshot`、`stagehand_tabs` | `ctx.browserUse`、`ctx.agents`、`ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | - |
+| `@deepseek-ai/dsh-action-cards` | `propose_action` | `ctx.tools`、`ctx.agents`、`ctx.sessionProjections`、`ctx.remoteAccess` | `tool/call`、`tool/result`、`plugin:action-cards/decision`、`user/message` | - | 只向加载过已注册卡片种类 Skill 的 Agent 声明；各种类的包注册自己的动作，个性化推荐 Bundle 提供随产品发布的种类。 |
 | `@deepseek-ai/dsh-tool-ask-user` | `ask_user_question` | `ctx.tools`、`ctx.userQuestions` | `tool/call`、`tool/result after an answer or timeout`、`late user/message` | - | ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才启用前台超时与 pending 结果，同时问题仍可回答；timed 模式内 `timeout: -1` 让本次调用无限期阻塞。 |
-| `@deepseek-ai/dsh-tools` | `run_code` | `ctx.workingDirectory (Agent executions)`、`ctx.tools`、`ctx.ptcRuntime (execution time)`、`ctx.systemPrompt` | `tool/call`、`one tool/ptc-dispatch-start + tool/ptc-dispatch pair per bridged sub-call`、`tool/result` | - | 在 `mode: ptc` 下，它由工具注册表所有，作为可过滤能力层之外的保留传输机制（参见 PTC mode Agent Note）。在 `ptc` 下，它是注册表对协议格式（wire format）的唯一贡献；其他可见能力在使用已加载运行时语言生成的 SDK 章节中声明。程序通过 binding 调用这些能力，调用按照原生并发约定调度：启动顺序和策略遵循提交顺序，并发安全的函数体最多重叠执行 `maxParallelSubCalls` 个。调用会重新进入完整且受守卫保护的工具流水线，并将每个嵌套执行关联到此外层结果。 |
-| `@deepseek-ai/dsh-plan-mode` | `exit_plan_mode` | `ctx.tools`、`ctx.systemPrompt`、`ctx.userQuestions (execution time, opportunistic)` | `tool/call`、`plan/mode inactive on an approved review`、`tool/result` | - | 规划未激活时，exit_plan_mode 仍保留在面向模型的 schema 中，这样状态转换不会在规划策略变更之外额外造成工具目录变动。其执行路径会拒绝规划模式之外的调用；在规划模式下，它通过用户交互 seam 提交计划（批准／根据反馈继续规划），批准后会在步骤边界记录规划模式已停用。 |
+| `@deepseek-ai/dsh-tool-executor-ptc` | `run_code` | `ctx.workingDirectory (Agent executions)`、`ctx.tools`、`ctx.ptcRuntime`、`ctx.systemPrompt` | `tool/call`、`one tool/ptc-dispatch-start + tool/ptc-dispatch pair per bridged sub-call`、`tool/result` | - | PTC 执行器只向模型公开 run_code，并在运行时语言生成的 SDK 中声明其他可见能力。程序绑定按提交顺序进入共享的受守卫工具流水线；并行安全的函数体最多重叠 maxParallelSubCalls 个，嵌套结果保持与外层程序关联。 |
+| `@deepseek-ai/dsh-plan-mode` | `exit_plan_mode` | `ctx.tools`、`ctx.systemPrompt`、`ctx.agents`、`ctx.userQuestions (execution time, opportunistic)` | `tool/call`、`plan/mode inactive on an approved review`、`tool/result` | - | 规划未激活时，exit_plan_mode 仍保留在面向模型的 schema 中，这样状态转换不会在规划策略变更之外额外造成工具目录变动。其执行路径会拒绝规划模式之外的调用；在规划模式下，它通过用户交互 seam 提交计划（批准／根据反馈继续规划），批准后会在步骤边界记录规划模式已停用。 |
 | `@deepseek-ai/dsh-tool-bash` | `bash` | `ctx.workingDirectory`、`ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs for run_in_background and the job-backed foreground path` | `tool/call`、`tool/result` | - | bash 工具是 bash 执行器 seam 面向模型的消费方。组合中有 job 注册表时，每次调用一启动就注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；没有注册表或 `enableRunInBackground: false` 时，工具注册不带 `run_in_background` 参数的纯前台 schema。 |
-| `@deepseek-ai/dsh-tool-present` | `present` | `ctx.workingDirectory`、`ctx.tools`, `ctx.fs`, `ctx.sessionProjections` | `tool/call`, `deliverables/presented 在成功的最终结果之后`, `tool/result` | - | 交付归调用方 Session 所有；Web ui-deliverables 提供源文件打开与卡片。 |
+| `@deepseek-ai/dsh-tool-present` | `present` | `ctx.workingDirectory`、`ctx.tools`, `ctx.fs`, `ctx.agents` | `tool/call`, `deliverables/presented 在成功的最终结果之后`, `tool/result` | - | 交付归调用方 Session 所有；Web ui-deliverables 提供源文件打开与卡片。 |
 | `@deepseek-ai/dsh-tool-pwsh` | `pwsh` | `ctx.workingDirectory`、`ctx.tools`、`ctx.shell`、`ctx.systemPrompt`、`ctx.shellEnv`、`ctx.jobs for run_in_background and the job-backed foreground path` | `tool/call`、`tool/result` | - | pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费方（由 `@deepseek-ai/dsh-pwsh-local` 等 PowerShell 执行器为 `ctx.shell` 提供后端）；除沙箱接口外，它逐项对应 bash 工具调用。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具收集／停止；托管的 `DSH_*` 环境来自 `@deepseek-ai/dsh-shell-env`。每次调用都在新进程中运行，不使用持久 PTY 会话。路径采用原生 `C:\...` 形式，变量采用 `$env:NAME`。 |
 | `@deepseek-ai/dsh-tool-cordis` | `cordis_inspect_list`, `cordis_inspect_query` | `ctx.tools`, `ctx.cordisInspect` | `tool/call`, `tool/result` | - | 创造模式提供两个只读运行时检查工具。Cordis host runner 提供检查注册表；Client 查询需要已连接页面。持久化变更编写为组合包，再通过 plugin_manager 安装。 |
 | `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.workingDirectory`、`ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 bash 工具；部署组合提供 PTY 后端，并可覆盖面向模型的环境描述。 |
 | `@deepseek-ai/dsh-tool-edit` | `edit` | `ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.lsp (optional: format-on-write / diagnostics-on-write)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`tool/result` | - | 四种模式的 `edit`（replace / patch / apply_patch / hashline）移植自 @oh-my-pi。与 tool-fs 同时挂载时应设置 `enableEdit: false`，让富编辑工具独享 `edit` 名称。 |
 | `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.workingDirectory`、`ctx.tools`、`ctx.terminals`、`an owning Agent at execution time` | `tool/call`、`PTY shell state`、`tool/result` | - | 一个按所有者隔离的持久 pwsh 工具，持久 bash 工具的 Windows 对应物；部署组合提供 pwsh 方言的 PTY 后端，并可覆盖面向模型的环境描述。 |
 | `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`、`ctx.fs` | `tool/call`、`fs/observed after view presence/absence, edit absence, or successful mutation`、`tool/result` | - | 基于文件系统 seam 的独立查看／创建／唯一字面量替换／按行插入工具；可与任何 shell 或终端接口组合。 |
-| `@deepseek-ai/dsh-tool-fs` | `edit`、`read`、`read_image`、`write` | `ctx.workingDirectory`、`ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (image-tool registration)`、`ctx.llm + an image-capable route (image-tool execution)` | `tool/call`、`fs/write-intent or fs/edit-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时图片工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图片输入，否则拒绝。 |
+| `@deepseek-ai/dsh-tool-fs` | `apply_patch`、`edit`、`read`、`read_image`、`write` | `ctx.workingDirectory`、`ctx.tools`、`ctx.fs`、`ctx.systemPrompt`、`ctx.attachments (image-tool registration)`、`ctx.llm + an image-capable route (image-tool execution)` | `tool/call`、`fs/write-intent, fs/edit-intent, or fs/delete-intent for mutations`、`fs/observed after read presence/absence or successful file operation`、`durable attachment (read_image)`、`tool/result` | - | 先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。随发行版交付的组合保持该行禁用，因此除非部署启用它，修改都是无条件的。没有 `ctx.attachments` 时图片工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图片输入，否则拒绝。`apply_patch` 仅在 `applyPatch: true` 时注册；目录为了记录其 schema 而开启该开关。`dsh-base` 与 Web 的 `standard` preset 开启它；Web 的 `ptc`、`cordis` preset 以及 PTC overlay 显式写出 `applyPatch: false`。 |
 | `@deepseek-ai/dsh-tool-graph` | `update_agent_graph`、`view_agent_graph`、`yield_agent_graph` | `ctx.tools`、`执行时归属的 Agent（root／direct-only 强制由宿主侧执行）`、`可选的 `agentGraphController` 服务（通过 ctx.get 读取）` | `tool/call`、`tool/result` | - | 宿主提供控制器上的 Agent Graph 监督工具（Maka 移植，切片 P4）：恰好三个模型可见工具 view_agent_graph / update_agent_graph / yield_agent_graph，外加 orchestration:graph 提示段。控制器服务是可选的（ctx.get），因此没有图宿主时会话也能创建；在提供之前每次调用都会以 [agent-graph-unavailable] 明确失败，宿主强制 root-only、direct-only 寻址。 |
 | `@deepseek-ai/dsh-tool-fs-search` | `glob`、`grep` | `ctx.workingDirectory`、`ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn 随包提供的 ripgrep 二进制文件（`@vscode/ripgrep`），并作为普通前台调用运行，绝不作为后台任务；无需在宿主机安装 `rg`，也不经过 shell 层。本目录使用 `sampleOverCapGlobResults: true`；部署必须显式选择该行为。结果超过上限时，会通过可选的 ctx.spillStore 后端保存完整的格式化列表；在共置部署中，如果后端公开本地路径，返回的定位信息可供后续读取／搜索。 |
 | `@deepseek-ai/dsh-tool-ast` | `ast_edit`、`ast_grep` | `ctx.tools`、`ctx.subprocess`、`ctx.systemPrompt`、`ctx.fs (ast_edit apply)` | `tool/call`、`fs/observed + fs/edit-intent + fs/write-intent for ast_edit apply (via ctx.fs)`、`tool/result` | - | ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由随包提供的 ast-grep 原生二进制（`@ast-grep/cli`）驱动——无需在宿主机安装 ast-grep，也不经过 shell 层。ast_edit 总是**先预览**（apply 默认为 false），且只有在 apply: true 时才写入文件，写入经文件系统缝隙（观察＋版本校验＋沙盒策略）。 |
 | `@deepseek-ai/dsh-tool-memory` | `learn`、`memory_edit`、`mine_sessions`、`recall`、`reflect`、`retain` | `ctx.tools`、`ctx.memory`、`ctx.systemPrompt` | `tool/call`、`project memory files under the configured memory root on retain/learn/memory_edit (recall and reflect are read-only)`、`tool/result` | - | retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主的 `ctx.memory` 服务，外加一个 `memory:project` 系统提示区段，在下一会话开始时重新载入该会话的项目记忆（摘要＋教训＋工作条目）（port_omp.md 第 4 项）。同时挂载 `sessionQuery` 服务（tool-session-query 行）时，`recall`/`reflect` 合并过往会话命中（source `session`、只读、带 sessionId/seq 溯源），`mine_sessions` 从最富教训的近期会话日志中收割教训——候选按回合失败、工具失败、压缩摘要与全部完成的待办排序（以新近度作平局裁决）——以 `learn` 条目存储、按运行去重，并标注会话结局（`completed`、`errored: N failed turns`、`aborted`）；没有该服务时所有会话特性降级为无操作。本移植仅内置 local；注册表为后续 Hindsight/Mnemopi 提供方保留接缝。 |
 | `@deepseek-ai/dsh-tool-terminal` | `terminal_close`、`terminal_list`、`terminal_open`、`terminal_read`、`terminal_send`、`terminal_signal` | `ctx.workingDirectory`、`ctx.tools`、`ctx.terminals`、`ctx.systemPrompt`、`ctx.jobs at call time for run_in_background` | `tool/call`、`tool/result` | - | 这 6 个终端工具需要选择启用，用于补充一次性 bash／文件系统工具。`terminal_send(run_in_background: true)` 会注册到 `ctx.jobs`；schema 不包含 TUI、具名按键序列、BEL、调整尺寸、自动启动和跨 agent 共享。 |
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
-| `@deepseek-ai/dsh-tool-schedule` | `schedule_create`、`schedule_delete`、`schedule_list`、`schedule_update` | `ctx.tools`、`ctx.schedule` | `tool/call`、Schedule storage domain 创建、更新或删除、`tool/result` | - | preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四个管理工具。每次调用都作用于调用方 Agent 的 Session。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。 |
+| `@deepseek-ai/dsh-tool-schedule` | `schedule_create`、`schedule_edit`、`schedule_list`、`schedule_view` | `ctx.tools`、`ctx.schedule`、`ctx.systemPrompt` | `tool/call`、Schedule storage domain 创建、更新或删除、`tool/result` | - | preset 或 Agent scope 挂载本包，并决定哪些 Agent 获得工具。管理工具按 id 跨会话读写 Host 的任务。任务保存 RFC 5545 重复规则，执行位置可选已有会话、首次创建后复用的会话或每次运行新建的会话。委派子 Agent 不能调用这些工具。 |
 | `@deepseek-ai/dsh-tool-debug` | `debug` | `ctx.tools`, `ctx.dap`, `ctx.systemPrompt`, `a session workspace cwd` | `tool/call`, `tool/result`, `the composed debuggee process state via the mounted DAP adapter` | - | debug composes a real debugger (gdb/lldb-dap/debugpy/dlv/...) through the DAP capability seam (ctx.dap) with one exclusive active session: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stackTrace/scopes/variables/evaluate, disassemble, read_memory/write_memory, modules, loaded_sources, custom_request, output, terminate, sessions. Requires a mounted DAP provider and the spawn seam; with none available, launch/attach return a structured "unavailable" error naming the missing adapter. |
 | `@deepseek-ai/dsh-code-runtime-kernels` | `run_kernel_code` | `ctx.tools`、`ctx.systemPrompt`、`调用时 PATH 上的 python3 与 node 二进制（或配置 pythonPath/nodePath）` | `tool/call`、`kernel 子进程会话状态（按 session id，reset: true 时重置）`、`tool/result` | - | run_kernel_code 在持久化 kernel（python3 或 node 子进程，仅标准库／内置）中执行模型代码，共享同一个宿主驱动：按 session id 的 kernel 状态与 reset、墙钟预算、SIGINT→SIGTERM→SIGKILL 升级、恶意对端解析。这是进程隔离而非安全边界——与 harness 进程后端相同的信任（port_omp.md 第 1 项）。 |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.workingDirectory`、`ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.workingDirectory`、`ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`、`session_event_search`、`session_event_trace`、`session_search`、`session_trace` | `ctx.tools`、`ctx.systemPrompt`、`ctx.sessionQuery`、`a calling Agent for workspace authority` | `tool/call`、`tool/result` | - | 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。 |
-| `@deepseek-ai/dsh-tool-subagent` | `list_subagent_models`、`subagent` | `ctx.tools`、`ctx.subagents`、`ctx.systemPrompt`、`用于模型发现和所选路由校验的 ctx.llm` | `tool/call`、`tool/result`、`child session events through the chosen provider` | `subagent`、`subagent_fork` | 注册的委派工具名称取决于加载时 `toolName` 配置（默认为 `subagent`）；上述默认 schema 关闭模型选择，而发现 schema 则展示为已启用 Session 中可用的固定配套工具。Web preset 会在每个新顶层 Session 创建时读取插件页偏好，并为其子 Session 保留该决定；`subagent_fork` 始终使用固定路由。每个实例通过 `provider` 选择后端，通过 `modelSelectionSettings` 读取模型选择设置。每次委派都会立即返回子代理 id；本地子代理接受后续消息，外部后端自动汇报单次执行结果。 |
-| `@deepseek-ai/dsh-tool-subagent-control` | `interrupt_agent`、`list_agents`、`send_message` | `ctx.tools`、`ctx.subagents`、`ctx.agents and ctx.sessionProjections (list_agents only)` | `tool/call`、`tool/result`、`child session events through ctx.subagents` | - | 这些是用于发现、中断托管 subagent 和向本地子代理发送消息的全局命名工具：绑定提供方的 `tool-subagent` 实例注册不同的委派工具；本包注册一次 `send_message` 和 `interrupt_agent`，另由 `list_agents` 通过单独加载的 `/list-agents` 插件提供，其目录行使用 sessionProjections 和实时 Agent 注册表。 |
+| `@deepseek-ai/dsh-experimental-tool-subagent-oar` | `subagent_oar` | `ctx.tools`, `ctx.subagents` | `tool/call`, `tool/result`, `parent subagent catalog and completion notices` | - | subagent_oar 工具在为外部提供方配置的别名之间选择。本目录展示 Codex 和 Claude Code 别名；每个部署自行选择提供方。原生模型和权限设置由所选提供方的配置决定。 |
+| `@deepseek-ai/dsh-tool-subagent` | `list_subagent_models`、`subagent` | `ctx.tools`、`ctx.subagents`、`ctx.systemPrompt`、`ctx.sessionProjections`、`用于模型发现和所选路由校验的 ctx.llm` | `tool/call`、`tool/result`、`child session events through the chosen provider` | `subagent`、`subagent_fork` | 加载时的 `toolName` 选择委派名称（默认为 `subagent`）；`modelSelection` 增加可选路由字段。`modelDiscovery` 默认关闭，每个作用域由一个实例注册共享发现工具。Web 与 Desktop preset 启用 spawn 发现和路由字段，并为 `subagent_fork` 保持路由字段关闭。Host 设置服务为每个新顶层 Session 记录授权；子 Session 继承该授权。没有已记录策略时，发现和显式选择只允许当前父级路由。每次委派都会立即返回子代理 id；本地子代理接受后续消息，外部后端自动汇报单次执行结果。 |
+| `@deepseek-ai/dsh-tool-subagent-control` | `interrupt_agent`、`list_agents`、`send_message` | `ctx.tools`、`ctx.subagents`、`ctx.agents` | `tool/call`、`tool/result`、`child session events through ctx.subagents` | - | 这些是用于发现、中断托管 subagent 和向本地子代理发送消息的全局命名工具：绑定提供方的 `tool-subagent` 实例注册不同的委派工具；本包的一个实例注册 `send_message`、`interrupt_agent` 和 `list_agents`。 |
 | `@deepseek-ai/dsh-tool-subagent-report` | `report` | `ctx.subagents`、`ctx.systemPrompt`、`a live continuable in-process child Agent` | `tool/call`、`tool/result`、`a user-role message in the direct parent session` | - | 按可继续的进程内子级注册，而非全局注册，因此该 schema 仅在这种子级内部可见，并且不受其全局 `toolFilter` 影响。同一份贡献还会安装子级作用域的 `tool:report` 系统提示词 section，本目录不渲染该 section。面向父级的 `send_message` 工具单独安装。 |
 | `@deepseek-ai/dsh-tool-jobs` | `job_kill`、`job_list`、`job_output` | `ctx.tools`、`ctx.jobs`、`ctx.systemPrompt` | `tool/call`、`tool/result`、`user/message via agent.inject() for background completion notices` | - | 与任务种类无关的后台任务控制器：后台 bash 命令与 PTY 发送 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。 |
 | `@deepseek-ai/dsh-experimental-tool-agent-team` | `interrupt_agent`、`list_agents`、`send_message`、`spawn_teammate`、`team_task_create`、`team_task_get`、`team_task_list`、`team_task_update`、`wait_agent` | `ctx.tools`、`ctx.systemPrompt`、`ctx.agentTeams`、`an exact live Team member Agent` | `tool/call`、`team/member`、`team/task`、`agent/inbox/spliced`、`user/message on inbox claim`、`tool/result` | - | 这 9 个工具限定于隐式 Team Lead 与持久 teammate 作用域。随产品发布的 dsh-base bundle 默认禁用该包；文档中的 Agent Teams profile patch 会启用它，并禁用旧 continuable child 的同名控制工具。 |
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-working-directory` | `working_directory` | `ctx.tools`, `ctx.workingDirectory` | `tool/call`, `working-directory/change`, `user context for directory changes`, `tool/result` | - | 读取或改变调用方 Session 的目录。已有 shell 和进程保留自己的目录；原始元数据和权限根目录保持不变。 |
-| `@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` | `ctx.tools`, `ctx.worktrees`, `a calling Agent` | `tool/call`, `Git branch and checkout`, `working-directory/change`, `tool/result` | - | 仅通过显式实验组合加载。在现有写权限下从固定的本地提交创建新分支与检出目录，再改变 Session 工作目录。离开时保留分支与检出目录。 |
+| `@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` | `ctx.tools`, `ctx.worktrees`, `a calling Agent` | `tool/call`, `Git branch and checkout`, `working-directory/change`, `tool/result` | - | 在 Web 和 Desktop 上通过变更请求与工作树组合包启用；其他 profile 可以选择独立组合包。在现有写权限下从固定的本地提交创建新分支与检出目录，再改变 Session 工作目录。离开时保留分支与检出目录。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-workspace-dependencies` | `load_workspace_dependencies` | `ctx.tools` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
@@ -71,10 +73,9 @@
 
 ## `@deepseek-ai/dsh-plugin-manager`
 
-
 ### `plugin_manager`
 
-列出当前 profile 中的插件或组合包，启用或禁用它们，安装组合包或移除已安装的组合包。每项操作都要求 danger-full-access 权限或本次调用的批准。批准不改变会话权限模式。变更影响该 profile 的所有会话。先列出条目以获取准确标识。包安装可能运行已获批准的构建脚本。支持热更新的 profile 立即应用变更，包括已安装包的升级；未直接应用的变更结果带有 nextStep，说明下一步要做什么或告诉用户什么。
+列出当前 profile 中的插件或组合包，启用或禁用它们，安装组合包或移除已安装的组合包。每项操作都要求 danger-full-access 权限或本次调用的批准。批准不改变会话权限模式。变更影响该 profile 的所有会话。先列出条目以获取准确标识。包安装可能运行已获批准的构建脚本。支持热更新的 profile 立即应用变更，包括已安装包的升级；未直接应用的变更结果带有 nextStep，说明下一步要做什么或告诉用户什么。不兼容的 DSH peer 依赖会阻止安装和激活。版本豁免可能导致崩溃和数据丢失：授权前必须警告用户，并获得用户对精确插件版本与运行时版本组合的明确许可。
 
 ```json
 {
@@ -187,11 +188,10 @@
 ```
 
 来源： [`packages/boot/plugin-market/src/tools.ts`](../packages/boot/plugin-market/src/tools.ts)
+
 <a id="deepseek-aidsh-mcp-resources"></a>
 
-
 ## `@deepseek-ai/dsh-mcp-resources`
-
 
 ### `list_mcp_resource_templates`
 
@@ -218,7 +218,6 @@
 
 来源： [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
 
-
 ### `list_mcp_resources`
 
 列出 MCP 服务器提供的资源。
@@ -243,7 +242,6 @@
 ```
 
 来源： [`packages/mcp/mcp-resources/src/tools.ts`](../packages/mcp/mcp-resources/src/tools.ts)
-
 
 ### `read_mcp_resource`
 
@@ -273,9 +271,7 @@
 
 <a id="deepseek-aidsh-experimental-browser-use-stagehand-native"></a>
 
-
 ## `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`
-
 
 ### `stagehand_act`
 
@@ -303,7 +299,6 @@
 ```
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
-
 
 ### `stagehand_extract`
 
@@ -374,7 +369,6 @@
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
 
-
 ### `stagehand_navigate`
 
 将 Stagehand 浏览器标签页导航至指定 URL。
@@ -401,7 +395,6 @@
 ```
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
-
 
 ### `stagehand_observe`
 
@@ -430,7 +423,6 @@
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
 
-
 ### `stagehand_screenshot`
 
 截取 Stagehand 标签页图像以供视觉检查。
@@ -457,7 +449,6 @@
 ```
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
-
 
 ### `stagehand_tabs`
 
@@ -525,15 +516,56 @@
 
 来源：[`packages/experimental/browser-use-stagehand-native/src/index.ts`](../packages/experimental/browser-use-stagehand-native/src/index.ts)
 
-<a id="deepseek-aidsh-tool-ask-user"></a>
+<a id="deepseek-aidsh-action-cards"></a>
 
+## `@deepseek-ai/dsh-action-cards`
+
+### `propose_action`
+
+在本次回答下方向用户展示一张可选操作卡片。只按指定该操作的 Skill 的要求调用。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Action name from the skill."
+    },
+    "title": {
+      "type": "string",
+      "description": "Card title."
+    },
+    "brief": {
+      "type": "string",
+      "description": "What the action does, in the user's language."
+    },
+    "details": {
+      "type": "object",
+      "description": "Fields the skill lists for this action.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "action",
+    "title",
+    "brief",
+    "details"
+  ]
+}
+```
+
+来源：[`packages/experimental/action-cards/src/index.ts`](../packages/experimental/action-cards/src/index.ts)
+
+只向加载过已注册卡片种类 Skill 的 Agent 声明；各种类的包注册自己的动作，个性化推荐 Bundle 提供随产品发布的种类。
+
+<a id="deepseek-aidsh-tool-ask-user"></a>
 
 ## `@deepseek-ai/dsh-tool-ask-user`
 
-
 ### `ask_user_question`
 
-继续操作前，如果需要确认、选择或缺失的信息，请向用户提出简明问题。发送一个或多个问题，每个问题都带一个稳定 id，该 id 会在答案中原样返回。
+继续操作前，如果需要确认、选择或缺失的信息，请向用户提出简明问题。如果回答项的 `selected` 为空且没有 `custom`，表示用户跳过了该问题：不带该回答继续执行，不要再次提问，也不要将跳过视为许可。
 
 ```json
 {
@@ -601,15 +633,13 @@
 
 ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才启用前台超时与 pending 结果，同时问题仍可回答；timed 模式内 `timeout: -1` 让本次调用无限期阻塞。
 
-<a id="deepseek-aidsh-tools"></a>
+<a id="deepseek-aidsh-tool-executor-ptc"></a>
 
-
-## `@deepseek-ai/dsh-tools`
-
+## `@deepseek-ai/dsh-tool-executor-ptc`
 
 ### `run_code`
 
-针对可用工具执行 TypeScript 程序。接受两个必填参数：`code`，即异步函数的**函数体**（仅使用可擦除语法；支持顶层 `await` 和 `return`）；以及 `description`，简要说明该程序做什么。请根据系统提示词中的声明，以 `await tools.name(args)` 形式调用工具。只有打印或返回的内容属于程序输出，请谨慎筛选。含图片的子工具结果会在运行结束后附加。
+针对可用工具执行 TypeScript 程序。接受两个必填参数：`code`，异步函数的函数体（仅限可擦除语法，支持顶层 `await` 和 `return`）；以及 `description`，简要说明程序做什么。请按系统提示词中的声明，以 `await tools.name(args)` 调用工具。只有打印或返回的内容构成程序输出，请筛选这些内容。含图片的子工具结果会在运行结束后附加。程序是异步 TypeScript 函数的函数体，只接受可擦除语法，不支持 enum 或 namespace。类型标注只作提示。支持顶层 await 和 return。使用 console.log(...) 或返回无损 JSON 值来输出。只有打印值和返回值成为程序输出。每次调用在新的 Node 进程中运行，可通过 await import(...) 使用 Node API。相对路径以传入的工作目录为准；process.env 初始为空。直接文件系统访问遵循本次执行的沙箱策略。每个程序从 Session 的当前目录启动，运行中保留初始目录。沙箱提权只为本次完整程序执行授权。嵌套工具保留自身策略与审批。只有在获得拒绝证据后才请求更宽访问。先前效果可能已经发生，请在显式重试前检查。程序不会自动重放。
 
 ```json
 {
@@ -617,7 +647,7 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
   "properties": {
     "code": {
       "type": "string",
-      "description": "The TypeScript program to execute, following this tool's execution instructions."
+      "description": "The program: the body of an async TypeScript function."
     },
     "description": {
       "type": "string",
@@ -625,7 +655,7 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
     },
     "timeoutMs": {
       "type": "number",
-      "description": "Positive elapsed-time budget in milliseconds, capped by the deployment maximum."
+      "description": "Positive elapsed-time budget in milliseconds, including nested tool and approval waits. Default 120000; capped at 600000. Zero does not disable the deadline."
     },
     "sandbox_permissions": {
       "type": "string",
@@ -655,19 +685,17 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 }
 ```
 
-来源：[`packages/core/tools/src/ptc.ts`](../packages/core/tools/src/ptc.ts)
+来源：[`packages/core/tool-executor-ptc/src/ptc.ts`](../packages/core/tool-executor-ptc/src/ptc.ts)
 
-在 `mode: ptc`／`mode: both` 下，它由工具注册表所有，作为可过滤能力层之外的保留传输机制（参见 PTC mode Agent Note）。在 `ptc` 下，它是注册表对协议格式的唯一贡献；其他可见能力在使用已加载运行时语言生成的 SDK 章节中声明。程序通过 binding 调用这些能力，调用按照原生并发约定调度：启动顺序和策略遵循提交顺序，并发安全的函数体最多重叠执行 `maxParallelSubCalls` 个。调用会重新进入完整且受守卫保护的工具流水线，并将每个嵌套执行关联到此外层结果。
+PTC 执行器只向模型公开 run_code，并在运行时语言生成的 SDK 中声明其他可见能力。程序绑定按提交顺序进入共享的受守卫工具流水线；并行安全的函数体最多重叠 maxParallelSubCalls 个，嵌套结果保持与外层程序关联。
 
 <a id="deepseek-aidsh-plan-mode"></a>
 
-
 ## `@deepseek-ai/dsh-plan-mode`
-
 
 ### `exit_plan_mode`
 
-仅在规划模式下使用。提交计划供用户评审，并在获批后退出规划模式。发送**完整的** Markdown 计划，以一个为计划命名的 # 标题开头。用户可以批准（从你的下一步骤起执行计划），也可以要求继续规划；其反馈会通过工具结果返回，请修改后再次提交。
+仅在规划模式下使用。提交计划供用户评审，并在获批后退出规划模式。用户可以批准（从你的下一步骤起执行计划），也可以要求继续规划；其反馈会通过工具结果返回，请修改后再次提交。
 
 ```json
 {
@@ -690,13 +718,11 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 
 <a id="deepseek-aidsh-tool-bash"></a>
 
-
 ## `@deepseek-ai/dsh-tool-bash`
-
 
 ### `bash`
 
-执行 bash 命令（`bash -c`）并返回 stdout/stderr。每次调用都在新 shell 中运行：调用之间不保留任何状态（cwd、变量、函数），请传入 `workdir`，不要使用 `cd`。非零退出会报告为 `[exit code: N]`。当前 harness 环境信息通过托管的 `$DSH_*` 变量公开，需要时请检查这些变量。在任何删除或移动之前，请确认解析后的绝对目标路径正是预期路径；绝不要对未经检查的计算路径执行此类操作。未设置的变量会展开为空字符串，因此请用 `${VAR:?}` 保护此类路径中的变量。命令可能在文件沙箱中运行；被阻止的文件操作报告为 `[sandbox: file access denied under <mode> mode]`，这是策略拒绝，而不是命令缺陷，请勿换一种方式重试。较长的输出会截断，只保留尾部；如可用，完整输出会保存到文件并报告其路径。对于长时间运行的命令，请设置 `run_in_background: true`：调用会立即返回 job id；使用 `job_output` 读取输出，使用 `job_kill` 停止任务。
+执行 bash 命令（`bash -c`）并返回 stdout/stderr。每次调用都在新 shell 中运行；请传入 `workdir`，不要使用 `cd`。托管的 `$DSH_*` 变量公开当前 harness 环境信息。较长的输出会截断，只保留尾部；如可用，完整输出会保存到文件并报告其路径。请在参数中先提供 `description`，再提供 `command`。在任何删除或移动之前，请确认解析后的绝对目标路径正是预期路径；绝不要对未经检查的计算路径执行此类操作。未设置的变量会展开为空字符串，因此请用 `${VAR:?}` 保护此类路径中的变量。命令可能在文件沙箱中运行；被阻止的文件操作报告为 `[sandbox: file access denied under <mode> mode]`，这是策略拒绝：请勿换一种方式重试。
 
 ```json
 {
@@ -732,16 +758,15 @@ ask_user_question 默认保持原有阻塞行为；设置 `mode: timed` 后才�
 
 来源：[`packages/shell/tool-bash/src/index.ts`](../packages/shell/tool-bash/src/index.ts)
 
-bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_background` 的运行会注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；禁用 `enableRunInBackground` 配置（默认为 true）后，该参数会被完全移除。
+bash 工具是 bash 执行器 seam 面向模型的消费方。组合中有 job 注册表时，每次调用一启动就注册到通用 `ctx.jobs` 运行时，并通过 `job_*` 工具（来自 `@deepseek-ai/dsh-tool-jobs`）收集／停止；没有注册表或 `enableRunInBackground: false` 时，工具注册不带 `run_in_background` 参数的纯前台 schema。
 
 <a id="deepseek-aidsh-tool-present"></a>
 
 ## `@deepseek-ai/dsh-tool-present`
 
-
 ### `present`
 
-将 Session 文件系统中已存在的文件声明为最终交付物。当你创建或更新的文件是用户要求接收的输出时，必须在写入之后、最终回复之前调用 present——包括通过 Bash 或代码执行创建的文件。仅在回复中提及路径不能替代此调用。文件必须已经存在。用户打开的是当前源文件；其内容不会被复制或保留。
+将已有文件声明为交付给用户的最终交付物。宿主可能只在你的本轮结束后才展示已交付的文件，因此请在文件定稿后再调用。如果用户需要提前审阅文件（例如在等待用户回答的工具调用之前），请改为在消息中链接这些文件。当用户需要独立文件时使用，尤其是 Office 文档、电子表格和演示文稿；如果最终回复已经足够，优先使用最终回复。用户打开的是当前文件；不复制其内容。
 
 ```json
 {
@@ -777,16 +802,15 @@ bash 工具是 bash 执行器 seam 面向模型的消费方。使用 `run_in_bac
 
 来源： [`packages/deliverables/tool-present/src/index.ts`](../packages/deliverables/tool-present/src/index.ts)
 
-交付物归属于调用它的 Session；Web ui-deliverables 提供源文件打开与卡片展示。
+交付归调用方 Session 所有；Web ui-deliverables 提供源文件打开与卡片。
 
 <a id="deepseek-aidsh-tool-pwsh"></a>
 
 ## `@deepseek-ai/dsh-tool-pwsh`
 
-
 ### `pwsh`
 
-执行 PowerShell 命令（`pwsh -Command`）并返回 stdout/stderr。每次调用都在新的 pwsh 进程中运行：调用之间不保留任何状态（cwd、变量、函数），请传入 `workdir`，不要使用 `cd`。路径采用 Windows 原生形式（`C:\...`）；使用 `$env:NAME` 读取环境变量。非零退出会报告为 `[exit code: N]`。当前 harness 环境信息通过托管的 `$env:DSH_*` 变量公开，需要时请检查这些变量。在任何删除或移动之前，请确认解析后的绝对目标路径正是预期路径；绝不要对未经检查的计算路径执行此类操作。不要给 `$HOME` 等自动变量赋值；变量名不区分大小写，因此 `$home` 就是同一个只读变量。命令可能在文件沙箱中运行；被阻止的文件操作报告为 `[sandbox: file access denied under <mode> mode]`，这是策略拒绝，而不是命令缺陷，请勿换一种方式重试。较长的输出会截断，只保留尾部；如可用，完整输出会保存到文件并报告其路径。在 Windows 上，被强制终止的命令会以 `[exit code: 1]` 结算且不带信号标记，请将其视为中断，而不是命令失败。对于长时间运行的命令，请设置 `run_in_background: true`：调用会立即返回 job id；使用 `job_output` 读取输出，使用 `job_kill` 停止任务。
+执行 PowerShell 命令（`pwsh -Command`）并返回 stdout/stderr。每次调用都在新的 pwsh 进程中运行；请传入 `workdir`，不要使用 `cd`。路径采用 Windows 原生形式（`C:\...`）；使用 `$env:NAME` 读取环境变量。托管的 `$env:DSH_*` 变量公开当前 harness 环境信息。较长的输出会截断，只保留尾部；如可用，完整输出会保存到文件并报告其路径。在 Windows 上，被强制终止的命令会以 `[exit code: 1]` 结算且不带信号标记，请将其视为中断，而不是命令失败。请在参数中先提供 `description`，再提供 `command`。在任何删除或移动之前，请确认解析后的绝对目标路径正是预期路径；绝不要对未经检查的计算路径执行此类操作。不要给 `$HOME` 等自动变量赋值；变量名不区分大小写，因此 `$home` 就是同一个只读变量。命令可能在文件沙箱中运行；被阻止的文件操作报告为 `[sandbox: file access denied under <mode> mode]`，这是策略拒绝：请勿换一种方式重试。
 
 ```json
 {
@@ -826,9 +850,7 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 <a id="deepseek-aidsh-tool-cordis"></a>
 
-
 ## `@deepseek-ai/dsh-tool-cordis`
-
 
 ### `cordis_inspect_list`
 
@@ -842,7 +864,6 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 ```
 
 来源： [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
-
 
 ### `cordis_inspect_query`
 
@@ -888,9 +909,7 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 
 <a id="deepseek-aidsh-tool-bash-persistent"></a>
 
-
 ## `@deepseek-ai/dsh-tool-bash-persistent`
-
 
 ### `bash`
 
@@ -918,7 +937,6 @@ pwsh 工具是 Windows 组合中 bash 执行器 seam 的 PowerShell 方言消费
 <a id="deepseek-aidsh-tool-edit"></a>
 
 ## `@deepseek-ai/dsh-tool-edit`
-
 
 ### `edit`
 
@@ -1015,7 +1033,6 @@ apply_patch / hashline mode: { input: string }
 
 ## `@deepseek-ai/dsh-tool-pwsh-persistent`
 
-
 ### `pwsh`
 
 在持久 PowerShell shell 中运行命令。包括当前目录和已导出环境变量在内的状态会在此 agent 的多次调用之间保留。
@@ -1043,20 +1060,21 @@ apply_patch / hashline mode: { input: string }
 
 ## `@deepseek-ai/dsh-tool-str-replace-editor`
 
-
 ### `str_replace_editor`
 
-用于查看、创建与编辑文件的自定义编辑工具。
-* 状态在多次命令调用以及和用户的讨论之间保持不变
-* 如果 `path` 是文件，`view` 显示应用 `cat -n` 后的结果。如果 `path` 是目录，`view` 最多列出两层深的非隐藏文件与目录
-* 如果指定的 `path` 已经作为文件存在，则不能使用 `create` 命令
-* 如果某个 `command` 产生较长的输出，它会被截断并标记 `<response clipped>`
-* 未被所选命令使用的参数的 null 占位符视为省略。必填参数仍需要值；删除匹配项时应省略 `str_replace.new_str` 而不是将其置为 null
+用于查看、创建和编辑文件的自定义编辑工具：
 
-使用 `str_replace` 命令的注意事项：
-* `old_str` 参数应精确匹配原文件中一个或多个连续行。注意空白！
-* 如果 `old_str` 参数在文件中不唯一，替换不会执行。请确保 `old_str` 中包含足够的上下文使其唯一
-* `new_str` 参数应包含替换 `old_str` 的编辑后行
+* 状态会在命令调用以及与用户的讨论之间持久保留
+* 如果 `path` 是文件，`view` 会显示应用 `cat -n` 后的结果。如果 `path` 是目录，`view` 会列出最多向下 2 层的非隐藏文件和目录
+* 如果指定的 `create` 命令目标 `path` 已作为文件存在，则不能使用该命令
+* 如果 `command` 产生较长输出，输出会被截断并标记为 `<response clipped>`
+* 当前命令不使用某个参数时，值为 `null` 的占位参数视为未提供。必填参数仍须提供值；删除匹配内容时应省略 `str_replace.new_str`，而不是将其设为 `null`
+
+使用 `str_replace` 命令时请注意：
+
+* `old_str` 参数应与原文件中一行或多行连续内容**完全**匹配。请留意空白字符！
+* 如果 `old_str` 参数在文件中不唯一，则不会执行替换。请确保在 `old_str` 中包含足够的上下文，使其唯一
+* `new_str` 参数应包含用于替换 `old_str` 的已编辑行
 
 ```json
 {
@@ -1142,14 +1160,34 @@ apply_patch / hashline mode: { input: string }
 }
 ```
 
-Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool-str-replace-editor/src/index.ts)
+来源：[`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool-str-replace-editor/src/index.ts)
 
-独立于文件系统接缝的查看／创建／唯一字面替换／行插入工具；可与任何 Shell 或终端 API 组合使用。
+基于文件系统 seam 的独立查看／创建／唯一字面量替换／按行插入工具；可与任何 shell 或终端接口组合。
 
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
 
+### `apply_patch`
+
+用一个 Codex 风格补丁新增、更新、删除或移动 UTF-8 文本文件；变更跨越多个文件或分离区域时，优先于多次 edit 调用。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input": {
+      "type": "string",
+      "description": "Codex patch text: start with *** Begin Patch and end with *** End Patch. Use *** Add File: path with + lines; *** Update File: path, optionally followed by *** Move to: path, with @@ or @@ context and space-prefixed context, + added, or - removed lines; *** End of File anchors the last hunk to the file end. Use *** Delete File: path to delete. Paths are relative to the Session working directory."
+    }
+  },
+  "required": [
+    "input"
+  ]
+}
+```
+
+来源： [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
 ### `edit`
 
@@ -1186,7 +1224,6 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
-
 ### `read`
 
 读取 UTF-8 文本文件，并返回带行号的内容。归档路径（foo.zip、foo.zip:dir、foo.zip:dir/file）通过内置多格式引擎列出归档或读取成员文本。Zstd 路径（foo.zst、foo.zstd、session.jsonl.zstd）通过同样的带行号窗口提供其解码后的纯文本/JSONL；带 ?outline=1 后缀读取会话日志（如 session.jsonl.zstd?outline=1）时，提供其回合大纲而非对话记录。对完整的小型 UTF-8 文件，读取会在内容前加一行 hashline 锚头（[path#TAG]）——请逐字复制该标签到 edit 工具的 hashline 段，使编辑精确锚定在你看到的内容上。超过 maxLineLength 的行会以截断形式显示，且不会被登记为已见（edits 不可用）；编辑前请调大 maxLineLength 重新读取。
@@ -1220,10 +1257,9 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
-
 ### `read_image`
 
-读取 PNG/JPEG/WebP/GIF 文件并返回图像本身。无扩展名的路径同样被接受；格式按文件内容检测，因此规范化附件路径可以直接传入，无需复制或重命名。Harness 会在下一次模型请求前校验并缩小受支持的大图，因此仅为查看图片时应直接使用此工具，无需安装图片库或创建缩略图。可以用小批次并发读取彼此独立的文件。要求当前模型接受图像输入。
+读取 PNG/JPEG/WebP/GIF 文件并返回图像本身。大图会自动缩小；不要为了查看图片而安装图片库或创建缩略图。
 
 ```json
 {
@@ -1241,7 +1277,6 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 ```
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
-
 
 ### `write`
 
@@ -1269,12 +1304,11 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 来源：[`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
-先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。加载这些工具的部署按预期也应加载该插件。没有 `ctx.attachments` 时图像工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图像输入，否则拒绝。
+先读后写／编辑策略由 `@deepseek-ai/dsh-fs-observation-policy` 添加；它是一个 `fs/*` 事件门禁插件，不会改变 schema。随发行版交付的组合保持该行禁用，因此除非部署启用它，修改都是无条件的。没有 `ctx.attachments` 时图片工具不会注册；其 schema 与路由无关，执行时除非确切路由的模型声明图片输入，否则拒绝。`apply_patch` 仅在 `applyPatch: true` 时注册；目录为了记录其 schema 而开启该开关。`dsh-base` 与 Web 的 `standard` preset 开启它；Web 的 `ptc`、`cordis` preset 以及 PTC overlay 显式写出 `applyPatch: false`。
 
 <a id="deepseek-aidsh-tool-graph"></a>
 
 ## `@deepseek-ai/dsh-tool-graph`
-
 
 ### `update_agent_graph`
 
@@ -1425,7 +1459,6 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
 
-
 ### `view_agent_graph`
 
 ```json
@@ -1448,7 +1481,6 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 ```
 
 Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/src/index.ts)
-
 
 ### `yield_agent_graph`
 
@@ -1477,10 +1509,9 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 
 ## `@deepseek-ai/dsh-tool-fs-search`
 
-
 ### `glob`
 
-查找路径匹配 glob 模式的文件。只返回匹配的文件路径，绝不返回目录；包括隐藏文件和被忽略的文件，但排除 VCS 元数据目录。最多按修改时间顺序返回 100 条路径；如果结果更多，则改为返回从顶层条目中抽样的 100 条路径，说明已抽样，并报告完整排序列表的保存位置。该工具不枚举目录条目。
+查找路径匹配 glob 模式的文件（不含目录），包括隐藏文件和被忽略的文件。最多按修改时间顺序返回 100 条路径；更大的结果会从顶层条目中抽样，并报告完整列表的保存位置。
 
 ```json
 {
@@ -1502,7 +1533,6 @@ Source: [`packages/graph/tool-graph/src/index.ts`](../packages/graph/tool-graph/
 ```
 
 来源：[`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-search/src/index.ts)
-
 
 ### `grep`
 
@@ -1542,7 +1572,6 @@ glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn �
 <a id="deepseek-aidsh-tool-ast"></a>
 
 ## `@deepseek-ai/dsh-tool-ast`
-
 
 ### `ast_edit`
 
@@ -1598,7 +1627,6 @@ glob 和 grep 是无条件可用的发现工具，通过 ctx.subprocess spawn �
 
 来源：[`packages/ast/tool-ast/src/index.ts`](../packages/ast/tool-ast/src/index.ts)
 
-
 ### `ast_grep`
 
 按 AST 模式对源文件进行结构化搜索。返回带行号、按文件分组的匹配节点。内联返回前 100 条匹配；被截断时汇报总数。支持 ast-grep 模式语法：`$NAME` 捕获一个节点，`$_` 匹配任意单个节点，`$$$NAME` 捕获零个或多个节点。对匹配文件使用 read 获取周边上下文。
@@ -1648,9 +1676,7 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 <a id="deepseek-aidsh-tool-memory"></a>
 
-
 ## `@deepseek-ai/dsh-tool-memory`
-
 
 ### `learn`
 
@@ -1676,7 +1702,6 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 ```
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
-
 
 ### `memory_edit`
 
@@ -1721,7 +1746,6 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
-
 ### `mine_sessions`
 
 从本项目自己的过往会话中收割可复用教训（需要宿主 `sessionQuery` 服务；没有它则降级为不可用的提示）。按教训密度对最近的候选会话排序——失败的回合、失败的工具调用、压缩摘要、全部完成的 todo 写入；以新近度作平局裁决——并消化最富教训的会话（或明确指定的某个 `session_id`），从压缩摘要、turn/end 错误原因、全部完成的 todos 中抽取教训。每条存入的教训都以会话作为溯源，并携带其简明结局（如 `completed`、`errored: 3 failed turns`、`aborted`）。可偶尔运行以把对话历史转化为持久记忆；按内容去重，因此重复运行不会新增内容。
@@ -1739,7 +1763,6 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 ```
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
-
 
 ### `recall`
 
@@ -1766,7 +1789,6 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
 
-
 ### `reflect`
 
 从相关的长期项目记忆中综合出一个连贯的回答；与 recall 不同，它会混合多条记忆。用于横跨大量存储事实的开放式问题：“关于这位用户你知道什么？”、“总结项目决策。”、“我对 X 的偏好是什么？”。可选的 `context` 将综合聚焦于特定角度。回答仅以存储的记忆为依据——在依赖之前请先验证仓库事实。
@@ -1791,7 +1813,6 @@ ast_grep（结构化搜索）与 ast_edit（预览／应用结构化重写）由
 ```
 
 来源：[`packages/memory/tool-memory/src/index.ts`](../packages/memory/tool-memory/src/index.ts)
-
 
 ### `retain`
 
@@ -1834,7 +1855,6 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 ## `@deepseek-ai/dsh-tool-terminal`
 
-
 ### `terminal_close`
 
 关闭一个持久终端，并等待其捕获且所有的进程树完全退出。
@@ -1856,7 +1876,6 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
-
 ### `terminal_list`
 
 列出当前 agent 所有的持久终端会话。
@@ -1869,7 +1888,6 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
-
 
 ### `terminal_open`
 
@@ -1900,7 +1918,6 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
 
-
 ### `terminal_read`
 
 从持久终端读取一页有界的保留输出，不发送输入。
@@ -1929,7 +1946,6 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
-
 
 ### `terminal_send`
 
@@ -1964,7 +1980,6 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 ```
 
 来源：[`packages/experimental/tool-terminal/src/index.ts`](../packages/experimental/tool-terminal/src/index.ts)
-
 
 ### `terminal_signal`
 
@@ -2003,13 +2018,11 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 <a id="deepseek-aidsh-tool-goal"></a>
 
-
 ## `@deepseek-ai/dsh-tool-goal`
-
 
 ### `create_goal`
 
-当当前直接人类请求是需要跨自主 Goal Round 持续推进的长期目标时，创建一个持久化的同会话完成目标。即使用户没有明确说「创建目标」，你也可以推断其意图。不要用于简单的单轮工作。执行时会拒绝非人类权限和 subagent 权限。
+创建一个持久化目标，使当前会话跨自动延续 Round 持续工作。当直接人类请求是长期目标时使用，即使用户没有说「目标」；不要用于单轮工作。
 
 ```json
 {
@@ -2032,10 +2045,9 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
 
-
 ### `get_goal`
 
-读取当前的同会话目标，包括确切的 id／revision、目标、阶段、已完成的延续 Round 数、Round 上限、存在时的阻塞原因，以及是否已准备下一次延续。更新目标前请先调用此工具。
+读取当前会话目标，包括 update_goal 所需的 id 和 revision。
 
 ```json
 {
@@ -2046,10 +2058,9 @@ retain、recall、reflect、memory_edit、learn 与 mine_sessions 基于宿主�
 
 来源：[`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
 
-
 ### `update_goal`
 
-更新确切的当前目标 revision。edit、pause 和 resume 要求直接的顶层人类请求。在自动延续当前目标期间，也允许 complete 和 blocked。在达到配置的最小 Round 数之前会拒绝 blocked；模型仍须判断相同条件是否在这些 Round 中持续存在，并在 blocked_reason 中予以说明。
+更新当前目标。
 
 ```json
 {
@@ -2105,134 +2116,48 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 ### `schedule_create`
 
-在当前会话中创建一条提醒，到期时投递 prompt。请恰好提供一个时间参数：after_seconds、at、every_seconds、daily、weekly 或 cron。时区中不存在的本地时间会被跳过；重复出现的本地时间只在较早的时刻触发一次。停机后，重复提醒只投递最近错过的一次。崩溃后可能重复投递。
+创建定时任务。rrule 的每次触发都会将 prompt 作为用户的定时消息投递到目标会话。结果包含任务 id 和下一次触发时间：scheduledAt 为 UTC 时间，scheduledAtLocal 为 rrule 所在时区的时间。停机后只补发最近一次错过的触发。崩溃后可能重复投递。
 
 ```json
 {
   "type": "object",
   "properties": {
-    "prompt": {
-      "type": "string",
-      "description": "Reminder content to present when the target becomes due."
-    },
     "title": {
       "type": "string",
-      "description": "Concise task name in the user's language, at most 120 characters. Name only the core action and subject; keep essential target identifiers such as PR numbers and branch names. Do not include execution frequency (e.g. daily, hourly), scheduled dates/times, time zones, task status, or configuration and execution details (e.g. read-only mode, profile-tag filters), even when embedded in the requested or existing title. Do not append parenthetical notes. Put scheduling information in the timing parameters and execution instructions in prompt."
+      "description": "Task name of at most 120 characters in the user's language: action plus object. Omit timing, status, ids, and bracketed suffixes."
     },
-    "after_seconds": {
-      "type": "number",
-      "description": "Delay in whole seconds."
+    "prompt": {
+      "type": "string",
+      "description": "Instruction delivered at each occurrence."
     },
-    "every_seconds": {
-      "type": "number",
-      "description": "Fixed-rate interval in whole seconds, at least 60, aligned to the creation time; changing it with schedule_update re-aligns it to the save time."
+    "rrule": {
+      "type": "string",
+      "description": "Supported RFC 5545 subset: one DTSTART line, a newline, and one RRULE line. DTSTART ends in Z for UTC or carries TZID with an IANA time zone; a fixed offset such as UTC+5 is Etc/GMT-5, with the sign reversed. DTSTART must name an existing local time. A TZID rule keeps local clock time across daylight-saving changes; generated nonexistent local times are skipped, and repeated ones occur once, at the earlier instant. DTSTART may be in the past; delivery starts with the first occurrence after creation. A one-time delivery is RRULE:FREQ=DAILY;COUNT=1. No SECONDLY; BYSECOND takes one value. COUNT is at most 1000; use UNTIL for longer rules. MINUTELY and HOURLY accept no BY parts, so select clock times with DAILY or WEEKLY plus BYHOUR and BYMINUTE. BYMONTHDAY and ordinal BYDAY require MONTHLY or YEARLY; BYYEARDAY and BYWEEKNO require YEARLY. Ordinal BYDAY cannot combine with BYWEEKNO. Each FREQ period allows at most 10080 candidates before BYSETPOS, which accepts at most 31 values. UNTIL is a UTC instant ending in Z. Example: \"DTSTART;TZID=Asia/Singapore:20260901T080000\\nRRULE:FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1\""
     },
-    "daily": {
-      "type": "object",
-      "description": "Every day at a local time.",
-      "additionalProperties": false,
-      "properties": {
-        "time": {
-          "type": "string",
-          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 23:00:00."
-        },
-        "time_zone": {
-          "type": "string",
-          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
-        }
-      },
-      "required": [
-        "time",
-        "time_zone"
+    "target": {
+      "type": "string",
+      "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+      "enum": [
+        "this_session",
+        "new_once",
+        "new"
       ]
-    },
-    "weekly": {
-      "type": "object",
-      "description": "On the given weekdays at a local time.",
-      "additionalProperties": false,
-      "properties": {
-        "time": {
-          "type": "string",
-          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 09:00:00."
-        },
-        "time_zone": {
-          "type": "string",
-          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
-        },
-        "weekdays": {
-          "type": "array",
-          "description": "ISO weekdays, Monday 1 through Sunday 7, without repetitions.",
-          "items": {
-            "type": "integer"
-          }
-        }
-      },
-      "required": [
-        "time",
-        "time_zone",
-        "weekdays"
-      ]
-    },
-    "cron": {
-      "type": "object",
-      "description": "Five-field Vixie cron expression in a time zone.",
-      "additionalProperties": false,
-      "properties": {
-        "expression": {
-          "type": "string",
-          "description": "minute hour day-of-month month day-of-week, for example \"*/15 9-17 * * 1-5\". When both day fields are restricted, a date matches if either one matches."
-        },
-        "time_zone": {
-          "type": "string",
-          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
-        }
-      },
-      "required": [
-        "expression",
-        "time_zone"
-      ]
-    },
-    "at": {
-      "oneOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "date": {
-              "type": "string"
-            },
-            "time": {
-              "type": "string"
-            },
-            "time_zone": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "date",
-            "time",
-            "time_zone"
-          ]
-        }
-      ],
-      "description": "Absolute target: an RFC 3339 date-time with offset, or a local date, time, and IANA time_zone."
     }
   },
   "required": [
+    "title",
     "prompt",
-    "title"
+    "rrule",
+    "target"
   ]
 }
 ```
 
-来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
+源码： [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
-### `schedule_delete`
+### `schedule_edit`
 
-删除当前会话中的一条提醒，活动或已结束的均可。删除不会撤回已经入队的提醒消息。
+按 id 更新、暂停、恢复或删除一个定时任务。删除不会撤回已排队的消息。
 
 ```json
 {
@@ -2240,33 +2165,84 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
   "properties": {
     "id": {
       "type": "string",
-      "description": "Exact schedule id."
+      "description": "Task id."
+    },
+    "action": {
+      "type": "string",
+      "description": "update applies the provided fields, at least one; delete removes the task.",
+      "enum": [
+        "update",
+        "delete"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "description": "Task name of at most 120 characters in the user's language: action plus object. Omit timing, status, ids, and bracketed suffixes."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "New instruction delivered at each occurrence."
+    },
+    "rrule": {
+      "type": "string",
+      "description": "New recurrence in the schedule_create rrule format."
+    },
+    "target": {
+      "type": "string",
+      "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+      "enum": [
+        "this_session",
+        "new_once",
+        "new"
+      ]
+    },
+    "active": {
+      "type": "boolean",
+      "description": "false pauses the task; true resumes only if its timing has a future occurrence. Otherwise provide a new rrule."
+    },
+    "expectedUpdatedAt": {
+      "type": "string",
+      "description": "updatedAt from the latest result that returned this task; if the task changed after that result, the result is schedule_conflict and nothing changes."
     }
   },
   "required": [
-    "id"
+    "id",
+    "action"
   ]
 }
 ```
 
-来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
+源码： [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
 ### `schedule_list`
 
-列出当前会话中的活动提醒。
+列出定时任务，包括从其他会话创建的任务。活动任务排在前面，按 scheduledAt 排序。
 
 ```json
 {
   "type": "object",
-  "properties": {}
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "description": "true for active tasks only; false for paused and ended tasks only; omitted for all tasks."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Page size from 1 to 500; defaults to 100."
+    },
+    "offset": {
+      "type": "integer",
+      "description": "Number of tasks to skip; defaults to 0."
+    }
+  }
 }
 ```
 
-来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
+源码： [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
-### `schedule_update`
+### `schedule_view`
 
-原地修改一条提醒并保留其 id。提供新的 title、prompt，或至多一个时间参数；未提供的字段保持原值。需要相对延迟时请新建一条提醒。
+按 id 查看一个定时任务。
 
 ```json
 {
@@ -2274,112 +2250,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
   "properties": {
     "id": {
       "type": "string",
-      "description": "Schedule id returned by schedule_list."
-    },
-    "title": {
-      "type": "string",
-      "description": "New task name; follow the schedule_create title rules."
-    },
-    "prompt": {
-      "type": "string",
-      "description": "New reminder content."
-    },
-    "every_seconds": {
-      "type": "number",
-      "description": "Fixed-rate interval in whole seconds, at least 60, aligned to the creation time; changing it with schedule_update re-aligns it to the save time."
-    },
-    "daily": {
-      "type": "object",
-      "description": "Every day at a local time.",
-      "additionalProperties": false,
-      "properties": {
-        "time": {
-          "type": "string",
-          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 23:00:00."
-        },
-        "time_zone": {
-          "type": "string",
-          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
-        }
-      },
-      "required": [
-        "time",
-        "time_zone"
-      ]
-    },
-    "weekly": {
-      "type": "object",
-      "description": "On the given weekdays at a local time.",
-      "additionalProperties": false,
-      "properties": {
-        "time": {
-          "type": "string",
-          "description": "HH:mm:ss with optional 1-3 fractional digits, for example 09:00:00."
-        },
-        "time_zone": {
-          "type": "string",
-          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
-        },
-        "weekdays": {
-          "type": "array",
-          "description": "ISO weekdays, Monday 1 through Sunday 7, without repetitions.",
-          "items": {
-            "type": "integer"
-          }
-        }
-      },
-      "required": [
-        "time",
-        "time_zone",
-        "weekdays"
-      ]
-    },
-    "cron": {
-      "type": "object",
-      "description": "Five-field Vixie cron expression in a time zone.",
-      "additionalProperties": false,
-      "properties": {
-        "expression": {
-          "type": "string",
-          "description": "minute hour day-of-month month day-of-week, for example \"*/15 9-17 * * 1-5\". When both day fields are restricted, a date matches if either one matches."
-        },
-        "time_zone": {
-          "type": "string",
-          "description": "UTC or IANA Area/Location, for example Asia/Shanghai."
-        }
-      },
-      "required": [
-        "expression",
-        "time_zone"
-      ]
-    },
-    "at": {
-      "oneOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "date": {
-              "type": "string"
-            },
-            "time": {
-              "type": "string"
-            },
-            "time_zone": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "date",
-            "time",
-            "time_zone"
-          ]
-        }
-      ],
-      "description": "Absolute target: an RFC 3339 date-time with offset, or a local date, time, and IANA time_zone."
+      "description": "Task id."
     }
   },
   "required": [
@@ -2388,14 +2259,13 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 }
 ```
 
-来源：[`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
+源码： [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts)
 
-preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四个管理工具。每次调用都作用于调用方 Agent 的 Session。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。
+preset 或 Agent scope 挂载本包，并决定哪些 Agent 获得工具。管理工具按 id 跨会话读写 Host 的任务。任务保存 RFC 5545 重复规则，执行位置可选已有会话、首次创建后复用的会话或每次运行新建的会话。委派子 Agent 不能调用这些工具。
 
 <a id="deepseek-aidsh-tool-debug"></a>
 
 ## `@deepseek-ai/dsh-tool-debug`
-
 
 ### `debug`
 
@@ -2605,7 +2475,6 @@ debug 通过 DAP capability seam（`ctx.dap`）组合真实调试器（gdb/lldb-
 
 ## `@deepseek-ai/dsh-code-runtime-kernels`
 
-
 ### `run_kernel_code`
 
 在持久化 kernel 中执行模型代码，并返回其 JSON 完成值与打印输出。`language` 选择运行时：`python` 或 `typescript`。`typescript` 下每个 cell 以异步函数体运行，因此支持顶层 `await` 与 `return`。`python` 下以模块运行：支持顶层 `await`，语句会持久化进会话命名空间，最后一个表达式即完成值（顶层 `return` 是非法 Python）。跨调用携带相同的非空 `session` 以保留 kernel 状态（变量、导入、工作数据）；省略它以一次性运行于全新状态。传 `reset: true` 会在本次运行前丢弃该会话先前的 kernel 状态（一次 reset，而不是状态损坏后的无限重试）。
@@ -2649,7 +2518,6 @@ run_kernel_code 在持久化 kernel（python3 或 node 子进程，仅标准库�
 <a id="deepseek-aidsh-tool-lsp"></a>
 
 ## `@deepseek-ai/dsh-tool-lsp`
-
 
 ### `lsp`
 
@@ -2706,9 +2574,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-ralph"></a>
 
-
 ## `@deepseek-ai/dsh-tool-ralph`
-
 
 ### `ralph`
 
@@ -2739,13 +2605,11 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-skill"></a>
 
-
 ## `@deepseek-ai/dsh-tool-skill`
-
 
 ### `skill`
 
-加载可用 skill（技能）的完整说明。在执行点名某项 skill 或与其明确匹配的任务前，请使用会话 skill 目录中的确切名称调用此工具。
+加载某项 skill（技能）的完整说明。在执行点名某项 skill 或与会话 skill 目录中某项 skill 明确匹配的任务前，请调用此工具。
 
 ```json
 {
@@ -2766,9 +2630,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-session-query"></a>
 
-
 ## `@deepseek-ai/dsh-tool-session-query`
-
 
 ### `session_event_read`
 
@@ -2802,7 +2664,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
-
 
 ### `session_event_search`
 
@@ -2864,7 +2725,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
-
 ### `session_event_trace`
 
 读取已获授权会话中某个事件的所有直接替换关系，以及该事件与其引用的来源事件之间的关系。
@@ -2889,7 +2749,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
-
 
 ### `session_search`
 
@@ -2984,7 +2843,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-session-query/src/index.ts`](../packages/experimental/tool-session-query/src/index.ts)
 
-
 ### `session_trace`
 
 读取围绕一个会话的已授权会话谱系，包括完整可见的祖先和后代关系。
@@ -3005,15 +2863,58 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。
 
-<a id="deepseek-aidsh-tool-subagent"></a>
+<a id="deepseek-aidsh-experimental-tool-subagent-oar"></a>
 
+## `@deepseek-ai/dsh-experimental-tool-subagent-oar`
+
+### `subagent_oar`
+
+将上下文完整的任务委派给已配置的外部 agent。每次调用选择一个运行时。subagent 在独立上下文中工作，无法看到当前对话。工具返回子级 id，后续完成通知包含其最终回答。subagent 不接受后续消息。并发启动相互独立的任务，并在其运行期间继续其他有用工作。只剩等待结果时结束当前轮次，不要轮询。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runtime": {
+      "type": "string",
+      "description": "Configured external runtime for this task.",
+      "enum": [
+        "codex",
+        "claude"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "description": "A short description of the delegated task, for display."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The complete, self-contained task. Include all context the external agent needs."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Initial child working directory. Relative paths use your current directory; omission inherits it."
+    }
+  },
+  "required": [
+    "runtime",
+    "description",
+    "prompt"
+  ]
+}
+```
+
+来源：[`packages/experimental/tool-subagent-oar/src/index.ts`](../packages/experimental/tool-subagent-oar/src/index.ts)
+
+subagent_oar 工具在为外部提供方配置的别名之间选择。本目录展示 Codex 和 Claude Code 别名；每个部署自行选择提供方。原生模型和权限设置由所选提供方的配置决定。
+
+<a id="deepseek-aidsh-tool-subagent"></a>
 
 ## `@deepseek-ai/dsh-tool-subagent`
 
-
 ### `list_subagent_models`
 
-在不改变当前 Agent 的情况下发现面向 subagent 的 LLM 路由。不带参数调用可列出已注册的提供方；带上 `provider` 可列出其宣传的模型；同时带上 `provider` 与 `model` 可检查该确切模型及其推理投入。目录成员资格仅供参考：适配器可能接受未列出的模型 id。请将返回的 id 用于委派工具的 `provider`、`model` 与 `reasoning_effort` 字段。
+查询 subagent 可用的模型，不更改当前 Agent。无参数：提供方；`provider`：允许的模型；`provider` + `model`：该模型及其推理强度。选择子级提供方和模型前先在此查询选项，再将返回的 id 用于委派。
 
 ```json
 {
@@ -3021,11 +2922,11 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
   "properties": {
     "provider": {
       "type": "string",
-      "description": "Registered LLM provider id. Omit to list providers."
+      "description": "Registered LLM provider id."
     },
     "model": {
       "type": "string",
-      "description": "Exact model id to inspect. Requires provider; omit to list that provider's advertised models."
+      "description": "Exact model id; requires provider."
     }
   }
 }
@@ -3033,10 +2934,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/subagent/tool-subagent/src/list-models.ts`](../packages/subagent/tool-subagent/src/list-models.ts)
 
-
 ### `subagent`
 
-将一项自包含任务委派给 subagent（在自身上下文中工作的独立 agent），用它卸载聚焦且独立的工作，例如研究、限定范围的实现或分析，以免消耗当前对话的上下文。subagent 会返回结果，但不会返回中间步骤。请提供完整、独立的提示词，因为它看不到当前对话。此调用默认等待结果。设置 `run_in_background: true` 可返回 job id；使用 `job_output` 收集结果，使用 `job_kill` 停止任务。
+将一项自包含任务委派给 subagent（在自身上下文中工作的独立 agent），用它卸载聚焦且独立的工作，例如研究、限定范围的实现或分析，以免消耗当前对话的上下文。subagent 会返回结果，但不会返回中间步骤。此工具启动独立管理的 subagent 并立即返回其 id。运行时会在任务结束时通知你。子代理通过 `send_message` 汇报结果；你可以使用 `send_message` 在运行时引导它，或在结束后继续对话。
 
 ```json
 {
@@ -3068,17 +2968,15 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/subagent/tool-subagent/src/index.ts`](../packages/subagent/tool-subagent/src/index.ts)
 
-注册的工具名称取决于加载时 `toolName` 配置（默认为 `subagent`）；上述 schema 对应默认值。随产品发布的组合会为每个 subagent 后端加载一次该包，因此模型还会看到绑定到 fork 后端的 `subagent_fork`。每个实例的描述、`run_in_background` 参数与 system prompt 策略取决于它自己的 `backgroundMode` 和 `enableRunInBackground`，因此两个随附 schema 并不相同：`subagent` 为 `continuable`，省略参数时默认后台运行，并由 runtime 自动投递结束结果；`subagent_fork` 保持 `one-shot`，省略参数时默认前台运行。详见 `packages/bundle/base/cordis.patch.yml` 和 `examples/acp-agent/cordis.yml`。
+加载时的 `toolName` 选择委派名称（默认为 `subagent`）；`modelSelection` 增加可选路由字段。`modelDiscovery` 默认关闭，每个作用域由一个实例注册共享发现工具。Web 与 Desktop preset 启用 spawn 发现和路由字段，并为 `subagent_fork` 保持路由字段关闭。Host 设置服务为每个新顶层 Session 记录授权；子 Session 继承该授权。没有已记录策略时，发现和显式选择只允许当前父级路由。每次委派都会立即返回子代理 id；本地子代理接受后续消息，外部后端自动汇报单次执行结果。
 
 <a id="deepseek-aidsh-tool-subagent-control"></a>
 
-
 ## `@deepseek-ai/dsh-tool-subagent-control`
-
 
 ### `interrupt_agent`
 
-根据 agent id 请求取消后台 agent 的当前轮次。目标可以是你的直接子级，也可以是在你下方创建的更深层 agent。只有当前轮次会停止：已经排队发给该 agent 的消息会一直搁置到后续的 send_message；它启动的 agent 会继续运行；该 agent 本身仍可接受后续操作。停止请求被接受后，此调用立即返回，因此目标可能还会短暂运行；中断一个已经完成的 agent 是可接受的空操作。
+根据 agent id 请求取消后台 agent 的当前轮次。目标可以是你的直接子级，也可以是在你下方创建的更深层 agent。对于本地 agent，只有当前轮次会停止：已经排队发给该 agent 的消息会一直搁置到后续的 send_message；它启动的 agent 会继续运行；该 agent 本身仍可接受后续操作。外部执行会永久停止，无法接收后续消息。停止请求被接受后，此调用立即返回，因此目标可能还会短暂运行；中断一个已经完成的 agent 是可接受的空操作。
 
 ```json
 {
@@ -3097,10 +2995,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)
 
-
 ### `list_agents`
 
-按持久 id 和标签列出你的可继续后台 subagent。用它回忆你启动过哪些 subagent，而不是轮询完成情况——subagent 完成时你会被告知。状态来自实时注册表：running 表示 agent 此刻正在工作；idle 表示已加载但处于轮次之间，可能正在等待它启动的 agent；ready 表示它只存在于存储中——可恢复而非终态，也不表示有结果等待收集；`send_message` 会在运行中 child 的最近 step 边界 steer 消息，或为 idle、ready child 启动轮次，且无论处于哪种状态，直接子级都仍可作为 `send_message` 的目标。该快照并非投递承诺；`send_message` 会执行权威检查，仍可能失败。无法读取的子级会作为诊断信息报告，而不会被静默丢弃。`descendants` 作用域会按稳定的前序顺序遍历你下方的整棵树，并为每个条目标注其持久的直接父会话 id 和深度。只有深度为 1 的条目可以使用 `send_message`；更深的条目只能作为 `interrupt_agent` 的候选目标。
+按持久 ID 和标签列出调用方目录中可继续的直接子代理。使用此工具回忆已启动的子代理，不要轮询完成状态；完成时会收到通知。状态来自在线注册表：running 表示当前正在工作；inactive 表示当前没有执行轮次，无论子代理已加载还是需要恢复，并不表示任务完成、成功、失败或正在等待其他代理。`send_message` 可在最近的步骤边界引导正在运行的子代理，或启动、恢复非活跃子代理的轮次；任何状态下的直接子级都可作为 `send_message` 的候选目标。列表快照不保证投递成功，`send_message` 仍进行权威检查，且可能失败。
 
 ```json
 {
@@ -3119,7 +3016,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/subagent/tool-subagent-control/src/list-agents.ts`](../packages/subagent/tool-subagent-control/src/list-agents.ts)
-
 
 ### `send_message`
 
@@ -3151,9 +3047,7 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-subagent-report"></a>
 
-
 ## `@deepseek-ai/dsh-tool-subagent-report`
-
 
 ### `report`
 
@@ -3213,13 +3107,11 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 <a id="deepseek-aidsh-tool-jobs"></a>
 
-
 ## `@deepseek-ai/dsh-tool-jobs`
-
 
 ### `job_kill`
 
-根据 job id 请求取消正在运行的后台任务。此调用立即返回；任务的工作真正停止后，会以 killed 状态结算。
+请求取消正在运行的后台任务。
 
 ```json
 {
@@ -3242,7 +3134,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/jobs/tool-jobs/src/index.ts`](../packages/jobs/tool-jobs/src/index.ts)
 
-
 ### `job_list`
 
 列出你的后台任务（包括正在运行和已完成的任务）及其 id、种类和状态。
@@ -3256,10 +3147,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/jobs/tool-jobs/src/index.ts`](../packages/jobs/tool-jobs/src/index.ts)
 
-
 ### `job_output`
 
-读取后台任务。流式任务只返回自上次读取以来的输出；最终输出任务会在结算后返回结果。每个响应都以 `[status: ...]` 结尾。读取默认不阻塞；设置 `wait: true` 后，最长等待到配置的上限。
+读取后台任务：流式任务返回自上次读取以来的输出，已完成的最终输出任务返回其结果。
 
 ```json
 {
@@ -3286,12 +3176,11 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/jobs/tool-jobs/src/index.ts`](../packages/jobs/tool-jobs/src/index.ts)
 
-与任务种类无关的后台任务控制器：后台 bash 命令、PTY 发送和 subagent 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。
+与任务种类无关的后台任务控制器：后台 bash 命令与 PTY 发送 都通过相同的 3 个工具读取、列出和终止。加载该插件会挂接控制器，从而启用生产方的 `ctx.jobs.start()`。
 
 <a id="deepseek-aidsh-experimental-tool-agent-team"></a>
 
 ## `@deepseek-ai/dsh-experimental-tool-agent-team`
-
 
 ### `interrupt_agent`
 
@@ -3314,10 +3203,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
-
 ### `list_agents`
 
-列出 Lead 与所有持久 teammate，以及各自当前的运行时状态。
+列出 Lead 与所有持久 teammate，以及可用于寻址的 target 和当前可用状态。inactive 表示没有轮次在执行，不表示任务结果。provisioning 与 failed 描述成员创建状态。
 
 ```json
 {
@@ -3328,10 +3216,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
-
 ### `send_message`
 
-向另一名 Team member 发送一条持久消息。running target 会在最近的步骤边界收到消息；idle target 会启动一个 turn；inactive teammate 会冷恢复。
+向另一名 Team member 发送一条消息。running target 会在最近的步骤边界收到消息；inactive target 会启动或恢复一个 turn。
 
 ```json
 {
@@ -3354,7 +3241,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
-
 
 ### `spawn_teammate`
 
@@ -3394,7 +3280,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
-
 
 ### `team_task_create`
 
@@ -3436,7 +3321,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
-
 ### `team_task_get`
 
 在修改或执行共享任务前，读取其完整的最新值。
@@ -3457,7 +3341,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
-
 
 ### `team_task_list`
 
@@ -3497,7 +3380,6 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 ```
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
-
 
 ### `team_task_update`
 
@@ -3566,10 +3448,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
 
-
 ### `wait_agent`
 
-等待本次调用开始后下一次 teammate 状态、mailbox 或共享任务变更。它绝不会唤醒 inactive member；若没有其他 member 正在 running 或 provisioning，则立即返回 noProgress。唤醒或超时后应重新列出状态，而不是轮询。
+等待本次调用开始后下一次 teammate 状态、消息或共享任务变更。它绝不会唤醒 inactive member；若没有其他 member 正在 running 或 provisioning，则立即返回 noProgress。唤醒或超时后应重新列出状态，而不是轮询。
 
 ```json
 {
@@ -3592,10 +3473,9 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 
 ## `@deepseek-ai/dsh-tool-todo`
 
-
 ### `todo_write`
 
-记录并更新当前工作的结构化任务列表。每次调用都要发送**完整列表**，它会**替换**之前的列表，不支持局部更新或逐项编辑。请用它规划多步骤工作并展示进度：开始前为每个具体步骤添加一项 todo。将当前正在处理的每项 todo 标记为 `in_progress`；确实并行运行时（例如并发 subagent 或后台命令）可同时标记多项，顺序工作则标记 1 项。只要工作尚未完成，就应至少有一项任务为 `in_progress`。某项 todo 完成后立即标记为 `completed`，不要批量标记完成；只有全部工作完成后，才可以没有 `in_progress` 项。简单的单步骤任务无需使用列表。状态：`pending`（未开始）、`in_progress`（正在处理）、`completed`（已完成）。
+记录并更新任务列表，用于规划多步骤工作并展示进度；简单的单步骤任务无需使用。开始前为每个具体步骤添加一项 todo。只要工作尚未完成，就将正在处理的 todo 标记为 `in_progress`，仅在工作并行运行时同时标记多项。某项 todo 完成后立即标记为 `completed`。
 
 ```json
 {
@@ -3669,7 +3549,7 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 ### `create_worktree`
 
-从本地提交、分支或标签创建新的 Git 分支与工作树，再将本 Session 的工作目录切换到该位置。默认使用 HEAD 和自动生成的名称。未提交文件保留在源检出目录中。名称已存在时失败。使用 working_directory 的 cd 参数离开；检出目录与分支仍然保留。
+从本地提交、分支或标签创建新的 Git 分支与工作树，再将本 Session 的工作目录切换到该位置。未提交文件保留在源检出目录中。名称已存在时失败。使用 working_directory 的 cd 参数离开；检出目录与分支仍然保留。
 
 ```json
 {
@@ -3677,7 +3557,7 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
   "properties": {
     "name": {
       "type": "string",
-      "description": "New branch name, also used as the checkout directory. Omit to generate a unique name."
+      "description": "New branch name, also used as the checkout directory: a few lowercase words joined by hyphens that describe the task, such as fix-login-retry. Omit to generate a unique name."
     },
     "from": {
       "type": "string",
@@ -3689,29 +3569,24 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 来源：[`packages/experimental/tool-worktree/src/index.ts`](../packages/experimental/tool-worktree/src/index.ts)
 
-仅通过显式实验组合加载。在现有写权限下从固定的本地提交创建新分支与检出目录，再改变 Session 工作目录。离开时保留分支与检出目录。
+在 Web 和 Desktop 上通过变更请求与工作树组合包启用；其他 profile 可以选择独立组合包。在现有写权限下从固定的本地提交创建新分支与检出目录，再改变 Session 工作目录。离开时保留分支与检出目录。
 
 <a id="deepseek-aidsh-tool-workflow"></a>
 
 ## `@deepseek-ai/dsh-tool-workflow`
 
-
 ### `workflow`
 
 运行用于大规模编排 subagent 的 JavaScript 工作流脚本。当工作会分散到许多相互独立的部分时，请使用此工具，例如审查大量文件、执行迁移、开展多角度研究或对发现进行对抗式验证；此时应将编排写成脚本，而不是逐轮委派。
 
-工作流的身份通过 `meta` 参数以 JSON 形式传入：必填的 `name`（简短 kebab-case）和 `description` 字符串，以及可选的 `whenToUse` 字符串和 `phases` 数组（`{title, detail?, provider?, model?}`）。`script` 参数只能是纯 JavaScript **函数体**，不能是 TypeScript，也不能包含 `export const meta` 语句；meta 是参数而非代码。脚本支持顶层 await；请以 `return <value>` 结尾，该值必须可以 JSON 序列化，并作为此工具的结果。
-
 脚本函数体提供以下钩子：
 
-- `agent(prompt, opts?): Promise<any>`：运行一个 subagent 直至完成。不提供 `opts.schema` 时，解析为子级最终文本；提供 `opts.schema` 时，它必须是以对象为根、且**只能**使用 type/properties/required/additionalProperties/items/enum/const/oneOf 的 JSON Schema，不支持 pattern/format/数值边界，此时解析为通过校验的对象。子级失败时解析为 `null`，可使用 `.filter(Boolean)` 过滤。其他选项包括 `label`（显示名称）、`phase`（进度组），以及相互独立的 `provider`／`model` LLM（大语言模型）目标覆盖项，两者可单独提供。其他任何选项（`effort`／`isolation`／`agentType`）都会明确报错。
-- `pipeline(items, ...stages): Promise<any[]>`：让每个条目分别经过各阶段，阶段之间**没有**屏障；多阶段工作优先使用它。每个阶段接收 `(prev, item, index)`。普通的阶段异常会将该**条目**变为 `null`，并跳过它的剩余阶段。
+- `agent(prompt, opts?): Promise<any>`：运行一个 subagent 直至完成。不提供 `opts.schema` 时，解析为子级最终文本；提供 `opts.schema` 时，它必须是以对象为根、且**只能**使用 type/properties/required/additionalProperties/items/enum/const/oneOf 的 JSON Schema，此时解析为通过校验的对象。子级失败时解析为 `null`，可使用 `.filter(Boolean)` 过滤。其他选项包括 `label`（显示名称）、`phase`（进度组），以及相互独立的 `provider`／`model` LLM（大语言模型）目标覆盖项。
+- `pipeline(items, ...stages): Promise<any[]>`：让每个条目分别经过各阶段，阶段之间**没有**屏障；多阶段工作优先使用它。每个阶段接收 `(prev, item, index)`。阶段异常会将该**条目**变为 `null`，并跳过它的剩余阶段。
 - `parallel(thunks): Promise<any[]>`：并发运行零参数函数并等待**全部**完成。它会形成屏障，仅当某个阶段确实需要汇总全部先前结果时使用。抛出异常的 thunk 解析为 `null`。
 - `phase(title)`：开始一个进度阶段；`log(message)`：说明进度；`args`：工具调用的 `args` 输入，原样提供。
 
-如果误用钩子（参数错误、未知选项、不受支持的 schema、触发上限），抛出的错误**总会**终止脚本，绝不会退化为单个条目的 `null`。
-
-约束：并发上限和 agent 总数上限均会生效；不提供文件系统、网络、定时器或 Node.js API。具体工作由 agent 完成，脚本只负责编排。该运行在前台执行：整个脚本完成后，调用才会返回。
+如果误用钩子（参数错误、未知选项、不受支持的 schema、触发上限），整个脚本会终止，而不会产生 `null`。脚本没有文件系统、网络、定时器或 Node.js API；具体工作由 agent 完成。
 
 ```json
 {
@@ -3813,7 +3688,6 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 ## `@deepseek-ai/dsh-tool-web`
 
-
 ### `web_fetch`
 
 获取指定 HTTP(S) URL 的内容，并将其解码为文本后返回。
@@ -3835,10 +3709,9 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 
 来源：[`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
-
 ### `web_search`
 
-在 Web 上搜索最新信息。在必填的 `queries` 数组中提供 1–4 个查询。返回可选的摘要答案和来源 URL 列表。
+在 Web 上搜索最新信息。返回可选的摘要答案和来源 URL 列表。
 
 ```json
 {
@@ -3861,11 +3734,8 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 来源：[`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
 web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。
-<a id="deepseek-aidsh-tool-git"></a>
-
 
 ## `@deepseek-ai/dsh-tool-git`
-
 
 ### `commit`
 
@@ -3893,7 +3763,6 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 ```
 
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
-
 
 ### `commit_apply`
 
@@ -4051,7 +3920,6 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
 
-
 ### `review`
 
 用专门的评审者 subagent 对 git 变更（工作区、已暂存区或一个提交区间）执行并行代码评审。每条发现按 P0–P3 分级并带置信度分数；工具返回按严重度排序的全部发现，以及带解释的 ship/reject 结论。评审者只读（git diff/log/show、read、grep、ast_grep），从不编辑文件或运行构建。可用 focus 过滤器只评审相关路径。
@@ -4094,7 +3962,6 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 ```
 
 来源：[`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/index.ts)
-
 
 ### `worktree`
 
@@ -4180,9 +4047,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 <a id="deepseek-aidsh-tool-browser"></a>
 
-
 ## `@deepseek-ai/dsh-tool-browser`
-
 
 ### `browser`
 
@@ -4282,7 +4147,6 @@ Browser tool (port of omp): open/close/run/state over launch (stealth-patched), 
 
 ## `@deepseek-ai/dsh-tool-av`
 
-
 ### `av_catalog`
 
 列出 Automic Vault 认识的工具：检测器（扫描覆盖范围；名称供 `av_scan` 的 `detector` 使用）与加固器（加固状态；名称供 `av_doctor` 的 `tool` 使用），各含文档链接。来自 `av detectors --json` 与 `av hardeners --json` 的只读元数据。
@@ -4310,7 +4174,6 @@ Browser tool (port of omp): open/close/run/state over launch (stealth-patched), 
 
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
 
-
 ### `av_doctor`
 
 校验已安装开发工具的 Automic Vault 加固状态（运行 `av doctor [tool] --json`）：哪些已加固工具健康、哪些有问题，并给出每条 issue 的修复步骤（stub/target 路径）。只读；代理报告，加固由用户运行。先用 `av_catalog` 查看工具名称。
@@ -4329,7 +4192,6 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
 
-
 ### `av_list`
 
 列出 Automic Vault 中已保存密钥的名称（`av list`）。只返回**名称**——绝不返回值，绝不释放密钥。用它告知用户保管库中有什么，再由用户决定如何处置。
@@ -4342,7 +4204,6 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 ```
 
 Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts)
-
 
 ### `av_scan`
 
@@ -4379,9 +4240,7 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 
 <a id="deepseek-aidsh-tool-logseq"></a>
 
-
 ## `@deepseek-ai/dsh-tool-logseq`
-
 
 ### `logseq_graph`
 
@@ -4430,7 +4289,6 @@ Source: [`packages/av/tool-av/src/index.ts`](../packages/av/tool-av/src/index.ts
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
-
 
 ### `logseq_list`
 
@@ -4514,7 +4372,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
-
 ### `logseq_query`
 
 对图运行 Datascript 查询（`logseq query --query <EDN>`），或按名称运行已保存查询并附可选 inputs。用于页面/块/标签一次跳转答不了的结构性问题。
@@ -4544,7 +4401,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
-
 
 ### `logseq_remove`
 
@@ -4586,7 +4442,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
-
 ### `logseq_search`
 
 按内容文本搜索 Logseq 块/页面/属性/标签（`logseq search <type> --content <text>`）。返回匹配项。
@@ -4619,7 +4474,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
 
-
 ### `logseq_server`
 
 管理 db-worker-node 服务（`logseq server ...`）：list/start/stop/restart/cleanup。无头场景需要它：每张图 start 一次，随后任何读/写工具都不再依赖桌面 App。
@@ -4644,7 +4498,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
-
 
 ### `logseq_show`
 
@@ -4683,7 +4536,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-logseq/src/index.ts)
-
 
 ### `logseq_upsert`
 
@@ -4827,9 +4679,7 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 图原生的 Logseq CLI 工具（logseq_list/show/search/query/upsert/remove/graph/server），从终端无头驱动 Logseq 数据库图——桌面 MCP 桥接的本地替代方案，补上 Datalog query、删除、一等任务与图生命周期。
 <a id="deepseek-aidsh-tool-codebase-memory"></a>
 
-
 ## `@deepseek-ai/dsh-tool-codebase-memory`
-
 
 ### `codebase_delete_project`
 
@@ -4848,7 +4698,6 @@ Source: [`packages/logseq/tool-logseq/src/index.ts`](../packages/logseq/tool-log
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
-
 
 ### `codebase_detect_changes`
 
@@ -4884,7 +4733,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_get_architecture`
 
 从知识图给出项目的高层架构概览：包、服务、依赖，以及对调用/导入图做 Leiden 社区检测得到的 de-facto 模块（含凝聚力与代表性节点）。深入遍历代码前使用，并据此检验重构是否符合真实接缝。可选目录前缀限定分析范围。
@@ -4914,7 +4762,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_get_code_snippet`
 
 读取已索引项目中单个符号的源码——codebase_search_graph 给出的完整限定名，或短函数名。在已知道符号（来自 codebase_search_graph / codebase_trace_path）时，用它替代若干次文件读取 + grep 循环。
@@ -4941,7 +4788,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_get_graph_schema`
 
 返回项目知识图中的节点标签与边类型——codebase_query_graph 的 Cypher 与 codebase_search_graph 接受的标签词汇表。
@@ -4959,7 +4805,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
-
 
 ### `codebase_index_repository`
 
@@ -5004,7 +4849,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_index_status`
 
 报告项目的索引状态与覆盖率：节点/边数量、新鲜度、跳过与部分解析的文件，以及上次索引运行的日志文件。在信任一个关于近期改动仓库的答案前使用。
@@ -5022,7 +4866,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
-
 
 ### `codebase_ingest_traces`
 
@@ -5066,7 +4909,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_list_projects`
 
 列出已索引进 codebase-memory 知识图的全部项目（名称、根路径、git 状态）。在其他 codebase_* 工具之前使用，取到目标仓库的标准 `project` 名，再传给其它工具。
@@ -5079,7 +4921,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
-
 
 ### `codebase_manage_adr`
 
@@ -5119,7 +4960,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_query_graph`
 
 对 codebase-memory 知识图执行原始 Cypher 查询，表达精选工具无法表达的多跳模式、聚合与跨服务分析。响应带 total（返回行数）；图有硬性 10 万行上限，宽泛查询请加 LIMIT。每个 Function/Method 节点还带有 complexity/cognitive/loop/recursion 热点属性。
@@ -5145,7 +4985,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
-
 
 ### `codebase_search_code`
 
@@ -5197,7 +5036,6 @@ grep 增强的代码搜索：按文本找匹配，再把匹配丰富进包含它
 ```
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
-
 
 ### `codebase_search_graph`
 
@@ -5287,7 +5125,6 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packages/codebase-memory/tool-codebase-memory/src/index.ts)
 
-
 ### `codebase_trace_path`
 
 追踪 codebase-memory 知识图中的调用/数据流/跨服务路径。callers/callees（calls 模式）、带参数表达式的值传播（data_flow），或穿过 HTTP/异步路由节点并跨仓库（cross_service）。调用方浮出声明与每条入边。
@@ -5355,9 +5192,7 @@ Source: [`packages/codebase-memory/tool-codebase-memory/src/index.ts`](../packag
 
 <a id="deepseek-aidsh-tool-agentsview"></a>
 
-
 ## `@deepseek-ai/dsh-tool-agentsview`
-
 
 ### `agentsview`
 
@@ -5486,9 +5321,7 @@ Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/u
 
 <a id="deepseek-aidsh-tool-openwiki"></a>
 
-
 ## `@deepseek-ai/dsh-tool-openwiki`
-
 
 ### `openwiki_begin`
 
@@ -5528,7 +5361,6 @@ Session-analytics tool (`agentsview` action=list/get/sessionUsage/health/stats/u
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
 
-
 ### `openwiki_finish`
 
 仅在每个 PageJob 都完成后调用。执行确定性的删除、校验、索引、出处、Claims 收尾与运行元数据持久化。
@@ -5550,7 +5382,6 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
 
-
 ### `openwiki_next_page`
 
 返回第一个待办的页面任务及其当前 Claims；无剩余任务时返回 status=complete。
@@ -5571,7 +5402,6 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 ```
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
-
 
 ### `openwiki_submit_page`
 
@@ -5635,7 +5465,6 @@ Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/to
 ```
 
 Source: [`packages/openwiki/tool-openwiki/src/index.ts`](../packages/openwiki/tool-openwiki/src/index.ts)
-
 
 ### `openwiki_submit_plan`
 

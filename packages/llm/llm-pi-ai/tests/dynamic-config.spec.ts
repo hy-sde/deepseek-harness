@@ -159,7 +159,9 @@ describe('request-level dynamic profiles', () => {
     // before any route exists, each addressed inside the providers dict and
     // described by the endpoint and environment variables it uses unconfigured.
     const directory = ctx.llm.listConfigurableProviders()
-    expect(directory.length).toBe(5)
+    // Fork vendor carries two extra builtin catalog providers (moonshotai,
+    // opencode-go) beyond upstream's five, so the dormant directory is larger.
+    expect(directory.length).toBe(7)
     expect(directory).toContainEqual({
       provider: 'openai',
       displayName: 'openai',

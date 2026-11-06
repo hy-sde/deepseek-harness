@@ -12,4 +12,6 @@ export const PROVIDER_DATA: Record<BuiltinProvider, ProviderData> & Partial<Reco
   'deepseek': { env: ['DEEPSEEK_API_KEY'], defaultBaseURL: 'https://api.deepseek.com' },
   'openai': { env: ['OPENAI_API_KEY'], defaultBaseURL: 'https://api.openai.com/v1' },
   'openai-codex': { env: [], defaultBaseURL: 'https://chatgpt.com/backend-api' },
+  'moonshotai': { env: ['MOONSHOT_API_KEY'], defaultBaseURL: 'https://api.moonshot.ai/v1' },
+  'opencode-go': { env: ['OPENCODE_API_KEY'] },
 }

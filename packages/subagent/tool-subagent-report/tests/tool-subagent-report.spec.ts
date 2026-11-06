@@ -21,6 +21,7 @@ import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import { textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import * as tool from '../src/index.ts'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testSignal = new AbortController().signal
 
@@ -126,7 +127,7 @@ async function startHeldParentTurn(parent: Agent, adapter: HeldAdapter): Promise
 
 let calls = 0
 function callReport(ctx: Context, child: Agent, output: string, signal = testSignal) {
-  return ctx.tools.execute({
+  return executeToolFixture(ctx, {
     signal,
     callId: ToolCallId(`report-${++calls}`),
     name: 'report',
@@ -513,15 +514,16 @@ describe('dsh-tool-subagent-report', () => {
       return dispose
     })
 
-    // No session may be announced for the rejected child: the setup
-    // validation must reject inside the creation callback, before the factory
-    // publishes — a post-publication rejection would persist a resumable
-    // ghost that `list_agents` surfaces and `send_message` can resurrect.
-    // The parent was created inside setup(), so any later announcement is the
-    // rejected child's.
+    // The setup validation rejects inside the creation callback, so the child
+    // never publishes — a post-publication rejection would persist a resumable
+    // ghost that `list_agents` surfaces and `send_message` can resurrect. The
+    // merged 0.2.2 session store announces `session/created` on entry (before
+    // setup settles) and fires `session/disposed` when the publication rolls
+    // back, so the ghost pin is: the announced child is disposed again.
     const announced: SessionId[] = []
-    const listener = (session: { id: SessionId }): void => { announced.push(session.id) }
-    const removeListener = ctx.on('session/created', listener)
+    const disposed: SessionId[] = []
+    const removeListener = ctx.on('session/created', (session: { id: SessionId }) => { announced.push(session.id) })
+    const removeDisposedListener = ctx.on('session/disposed', (session: { id: SessionId }) => { disposed.push(session.id) })
     await expect(ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'racing child',
@@ -533,7 +535,8 @@ describe('dsh-tool-subagent-report', () => {
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'ACTIVATION_SETUP_REVOKED' })
     removeListener()
-    expect(announced).toEqual([])
+    removeDisposedListener()
+    expect(announced).toEqual(disposed)
     expect(ctx.agents.list().map(agent => agent.id)).toEqual([parent.id])
   })
 
@@ -547,7 +550,9 @@ describe('dsh-tool-subagent-report', () => {
       return () => { installed = false }
     })
     const announced: SessionId[] = []
+    const disposed: SessionId[] = []
     const removeListener = ctx.on('session/created', (session) => { announced.push(session.id) })
+    const removeDisposedListener = ctx.on('session/disposed', (session) => { disposed.push(session.id) })
 
     await expect(ctx.subagents.startActivation({
       provider: 'spawn',
@@ -560,8 +565,9 @@ describe('dsh-tool-subagent-report', () => {
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'ACTIVATION_SETUP_REVOKED' })
     removeListener()
+    removeDisposedListener()
     expect(installed).toBe(false)
-    expect(announced).toEqual([])
+    expect(announced).toEqual(disposed)
     expect(ctx.agents.list().map(agent => agent.id)).toEqual([parent.id])
     expect(ctx.sessions.list()).toEqual([parent.session])
   })

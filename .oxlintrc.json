@@ -356,7 +356,8 @@
       ],
       "rules": {
         "typescript/no-unnecessary-condition": "off",
-        "typescript/no-unnecessary-type-assertion": "off"
+        "typescript/no-unnecessary-type-assertion": "off",
+        "typescript/no-unnecessary-boolean-literal-compare": "off"
       },
       "plugins": [
         "typescript"
@@ -390,6 +391,21 @@
       "rules": {
         "typescript/require-await": "off", // Async faces Node and Cordis define (fs promises, the module seam) reject rather than throw; the VFS beneath them never awaits.
         "typescript/no-extraneous-class": "off" // Node constructs these (`new Script()`, `new Worker()`), so a stub that refuses must still be a class.
+      },
+      "plugins": [
+        "typescript"
+      ]
+    },
+    {
+      // Fork-only package. Its tests read projection state through the registry's
+      // deprecated two-argument stateOf shim, which the fork keeps for source-level
+      // compat; the handle-based accessor is not reachable from a plugin-mounted
+      // registration without restructuring the plugin's public face.
+      "files": [
+        "packages/graph/graph-projection/tests/**/*.ts"
+      ],
+      "rules": {
+        "typescript/no-deprecated": "off"
       },
       "plugins": [
         "typescript"
