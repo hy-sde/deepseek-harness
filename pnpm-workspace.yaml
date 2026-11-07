@@ -111,9 +111,9 @@ minimumReleaseAgeExclude:
   - '@trycua/cua-driver-win32-arm64-msvc@0.28.0'
   - '@trycua/cua-driver-win32-x64-msvc@0.28.0'
   - '@trycua/cua-driver@0.28.0'
-  - '@hy-sde-org/dsh-session-intelligence@0.1.5-rc.1'
-  - '@hy-sde-org/dsh-code-runtime-kernels@0.1.5-rc.1'
-  - '@hy-sde-org/dsh-zstd-frame@0.1.5-rc.1'
+  - '@hy-sde-org/dsh-session-intelligence@0.2.2-rc.1'
+  - '@hy-sde-org/dsh-code-runtime-kernels@0.2.2-rc.1'
+  - '@hy-sde-org/dsh-zstd-frame@0.2.2-rc.1'
   - '@hy-sde-org/dsh-*'
   # pi-durable stack (Route A engine + tools) published 2026-10-01
   - '@earendil-works/*'
