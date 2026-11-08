@@ -12,9 +12,15 @@ Search and fetch share no request schema and no business logic, but they are del
 
 ## Search request and result
 
-Each seam request carries exactly one `query`. The `dsh-tool-web` consumer accepts a required `queries` array and fans it out into separate seam requests; a one-item array performs one search. `maxResults` is a consumer-owned bound (`dsh-tool-web`'s `searchMaxResults` config, default `8`) passed through the seam and enforced on the way back — if a provider over-returns, the seam truncates `sources[]` and sets `truncated`.
+Each seam request carries exactly one `query`. The `dsh-tool-web` consumer accepts a required `queries` array and fans it out into separate seam requests; a one-item array performs one search. `recency` is an optional relative publication window; providers map it to a native filter when available and otherwise ignore it. `maxResults` is a consumer-owned bound (`dsh-tool-web`'s `searchMaxResults` config, default `8`, optionally narrowed by the model's `limit`) passed through the seam and enforced on the way back — if a provider over-returns, the seam truncates `sources[]` and sets `truncated`.
 
 ```ts type-equiv
+/** Relative publication window a search provider may map onto its native filter. */
+type WebSearchRecency = 'day' | 'week' | 'month' | 'year'
+```
+
+```ts type-equiv
+
 /**
  * What one search-capable backend is asked to search. Each request carries one
  * query; a consumer may issue several requests. `maxResults` is a
@@ -23,6 +29,12 @@ Each seam request carries exactly one `query`. The `dsh-tool-web` consumer accep
  */
 interface WebSearchRequest {
   readonly query: string
+  /**
+   * Optional relative publication window. Providers with a native time filter
+   * should map it directly; providers without one must ignore it rather than
+   * changing topic scope or ranking mode.
+   */
+  readonly recency?: WebSearchRecency
   /**
    * Upper bound on returned sources; the seam truncates to it. Omitted = no
    * bound. `dsh-tool-web` always sets it. A provider whose API supports a
@@ -45,6 +57,11 @@ interface WebSearchRequest {
 interface WebSearchResult {
   /** Optional provider-generated answer text, search context, or summary. */
   readonly content?: string
+  /**
+   * Search-control notices for the caller, such as a query constraint that was
+   * relaxed because enforcing it would have removed every source.
+   */
+  readonly notices?: readonly string[]
   /** Citeable sources, already truncated to the request's `maxResults`. */
   readonly sources: readonly WebSearchSource[]
   /** True when the seam dropped sources to honor `maxResults`. */

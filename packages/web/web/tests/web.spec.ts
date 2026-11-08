@@ -241,6 +241,28 @@ describe('WebRuntime maxResults enforcement', () => {
     expect(result.sources).toHaveLength(2)
     expect(result.truncated).toBe(false)
   })
+
+  it('forwards recency and preserves provider notices while applying the source cap', async () => {
+    const { web } = await mountWeb()
+    let seen: WebSearchRequest | undefined
+    web.registerSearchProvider(makeSearchProvider('public', available, (request) => {
+      seen = request
+      return Promise.resolve({
+        notices: ['constraint relaxed'],
+        sources: [{ url: 'https://1' }, { url: 'https://2' }],
+        truncated: false,
+      })
+    }))
+
+    const result = await web.search({ query: 'q', recency: 'week', maxResults: 1 })
+
+    expect(seen).toEqual({ query: 'q', recency: 'week', maxResults: 1 })
+    expect(result).toEqual({
+      notices: ['constraint relaxed'],
+      sources: [{ url: 'https://1' }],
+      truncated: true,
+    })
+  })
 })
 
 describe('WebRuntime fetch capability', () => {

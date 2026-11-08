@@ -10,7 +10,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolResult, WebSearchResultView, WebSource } from '@deepseek-ai/dsh-tools'
 import { truncateWithoutSplittingSurrogatePair } from '@deepseek-ai/dsh-output-retention'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import type { WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web'
+import type { WebSearchRecency, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web'
 import { EXTERNAL_WEB_CONTENT_NOTICE } from './trust.ts'
 
 /**
@@ -36,22 +36,34 @@ const SUMMARY_ELLIPSIS = '…'
 /** Model-facing `web_search` arguments. */
 interface WebSearchArgs {
   queries: string[]
+  /** Relative publication window applied to every query in this call. */
+  recency?: WebSearchRecency
+  /** Combined source cap for this call, bounded by the deployment maximum. */
+  limit?: number
+}
+
+/** Validated search arguments ready for seam calls. */
+interface ParsedWebSearchArgs {
+  queries: string[]
+  maxResults: number
+  recency?: WebSearchRecency
 }
 
 /**
- * Validate value constraints the schema DSL can't express: `queries` is
- * non-empty, contains only non-blank strings, and fits the deployment's
- * query-count bound. Exact duplicate strings are collapsed after the bound
- * check. Throws a plain `Error` otherwise.
+ * Validate model-facing search controls. Queries must be non-empty and fit the
+ * deployment's query-count bound; exact duplicates collapse after that bound
+ * check. A per-call limit may narrow, but never exceed, the deployment cap.
  *
  * @param args - the schema-validated `web_search` arguments.
  * @param maxQueries - the deployment's upper bound on queries in one call.
- * @returns the accepted queries in their first-occurrence order.
+ * @param maxResults - the deployment's upper bound on combined sources.
+ * @returns normalized queries and controls for execution.
  */
 export function parseSearchArgs(
   args: WebSearchArgs,
   maxQueries: number,
-): string[] {
+  maxResults: number,
+): ParsedWebSearchArgs {
   const queries = args.queries
   if (queries.length === 0) throw new Error('queries must contain at least one query')
   if (queries.length > maxQueries) {
@@ -59,7 +71,15 @@ export function parseSearchArgs(
     throw new Error(`queries must contain at most ${maxQueries} ${noun}`)
   }
   if (queries.some(query => query.trim().length === 0)) throw new Error('each query must be a non-empty string')
-  return [...new Set(queries)]
+  const limit = args.limit ?? maxResults
+  if (!Number.isInteger(limit) || limit < 1 || limit > maxResults) {
+    throw new Error(`limit must be an integer from 1 to ${maxResults}`)
+  }
+  return {
+    queries: [...new Set(queries)],
+    maxResults: limit,
+    ...args.recency !== undefined ? { recency: args.recency } : {},
+  }
 }
 
 /** Display label for a source: its title, else its hostname. */
@@ -85,6 +105,9 @@ function sourceLabel(url: string, title: string | undefined): string {
 export function formatSearchOutput(result: WebSearchResult): string {
   const parts: string[] = [EXTERNAL_WEB_CONTENT_NOTICE]
   if (result.content !== undefined && result.content.length > 0) parts.push(result.content)
+  if (result.notices !== undefined && result.notices.length > 0) {
+    parts.push(result.notices.map(notice => `Note: ${notice}`).join('\n'))
+  }
 
   if (result.sources.length > 0) {
     const lines = result.sources.map((source) => {
@@ -255,20 +278,23 @@ export function presentSearchResult(args: WebSearchArgs, result: ToolResult): We
  * its siblings, and this function waits for every search to settle before
  * rethrowing the first failure.
  *
- * @param ctx - context whose `web` service performs the searches.
- * @param queries - validated non-empty queries.
- * @param maxResults - the deployment's source cap for the combined result.
+ * @param request - validated queries and controls.
  * @param signal - cancellation signal forwarded to every search.
  * @returns the combined search result.
  */
 async function runSearchQueries(
   ctx: Context,
-  queries: string[],
-  maxResults: number,
+  request: ParsedWebSearchArgs,
   signal: AbortSignal,
 ): Promise<WebSearchResult> {
+  const { queries, maxResults, recency } = request
+  const seamRequest = (query: string) => ({
+    query,
+    maxResults,
+    ...recency !== undefined ? { recency } : {},
+  })
   if (queries.length === 1) {
-    return ctx.web.search({ query: queries[0] as string, maxResults }, signal)
+    return ctx.web.search(seamRequest(queries[0] as string), signal)
   }
   const controller = new AbortController()
   const batchSignal = AbortSignal.any([signal, controller.signal])
@@ -276,7 +302,7 @@ async function runSearchQueries(
   const results: WebSearchResult[] = []
   const searches = queries.map(async (query, index) => {
     try {
-      results[index] = await ctx.web.search({ query, maxResults }, batchSignal)
+      results[index] = await ctx.web.search(seamRequest(query), batchSignal)
     } catch (error) {
       if (firstFailure === undefined) firstFailure = { error }
       controller.abort(error)
@@ -318,8 +344,12 @@ function mergeSearchResults(
     if (result.content === undefined || result.content.length === 0) return []
     return [`### ${queries[index]}\n\n${result.content}`]
   })
+  const notices = results.flatMap((result, index) =>
+    result.notices?.map(notice => `${queries[index]}: ${notice}`) ?? [],
+  )
   return {
     ...contents.length > 0 ? { content: contents.join('\n\n') } : {},
+    ...notices.length > 0 ? { notices } : {},
     sources,
     truncated: results.some(result => result.truncated) || droppedSource,
   }
@@ -367,7 +397,16 @@ export function applyWebSearchTool(
         type: 'array',
         required: true,
         items: { type: 'string' },
-        description: `1–${maxQueries} search queries; their results are merged.`,
+        description: `1–${maxQueries} queries; supports quoted phrases, negation, OR, site:, inurl:, intitle:, intext:, filetype:, after:/before:, and lang: where the provider supports them; results are merged.`,
+      },
+      recency: {
+        type: 'string',
+        enum: ['day', 'week', 'month', 'year'],
+        description: 'Optional publication window applied to every query.',
+      },
+      limit: {
+        type: 'integer',
+        description: `Combined source limit from 1 to ${maxResults}; defaults to ${maxResults}.`,
       },
     },
     output: {
@@ -376,6 +415,10 @@ export function applyWebSearchTool(
         additionalProperties: false,
         properties: {
           content: { type: 'string' },
+          notices: {
+            type: 'array',
+            items: { type: 'string' },
+          },
           sources: {
             type: 'array',
             required: true,
@@ -401,10 +444,11 @@ export function applyWebSearchTool(
     // Provider reads do not mutate parent-agent state.
     isConcurrencySafe: () => true,
     async execute(args, exec) {
-      const queries = parseSearchArgs(args, maxQueries)
-      const result = await runSearchQueries(ctx, queries, maxResults, exec.signal)
+      const request = parseSearchArgs(args, maxQueries, maxResults)
+      const result = await runSearchQueries(ctx, request, exec.signal)
       return {
         ...result.content !== undefined ? { content: result.content } : {},
+        ...result.notices !== undefined ? { notices: [...result.notices] } : {},
         sources: result.sources.map(source => modelSource(source, summaryMaxChars)),
         truncated: result.truncated,
       }

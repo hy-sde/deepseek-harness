@@ -50,11 +50,15 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### Searching and fetching
 
-`search()` runs one query and returns an optional provider answer plus a list of citeable sources; the service enforces `request.maxResults` by truncating `sources[]` and setting `truncated`. `fetch()` retrieves one URL and returns its final URL, status code, decoded body, and a truncation flag; a non-2xx response is a result, not an error.
+`search()` runs one query and returns an optional provider answer plus a list of citeable sources. Callers may supply `recency` (`day`, `week`, `month`, or `year`) for providers with a native publication-time filter. Providers that cannot honor it ignore it without changing topic scope or ranking mode. The service enforces `request.maxResults` by truncating `sources[]` and setting `truncated`; provider `notices` survive that cap. `fetch()` retrieves one URL and returns its final URL, status code, decoded body, and a truncation flag; a non-2xx response is a result, not an error.
 
 ```text
-// Search the web; sources[] is capped to maxResults:
-const result = await ctx.web.search({ query: 'deepseek harness', maxResults: 8 })
+// Search recent material; sources[] is capped to maxResults:
+const result = await ctx.web.search({
+  query: 'deepseek harness',
+  recency: 'month',
+  maxResults: 8,
+})
 
 // Fetch one URL; a non-2xx response is a result, not an error:
 const page = await ctx.web.fetch({ url: 'https://example.com' })
@@ -161,7 +165,7 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 These limits define when the service is incomplete on its own. They are current package constraints.
 
 - **No observation surface** — there is no provider-change event and no capability-status query; `searchReady()` and `fetchReady()` report only the selected provider's credential readiness and answer true when selection fails. Availability is observable only by running a search or fetch and routing the thrown code, and the no-provider failure is the generic `WEB_PROVIDER_UNAVAILABLE` with no per-provider reason enumeration ([Agent Note](../../../.agents/notes/archived/simplification/2026-07-04-drop-unconsumed-web-observation-surface.md)).
-- **Search requests carry only `query` and `maxResults`** — provider-neutral controls (recency, domain filters, regional hints, search depth) are deferred until the backends can honor them ([seam Agent Note](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.md)).
+- **Structured search controls stay deliberately small** — requests carry `query`, optional `recency`, and `maxResults`. Domain, title, URL, filetype, language, and absolute-date directives remain encoded in the query string for providers such as `dsh-web-search-public` to map and enforce; regional hints and a provider-neutral upstream search-depth control remain deferred ([seam Agent Note](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.md)).
 - **`WebFetchBody` has no `pdf` arm** — text-extractable PDF support is named deferred work; the closed union makes adding it a compile-enforced change across the web packages.
 - **Provider-backed page extraction is out of scope of `fetch()`** — a Firecrawl/Tavily-style `web_extract` capability is deferred rather than widening the fetch operation.
 

@@ -7,6 +7,9 @@
 
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 
+/** Relative publication window a search provider may map onto its native filter. */
+export type WebSearchRecency = 'day' | 'week' | 'month' | 'year'
+
 /**
  * What one search-capable backend is asked to search. Each request carries one
  * query; a consumer may issue several requests. `maxResults` is a
@@ -15,6 +18,12 @@ import { HarnessError } from '@deepseek-ai/dsh-llm'
  */
 export interface WebSearchRequest {
   readonly query: string
+  /**
+   * Optional relative publication window. Providers with a native time filter
+   * should map it directly; providers without one must ignore it rather than
+   * changing topic scope or ranking mode.
+   */
+  readonly recency?: WebSearchRecency
   /**
    * Upper bound on returned sources; the seam truncates to it. Omitted = no
    * bound. `dsh-tool-web` always sets it. A provider whose API supports a
@@ -35,6 +44,11 @@ export interface WebSearchRequest {
 export interface WebSearchResult {
   /** Optional provider-generated answer text, search context, or summary. */
   readonly content?: string
+  /**
+   * Search-control notices for the caller, such as a query constraint that was
+   * relaxed because enforcing it would have removed every source.
+   */
+  readonly notices?: readonly string[]
   /** Citeable sources, already truncated to the request's `maxResults`. */
   readonly sources: readonly WebSearchSource[]
   /** True when the seam dropped sources to honor `maxResults`. */

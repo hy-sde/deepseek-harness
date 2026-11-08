@@ -1573,6 +1573,11 @@
     },
     {
       "doc": "docs/subsystems/web.md",
+      "symbol": "WebSearchRecency",
+      "source": "packages/web/web/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/web.md",
       "symbol": "WebSearchRequest",
       "source": "packages/web/web/src/types.ts"
     },

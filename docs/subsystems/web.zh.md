@@ -12,9 +12,15 @@ Web 访问 seam 是一个[能力 seam](../../.agents/notes/implemented/architect
 
 ## 搜索请求与结果
 
-每个 seam 请求只携带一个 `query`。消费方 `dsh-tool-web` 接受必填的 `queries` 数组，并把它扇出为多个独立 seam 请求；单元素数组执行一次搜索。`maxResults` 是消费方自有的上限（`dsh-tool-web` 的 `searchMaxResults` 配置，默认 `8`），通过 seam 传递并在返回时强制执行——如果提供方返回超量，seam 截断 `sources[]` 并设置 `truncated`。
+每个 seam 请求只携带一个 `query`。消费方 `dsh-tool-web` 接受必填的 `queries` 数组，并把它扇出为多个独立 seam 请求；单元素数组执行一次搜索。`recency` 是可选的相对发布时间窗口；提供方在具备原生筛选时进行映射，否则将其忽略。`maxResults` 是消费方自有的上限（`dsh-tool-web` 的 `searchMaxResults` 配置，默认 `8`，模型可通过 `limit` 缩小），通过 seam 传递并在返回时强制执行——如果提供方返回超量，seam 截断 `sources[]` 并设置 `truncated`。
 
 ```ts type-equiv
+/** Relative publication window a search provider may map onto its native filter. */
+type WebSearchRecency = 'day' | 'week' | 'month' | 'year'
+```
+
+```ts type-equiv
+
 /**
  * What one search-capable backend is asked to search. Each request carries one
  * query; a consumer may issue several requests. `maxResults` is a
@@ -23,6 +29,12 @@ Web 访问 seam 是一个[能力 seam](../../.agents/notes/implemented/architect
  */
 interface WebSearchRequest {
   readonly query: string
+  /**
+   * Optional relative publication window. Providers with a native time filter
+   * should map it directly; providers without one must ignore it rather than
+   * changing topic scope or ranking mode.
+   */
+  readonly recency?: WebSearchRecency
   /**
    * Upper bound on returned sources; the seam truncates to it. Omitted = no
    * bound. `dsh-tool-web` always sets it. A provider whose API supports a
@@ -45,6 +57,11 @@ interface WebSearchRequest {
 interface WebSearchResult {
   /** Optional provider-generated answer text, search context, or summary. */
   readonly content?: string
+  /**
+   * Search-control notices for the caller, such as a query constraint that was
+   * relaxed because enforcing it would have removed every source.
+   */
+  readonly notices?: readonly string[]
   /** Citeable sources, already truncated to the request's `maxResults`. */
   readonly sources: readonly WebSearchSource[]
   /** True when the seam dropped sources to honor `maxResults`. */

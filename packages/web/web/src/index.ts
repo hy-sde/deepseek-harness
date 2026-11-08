@@ -29,6 +29,7 @@ export type {
   WebSearchProvider,
   WebSearchRequest,
   WebSearchResult,
+  WebSearchRecency,
   WebSearchSource,
 } from './types.ts'
 

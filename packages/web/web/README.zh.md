@@ -50,11 +50,15 @@ kind: "package-reference"
 
 ### 搜索与抓取
 
-`search()` 执行一次查询，返回可选的提供方答案与可引用的来源列表；服务强制执行 `request.maxResults`：截断 `sources[]` 并设置 `truncated`。`fetch()` 获取一个 URL，返回其最终 URL、状态码、解码后的正文与截断标志；非 2xx 响应是结果，不是错误。
+`search()` 执行一次查询，返回可选的提供方答案与可引用的来源列表。调用方可提供 `recency`（`day`、`week`、`month` 或 `year`），供具备原生发布时间筛选的提供方使用；不能支持的提供方会忽略它，不会改变主题范围或排序模式。服务强制执行 `request.maxResults`：截断 `sources[]` 并设置 `truncated`，且提供方的 `notices` 会保留。`fetch()` 获取一个 URL，返回其最终 URL、状态码、解码后的正文与截断标志；非 2xx 响应是结果，不是错误。
 
 ```text
-// Search the web; sources[] is capped to maxResults:
-const result = await ctx.web.search({ query: 'deepseek harness', maxResults: 8 })
+// Search recent material; sources[] is capped to maxResults:
+const result = await ctx.web.search({
+  query: 'deepseek harness',
+  recency: 'month',
+  maxResults: 8,
+})
 
 // Fetch one URL; a non-2xx response is a result, not an error:
 const page = await ctx.web.fetch({ url: 'https://example.com' })
@@ -161,7 +165,7 @@ const fetchOffered = await ctx.web.fetchReady('deepseek-official')
 这些限制说明本服务单独使用时在哪些方面不完整。它们是当前包约束。
 
 - **没有观测接口**：没有提供方变更事件或能力状态查询；`searchReady()` 与 `fetchReady()` 只报告选中提供方的凭据就绪状态，选择失败时回答 true。可用性只能通过执行搜索或抓取并按抛出的 code 路由来观测，无提供方失败是通用的 `WEB_PROVIDER_UNAVAILABLE`，不枚举逐提供方原因（见 [Agent Note](../../../.agents/notes/archived/simplification/2026-07-04-drop-unconsumed-web-observation-surface.md)）。
-- **搜索请求只携带 `query` 与 `maxResults`**：提供方无关的控制项（新近程度、域名过滤条件、区域提示、搜索深度）暂缓至后端都能诚实支持时（见 [seam Agent Note](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.zh.md)）。
+- **结构化搜索控制刻意保持精简**：请求携带 `query`、可选的 `recency` 与 `maxResults`。域名、标题、URL、文件类型、语言和绝对日期指令仍编码在查询字符串中，由 `dsh-web-search-public` 等提供方映射并执行；区域提示与提供方无关的上游搜索深度控制仍属延期工作（见 [seam Agent Note](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.zh.md)）。
 - **`WebFetchBody` 没有 `pdf` 分支**：可提取文本的 PDF 支持属于明确的延期工作；封闭联合会使新增该分支成为跨 web 包、由编译强制执行的变更。
 - **提供方支持的页面提取不属于 `fetch()` 范围**：Firecrawl/Tavily 风格的 `web_extract` 能力延期，而不会扩展抓取操作。
 
