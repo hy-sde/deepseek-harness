@@ -112,6 +112,15 @@ class TabState {
   attaching: Promise<boolean> | null = null
   /** Detach RPC still landing; a new attach must wait it out or the late detach undoes it. */
   detaching: Promise<void> | null = null
+
+  /**
+   * Settled by the tab's next extension-reported detach — the report a
+   * detach-killed command waits for before its failure reply. Replaced once
+   * settled so the next detach gets its own settlement.
+   */
+  chromeDetach = Promise.withResolvers<void>()
+  /** Reason the tab's last extension-reported detach named; undefined until then. */
+  detachReason: string | undefined
   /** True after the relay put this tab in the omp group; `ompGroupId` holds that group. */
   grouped = false
   /** Group RPC in flight — suppresses duplicate requests from load-time tabUpdated bursts. */
@@ -148,8 +157,38 @@ class TabState {
 const INELIGIBLE_URL = /^(chrome|devtools|edge|view-source|chrome-extension|chrome-untrusted|chrome-search):/i
 
 const RPC_TIMEOUT_MS = 20_000
+/**
+ * Deadline for page-bound work that legitimately outlives the default: an
+ * `awaitPromise` evaluate that waits on the page, or a navigation the client
+ * owns a timeout for. Matches Playwright's 180s protocol timeout, so the
+ * relay's deadline never cuts a command Playwright would still wait for.
+ */
+const PAGE_BOUND_RPC_TIMEOUT_MS = 180_000
 const CDP_ERROR_METHOD_NOT_FOUND = -32601
 const CDP_ERROR_SERVER = -32000
+
+/** Chrome's answer to a command in flight when it ends the debugger attachment. */
+const DETACHED_COMMAND_ERROR = /Detached while handling command/
+/**
+ * How long a root-session command Chrome killed with its in-flight detach
+ * answer waits for the extension's own detach report before the failure
+ * reply; bounded so a detach Chrome never reports still replies.
+ */
+const CHROME_DETACH_REPORT_MS = 1_000
+/**
+ * Deadline for the page command that lets Chrome's detach report overtake a
+ * child-session failure reply: Chrome ends a cross-site frame's session the
+ * moment it detaches the debugger, ahead of the report.
+ */
+const DETACH_REPORT_PROBE_MS = 500
+
+/** A relay RPC the bridge gave up on at its own deadline; Chrome never answered it. */
+class RpcTimeoutError extends Error {}
+
+/** Resolves after `ms`; deadline for waits that have no in-flight rpc to time out. */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 function tabTargetId(tabId: number): string {
   return `TAB${tabId}`
@@ -512,20 +551,50 @@ export class RelayBridge {
       return true
     }
     try {
-      const result = await this.#rpc({
-        op: 'send',
-        tabId,
-        ...(realSessionId !== undefined ? { sessionId: realSessionId } : {}),
-        method: msg.method,
-        ...(msg.params !== undefined ? { params: msg.params } : {}),
-      })
+      const result = await this.#send(tabId, msg.method, msg.params, realSessionId)
       beforeReply?.()
       this.#reply(conn, msg, (result as Record<string, unknown> | undefined) ?? {})
       return true
     } catch (err) {
-      this.#replyError(conn, msg, err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      const tab = this.#tabs.get(tabId)
+      await this.#overtakeDetachReport(tab, realSessionId, message)
+      this.#replyError(conn, msg, this.#detachReport(tab, message))
       return false
     }
+  }
+
+  /**
+   * Give Chrome's detach report a chance to overtake a command failure, so the
+   * downstream client learns why the session died before the error reply:
+   * Chrome answers a command in flight with {@link DETACHED_COMMAND_ERROR}
+   * ahead of the extension's detach report. A root-session failure waits for
+   * that report ({@link CHROME_DETACH_REPORT_MS}); a child-session failure
+   * sends one page command Chrome answers only after reporting the detach
+   * ({@link DETACH_REPORT_PROBE_MS}).
+   */
+  async #overtakeDetachReport(tab: TabState | undefined, realSessionId: string | undefined, message: string): Promise<void> {
+    if (!tab?.attached || !DETACHED_COMMAND_ERROR.test(message)) return
+    if (realSessionId === undefined) {
+      await Promise.race([tab.chromeDetach.promise, sleep(CHROME_DETACH_REPORT_MS)])
+      return
+    }
+    try {
+      await this.#rpc({ op: 'send', tabId: tab.tabId, method: 'Target.getTargetInfo' }, DETACH_REPORT_PROBE_MS)
+    } catch {
+      // The probe itself failing is fine: its deadline fired or the tab is gone.
+    }
+  }
+
+  /**
+   * The text a failed command replies with: Chrome's in-flight detach answer
+   * names nothing, so once the tab's detach is reported the reply says what
+   * happened to the tab instead.
+   */
+  #detachReport(tab: TabState | undefined, message: string): string {
+    if (!tab || tab.attached || tab.detachReason === undefined) return message
+    if (!DETACHED_COMMAND_ERROR.test(message)) return message
+    return `Chrome detached the debugger from tab ${tab.tabId} (${tab.detachReason}) during this command`
   }
 
   /**
@@ -823,8 +892,12 @@ export class RelayBridge {
     tab.attached = false
     tab.attaching = null
     tab.banned = true
-    // The user dismissed the debugger infobar (or the attach was torn
-    // down): release the tab's omp-group membership too.
+    tab.detachReason = reason
+    // A detach-killed command may be holding for this report; swap in a fresh
+    // settlement so the tab's next detach gets its own.
+    tab.chromeDetach.resolve()
+    tab.chromeDetach = Promise.withResolvers<void>()
+    // A detached tab is no longer a group candidate — no claim holds it — so release its omp-group membership too.
     this.#syncTabGrouping(tab)
     this.#retractTab(tab)
   }
@@ -962,7 +1035,11 @@ export class RelayBridge {
         } catch (err) {
           this.#log('tab grouping failed', { error: err instanceof Error ? err.message : String(err) })
         } finally {
-          for (const tab of batch) tab.grouping = false
+          for (const tab of batch) {
+            tab.grouping = false
+            // The claim may have gone while the RPC was in flight (its client closed): undo the grouping.
+            if (tab.grouped && !this.#groupWorthy(tab)) this.#syncTabGrouping(tab)
+          }
         }
       }
     } finally {
@@ -1044,6 +1121,8 @@ export class RelayBridge {
     const tab = this.#tabs.get(tabId)
     if (!tab?.attached) return
     tab.attached = false
+    // This detach is the relay's own; any reported detach reason is from an earlier cycle.
+    tab.detachReason = undefined
     this.#forgetChildren(tab)
     const done = this.#rpc({ op: 'detach', tabId })
       .then(() => {})
@@ -1084,6 +1163,8 @@ export class RelayBridge {
     const attempt = this.#rpc({ op: 'attach', tabId: tab.tabId })
       .then(() => {
         tab.attached = true
+        // A fresh attach leaves any earlier detach cycle's reason behind.
+        tab.detachReason = undefined
         return true
       })
       .catch((err: unknown) => {
@@ -1143,6 +1224,34 @@ export class RelayBridge {
   #emit(conn: CdpConnection, method: string, params: Record<string, unknown>, sessionId?: string): void {
     conn.socket.send(JSON.stringify({ sessionId, method, params }))
   }
+  /**
+   * Forward one CDP command to a tab under a deadline that fits the command:
+   * page-bound work (`awaitPromise` evaluates, `Runtime.awaitPromise`,
+   * `Page.navigate`) gets {@link PAGE_BOUND_RPC_TIMEOUT_MS}, everything else
+   * {@link RPC_TIMEOUT_MS}. A deadline miss rejects with an error naming the
+   * method and tab; other failures pass through unchanged.
+   */
+  async #send(
+    tabId: number,
+    method: string,
+    params?: Record<string, unknown>,
+    sessionId?: string,
+  ): Promise<unknown> {
+    const pageBound = params?.awaitPromise === true || method === 'Runtime.awaitPromise' || method === 'Page.navigate'
+    const timeoutMs = pageBound ? PAGE_BOUND_RPC_TIMEOUT_MS : RPC_TIMEOUT_MS
+    try {
+      return await this.#rpc({
+        op: 'send',
+        tabId,
+        ...(sessionId !== undefined ? { sessionId } : {}),
+        method,
+        ...(params !== undefined ? { params } : {}),
+      }, timeoutMs)
+    } catch (err) {
+      if (!(err instanceof RpcTimeoutError)) throw err
+      throw new Error(`${method} on tab ${tabId}: Chrome sent no answer within ${timeoutMs}ms`, { cause: err })
+    }
+  }
 
   #rpc(req: RelayRpcRequest, timeoutMs = RPC_TIMEOUT_MS): Promise<unknown> {
     const ext = this.#ext
@@ -1151,10 +1260,16 @@ export class RelayBridge {
     const { promise, resolve, reject } = Promise.withResolvers<unknown>()
     const timer = setTimeout(() => {
       this.#pendingRpc.delete(id)
-      reject(new Error(`extension rpc '${req.op}' timed out after ${timeoutMs}ms`))
+      reject(new RpcTimeoutError(`extension rpc '${req.op}' timed out after ${timeoutMs}ms`))
     }, timeoutMs)
     this.#pendingRpc.set(id, { resolve, reject, timer })
-    ext.send(JSON.stringify({ t: 'rpc', id, ...req } satisfies RelayToExtMessage))
+    // Only in a tab a downstream connection claims may the extension empty another extension's
+    // frames to get past Chrome's refusal; the user's other tabs keep their menus.
+    const sent =
+      req.op === 'attach' || req.op === 'send'
+        ? { ...req, clearForeignFrames: this.#claimed(req.tabId) }
+        : req
+    ext.send(JSON.stringify({ t: 'rpc', id, ...sent } satisfies RelayToExtMessage))
     return promise
   }
 }

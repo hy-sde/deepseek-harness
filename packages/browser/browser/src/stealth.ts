@@ -43,7 +43,11 @@ export function stealthIgnoreDefaultArgs(executablePath?: string): string[] {
   return STEALTH_IGNORE_DEFAULT_ARGS.filter(arg => arg !== ENABLE_AUTOMATION_FLAG)
 }
 
-/** Additional launch args reducing automation fingerprints. */
+/**
+ * Additional launch args reducing automation fingerprints. On macOS the renderer-priority feature
+ * rides in the one `--disable-features` value: Chromium honors a single occurrence of that switch,
+ * so a second one would drop the other features.
+ */
 export const STEALTH_LAUNCH_ARGS = [
   '--disable-blink-features=AutomationControlled',
   '--no-first-run',
@@ -51,7 +55,13 @@ export const STEALTH_LAUNCH_ARGS = [
   '--disable-background-networking',
   '--disable-component-update',
   '--disable-sync',
-  '--disable-features=Translate,PrivacySandboxSettings4',
+  // Darwin-only: Chromium otherwise moves background-tab renderers into the Darwin background
+  // band behind MacAllowBackgroundingRenderProcesses, ignoring --disable-renderer-backgrounding,
+  // and CDP calls into tabs beside a busy one stall. Unknown feature names are ignored on
+  // Chromium builds without the feature.
+  `--disable-features=Translate,PrivacySandboxSettings4${
+    process.platform === 'darwin' ? ',MacAllowBackgroundingRenderProcesses' : ''
+  }`,
   '--disable-domain-reliability',
   '--disable-breakpad',
 ] as const
