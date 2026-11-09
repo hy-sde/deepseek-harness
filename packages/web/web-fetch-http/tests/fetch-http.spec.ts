@@ -3,8 +3,14 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { AddressInfo } from 'node:net'
 import { Context } from '@deepseek-ai/cordis'
 import WebRuntime from '@deepseek-ai/dsh-web'
+import type { WebFetchBody } from '@deepseek-ai/dsh-web'
 import { HttpFetchProvider, LOCAL_FETCH_PROVIDER_ID } from '@deepseek-ai/dsh-web-fetch-http'
 import type { HttpFetchLimits } from '@deepseek-ai/dsh-web-fetch-http'
+
+/** Narrows a fetch body to its text content; blocked bodies carry no page content. */
+function contentOf(body: WebFetchBody): string {
+  return body.kind === 'blocked' ? '' : body.content
+}
 import * as fetchPlugin from '@deepseek-ai/dsh-web-fetch-http'
 import {
   classifyContentType,
@@ -145,21 +151,21 @@ describe('HttpFetchProvider caps', () => {
   it('truncates a stream that grows past the byte cap', async () => {
     handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('abcdefghij') }
     const result = await provider({ maxResponseBytes: 4 }).fetch({ url: base })
-    expect(result.body.content).toBe('abcd')
+    expect(contentOf(result.body)).toBe('abcd')
     expect(result.truncated).toBe(true)
   })
 
   it('does not flag a body that exactly fills the byte cap as truncated', async () => {
     handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('abcd') }
     const result = await provider({ maxResponseBytes: 4 }).fetch({ url: base })
-    expect(result.body.content).toBe('abcd')
+    expect(contentOf(result.body)).toBe('abcd')
     expect(result.truncated).toBe(false)
   })
 
   it('truncates a decoded body past the character cap', async () => {
     handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('abcdefghij') }
     const result = await provider({ maxBodyChars: 3 }).fetch({ url: base })
-    expect(result.body.content).toBe('abc')
+    expect(contentOf(result.body)).toBe('abc')
     expect(result.truncated).toBe(true)
   })
 
@@ -178,14 +184,14 @@ describe('HttpFetchProvider caps', () => {
   it('accepts a declared content-length within the cap', async () => {
     handler = (_req, res) => { const body = 'sized'; res.writeHead(200, { 'content-type': 'text/plain', 'content-length': String(body.length) }); res.end(body) }
     const result = await provider().fetch({ url: base })
-    expect(result.body.content).toBe('sized')
+    expect(contentOf(result.body)).toBe('sized')
   })
 
   it('decodes a non-UTF-8 declared charset', async () => {
     // 0xE9 is "é" in ISO-8859-1; decoded as UTF-8 it would be a replacement char.
     handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain; charset=iso-8859-1' }); res.end(Buffer.from([0x63, 0x61, 0x66, 0xE9])) }
     const result = await provider().fetch({ url: base })
-    expect(result.body.content).toBe('café')
+    expect(contentOf(result.body)).toBe('café')
   })
 
   it('rejects an unsupported declared charset', async () => {
@@ -239,7 +245,7 @@ describe('HttpFetchProvider charset recovery', () => {
       res.writeHead(200, { 'content-type': 'text/plain; charset=gbk' })
       res.end(Buffer.from([0xD6, 0xD0, 0xCE, 0xC4]))
     }
-    expect((await provider().fetch({ url: base })).body.content).toBe('中文')
+    expect(contentOf((await provider().fetch({ url: base })).body)).toBe('中文')
   })
 
   it('keeps replacement decoding for a single declared charset', async () => {
@@ -247,7 +253,7 @@ describe('HttpFetchProvider charset recovery', () => {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
       res.end(Buffer.from([0xE4, 0xB8]))
     }
-    expect((await provider().fetch({ url: base })).body.content).toBe('\uFFFD')
+    expect(contentOf((await provider().fetch({ url: base })).body)).toBe('\uFFFD')
   })
 
   it.each([
@@ -260,7 +266,7 @@ describe('HttpFetchProvider charset recovery', () => {
       res.end(body)
     }
     const result = await provider({ maxResponseBytes }).fetch({ url: base })
-    expect(result.body.content).toBe('中')
+    expect(contentOf(result.body)).toBe('中')
     expect(result.truncated).toBe(truncated)
   })
 
@@ -292,7 +298,7 @@ describe('HttpFetchProvider charset recovery', () => {
       res.writeHead(200, { 'content-type': 'text/plain; charset=gbk,utf-8' })
       res.end('©'.repeat(1000))
     }
-    expect((await provider().fetch({ url: base })).body.content).toBe('©'.repeat(1000))
+    expect(contentOf((await provider().fetch({ url: base })).body)).toBe('©'.repeat(1000))
   })
 })
 
@@ -303,7 +309,7 @@ describe('HttpFetchProvider redirects', () => {
       else { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('arrived') }
     }
     const result = await provider().fetch({ url: `${base}/start` })
-    expect(result.body.content).toBe('arrived')
+    expect(contentOf(result.body)).toBe('arrived')
     expect(result.url).toBe(`${base}/end`)
   })
 
@@ -341,7 +347,7 @@ describe('HttpFetchProvider redirects', () => {
       else { res.writeHead(302, { location: `/?n=${n + 1}` }); res.end() }
     }
     const result = await provider({ maxRedirects: 2 }).fetch({ url: `${base}/?n=0` })
-    expect(result.body.content).toBe('landed')
+    expect(contentOf(result.body)).toBe('landed')
     expect(requests).toBe(3)
   })
 
@@ -381,7 +387,7 @@ describe('HttpFetchProvider redirects', () => {
     await expect(provider({ maxRedirects: 0 }).fetch({ url: `${base}/r` }))
       .rejects.toThrow(expect.objectContaining({ code: 'WEB_REDIRECT_BLOCKED' }))
     const direct = await provider({ maxRedirects: 0 }).fetch({ url: `${base}/done` })
-    expect(direct.body.content).toBe('direct')
+    expect(contentOf(direct.body)).toBe('direct')
   })
 
   it('treats a redirect without a Location header as a provider error', async () => {
@@ -396,7 +402,7 @@ describe('HttpFetchProvider redirects', () => {
       else { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('landed') }
     }
     const result = await provider().fetch({ url: `${base}/a` })
-    expect(result.body.content).toBe('landed')
+    expect(contentOf(result.body)).toBe('landed')
   })
 })
 
@@ -478,10 +484,19 @@ describe('HttpFetchProvider body cancellation on error paths', () => {
     await closed
   })
 
-  it.each(['not-a-charset', 'gb2312,gbk', 'windows-1252,gbk'])('cancels the body when charset %s is rejected', async (charset) => {
-    const closed = respondWithOpenBody(200, { 'content-type': `text/plain; charset=${charset}` })
+  it.each(['not-a-charset', 'gb2312,gbk', 'windows-1252,gbk'])('surfaces WEB_UNSUPPORTED_CONTENT_TYPE for charset %s on a complete body', async (charset) => {
+    handler = (_req, res) => { res.writeHead(200, { 'content-type': `text/plain; charset=${charset}` }); res.end('body') }
     await expect(provider().fetch({ url: base }))
       .rejects.toThrow(expect.objectContaining({ code: 'WEB_UNSUPPORTED_CONTENT_TYPE' }))
+  })
+
+  it.each(['not-a-charset', 'gb2312,gbk', 'windows-1252,gbk'])('cancels the open body of a charset-rejected %s response when the deadline fires', async (charset) => {
+    // The transport reads the whole body before the decoder runs, so an
+    // unfinished body blocks until the deadline aborts the stream and closes
+    // the socket — the read no longer fails fast on the charset header.
+    const closed = respondWithOpenBody(200, { 'content-type': `text/plain; charset=${charset}` })
+    await expect(provider({ timeoutMs: 80 }).fetch({ url: base }))
+      .rejects.toThrow(expect.objectContaining({ code: 'WEB_FETCH_TIMEOUT' }))
     await closed
   })
 
@@ -507,6 +522,61 @@ describe('web-fetch-http plugin registration', () => {
 
   it('has no default export (namespace plugin export shape)', () => {
     expect('default' in fetchPlugin).toBe(false)
+  })
+
+  it('escalates a blocked fetch through a provided browser service', async () => {
+    handler = (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<form method="post"><input type="hidden" name="js_challenge" value="1"></form>')
+    }
+    const renders: string[] = []
+    const ctx = new Context()
+    await ctx.plugin(WebRuntime, { fetchProvider: LOCAL_FETCH_PROVIDER_ID })
+    ctx.provide('browser', {
+      fetchPageHtml: (url: string) => {
+        renders.push(url)
+        return Promise.resolve({ html: '<p>rendered</p>', status: 200, url })
+      },
+    } as never)
+    const fiber = await ctx.plugin(fetchPlugin, {})
+    await expect(ctx.web.fetch({ url: `${base}/` }))
+      .resolves.toMatchObject({ statusCode: 200, body: { kind: 'html', content: '<p>rendered</p>' } })
+    expect(renders).toEqual([`${base}/`])
+    await fiber.dispose()
+  })
+
+  it('keeps the blocked result when browserEscalation is off', async () => {
+    handler = (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<form method="post"><input type="hidden" name="js_challenge" value="1"></form>')
+    }
+    const renders: string[] = []
+    const ctx = new Context()
+    await ctx.plugin(WebRuntime, { fetchProvider: LOCAL_FETCH_PROVIDER_ID })
+    ctx.provide('browser', {
+      fetchPageHtml: (url: string) => {
+        renders.push(url)
+        return Promise.resolve({ html: '<p>rendered</p>', status: 200, url })
+      },
+    } as never)
+    const fiber = await ctx.plugin(fetchPlugin, { browserEscalation: false })
+    await expect(ctx.web.fetch({ url: `${base}/` }))
+      .resolves.toMatchObject({ body: { kind: 'blocked' } })
+    expect(renders).toEqual([])
+    await fiber.dispose()
+  })
+
+  it('returns the blocked result as-is when no browser service is mounted', async () => {
+    handler = (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<form method="post"><input type="hidden" name="js_challenge" value="1"></form>')
+    }
+    const ctx = new Context()
+    await ctx.plugin(WebRuntime, { fetchProvider: LOCAL_FETCH_PROVIDER_ID })
+    const fiber = await ctx.plugin(fetchPlugin, {})
+    await expect(ctx.web.fetch({ url: `${base}/` }))
+      .resolves.toMatchObject({ body: { kind: 'blocked' } })
+    await fiber.dispose()
   })
 
   it('rejects a non-positive resource limit at construction', async () => {
@@ -551,5 +621,57 @@ describe('web-fetch-http plugin registration', () => {
     await expect(ctx.web.fetch({ url: `${base}/` }))
       .resolves.toMatchObject({ statusCode: 200 })
     await fiber.dispose()
+  })
+})
+
+describe('challenge detection', () => {
+  it('returns a blocked body for a 2xx live challenge form', async () => {
+    handler = (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<form method="post"><input type="hidden" name="js_challenge" value="1"></form>')
+    }
+    await expect(provider().fetch({ url: `${base}/` })).resolves.toEqual({
+      url: `${base}/`,
+      statusCode: 200,
+      body: {
+        kind: 'blocked',
+        protection: 'JavaScript challenge',
+        detail: 'a live js_challenge form field on a small interstitial page',
+      },
+      truncated: false,
+    })
+  })
+
+  it('returns a blocked body for the cf-mitigated challenge header', async () => {
+    handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/html', 'cf-mitigated': 'challenge' }); res.end('<p>hi</p>') }
+    await expect(provider().fetch({ url: `${base}/` })).resolves.toMatchObject({
+      statusCode: 200,
+      body: { kind: 'blocked', protection: 'Cloudflare', detail: 'the cf-mitigated: challenge response header' },
+    })
+  })
+
+  it('returns a non-2xx vendor wall as a blocked result, not a throw', async () => {
+    handler = (_req, res) => { res.writeHead(403, { 'content-type': 'text/html' }); res.end('<script>window._cf_chl_opt = {}</script>') }
+    await expect(provider().fetch({ url: `${base}/` })).resolves.toMatchObject({
+      statusCode: 403,
+      body: { kind: 'blocked', protection: 'Cloudflare', detail: 'a bot-wall marker in the response body' },
+    })
+  })
+
+  it('does not scan non-html bodies', async () => {
+    handler = (_req, res) => { res.writeHead(403, { 'content-type': 'text/plain' }); res.end('_cf_chl_opt') }
+    await expect(provider().fetch({ url: `${base}/` })).resolves.toMatchObject({
+      statusCode: 403,
+      body: { kind: 'text', content: '_cf_chl_opt' },
+    })
+  })
+
+  it('does not false-positive on a large 2xx page quoting a marker', async () => {
+    const article = `${'<p>story</p>'.repeat(200)} quoting _cf_chl_opt from a news article`
+    handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/html' }); res.end(article) }
+    await expect(provider().fetch({ url: `${base}/` })).resolves.toMatchObject({
+      statusCode: 200,
+      body: { kind: 'html', content: article.slice(0, limits.maxBodyChars) },
+    })
   })
 })

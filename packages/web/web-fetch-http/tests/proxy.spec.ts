@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
 import { HttpFetchProvider } from '@deepseek-ai/dsh-web-fetch-http'
 import type { HttpFetchLimits } from '@deepseek-ai/dsh-web-fetch-http'
+import type { WebFetchBody } from '@deepseek-ai/dsh-web'
+
+/** Narrows a fetch body to its text content; blocked bodies carry no page content. */
+function contentOf(body: WebFetchBody): string {
+  return body.kind === 'blocked' ? '' : body.content
+}
 
 const limits: HttpFetchLimits = {
   maxResponseBytes: 5_000_000,
@@ -74,7 +80,7 @@ describe('fetching through a proxy', () => {
 
     const result = await new HttpFetchProvider(limits).fetch({ url: proxyTarget })
 
-    expect(result.body.content).toBe('via-proxy')
+    expect(contentOf(result.body)).toBe('via-proxy')
     expect(proxied).toEqual([proxyTarget])
   })
 
@@ -84,7 +90,7 @@ describe('fetching through a proxy', () => {
 
     const result = await new HttpFetchProvider(limits).fetch({ url: originUrl })
 
-    expect(result.body.content).toBe('direct')
+    expect(contentOf(result.body)).toBe('direct')
     expect(proxied).toEqual([])
   })
 

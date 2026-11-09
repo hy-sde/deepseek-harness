@@ -3,14 +3,18 @@
  * enforces time and size limits, classifies and decodes text, and leaves presentation to
  * `@deepseek-ai/dsh-tool-web`. Requests carry no browser cookies
  * or ambient credentials.
+ *
+ * A response whose bot protection answered instead of the page (see
+ * `scanChallengePage` in `@deepseek-ai/dsh-web`) becomes a `blocked` body, and —
+ * when a browser escalation is configured — the provider re-renders the URL
+ * through the host browser before giving up.
  * @module @deepseek-ai/dsh-web-fetch-http/provider
  */
 
-import { WebError } from '@deepseek-ai/dsh-web'
-import type { WebFetchBody, WebFetchProvider, WebFetchRequest, WebFetchResult } from '@deepseek-ai/dsh-web'
+import { httpFetchPage, scanChallengePage, WebError } from '@deepseek-ai/dsh-web'
+import type { ChallengeSource, HttpFetchedPage, WebFetchBody, WebFetchProvider, WebFetchRequest, WebFetchResult } from '@deepseek-ai/dsh-web'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import type { Response } from 'undici'
-import { classifyContentType, decoderForCharset, isSameOrigin, parseCharset, validateFetchUrl } from './policy.ts'
+import { classifyContentType, decoderForCharset, parseCharset, validateFetchUrl } from './policy.ts'
 
 /** Resolved provider limits (the plugin's schemastery Config supplies defaults). */
 export interface HttpFetchLimits {
@@ -26,6 +30,42 @@ export interface HttpFetchLimits {
   userAgent: string
 }
 
+/**
+ * Options the provider passes to a browser renderer. Only the cancellation
+ * signal flows through: the escalation deadline lives on the provider side.
+ */
+export interface BrowserRenderOptions {
+  /** Cancellation signal for the render. */
+  readonly signal?: AbortSignal
+}
+
+/**
+ * Render one URL through a real browser, duck-typed from the host `browser`
+ * service's `fetchPageHtml` (the same seam the public search engines use).
+ */
+export type BrowserPageRenderer = (url: string, options?: BrowserRenderOptions) => Promise<{ html: string; status: number; url: string }>
+
+/**
+ * Browser escalation for a blocked fetch: when bot protection answers a plain
+ * HTTP(S) fetch, the provider re-renders the URL through the host browser once.
+ */
+export interface HttpFetchEscalation {
+  /** The duck-typed browser page renderer. */
+  readonly render: BrowserPageRenderer
+  /** Deadline for one escalation render, in milliseconds. */
+  readonly timeoutMs: number
+}
+
+/** Default escalation deadline; matches the browser service's own page timeout. */
+export const BROWSER_ESCALATION_TIMEOUT_MS = 30_000
+
+/** Why a response was classified as bot protection, as model-facing evidence text. */
+const BLOCKED_DETAIL: Record<ChallengeSource, string> = {
+  'cf-mitigated-header': 'the cf-mitigated: challenge response header',
+  'challenge-form': 'a live js_challenge form field on a small interstitial page',
+  'page-marker': 'a bot-wall marker in the response body',
+}
+
 /** Stable id this provider registers under. */
 export const LOCAL_FETCH_PROVIDER_ID = 'http'
 
@@ -33,8 +73,15 @@ export const LOCAL_FETCH_PROVIDER_ID = 'http'
 export class HttpFetchProvider implements WebFetchProvider {
   readonly id = LOCAL_FETCH_PROVIDER_ID
 
-  /** @param limits - resolved transport and response limits. */
-  constructor(private readonly limits: HttpFetchLimits) {}
+  /**
+   * @param limits - resolved transport and response limits.
+   * @param escalation - browser escalation for blocked responses; omitted =
+   *   a blocked body is returned as-is.
+   */
+  constructor(
+    private readonly limits: HttpFetchLimits,
+    private readonly escalation?: HttpFetchEscalation,
+  ) {}
 
   /** No credentials to check — an anonymous fetcher is always usable. */
   available(): boolean {
@@ -47,93 +94,48 @@ export class HttpFetchProvider implements WebFetchProvider {
     // One signal stops both the request and body read. The deadline's TimeoutReason later
     // distinguishes this provider's timeout from caller or outer-deadline cancellation.
     using d = deadline(signal, this.limits.timeoutMs, 'WEB_FETCH_TIMEOUT')
-    return await this.followAndRead(request.url, d.signal)
+    const page = await this.followAndRead(request.url, d.signal)
+    const result = this.readBody(page)
+    if (result.body.kind !== 'blocked') return result
+    if (this.escalation === undefined) return result
+    return await this.escalateViaBrowser(request.url, result, d.signal)
   }
 
-  /** Follow same-origin redirects up to the hop cap, then read the final response. */
-  private async followAndRead(initialUrl: string, signal: AbortSignal): Promise<WebFetchResult> {
-    let currentUrl = validateFetchUrl(initialUrl)
-    let redirectsFollowed = 0
-
-    for (;;) {
-      const response = await this.requestOnce(currentUrl, signal)
-      if (isRedirectStatus(response.status)) {
-        // Enforce the redirect budget before validating the next hop.
-        if (redirectsFollowed >= this.limits.maxRedirects) {
-          await response.body?.cancel()
-          throw new WebError(`exceeded the maximum of ${this.limits.maxRedirects} redirects`, 'WEB_REDIRECT_BLOCKED')
-        }
-        const location = response.headers.get('location')
-        if (location === null) {
-          // A redirect status with no Location is not a usable resource. Cancel
-          // the (possibly streaming) body before throwing so no socket leaks.
-          await response.body?.cancel()
-          throw new WebError(`redirect response (HTTP ${response.status}) without a Location header`, 'WEB_PROVIDER_ERROR')
-        }
-        const target = resolveRedirect(location, currentUrl)
-        // Re-validate the target against the same transport hygiene a direct request gets: a
-        // redirect must not be a back door to a credentialed, non-http(s), or over-long URL
-        // that validateFetchUrl would reject.
-        let validatedTarget: URL
-        try {
-          validatedTarget = validateFetchUrl(target.toString())
-          if (!isSameOrigin(validatedTarget, currentUrl)) {
-            throw new WebError(
-              `cross-origin redirect to ${validatedTarget.origin} is not followed automatically; retry against that URL directly`,
-              'WEB_REDIRECT_BLOCKED',
-            )
-          }
-        } catch (error: unknown) {
-          await response.body?.cancel()
-          throw error
-        }
-        await response.body?.cancel()
-        currentUrl = validatedTarget
-        redirectsFollowed++
-        continue
-      }
-
-      return await this.readBody(response, currentUrl, signal)
-    }
-  }
-
-  /** Send one GET through the process-wide dispatcher, which applies the installed proxy policy. */
-  private async requestOnce(url: URL, signal: AbortSignal): Promise<Response> {
-    const headers = {
-      'user-agent': this.limits.userAgent,
-      'accept': 'text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8',
-    }
+  /** Fetch the page through the shared transport, then translate transport failures. */
+  private async followAndRead(initialUrl: string, signal: AbortSignal): Promise<HttpFetchedPage> {
+    // Pre-validate like a direct request: the transport requires a parseable URL
+    // and would surface policy violations as raw TypeErrors instead of WebErrors.
+    validateFetchUrl(initialUrl)
     try {
-      // Keep the Node-only transport out of browser-worker startup; a real request loads it here.
-      const { fetch } = await import('undici')
-      return await fetch(url, { method: 'GET', redirect: 'manual', headers, signal })
+      return await httpFetchPage({
+        url: initialUrl,
+        headers: {
+          'user-agent': this.limits.userAgent,
+          'accept': 'text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8',
+        },
+        signal,
+        redirect: { mode: 'same-origin', maxRedirects: this.limits.maxRedirects, validateTarget: target => validateFetchUrl(target.toString()) },
+        maxBytes: this.limits.maxResponseBytes,
+      })
     } catch (error: unknown) {
+      if (error instanceof WebError) throw error
       throw translateAbortOrNetwork(error, signal)
     }
   }
 
-  /** Read, byte-cap, classify, and decode the final response body. */
-  private async readBody(response: Response, finalUrl: URL, signal: AbortSignal): Promise<WebFetchResult> {
-    const contentType = response.headers.get('content-type')
+  /** Decode the fetched bytes, classify the body, and detect bot-protection responses. */
+  private readBody(page: HttpFetchedPage): WebFetchResult {
+    const contentType = page.headers.get('content-type')
     const kind = classifyContentType(contentType)
     if (kind === undefined) {
-      await response.body?.cancel()
       throw new WebError(`unsupported content type "${contentType ?? 'unknown'}"`, 'WEB_UNSUPPORTED_CONTENT_TYPE')
     }
 
-    // Reject unsupported declarations before reading, releasing the response stream.
-    let decoder: TextDecoder
-    try {
-      decoder = decoderForCharset(parseCharset(contentType))
-    } catch (error: unknown) {
-      await response.body?.cancel()
-      throw error
-    }
-    const { bytes, truncatedByBytes } = await this.readCapped(response, signal)
+    const decoder = decoderForCharset(parseCharset(contentType))
     let decoded: string
     try {
       // Only a real byte-cap truncation permits an incomplete UTF-8 suffix.
-      decoded = decoder.decode(bytes, { stream: decoder.fatal && truncatedByBytes })
+      decoded = decoder.decode(page.bytes, { stream: decoder.fatal && page.truncatedByBytes })
     } catch (error: unknown) {
       throw new WebError(
         'response body is not valid UTF-8 for the malformed charset declaration',
@@ -143,90 +145,77 @@ export class HttpFetchProvider implements WebFetchProvider {
     }
     const truncatedByChars = decoded.length > this.limits.maxBodyChars
     const content = truncatedByChars ? decoded.slice(0, this.limits.maxBodyChars) : decoded
-    const body: WebFetchBody = kind === 'html' ? { kind: 'html', content } : { kind: 'text', content }
+
+    // Bot-protection scan runs on the full decoded body before the char cap:
+    // wall markers near the end of a long page still identify the protection.
+    const verdict = scanChallengePage({
+      status: page.status,
+      body: decoded,
+      cfMitigated: page.headers.get('cf-mitigated'),
+      contentType,
+    })
+    const body: WebFetchBody = verdict !== undefined
+      ? { kind: 'blocked', protection: verdict.protection, detail: BLOCKED_DETAIL[verdict.source] }
+      : kind === 'html' ? { kind: 'html', content } : { kind: 'text', content }
 
     return {
-      url: finalUrl.toString(),
-      statusCode: response.status,
+      url: page.finalUrl,
+      statusCode: page.status,
       body,
-      truncated: truncatedByBytes || truncatedByChars,
+      truncated: page.truncatedByBytes || truncatedByChars,
     }
   }
 
   /**
-   * Read the response stream up to `maxResponseBytes`. A `Content-Length` over
-   * the cap rejects immediately with `WEB_FETCH_TOO_LARGE`; a stream that grows
-   * past the cap is cut short (`truncatedByBytes`) rather than rejected, so a
-   * server that under-reports still yields a bounded usable body.
+   * Re-render a blocked URL through the host browser once. Any escalation
+   * failure — navigation error, escalation deadline, renderer rejection — falls
+   * back to the blocked result so the protection verdict is never masked; only
+   * caller cancellation and this provider's own fetch deadline fail the call.
    */
-  private async readCapped(response: Response, signal: AbortSignal): Promise<{ bytes: Uint8Array; truncatedByBytes: boolean }> {
-    const declared = response.headers.get('content-length')
-    if (declared !== null) {
-      const length = Number(declared)
-      if (Number.isFinite(length) && length > this.limits.maxResponseBytes) {
-        await response.body?.cancel()
-        throw new WebError(`response exceeds the maximum of ${this.limits.maxResponseBytes} bytes`, 'WEB_FETCH_TOO_LARGE')
-      }
-    }
-
-    /* v8 ignore next -- a 2xx Response from fetch always exposes a body stream; the null guard is defensive. */
-    if (response.body === null) return { bytes: new Uint8Array(0), truncatedByBytes: false }
-
-    const chunks: Uint8Array[] = []
-    let total = 0
-    let truncatedByBytes = false
-    // Undici exposes response chunks as `any`; Fetch guarantees body chunks are Uint8Array.
-    const reader = response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>
+  private async escalateViaBrowser(requestUrl: string, blocked: WebFetchResult, signal: AbortSignal): Promise<WebFetchResult> {
+    const escalation = this.escalation
+    if (escalation === undefined) return blocked
+    using e = deadline(signal, escalation.timeoutMs, 'WEB_FETCH_ESCALATION_TIMEOUT')
     try {
-      for (;;) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const remaining = this.limits.maxResponseBytes - total
-        // Only DROPPED bytes count as truncation: a chunk that exactly fills the
-        // remaining capacity keeps all its bytes and we read on to observe EOF,
-        // so an exactly-at-cap body is not falsely flagged truncated.
-        if (value.byteLength > remaining) {
-          chunks.push(value.subarray(0, remaining))
-          total += remaining
-          truncatedByBytes = true
-          break
-        }
-        chunks.push(value)
-        total += value.byteLength
+      const rendered = await raceAbort(escalation.render(requestUrl, { signal: e.signal }), e.signal)
+      // The rendered page must itself be a real page: a browser that lands on
+      // another challenge did not get through either.
+      const verdict = scanChallengePage({ status: rendered.status, body: rendered.html, contentType: 'text/html' })
+      if (verdict !== undefined) return blocked
+      const truncatedByChars = rendered.html.length > this.limits.maxBodyChars
+      const content = truncatedByChars ? rendered.html.slice(0, this.limits.maxBodyChars) : rendered.html
+      return {
+        url: rendered.url,
+        statusCode: rendered.status,
+        body: { kind: 'html', content },
+        truncated: truncatedByChars,
       }
     } catch (error: unknown) {
-      /* v8 ignore next -- mid-stream read fault needs a network drop after headers; translate path covered by request-phase tests. */
-      throw translateAbortOrNetwork(error, signal)
-    } finally {
-      /* v8 ignore next 4 -- cancel() after a completed/broken read settles without rejecting; unobserved best-effort cleanup. */
-      await reader.cancel().catch(() => {
-        // Cancel after a successful read (or after we broke past the cap) is
-        // best-effort cleanup; the bytes we need are already collected.
-      })
+      // Inspect the fetch deadline's signal, not the escalation deadline's: an
+      // escalation timeout falls back to the blocked result, while a caller
+      // cancel or a fired fetch deadline fails the call.
+      if (signal.aborted) throw translateAbortOrNetwork(error, signal)
+      return blocked
     }
-
-    const bytes = new Uint8Array(total)
-    let offset = 0
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    return { bytes, truncatedByBytes }
   }
 }
 
-/** HTTP redirect status codes that carry a `Location`. */
-function isRedirectStatus(status: number): boolean {
-  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308
-}
-
-/** Resolve a (possibly relative) `Location` against the current URL. */
-function resolveRedirect(location: string, base: URL): URL {
+/**
+ * Settle with `promise` unless `signal` aborts first, then reject with the
+ * abort reason. The provider owns its deadlines: a renderer that ignores its
+ * signal must not hang the fetch past the escalation budget.
+ */
+async function raceAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) throw signal.reason
+  let onAbort: () => void = () => {}
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => { reject(signal.reason instanceof Error ? signal.reason : new Error('Aborted')) }
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
   try {
-    return new URL(location, base)
-  } catch (error: unknown) {
-    /* v8 ignore next 2 -- URL resolution against a valid absolute base effectively never throws; defensive guard. */
-    throw new WebError(`invalid redirect Location "${location}"`, 'WEB_PROVIDER_ERROR', { cause: error })
+    return await Promise.race([promise, aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
   }
 }
 

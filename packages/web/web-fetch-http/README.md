@@ -52,11 +52,11 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### What a fetch returns
 
-A successful call yields a `WebFetchResult`: the final URL after allowed redirects, the HTTP status code, a decoded body classified as `html` or `text`, and a `truncated` flag. A non-2xx response is a result, not an error — the status code is part of the fetched resource state; `WebError` is reserved for failures to safely retrieve or represent the resource.
+A successful call yields a `WebFetchResult`: the final URL after allowed redirects, the HTTP status code, a decoded body classified as `html` or `text` — or a `blocked` body naming the bot protection that answered instead of the page — and a `truncated` flag. A non-2xx response is a result, not an error — the status code is part of the fetched resource state; `WebError` is reserved for failures to safely retrieve or represent the resource.
 
 ```text
 const page = await ctx.web.fetch({ url: 'https://example.com' })
-// page.body.kind === 'html' | 'text'; page.statusCode === 200 | 404 | ...
+// page.body.kind === 'html' | 'text' | 'blocked'; page.statusCode === 200 | 403 | 404 | ...
 ```
 
 ### Transport behavior
@@ -64,6 +64,10 @@ const page = await ctx.web.fetch({ url: 'https://example.com' })
 The provider keeps requests anonymous and bounded: it accepts only `http:` and `https:` URLs without embedded credentials and rejects URLs over 2,048 characters. Requests go through the process-wide dispatcher, so the installed proxy policy applies and the system resolver chooses the address; any destination address is allowed. Same-origin redirects are followed; cross-origin redirects fail and require a fresh call. The provider also enforces byte, character, hop, and time caps, rejects unsupported content types, and sends an explicit product `User-Agent`.
 
 A malformed comma- or whitespace-joined charset declaration containing a UTF-8 label (such as `charset=utf-8,gbk`) is decoded strictly as UTF-8. Recovery rejects invalid UTF-8 without trying another encoding. When the byte cap cuts a character, recovery omits the incomplete suffix and returns `truncated: true`; a complete response using recovery must pass the EOF check. Valid single-label declarations retain ordinary replacement decoding.
+
+### Bot-protection escalation
+
+A response whose decoded body the shared challenge scan classifies as a bot wall (a `cf-mitigated: challenge` header, a live `js_challenge` form, or a wall marker on a non-2xx status) yields a `blocked` body naming the protection. When the host `browser` service is mounted and the `browserEscalation` config flag is on (default), the provider re-requests the URL once through the browser's real rendering (own fingerprint and JavaScript) and validates the rendered page with the same scan before returning it as `html`. A render failure, its deadline (`WEB_FETCH_ESCALATION_TIMEOUT` internally, bounded by the outer fetch deadline), or a rendered page that is still a challenge falls back to the original `blocked` result — escalation never masks the verdict.
 
 ### Failures and recovery
 
