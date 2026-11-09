@@ -176,6 +176,12 @@ async function readConflictSummary(
  * with the calling session's history (id reuse by path+start line), and render
  * the resolution notice. Returns `undefined` when nothing to report or no
  * session key / registry are available.
+ *
+ * `wideLineNumbers` carries the read's column-cut rows. A wide row's window
+ * text is its truncated display, not the source line, so a block intersecting
+ * one would register cut sides that no resolve can splice back and that make
+ * conflict:// side reads report the display as the content; such blocks are
+ * skipped and left to the `:conflicts` whole-file scan or a raised-cap re-read.
  */
 export function conflictNoticeForRead(
   ctx: Context,
@@ -183,10 +189,12 @@ export function conflictNoticeForRead(
   exec: ToolExecution,
   target: FsTarget,
   outcome: { path: string; offset: number; lines: FileTextLine[] },
+  wideLineNumbers: readonly number[],
 ): string | undefined {
   const sessionKey = sessionKeyOf(exec)
   if (sessionKey === undefined) return undefined
   const blocks = scanConflictLines(outcome.lines.map(line => line.text), outcome.offset)
+    .filter(block => !wideLineNumbers.some(number => number >= block.startLine && number <= block.endLine))
   if (blocks.length === 0) return undefined
   const history: ConflictHistory = iu.conflicts(sessionKey)
   const absolutePath = ctx.fs.processPath(target)

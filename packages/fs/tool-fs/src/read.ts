@@ -344,8 +344,9 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
       // Conflict surfacing: register any conflict block inside this read's
       // window with the session history so `write({ path: "conflict://<N>" })`
       // can resolve it, and append the resolution notice to the model text.
+      // Column-cut rows stay out: their window text is the truncated display.
       if (iu !== undefined) {
-        const notice = conflictNoticeForRead(ctx, iu, exec, target, outcome)
+        const notice = conflictNoticeForRead(ctx, iu, exec, target, outcome, window.wideLineNumbers)
         if (notice !== undefined) {
           // Record the present observation too: the read succeeded and the
           // model now holds a version it can splice against.
