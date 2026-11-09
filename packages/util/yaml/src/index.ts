@@ -84,7 +84,7 @@ export function load(source: string, options?: YamlLoadOptions): unknown {
   // A non-empty source that yields no document is comment-only; both parsers give null.
   if (document === undefined) return null
   throwOnParseLog(document)
-  return document.toJS() as unknown
+  return document.toJS()
 }
 
 /**
@@ -105,7 +105,7 @@ export function loadAll(source: string, options?: YamlLoadOptions): unknown[] {
   for (const document of documents) throwOnParseLog(document)
   return documents
     .map((document) => {
-      const value = document.toJS() as unknown
+      const value = document.toJS()
       return value === null && document.contents === null ? undefined : value
     })
 }

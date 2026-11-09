@@ -164,7 +164,24 @@ const coveragePartitionMode = coveragePartitionRaw === '1'
 // owns the rule and its reach).
 const laneTestBudget = coverageTestTimeoutOptions(process.env[COVERAGE_TEST_TIMEOUT_ENV])
 // Outside CI, forks follow the local worker budget; CI keeps Vitest's own default for its runner.
-const localWorkerBudget = process.env.CI === 'true' ? {} : { maxWorkers: defaultParallelism(process.env, undefined, LOCAL_TEST_PARALLELISM_CAP) }
+// DSH_TEST_MAX_WORKERS pins the local pool explicitly: low-RAM shared workstations bound the
+// test gate's memory (each fork holds a full module graph) below what min(cpus, cap) forks cost.
+// Mirrors vitest.snapshot.config.ts's positiveIntFromEnv: unset/empty falls through, anything
+// non-integral or < 1 is a misconfiguration, not a silent no-op.
+function positiveIntFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') return fallback
+
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer, got ${JSON.stringify(raw)}`)
+  }
+  return value
+}
+
+const localWorkerBudget = process.env.CI === 'true'
+  ? {}
+  : { maxWorkers: positiveIntFromEnv('DSH_TEST_MAX_WORKERS', defaultParallelism(process.env, undefined, LOCAL_TEST_PARALLELISM_CAP)) }
 
 // These suites exercise process-global state, process APIs, or timing-sensitive process I/O
 // that worker threads cannot isolate reliably under aggregate gate contention.

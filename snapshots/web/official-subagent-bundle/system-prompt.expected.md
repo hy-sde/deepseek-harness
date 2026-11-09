@@ -307,8 +307,12 @@ interface ToolArgsMap {
   } & Record<string, JsonValue>;
   /** Search the web for current information. Returns an optional summary answer and a list of source URLs. */
   web_search: {
-    /** 1–4 search queries; their results are merged. */
+    /** 1–4 queries; supports quoted phrases, negation, OR, site:, inurl:, intitle:, intext:, filetype:, after:/before:, and lang: where the provider supports them; results are merged. */
     queries: string[];
+    /** Optional publication window applied to every query. */
+    recency?: "day" | "week" | "month" | "year";
+    /** Combined source limit from 1 to 8; defaults to 8. */
+    limit?: number;
   } & Record<string, JsonValue>;
   /** Read the current working directory, or change it with cd. Relative paths use the current directory. Existing shells and running processes keep their own directories. */
   working_directory: {

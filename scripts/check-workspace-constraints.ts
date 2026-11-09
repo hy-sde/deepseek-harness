@@ -48,6 +48,11 @@ const vendoredPackages = new Set([
   '@deepseek-ai/cordis-plugin-timer',
   '@deepseek-ai/cordis-plugin-hmr',
   '@deepseek-ai/cordis-plugin-logger-console',
+  '@deepseek-ai/pi-ai',
+  '@deepseek-ai/zod',
+  '@deepseek-ai/mcp-core',
+  '@deepseek-ai/mcp-core-internal',
+  '@deepseek-ai/mcp-client',
 ])
 const publicNativePackages = new Set([
   '@deepseek-ai/node-addon-system',

@@ -83,6 +83,7 @@ async function runPack(root: string, args: string[] = []) {
     expect(result.signalCode).toBeNull()
     return {
       status: result.exitCode,
+      stdout: result.output.filter(chunk => chunk.stream === 'stdout').map(chunk => chunk.text).join(''),
       stderr: result.output.filter(chunk => chunk.stream === 'stderr').map(chunk => chunk.text).join(''),
     }
   } finally {
@@ -290,7 +291,9 @@ describe('release pack CLI', () => {
     const result = await runPack(root, ['--concurrency', '8'])
 
     expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('pack fixture failure')
+    // pnpm routes lifecycle-script output between stdout and stderr across
+    // versions, so match the failure text in the combined capture.
+    expect(result.stdout + result.stderr).toContain('pack fixture failure')
     expect(existsSync(join(root, 'packed', PUBLISH_ORDER_FILE))).toBe(false)
   })
 

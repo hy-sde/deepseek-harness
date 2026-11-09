@@ -55,3 +55,7 @@ openwiki/.page-manifest.json
 
 # Generated company-signed CUA release record.
 /packages/experimental/cua-macos/cua-helper.json
+
+# Test/build transient artifacts
+apps/web/test-results/
+website/.vitepress/config.ts.timestamp-*.mjs

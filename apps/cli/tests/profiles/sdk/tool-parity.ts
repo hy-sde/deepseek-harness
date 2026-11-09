@@ -9,9 +9,18 @@ interface Exception {
 
 /** Intentional product differences; obsolete entries fail alongside undeclared differences. */
 export const toolParityExceptions: Record<ToolMode, readonly Exception[]> = {
-  standard: [{ tool: 'list_subagent_models', side: 'desktop',
-    reason: 'Desktop enables subagent model discovery; SDK delegation inherits the caller model by default.' }],
+  standard: [
+    { tool: 'ast_edit', side: 'sdk',
+      reason: 'SDK ships the AST structural rewrite tool in its agent preset; the Desktop bundle does not include it.' },
+    { tool: 'ast_grep', side: 'sdk',
+      reason: 'SDK ships the AST structural search tool in its agent preset; the Desktop bundle does not include it.' },
+    { tool: 'list_subagent_models', side: 'desktop',
+      reason: 'Desktop enables subagent model discovery; SDK delegation inherits the caller model by default.' }],
   ptc: [
+    { tool: 'ast_edit', side: 'sdk',
+      reason: 'SDK ships the AST structural rewrite tool in its agent preset; the Desktop bundle does not include it.' },
+    { tool: 'ast_grep', side: 'sdk',
+      reason: 'SDK ships the AST structural search tool in its agent preset; the Desktop bundle does not include it.' },
     { tool: 'list_subagent_models', side: 'desktop',
       reason: 'Desktop enables subagent model discovery; SDK delegation inherits the caller model by default.' },
     { tool: 'plugin_manager', side: 'sdk',

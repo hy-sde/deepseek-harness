@@ -572,8 +572,12 @@ class WebFetchOutput(TypedDict):
     truncated: bool
 
 class WebSearchArgs(TypedDict):
-    # 1–4 search queries; their results are merged.
+    # 1–4 queries; supports quoted phrases, negation, OR, site:, inurl:, intitle:, intext:, filetype:, after:/before:, and lang: where the provider supports them; results are merged.
     queries: list[str]
+    # Optional publication window applied to every query.
+    recency: NotRequired[Literal["day", "week", "month", "year"]]
+    # Combined source limit from 1 to 8; defaults to 8.
+    limit: NotRequired[int]
     # Additional keys beyond those declared are allowed.
 
 class WebSearchOutputSources(TypedDict):
@@ -585,6 +589,7 @@ class WebSearchOutputSources(TypedDict):
 
 class WebSearchOutput(TypedDict):
     content: NotRequired[str]
+    notices: NotRequired[list[str]]
     sources: list[WebSearchOutputSources]
     truncated: bool
 

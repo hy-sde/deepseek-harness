@@ -1,7 +1,8 @@
 /**
  * Pack one family's public packages into a staging directory; the release command
  * also records their publish order. Default serial packs execute
- * in that order; explicitly parallel packs use pnpm's bounded scheduler.
+ * in that order; explicitly parallel packs run a bounded pool of independent
+ * pnpm packs, because pnpm 12's recursive pack serializes members.
  *
  * The release command is the release boundary: it runs without credentials, produces
  * every tarball from one commit, and hands the publish step exactly those bytes
@@ -56,14 +57,29 @@ async function packMembers(
     return order
   }
   if (members.length === 0) return []
-  const invocation = pnpmInvocation([
-    'pack',
-    '--recursive',
-    `--workspace-concurrency=${String(concurrency)}`,
-    ...members.map(member => `--filter=${member.name}`),
-    '--pack-destination', destination,
-  ])
-  await runConcurrent(invocation.command, invocation.args)
+  // pnpm 12's recursive pack serializes members regardless of its workspace
+  // concurrency, so explicit parallelism comes from a bounded pool of the same
+  // per-member invocations the serial path uses; the pool caps active packs at
+  // the requested concurrency, stops starting new packs after a failure, and
+  // validation still follows the recorded publish order.
+  let nextIndex = 0
+  let failure: unknown
+  const packNext = async (): Promise<void> => {
+    while (failure === undefined && nextIndex < members.length) {
+      const member = members[nextIndex]
+      if (member === undefined) break
+      nextIndex += 1
+      const invocation = pnpmInvocation(['--dir', member.directory, 'pack', '--pack-destination', destination])
+      try {
+        await runConcurrent(invocation.command, invocation.args)
+      } catch (error) {
+        failure ??= error
+        return
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, members.length) }, packNext))
+  if (failure !== undefined) throw failure
   return members.map(member => validatePackedMember(family, member, destination))
 }
 

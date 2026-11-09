@@ -22,6 +22,7 @@ export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolic
   'packages/lsp/lsp': { category: 'optional', reason: 'Service definition for deployment-configured language servers.' },
   'packages/lsp/lsp-stdio': { category: 'optional', reason: 'Requires an explicit server list and language-server executables.' },
   'packages/lsp/tool-lsp': { category: 'optional', reason: 'Model tools selected together with a configured LSP provider.' },
+  'packages/core/tool-executor-catalog': { category: 'optional', reason: 'Catalog device presentation selected by explicit configuration.' },
   'packages/ssh/ssh': { category: 'optional', reason: 'Explicit remote connection and helper configuration.' },
   'packages/ssh/ssh-helper-runtime': { category: 'optional', reason: 'Private executable carrier for explicitly configured SSH connections.' },
   'packages/ssh/fs-ssh': { category: 'optional', reason: 'Remote filesystem provider selected in an SSH composition.' },
@@ -74,5 +75,4 @@ export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolic
   'packages/orchestration/policy': { category: 'optional', reason: 'Config-driven fan-out policy mounted by explicitly configured deployments.' },
   'packages/skill/skill-plugin-use': { category: 'optional', reason: 'Host-plane skill advice provider mounted by explicitly configured deployments.' },
   'packages/subagent/tool-subagent-report': { category: 'optional', reason: 'Continuable child report tool mounted by explicitly configured deployments.' },
-  'packages/web/web-search-deepseek': { category: 'optional', reason: 'Alternative search provider requiring its own API credentials.' },
 }

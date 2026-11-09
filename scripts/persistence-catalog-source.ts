@@ -140,8 +140,18 @@ export function collectLogEvents(scanRoot: string = root): LogEventEntry[] {
   const seen = new Map<string, string>()
   let owningDecl: string | null = null
   for (const rel of globSync('packages/*/*/src/**/*.{ts,tsx}', { cwd: scanRoot }).map(s => s.split(sep).join('/')).sort()) {
+    // Transient oxlint typeAware probe files (scripts/oxlint-contract.spec.ts) are written and
+    // removed inside src/ while other vitest workers run; skip those, and skip anything that
+    // vanishes between the glob and the read, instead of failing the whole catalog.
+    if (/\/oxlint-contract-[^/]+\.ts$/.test(rel)) continue
     const abs = resolve(scanRoot, rel)
-    const text = readFileSync(abs, 'utf8')
+    let text: string
+    try {
+      text = readFileSync(abs, 'utf8')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue
+      throw error
+    }
     if (!text.includes('SessionEventMap')) continue
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true)
     for (const { decl, topLevel } of sessionEventMapDecls(sf)) {

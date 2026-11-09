@@ -912,10 +912,24 @@
         "properties": {
           "queries": {
             "type": "array",
-            "description": "1–4 search queries; their results are merged.",
+            "description": "1–4 queries; supports quoted phrases, negation, OR, site:, inurl:, intitle:, intext:, filetype:, after:/before:, and lang: where the provider supports them; results are merged.",
             "items": {
               "type": "string"
             }
+          },
+          "recency": {
+            "type": "string",
+            "description": "Optional publication window applied to every query.",
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Combined source limit from 1 to 8; defaults to 8."
           }
         },
         "required": [
