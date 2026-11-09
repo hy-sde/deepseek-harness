@@ -134,7 +134,8 @@ export class LspInstance {
    * @returns the formatted text, or `null` when the server cannot/does not format.
    */
   format(request: LspFormatRequest, uri: string, languageId: string, signal?: AbortSignal): Promise<LspFormatResult> {
-    /* jscpd:ignore-start -- query and format keep parallel copies of the serialized-queue tap (transport-failure teardown, queue retap, run forwarding) */
+    /* jscpd:ignore-start -- query and format keep parallel copies of the serialized-queue tap
+     * (transport-failure teardown, queue retap, run forwarding) */
     const run = abortable(this.queue, signal)
       .then(() => this.runFormat(request, uri, languageId, signal))
       .catch(async (error: unknown) => {
@@ -160,7 +161,8 @@ export class LspInstance {
     languageId: string,
     signal?: AbortSignal,
   ): Promise<LspDiagnosticsResult> {
-    /* jscpd:ignore-start -- format and collectDiagnostics keep parallel copies of the serialized-queue tap (transport-failure teardown, queue retap, run forwarding) */
+    /* jscpd:ignore-start -- format and collectDiagnostics keep parallel copies of the serialized-queue tap
+     * (transport-failure teardown, queue retap, run forwarding) */
     const run = abortable(this.queue, signal)
       .then(() => this.runCollectDiagnostics(request, uri, languageId, signal))
       .catch(async (error: unknown) => {
@@ -182,7 +184,8 @@ export class LspInstance {
    * @returns the normalized diagnostics (empty on no publish).
    */
   diagnostics(request: LspProviderQuery, source: HostSource, signal?: AbortSignal): Promise<LspQueryResult> {
-    /* jscpd:ignore-start -- query and diagnostics keep parallel copies of the serialized-queue tap (transport-failure teardown, queue retap, run forwarding) */
+    /* jscpd:ignore-start -- query and diagnostics keep parallel copies of the serialized-queue tap
+     * (transport-failure teardown, queue retap, run forwarding) */
     const run = abortable(this.queue, signal)
       .then(() => this.runDiagnostics(request, source, signal))
       .catch(async (error: unknown) => {
@@ -381,7 +384,8 @@ export class LspInstance {
     // caught (version freshness — not arrival order — is the correctness property). The deadline
     // fuses caller cancellation with the collection budget; a server that never publishes (no
     // diagnostic capability) times out into an empty result instead of an error.
-    /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies of the publish-wait setup (deadline arming, listener registration, freshness filter) */
+    /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies of the publish-wait setup
+     * (deadline arming, listener registration, freshness filter) */
     const deadlineSignal = deadline(signal, this.spec.diagnosticsTimeoutMs, 'LSP_DIAGNOSTICS_TIMEOUT')
     let opened = false
     let removeListener: (() => void) | undefined
@@ -400,7 +404,8 @@ export class LspInstance {
         received.resolve(params)
       })
       try {
-        /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies of the didOpen-plus-bounded-publish-wait sequence */
+        /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies
+         * of the didOpen-plus-bounded-publish-wait sequence */
         await abortable(this.connection.notify('textDocument/didOpen', {
           textDocument: { uri, languageId, version: request.version, text: request.text },
         }), signal)

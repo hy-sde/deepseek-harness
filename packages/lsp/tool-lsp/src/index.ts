@@ -255,7 +255,8 @@ export function apply(ctx: Context, config: Config): void {
                         additionalProperties: false,
                         properties: {
                           range: { ...LSP_RANGE_OUTPUT_SCHEMA, required: true },
-                          /* jscpd:ignore-start -- the codeActions, rename, and diagnostics output-schema variants keep per-kind copies of the schema tail, resolvedWorkspaceUri, variant head, and kind discriminator */
+                          /* jscpd:ignore-start -- the codeActions, rename, and diagnostics output-schema variants keep
+                           * per-kind copies of the schema tail, resolvedWorkspaceUri, variant head, and kind discriminator */
                           newText: { type: 'string', required: true },
                         },
                       },
@@ -412,7 +413,8 @@ export function apply(ctx: Context, config: Config): void {
         case 'diagnostics':
           return {
             kind: 'diagnostics' as const,
-            /* jscpd:ignore-start -- the codeActions and diagnostics render cases keep independent copies of the diagnostic-normalizing map callback */
+            /* jscpd:ignore-start -- the codeActions and diagnostics render cases keep independent copies
+             * of the diagnostic-normalizing map callback */
             diagnostics: result.diagnostics.map(diagnostic => ({
               range: {
                 start: { line: diagnostic.range.start.line, character: diagnostic.range.start.character },
