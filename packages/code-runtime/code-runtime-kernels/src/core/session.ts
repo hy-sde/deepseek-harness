@@ -201,8 +201,12 @@ export class SessionRegistry {
     // A kernel that died after its last run is replaced by the acquire below:
     // surface that replacement, because prior cells' state died with it —
     // unless a snapshot restores it (omp d7197bd069). A reset discards the
-    // old kernel deliberately and is not a replacement.
+    // old kernel deliberately and is not a replacement. The restore decision
+    // is captured before the exec: the runner decides from the snapshot file
+    // as it exists at exec start, and a successful run writes one only
+    // afterward.
     const replacedDeadKernel = options.reset !== true && session.kernel !== null && !session.kernel.isAlive()
+    const restores = this.#willRestoreSnapshot(sessionId)
     let kernel = await this.#acquireKernel(sessionId, session)
     const first = await this.#executeOnce(kernel, sessionId, code, bindings, options)
     // A kernel that died or was killed settling the run is replaced once and
@@ -222,16 +226,19 @@ export class SessionRegistry {
     // `cancelled` result here can only come from the kernel side.
     const cancelledButAlive = first.cancelled && dead
     if (!first.killed && !cancelledButAlive) {
-      return replacedDeadKernel ? this.#noticed(first, sessionId) : first
+      return replacedDeadKernel && !restores ? this.#noticed(first) : first
     }
     await kernel.shutdown().catch(() => { })
     if (session !== this.#sessions.get(sessionId)) return first
     kernel = await this.#acquireKernel(sessionId, session)
+    // The retry's restore decision comes from the file as it exists now: the
+    // dead run wrote nothing, so any snapshot file here predates the death.
+    const retryRestores = this.#willRestoreSnapshot(sessionId)
     const second = await this.#executeOnce(kernel, sessionId, code, bindings, options)
-    // The retry ran on a replacement kernel: unless a snapshot restore
-    // returns prior cells' state, the result carries the restart notice
-    // ahead of its output (omp d7197bd069).
-    const retried = this.#noticed(second, sessionId)
+    // The retry ran on a replacement kernel: unless its exec restores prior
+    // cells' state, the result carries the restart notice ahead of its
+    // output (omp d7197bd069).
+    const retried = retryRestores ? second : this.#noticed(second)
     if (retried.killed) {
       // Give up restoring state: report the second outcome with the first's
       // message so the caller sees that retries also died.
@@ -241,10 +248,13 @@ export class SessionRegistry {
   }
 
   /**
-   * Whether the next exec of this session restores a persisted namespace:
-   * snapshots are configured and the session's snapshot file exists — a
-   * successful run wrote it, and the runner restores it on a fresh kernel's
-   * first exec, so prior cells' state survives the replacement.
+   * Whether an exec of this session that starts now will restore a persisted
+   * namespace: snapshots are configured and the session's snapshot file
+   * exists — a prior successful run wrote it, and the runner restores it on
+   * a fresh kernel's first exec, so prior cells' state survives the
+   * replacement. Evaluate BEFORE the exec: the runner decides from the file
+   * as it exists at exec start, and a successful run writes one only
+   * afterward.
    */
   #willRestoreSnapshot(sessionId: string): boolean {
     const spec = this.#config.snapshot?.(sessionId)
@@ -252,12 +262,12 @@ export class SessionRegistry {
   }
 
   /**
-   * Prepend the restart notice to a result produced by a replacement kernel,
-   * unless a snapshot restore returns the prior state — the runner's restore
-   * log already reports what survived.
+   * Prepend the restart notice to a result produced by a replacement kernel.
+   * Callers skip it when the exec restored a snapshot (captured before the
+   * exec via #willRestoreSnapshot) — the runner's restore log then reports
+   * what survived.
    */
-  #noticed(result: KernelExecResult, sessionId: string): KernelExecResult {
-    if (this.#willRestoreSnapshot(sessionId)) return result
+  #noticed(result: KernelExecResult): KernelExecResult {
     return {
       ...result,
       logs: [{ text: `${restartNotice(this.#config.label)}\n`, stream: 'stdout' }, ...result.logs],

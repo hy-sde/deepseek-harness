@@ -8,13 +8,20 @@
  * dying on cue.
  */
 
+import { createHash } from 'node:crypto'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import { KernelHost, nodejsKernelProfile } from '../src/core/kernel.ts'
 import { SessionRegistry } from '../src/core/session.ts'
 import { KernelManager } from '../src/index.ts'
-import { tempSnapshotDir } from './test-util.ts'
+import { cleanTempSnapshotDirs, tempSnapshotDir } from './test-util.ts'
+
+afterEach(() => {
+  cleanTempSnapshotDirs()
+})
 
 function startConfig(env?: Record<string, string>) {
   return {
@@ -24,6 +31,20 @@ function startConfig(env?: Record<string, string>) {
     shutdownGraceMs: 1_000,
     ...env !== undefined ? { env } : {},
   }
+}
+
+const SEED_DOC = JSON.stringify({
+  version: 1,
+  savedAt: 0,
+  state: { saved: {}, lost: [] },
+  globals: { saved: {}, lost: [] },
+  lost: [],
+})
+
+/** The manager derives per-session snapshot paths by digest (index.ts #snapshotSpecFor). */
+function seedSnapshotPath(snapshotDir: string, sessionId: string): string {
+  const digest = createHash('sha256').update(`typescript:${sessionId}`).digest('hex').slice(0, 32)
+  return join(snapshotDir, 'typescript', `${digest}.snapshot`)
 }
 
 /**
@@ -283,6 +304,102 @@ describe('SessionRegistry — restart notice (omp d7197bd069)', () => {
       expect(result.logs.map(log => log.text).join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
     } finally {
       await registry.disposeAll()
+    }
+  })
+
+  it('notices the replacement when nothing can be restored', { timeout: 60_000, skip: process.platform === 'win32' }, async () => {
+    // A failed run never writes a snapshot, so the state the dying kernel
+    // takes with it is unrestorable even though an earlier cell defined a
+    // variable. The retry is the session's first successful run, and the
+    // runner publishes its snapshot only at settle — microseconds after the
+    // done frame, a race the host must not depend on. The retry cell writes
+    // the session's snapshot mid-cell instead, so the file provably exists
+    // once the run settles: the notice decision is captured before the exec
+    // and must not be confused by that post-replacement file.
+    let kills = 0
+    const snapshotDir = tempSnapshotDir()
+    const seedPath = seedSnapshotPath(snapshotDir, 'restart-after-failure')
+    const bindings: PtcBindingNamespace[] = [{
+      global: 'test',
+      functions: {
+        dieOnce: async (args: unknown) => {
+          const { pid } = args as { pid: number }
+          if (kills++ === 0) process.kill(-pid, 'SIGKILL')
+          return null
+        },
+        seedSnapshot: async () => {
+          mkdirSync(dirname(seedPath), { recursive: true })
+          writeFileSync(seedPath, SEED_DOC)
+          return null
+        },
+      },
+    }]
+    const manager = new KernelManager({
+      languages: ['typescript'],
+      snapshotDir,
+    })
+    try {
+      const failed = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-after-failure',
+        code: 'globalThis.laneState = 41\nthrow new Error("boom")',
+      })
+      expect(failed.error).toBeDefined()
+      const result = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-after-failure',
+        code: 'await test.dieOnce({ pid: process.pid })\nawait test.seedSnapshot()\nreturn 42',
+        bindings,
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value).toBe(42)
+      expect(result.executionCount).toBe(1)
+      expect(result.logs.join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
+    } finally {
+      await manager.teardown()
+    }
+  })
+
+  it('notices the replacement between cells when nothing can be restored', { timeout: 60_000 }, async () => {
+    // Same trigger through the died-between-cells path: the failed run never
+    // snapshots anything, the delayed exit kills the kernel afterward, and
+    // the next run both restores nothing and writes the session's first
+    // snapshot mid-cell — the notice must still fire.
+    const snapshotDir = tempSnapshotDir()
+    const seedPath = seedSnapshotPath(snapshotDir, 'restart-between-failure')
+    const bindings: PtcBindingNamespace[] = [{
+      global: 'test',
+      functions: {
+        seedSnapshot: async () => {
+          mkdirSync(dirname(seedPath), { recursive: true })
+          writeFileSync(seedPath, SEED_DOC)
+          return null
+        },
+      },
+    }]
+    const manager = new KernelManager({
+      languages: ['typescript'],
+      snapshotDir,
+    })
+    try {
+      const failed = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-between-failure',
+        code: 'globalThis.laneState = 41\nsetTimeout(() => { process.exit(5) }, 300)\nthrow new Error("boom")',
+      })
+      expect(failed.error).toBeDefined()
+      await delay(600)
+      const second = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-between-failure',
+        code: 'await test.seedSnapshot()\nreturn 42',
+        bindings,
+      })
+      expect(second.error).toBeUndefined()
+      expect(second.value).toBe(42)
+      expect(second.logs.join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
+    } finally {
+      await manager.teardown()
     }
   })
 })
