@@ -426,6 +426,8 @@ export class KernelHost {
    * flags the provider maps onto the failure kinds; a failed stdin write
    * resolves killed instead of rejecting, and retires the kernel
    * (omp #14196/#14199).
+   * An already-aborted signal settles cancelled immediately without reaching
+   * the kernel (omp 6dde5ac2d4).
    */
   async execute(
     id: string,
@@ -433,6 +435,16 @@ export class KernelHost {
     namespaces: PtcBindingNamespace[],
     options: { signal?: AbortSignal; cwd?: string; env?: Record<string, string>; snapshot?: SnapshotSpec } = {},
   ): Promise<KernelExecResult> {
+    // A caller that already gave up must not reach the kernel: the SIGINT
+    // would land on an idle runner, which exits on it — a clean cancellation
+    // must not become a dead kernel plus a pointless replacement spawn
+    // (omp 6dde5ac2d4).
+    if (options.signal?.aborted === true) {
+      return {
+        status: 'error', logs: [], cancelled: true, invalidOutput: false,
+        message: 'run cancelled before it started', killed: false,
+      }
+    }
     if (!this.isAlive()) {
       return {
         status: 'error', logs: [], cancelled: false, invalidOutput: false,
@@ -462,8 +474,7 @@ export class KernelHost {
     })
     this.#runs.set(id, run)
     const onAbort = (): void => { void this.#interrupt(run) }
-    if (options.signal?.aborted) onAbort()
-    else options.signal?.addEventListener('abort', onAbort, { once: true })
+    options.signal?.addEventListener('abort', onAbort, { once: true })
 
     let transportFailed = false
     try {

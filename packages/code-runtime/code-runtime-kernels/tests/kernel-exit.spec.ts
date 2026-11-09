@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { KernelHost, nodejsKernelProfile } from '../src/core/kernel.ts'
+import { SessionRegistry } from '../src/core/session.ts'
 
 function startConfig(env?: Record<string, string>) {
   return {
@@ -122,6 +123,53 @@ describe('KernelHost — exit diagnosis (omp af92dbc0b2/a19f742ef9)', () => {
       expect(result.message).not.toContain('late-done-MARKER')
     } finally {
       await kernel.shutdown()
+    }
+  })
+})
+
+describe('KernelHost — pre-aborted signal (omp 6dde5ac2d4)', () => {
+  it('settles cancelled without reaching a live kernel', { timeout: 30_000 }, async () => {
+    const kernel = await KernelHost.start(nodejsKernelProfile(process.execPath), startConfig())
+    try {
+      const controller = new AbortController()
+      controller.abort(new Error('caller gave up'))
+      const result = await kernel.execute('pre-aborted', 'return 1', [], { signal: controller.signal })
+      expect(result.status).toBe('error')
+      expect(result.cancelled).toBe(true)
+      expect(result.killed).toBe(false)
+      // The SIGINT never landed, so the runner lives on and serves the next run.
+      expect(kernel.isAlive()).toBe(true)
+      const after = await kernel.execute('still-works', 'return 2 + 2', [], {})
+      expect(after.status).toBe('ok')
+      expect(after.value).toBe(4)
+    } finally {
+      await kernel.shutdown()
+    }
+  })
+
+  it('does not spawn a replacement kernel for an already-aborted session run', { timeout: 30_000 }, async () => {
+    let starts = 0
+    const registry = new SessionRegistry({
+      label: 'nodejs kernel',
+      start: () => {
+        starts += 1
+        return KernelHost.start(nodejsKernelProfile(process.execPath), startConfig())
+      },
+      sessionIdleMs: 0,
+    })
+    try {
+      const controller = new AbortController()
+      controller.abort(new Error('caller gave up'))
+      const result = await registry.executeOnSession('pre-aborted', 'return 1', [], { signal: controller.signal })
+      // One spawn for the session kernel, none for a pointless retry.
+      expect(starts).toBe(1)
+      expect(result.cancelled).toBe(true)
+      expect(result.killed).toBe(false)
+      const follow = await registry.executeOnSession('pre-aborted', 'return 2 + 2', [], {})
+      expect(follow.status).toBe('ok')
+      expect(follow.value).toBe(4)
+    } finally {
+      await registry.disposeAll()
     }
   })
 })

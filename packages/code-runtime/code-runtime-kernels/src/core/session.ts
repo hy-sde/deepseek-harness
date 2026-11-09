@@ -195,8 +195,15 @@ export class SessionRegistry {
     // a fresh kernel gets one retry (mirrors omp's dead-kernel recovery in
     // `kernel-session-registry.executeOnSession`).
     if (session !== this.#sessions.get(sessionId)) return first
+    // A caller that already gave up gets its cancellation back verbatim:
+    // re-executing the code on a fresh kernel would run what the caller
+    // stopped (omp 6dde5ac2d4). The kernel-level pre-abort check keeps the
+    // still-aborted signal from spawning at all; this keeps the retry off.
+    if (options.signal?.aborted === true) return first
     const dead = !kernel.isAlive()
-    const cancelledButAlive = first.cancelled && !(options.signal?.aborted === true) && dead
+    // The guard above proves the caller has not aborted by this point, so a
+    // `cancelled` result here can only come from the kernel side.
+    const cancelledButAlive = first.cancelled && dead
     if (!first.killed && !cancelledButAlive) return first
     await kernel.shutdown().catch(() => { })
     if (session !== this.#sessions.get(sessionId)) return first
