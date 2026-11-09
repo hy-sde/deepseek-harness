@@ -523,6 +523,7 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
     },
   }))
 
+  /* jscpd:ignore-start -- the codebase_get_graph_schema and codebase_delete_project tool registrations keep independent copies of this defineTool scaffolding; each tool owns its own description, parameters, and CLI op. */
   ctx.tools.register(defineTool({
     name: 'codebase_delete_project',
     device: true,
@@ -538,4 +539,5 @@ export function applyCodebaseMemoryTools(ctx: Context, config: CodebaseMemoryToo
       return { text: renderPayload(payload, maxChars) }
     },
   }))
+  /* jscpd:ignore-end */
 }

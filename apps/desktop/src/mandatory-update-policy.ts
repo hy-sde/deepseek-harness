@@ -1,7 +1,6 @@
 /** Mandatory-update policy, independent of local business traffic and updater artifacts. */
 
 import { valid } from 'semver'
-import { platformClientHeaders, type AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account'
 
 /** Installed release identity; no field is supplied by a renderer. */
 export interface DesktopPolicyIdentity {
@@ -31,6 +30,27 @@ export interface DesktopPolicyState {
   readonly detail?: string
   readonly page?: string
   readonly error?: 'unavailable' | 'authentication-required'
+}
+
+/** Client identity sampled for one policy check. */
+export interface DesktopPolicyClientMetadata {
+  readonly version: string
+  readonly locale: string
+  readonly timezoneOffsetSeconds: number
+}
+
+function policyLocale(locale: string): 'zh_CN' | 'en_US' {
+  return locale.toLowerCase().split(/[-_]/)[0] === 'zh' ? 'zh_CN' : 'en_US'
+}
+
+function policyClientHeaders(platform: 'win32' | 'darwin', client: DesktopPolicyClientMetadata): Record<string, string> {
+  return {
+    'x-client-bundle-id': '',
+    'x-client-platform': platform === 'win32' ? 'desktop-win' : 'desktop-mac',
+    'x-client-version': client.version,
+    'x-client-locale': policyLocale(client.locale),
+    'x-client-timezone-offset': String(client.timezoneOffsetSeconds),
+  }
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -148,7 +168,7 @@ export class DesktopMandatoryUpdatePolicy {
     private readonly identity: DesktopPolicyIdentity,
     private readonly publish: (state: DesktopPolicyState) => void,
     private readonly request: typeof fetch = fetch,
-    private readonly client: () => AccountClientMetadata,
+    private readonly client: () => DesktopPolicyClientMetadata,
     private readonly random: () => number = Math.random,
   ) {
     if (valid(this.client().version) === null || valid(identity.bundledDshVersion) === null
@@ -158,7 +178,7 @@ export class DesktopMandatoryUpdatePolicy {
   /** Platform headers for one check; the calling UI's language and UTC offset are read now. */
   private requestHeaders(): Record<string, string> {
     return {
-      ...platformClientHeaders(this.identity.platform, this.client()),
+      ...policyClientHeaders(this.identity.platform, this.client()),
       'x-client-arch': this.identity.arch, 'x-client-update-channel': this.identity.channel,
       'x-client-bundled-dsh-version': this.identity.bundledDshVersion,
     }

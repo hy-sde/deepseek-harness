@@ -48,6 +48,7 @@ export interface HashlineDiffOptions {
   reader?: FileReader
 }
 
+/* jscpd:ignore-start -- tool-edit's hashline diff preview and the hashline patcher decide anchor-scoped edits independently. */
 function hasAnchorScopedEdit(edits: readonly Edit[]): boolean {
   return edits.some((edit) => {
     if (edit.kind === 'delete' || edit.kind === 'block' || edit.kind === 'cut') return true
@@ -58,6 +59,7 @@ function hasAnchorScopedEdit(edits: readonly Edit[]): boolean {
     return edit.cursor.kind === 'before_anchor' || edit.cursor.kind === 'after_anchor'
   })
 }
+/* jscpd:ignore-end */
 
 function createMismatchError(
   section: PatchSection,

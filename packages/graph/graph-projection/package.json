@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-graph-projection",
   "description": "Session projection unit: the standing agent-graph snapshot folded from the host's graph/change publishes (Maka port, slice P6a)",
-  "version": "0.2.1-rc.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

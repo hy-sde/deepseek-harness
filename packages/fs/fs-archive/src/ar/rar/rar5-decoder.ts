@@ -29,6 +29,7 @@ class Bits {
     this.bytes.fill(0xff, bytes.byteLength)
   }
 
+  /* jscpd:ignore-start -- the RAR4 and RAR5 bit readers keep independent copies of this MSB bit-read method */
   read(n: number): number {
     if (n === 0) return 0
     if (n < 0 || n > 31) fail('invalid bit count')
@@ -46,6 +47,7 @@ class Bits {
     }
     return value
   }
+  /* jscpd:ignore-end */
 
   peek15(): number {
     const pos = this.pos

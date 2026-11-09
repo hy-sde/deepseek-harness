@@ -35,6 +35,6 @@
   },
   "dependencies": {
     "@deepseek-ai/cosmokit": "workspace:~",
-    "@deepseek-ai/dsh-yaml": "workspace:~"
+    "@deepseek-ai/dsh-yaml": "workspace:*"
   }
 }

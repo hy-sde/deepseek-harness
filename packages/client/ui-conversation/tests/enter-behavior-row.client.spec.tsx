@@ -10,7 +10,7 @@ import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/c
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { EnterBehaviorRow } from '../src/client/settings/EnterBehaviorRow.tsx'
 import type { EnterBehaviorRowProps } from '../src/client/settings/EnterBehaviorRow.tsx'
-import { ComposerSubmissionPolicy } from '../src/client/input/submission-policy.ts'
+import { ComposerSubmissionPolicy } from '../src/client/submission-policy.ts'
 import { en } from '../src/client/locales.ts'
 
 // Every fixture carries the resource hook the resources plugin merges into GlobalStandardProps.

@@ -15,12 +15,13 @@ const overlay = vi.hoisted(() => ({ create: vi.fn(), render: vi.fn(), cancel: vi
 vi.mock('../src/client/pdf/text.ts', () => ({ pdfTextRenderer: (host: HTMLDivElement) => { overlay.create(host); return overlay.render } }))
 vi.mock('../src/client/pdf/runtime.ts', () => ({ openPdf: engine.open }))
 vi.mock('../src/client/pdf/document.ts', () => ({ renderPdfPage: engine.render }))
-import { PdfBody, type PdfBodyProps } from '../src/client/pdf/pdf.tsx'
-import { createPdfStore, type PdfState } from '../src/client/pdf/store.ts'
+import { PdfBody } from '../src/client/pdf/pdf.tsx'
+import type { PdfBodyProps } from '../src/client/pdf-body.ts'
+import { createPdfStore, type PdfState } from '../src/client/pdf-store.ts'
 import { en } from '../src/client/pdf/locales.ts'
 import { LoadingIndicator } from '../src/client/LoadingIndicator.tsx'
 import { PdfWorkerFailure } from '../src/client/pdf/errors.ts'
-import { ZoomViewport, zoomSurfaceClass } from '../src/client/zoom/ZoomViewport.tsx'
+import { ZoomViewport, zoomSurfaceClass } from '../src/client/ZoomViewport.tsx'
 
 const loads: Array<{
   deferred: ReturnType<typeof Promise.withResolvers<PdfDocument>>

@@ -11,13 +11,14 @@ import { WikiClient, type WikiRemoteNamespace } from '../src/client/api.ts'
 import { wikiStore } from '../src/client/store.ts'
 
 async function resetStore(): Promise<void> {
-  // Re-bind a scripted client after each test so recorded calls reset, close
-  // the drawer from the previous test, and materialize the page list via the
-  // lazy path so every test starts from a settled store.
+  // Re-bind a scripted client after each test so recorded calls reset, reset
+  // the list view from the previous test, and materialize the page list via
+  // the lazy path so every test starts from a settled store.
   const calls: { method: string; args: unknown[] }[] = []
   stub = calls
   await wikiStore.bind(new WikiClient(scriptedWiki(calls)))
-  wikiStore.close()
+  wikiStore.backToPages()
+  wikiStore.setSearchQuery('')
   await wikiStore.ensurePages()
 }
 
@@ -65,20 +66,11 @@ describe('wikiStore state machine', () => {
     expect(wikiStore.getState().current).toBeNull()
   })
 
-  it('toggles drawer open/closed', () => {
-    expect(wikiStore.getState().open).toBe(false)
-    wikiStore.toggleOpen()
-    expect(wikiStore.getState().open).toBe(true)
-    wikiStore.close()
-    expect(wikiStore.getState().open).toBe(false)
-  })
-
-  it('issues no wire call on bind; the first open loads exactly once', async () => {
+  it('issues no wire call on bind; the first panel mount loads exactly once', async () => {
     const calls: { method: string; args: unknown[] }[] = []
     await wikiStore.bind(new WikiClient(scriptedWiki(calls)))
     expect(calls).toEqual([])
-    wikiStore.toggleOpen() // fire-and-forget load, as the UI does
-    await wikiStore.ensurePages()
+    await Promise.all([wikiStore.ensurePages(), wikiStore.ensurePages()]) // concurrent mounts stay single-flight
     expect(calls.map(call => call.method)).toEqual(['listPages'])
   })
 

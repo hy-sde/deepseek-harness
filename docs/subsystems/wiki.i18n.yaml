@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/wiki.md
 /wiki-graph:
-  en: 83876acb46667955
-  zh: 3e3fcd4eb56502e3
+  en: 3a3d0527a23ba4b9
+  zh: 8da44e9e5c0d3d6b
 /wiki-graph/coordinates:
-  en: 1c78881678155301
-  zh: a7c00fc0ca8a4cac
+  en: 1aa0e10b29c04e71
+  zh: 165ed0f38a220b0a

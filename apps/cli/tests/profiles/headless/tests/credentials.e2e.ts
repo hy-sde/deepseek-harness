@@ -151,7 +151,7 @@ describe('headless credential policy', { retry: 0 }, () => {
           await writeFile(join(cwd, '.dsh', '.credentials.yaml'), document, { mode: 0o600 })
           if (empty) await writeFile(join(cwd, '.env'), `DEEPSEEK_API_KEY=${projectKey}\n`)
           if (restoring) await writeFile(join(cwd, 'auth.patch.json'), JSON.stringify(
-            ['credentials', 'authorization', 'deepseek-account'].map(id => ({ id, disabled: false })),
+            ['credentials', 'authorization'].map(id => ({ id, disabled: false })),
           ))
         },
         inspect: async (cwd) => {
@@ -172,10 +172,9 @@ describe('headless credential policy', { retry: 0 }, () => {
     }
   }, processTimeoutMs + 15_000)
 
-  it.each([
-    { provider: 'deepseek-account', model: 'deepseek-v4-flash', code: 'ACCOUNT_SIGN_IN_REQUIRED' },
-    { provider: 'openai-codex', model: 'gpt-5.4', code: 'PI_AI_ERROR: Provider is not configured: openai-codex' },
-  ])('fails without saved sign-in for $provider', async ({ provider, model, code }) => {
+  it('fails without configured credentials for an unconfigured provider', async () => {
+    const provider = 'openai-codex'
+    const model = 'gpt-5.4'
     const result = await runLoaderSmoke({
       label: `headless saved sign-in: ${provider}`,
       tempDirPrefix: 'headless-saved-sign-in-', binScript, tsconfigPath, sourceImport: 'tsx/esm',
@@ -187,9 +186,9 @@ describe('headless credential policy', { retry: 0 }, () => {
         await writeFile(join(cwd, '.dsh', '.credentials.yaml'), credentials, { mode: 0o600 })
         await writeFile(join(cwd, 'auth.patch.json'), JSON.stringify([
           { id: 'agent-default-model', config: { provider, model } },
-          ...provider === 'openai-codex' ? [{ id: 'llm-pi-ai', config: { providers: {
+          { id: 'llm-pi-ai', config: { providers: {
             [provider]: { models: [{ id: model, contextWindow: 32_768, maxTokens: 1024 }] },
-          } } }] : [],
+          } } },
         ]))
       },
       inspect: async (cwd) => {
@@ -197,7 +196,7 @@ describe('headless credential policy', { retry: 0 }, () => {
       },
     })
     expect(result.stdout).toBe('\n')
-    expect(result.stderr).toContain(code)
+    expect(result.stderr).toContain('PI_AI_ERROR: Provider is not configured: openai-codex')
     expect(result.stderr).not.toContain('pending')
   }, processTimeoutMs + 15_000)
 })

@@ -41,10 +41,6 @@ beforeEach(() => { electron.create.mockReset(); electron.handlers.clear() })
 
 const operations = {
   analyticsEnabled: async () => true,
-  takeNotice: async () => undefined,
-  startSignIn: async () => ({ links: { usageUrl: 'http://localhost/usage', topUpUrl: 'http://localhost/top_up' }, status: 'signed-out' as const, attempt: null }),
-  cancelSignIn: async () => ({ links: { usageUrl: 'http://localhost/usage', topUpUrl: 'http://localhost/top_up' }, status: 'signed-out' as const, attempt: null }),
-  copySignInLink: async () => undefined,
   saveApiKey: () => Promise.resolve({ ok: true as const }),
   skip: () => Promise.resolve(),
 }
@@ -116,28 +112,18 @@ describe('desktop welcome window', () => {
     electron.create.mockReturnValue(window)
     const saveApiKey = vi.fn(operations.saveApiKey)
     const skip = vi.fn(operations.skip)
-    const copySignInLink = vi.fn(operations.copySignInLink)
-    const takeNotice = vi.fn(async () => 'session-expired' as const)
-    await openWelcomeWindow(resolveDesktopLocale('en'), { ...operations, saveApiKey, skip, copySignInLink, takeNotice })
+    await openWelcomeWindow(resolveDesktopLocale('en'), { ...operations, saveApiKey, skip })
     const own = { sender: window.webContents, senderFrame: window.webContents.mainFrame }
-    const take = electron.handlers.get(WELCOME_IPC.takeNotice)!
-    await expect(take({ ...own, senderFrame: {} })).rejects.toThrow('unowned frame')
-    expect(takeNotice).not.toHaveBeenCalled()
-    expect(await take(own)).toBe('session-expired')
-    expect(takeNotice).toHaveBeenCalledOnce()
     const save = electron.handlers.get(WELCOME_IPC.saveApiKey)!
     await expect(save({ sender: {}, senderFrame: {} }, 'sk-test')).rejects.toThrow('unowned frame')
     await expect(save({ ...own, senderFrame: {} }, 'sk-test')).rejects.toThrow('unowned frame')
     expect(await save(own, 'bad key')).toEqual({ ok: false })
     expect(saveApiKey).not.toHaveBeenCalled()
     expect(await save(own, 'sk-test')).toEqual({ ok: true })
-    await electron.handlers.get(WELCOME_IPC.skip)!(own)
+    const skipHandler = electron.handlers.get(WELCOME_IPC.skip)!
+    await expect(skipHandler({ ...own, senderFrame: {} })).rejects.toThrow('unowned frame')
+    await skipHandler(own)
     expect(skip).toHaveBeenCalledOnce()
-    const copy = electron.handlers.get(WELCOME_IPC.copyLink)!
-    await expect(copy({ ...own, senderFrame: {} }, 'attempt')).rejects.toThrow('unowned frame')
-    await expect(copy(own, 42)).rejects.toThrow('invalid attempt')
-    await copy(own, 'attempt')
-    expect(copySignInLink).toHaveBeenCalledExactlyOnceWith('attempt')
     window.once.mock.calls[0]![1]()
     expect(electron.handlers.size).toBe(0)
   })
@@ -162,29 +148,27 @@ describe('desktop welcome window', () => {
     const previous = createWindow()
     const current = createWindow()
     electron.create.mockReturnValueOnce(previous).mockReturnValueOnce(current)
-    const previousStart = vi.fn(operations.startSignIn)
-    const currentStart = vi.fn(operations.startSignIn)
-    await openWelcomeWindow(resolveDesktopLocale('en'), { ...operations, startSignIn: previousStart })
-    const previousHandler = electron.handlers.get(WELCOME_IPC.start)!
+    const previousSave = vi.fn(operations.saveApiKey)
+    const currentSave = vi.fn(operations.saveApiKey)
+    await openWelcomeWindow(resolveDesktopLocale('en'), { ...operations, saveApiKey: previousSave })
+    const previousHandler = electron.handlers.get(WELCOME_IPC.saveApiKey)!
     const previousSender = { sender: previous.webContents, senderFrame: previous.webContents.mainFrame }
-    await openWelcomeWindow(resolveDesktopLocale('en'), { ...operations, startSignIn: currentStart })
-    const currentHandler = electron.handlers.get(WELCOME_IPC.start)!
-    await expect(previousHandler(previousSender)).rejects.toThrow('unowned frame')
-    await expect(currentHandler(previousSender)).rejects.toThrow('unowned frame')
+    await openWelcomeWindow(resolveDesktopLocale('en'), { ...operations, saveApiKey: currentSave })
+    const currentHandler = electron.handlers.get(WELCOME_IPC.saveApiKey)!
+    await expect(previousHandler(previousSender, 'sk-old')).rejects.toThrow('unowned frame')
+    await expect(currentHandler(previousSender, 'sk-old')).rejects.toThrow('unowned frame')
     previous.once.mock.calls[0]![1]()
-    expect(electron.handlers.get(WELCOME_IPC.start)).toBe(currentHandler)
-    await currentHandler({ sender: current.webContents, senderFrame: current.webContents.mainFrame })
-    expect(currentStart).toHaveBeenCalledOnce()
-    expect(previousStart).not.toHaveBeenCalled()
+    expect(electron.handlers.get(WELCOME_IPC.saveApiKey)).toBe(currentHandler)
+    await currentHandler({ sender: current.webContents, senderFrame: current.webContents.mainFrame }, 'sk-new')
+    expect(currentSave).toHaveBeenCalledOnce()
+    expect(previousSave).not.toHaveBeenCalled()
     current.once.mock.calls[0]![1]()
     expect(electron.handlers.size).toBe(0)
   })
 
-  it('shows the entry after logout only without a separately configured API key', () => {
-    expect(needsWelcome({ loggedIn: true, hasApiKey: false })).toBe(false)
-    expect(needsWelcome({ loggedIn: false, hasApiKey: false })).toBe(true)
-    expect(needsWelcome({ loggedIn: false, hasApiKey: true })).toBe(false)
-    expect(needsWelcome({ loggedIn: true, hasApiKey: true })).toBe(false)
+  it('shows the entry only without a separately configured API key', () => {
+    expect(needsWelcome({ hasApiKey: false })).toBe(true)
+    expect(needsWelcome({ hasApiKey: true })).toBe(false)
   })
 })
 
@@ -200,11 +184,9 @@ it('accepts only permitted event fields and reads the current policy over IPC', 
   enabled = false
   expect(await policy(own)).toBe(false)
   const report = electron.handlers.get(WELCOME_IPC.analytics)!
-  await report(own, 'auth_page_click', { button_name: 'api-key' })
-  expect(analytics).toHaveBeenLastCalledWith('auth_page_click', { button_name: 'api-key' })
-  await expect(report(own, 'auth_page_click', { button_name: 'api-key', token: 'private' })).rejects.toThrow('invalid analytics')
+  await expect(report(own, 'auth_page_click', { button_name: 'api-key' })).rejects.toThrow('invalid analytics')
+  await expect(report(own, 'api_key_save_click', { token: 'private' } as never)).rejects.toThrow('invalid analytics')
   await expect(report(own, 'desktop_app_launch', {})).rejects.toThrow('invalid analytics')
-  await expect(report(own, 'auth_page_view', null)).rejects.toThrow('invalid analytics')
   await report(own, 'api_key_save_click', {})
   expect(analytics).toHaveBeenLastCalledWith('api_key_save_click', {})
 })

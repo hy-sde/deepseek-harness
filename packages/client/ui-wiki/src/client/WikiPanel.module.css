@@ -1,0 +1,298 @@
+/* Wiki panel: DSH design tokens throughout (design-platform.css), no
+   fixed palette so the page tracks light/dark themes. Docked main-column
+   page like the plugin manager: transparent over the app background. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 0 clamp(24px, 4vw, 48px);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0 10px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--dsw-alias-state-error-primary);
+  background: var(--dsw-alias-state-error-secondary);
+  border-bottom: 0.5px solid var(--dsw-alias-border-l1);
+}
+
+.dismiss {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 10px 0 16px;
+}
+
+.muted {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12.5px;
+  padding: 12px 0;
+}
+
+.pageList, .pageView {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.searchRow, .createRow, .addRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.searchInput, .addInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+}
+
+.searchInput::placeholder, .addInput::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.searchInput:focus, .addInput:focus {
+  outline: none;
+  border-color: var(--dsw-alias-brand-primary);
+}
+
+.action {
+  appearance: none;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .action:hover {
+    background: var(--dsw-alias-button-floating-hover);
+    color: var(--dsw-alias-label-primary);
+  }
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--dsw-alias-label-tertiary);
+  margin: 4px 0 2px;
+}
+
+.pageRows, .results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pageRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .pageRow:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.pageName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.8px;
+}
+
+.pageDate, .pageHint {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.pageHint {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-brand-primary);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 3px 4px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .back:hover {
+    text-decoration: underline;
+  }
+}
+
+.pageTitle {
+  font-size: 15px;
+  font-weight: 700;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.danger {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+@media (hover: hover) {
+  .danger:hover {
+    background: var(--dsw-alias-interactive-bg-hover-danger);
+    color: var(--dsw-alias-state-error-primary);
+  }
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-alias-fill-l2);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.treeWrap {
+  border-left: 0.5px solid var(--dsw-alias-border-l2);
+  padding-left: 10px;
+}
+
+.addRow {
+  display: flex;
+}
+
+.linked {
+  margin-top: 14px;
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+  padding-top: 8px;
+}
+
+.linkedTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--dsw-alias-label-tertiary);
+  margin-bottom: 4px;
+}
+
+.linkedRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .linkedRow:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.linkedPage {
+  font-size: 11px;
+  color: var(--dsw-alias-brand-primary);
+}

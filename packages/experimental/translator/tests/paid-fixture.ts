@@ -6,8 +6,6 @@ import SessionStore, { SESSION_FORMAT_VERSION, SessionId, SessionSeq, type Sessi
 import * as JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SqliteSessionQuery from '@deepseek-ai/dsh-session-query-sqlite'
 import * as Official from '@deepseek-ai/dsh-llm-deepseek-api-key'
-import * as Account from '@deepseek-ai/dsh-llm-deepseek-account'
-import type { DeepSeekAccount } from '@deepseek-ai/dsh-deepseek-account'
 import DeepSeekLlmApiExtensionRegistry from '@deepseek-ai/dsh-deepseek-llm-api-extensions'
 import * as SessionLogDeepSeek from '@deepseek-ai/dsh-session-log-deepseek'
 import { createLaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
@@ -22,7 +20,6 @@ import Translator, { type Config } from '../src/index.ts'
 export interface NativeRequest {
   path: string
   body: Record<string, unknown>
-  accountAuth: boolean
   officialAuth: boolean
   sessionHeader: boolean
   audit: readonly SessionEvent[]
@@ -49,15 +46,12 @@ export function sse(events: Record<string, unknown>[]): string {
 export interface FixtureOptions {
   translator?: Partial<Config>
   officialModels?: { id: string; name: string }[]
-  /** Entries of the account `GET /models` listing. */
-  accountModels?: { id: string; name: string }[]
   officialName?: string
   withCredentials?: boolean
   withSession?: boolean
   withSessionQuery?: boolean
   credentialConfigured?: boolean
   ambientConfigured?: boolean
-  signedIn?: boolean
   withSessionLog?: boolean
   responseStatus?: number
   reply?: (response: ServerResponse, request: NativeRequest) => void | Promise<void>
@@ -84,9 +78,8 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
   const server = createServer((request, response) => {
     const work = (async () => {
       if (request.method === 'GET' && request.url === '/models') {
-        const listed = options.accountModels ?? [{ id: 'deepseek-flash', name: 'Another arbitrary Flash version' }]
         response.writeHead(200, { 'content-type': 'application/json' })
-        response.end(JSON.stringify({ object: 'list', data: listed.map(model => ({ ...model, api_capabilities: { anthropic_messages: {} } })) }))
+        response.end(JSON.stringify({ object: 'list', data: (options.officialModels ?? [{ id: 'deepseek-flash', name: 'Flash version-independent name' }]).map(model => ({ ...model, api_capabilities: { anthropic_messages: {} } })) }))
         return
       }
       const chunks: Buffer[] = []
@@ -97,7 +90,7 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
       const payload: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'))
       if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) throw new Error('Expected native Messages request object')
       const input: NativeRequest = { path: request.url ?? '', body: payload as Record<string, unknown>,
-        accountAuth: request.headers['x-dsh-auth-token'] !== undefined, officialAuth: request.headers['x-api-key'] !== undefined,
+        officialAuth: request.headers['x-api-key'] !== undefined,
         sessionHeader: request.headers['x-deepseek-harness-session-id'] !== undefined,
         audit: await readEvents(auditId) }
       requests.push(input)
@@ -122,7 +115,7 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
   const address = server.address()
   if (address === null || typeof address === 'string') throw new Error('Expected allocated loopback listener')
   const baseURL = `http://127.0.0.1:${address.port}/anthropic`
-  let configured = options.credentialConfigured ?? true, signedIn = options.signedIn ?? true
+  let configured = options.credentialConfigured ?? true
   const configPath = join(root, 'cordis.yml'), storedRoot = join(root, 'sessions')
   let translator = options.translator ?? {}, withNativeOwners = true
   const rows = () => [
@@ -132,7 +125,6 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
     { id: 'official-custom-id', name: options.officialName ?? '@deepseek-ai/dsh-llm-deepseek-api-key', disabled: !withNativeOwners, config: {
       baseURL, apiKeyEnv: 'PAID_TRANSLATION_FIXTURE_KEY', models: options.officialModels ?? [{ id: 'deepseek-flash', name: 'Flash version-independent name' }],
     } },
-    { id: 'account-custom-id', name: '@deepseek-ai/dsh-llm-deepseek-account', disabled: !withNativeOwners, config: { baseURL } },
     { id: 'translator', name: '@deepseek-ai/dsh-experimental-translator', config: translator },
     ...options.withSessionQuery === true ? [
       { id: 'query', name: '@deepseek-ai/dsh-session-query-sqlite', config: { path: join(root, 'query.sqlite'), openAt: 'never' } },
@@ -147,7 +139,7 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
     ['@deepseek-ai/dsh-llm', LlmRuntime], ['@deepseek-ai/dsh-session', SessionStore],
     ['@deepseek-ai/dsh-session-persistence-jsonl', JsonlPersistence], ['@deepseek-ai/dsh-session-query-sqlite', SqliteSessionQuery],
     [options.officialName ?? '@deepseek-ai/dsh-llm-deepseek-api-key', Official],
-    ['@deepseek-ai/dsh-llm-deepseek-account', Account], ['@deepseek-ai/dsh-experimental-translator', Translator],
+    ['@deepseek-ai/dsh-experimental-translator', Translator],
     ['@deepseek-ai/dsh-deepseek-llm-api-extensions', DeepSeekLlmApiExtensionRegistry],
     ['@deepseek-ai/dsh-session-log-deepseek', SessionLogDeepSeek],
   ])
@@ -170,9 +162,6 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
       describe: async () => ({ configured, writable: true }),
       resolve: async () => configured ? { value: 'fixture-native-key', source: 'fixture' } : undefined,
     } as never)
-    host.provide('deepseekAccount', {
-      resolveToken: async (_baseURL: string): Promise<string | undefined> => signedIn ? 'fixture-account-token' : undefined,
-    } as DeepSeekAccount)
   })
   let ctx = await start(), session: Session | undefined
   cleanups.push(async () => { await ctx.fiber.dispose() })
@@ -186,7 +175,7 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
     await ctx.sessionPersistence.create(session.header)
     await ctx.sessions.flush(session)
   }
-  const translate = (provider: 'deepseek-account' | 'deepseek-official', text = 'Original paragraph', signal?: AbortSignal) =>
+  const translate = (provider: 'deepseek-official', text = 'Original paragraph', signal?: AbortSignal) =>
     ctx.translator.translate(ctx.translator.resolve({ text, targetLanguage: 'zh', provider,
       ...session === undefined ? {} : { sessionId: session.id } }), signal)
   return { get ctx() { return ctx }, get session() { return session }, root, requests, errors, translate, readEvents,
@@ -220,5 +209,5 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
       await writeFile(configPath, JSON.stringify(rows()))
       ctx = await start()
     },
-    setConfigured(value: boolean) { configured = value }, setSignedIn(value: boolean) { signedIn = value } }
+    setConfigured(value: boolean) { configured = value } }
 }

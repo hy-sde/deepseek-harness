@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
-    "@deepseek-ai/dsh-yaml": "workspace:~",
+    "@deepseek-ai/dsh-yaml": "workspace:*",
     "yaml": "2.9.0"
   },
   "devDependencies": {

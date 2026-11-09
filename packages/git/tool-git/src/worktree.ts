@@ -211,6 +211,7 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
                   },
                 },
               },
+              /* jscpd:ignore-start -- the prune candidates and prune skipped entries of the worktree output schema keep independent copies of the name/path/reason item shape. */
               skipped: {
                 type: 'array',
                 required: true,
@@ -224,6 +225,7 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
                   },
                 },
               },
+              /* jscpd:ignore-end */
               removed: { type: 'array', required: true, items: { type: 'string' } },
             },
           },

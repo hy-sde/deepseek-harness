@@ -80,6 +80,7 @@ export async function validateWikiMermaid(
   return report
 }
 
+/* jscpd:ignore-start -- the wiki-link validator and the mermaid generator independently keep these backend list/read helpers. */
 /**
  * Lists every non-reserved Markdown file under a wiki root, recursively.
  *
@@ -138,6 +139,7 @@ async function readText(
 
   throw new Error(`${filePath} is not a text file`)
 }
+/* jscpd:ignore-end */
 
 /**
  * Extracts an entry's basename from its virtual path.

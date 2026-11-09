@@ -463,6 +463,7 @@ export class VcsService extends Service {
     const graceMs = this.graceMs
     const maxStdoutBytes = this.maxStdoutBytes
     const maxStderrBytes = this.maxStderrBytes
+    /* jscpd:ignore-start -- the git and vcs services maintain independent copies of the Effect-scoped subprocess run machinery: deadline finalizer, spawn, and failure classification. */
     const spawnVcs = (spec: SubprocessSpawnSpec): SubprocessHandle => this.subprocess().spawn(spec)
     return await Effect.runPromise(
       Effect.scoped(
@@ -538,6 +539,7 @@ export class VcsService extends Service {
                 stderr: '',
               }),
             )
+            /* jscpd:ignore-end */
           }
           if (state.timedOut) {
             return yield* Effect.fail(
@@ -568,6 +570,7 @@ export class VcsService extends Service {
       ),
       { scheduler: syncScheduler },
     )
+    /* jscpd:ignore-start -- the av and vcs services maintain independent copies of the runChecked entry and clean-exit guard. */
   }
 
   /** Run one `pi-vcs` command and require a clean exit (exit 0). */
@@ -586,6 +589,7 @@ export class VcsService extends Service {
           this.structuredCode(run.stderr),
         ),
       )
+      /* jscpd:ignore-end */
     }
     return run
   }

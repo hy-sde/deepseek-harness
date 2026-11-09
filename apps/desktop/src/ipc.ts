@@ -29,7 +29,6 @@ export const DESKTOP_IPC = {
   fileDragCancel: 'dsh-desktop:file-drag-cancel',
   fileDragStart: 'dsh-desktop:file-drag-start',
   fileDragRelease: 'dsh-desktop:file-drag-release',
-  deviceInfo: 'dsh-desktop:device-info',
   localeBootstrap: 'dsh-desktop:locale-bootstrap',
   localeChanged: 'dsh-desktop:locale-changed',
   updatesStatus: 'dsh-desktop:updates-status',
@@ -85,11 +84,6 @@ export interface DshDesktopProductApi {
   readonly fileDrag: DesktopFileDrag
   readonly keyboard: DesktopKeyboardApi
   readonly shortcuts: DesktopShortcutsApi
-  /**
-   * Local machine description for the feedback questionnaire.
-   * @returns `name=value` fields separated by `; `, with no hostname, user name, or serial number.
-   */
-  deviceInfo(): Promise<string>
   readonly updates: {
     status(): Promise<DesktopUpdatePresentation>
     open(): Promise<void>

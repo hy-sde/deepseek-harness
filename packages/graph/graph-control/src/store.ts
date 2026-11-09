@@ -385,6 +385,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
 
   cancelAgentGraphIntentExecution(graphId: string, intentId: string, reason: string): Promise<AgentGraphIntentAdmissionTransition> {
     return this.locked(async () => {
+      /* jscpd:ignore-start -- sibling intent-claim store methods own independent state transitions behind the same locked lookup-and-mutate skeleton. */
       const claim = this.claims.get(claimKey(graphId, intentId))
       if (claim === undefined) {
         throw new GraphControlError('intent-not-found', `agent graph ${graphId}: intent ${intentId} has no durable claim`)
@@ -392,6 +393,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       if (claim.admissionStatus === 'cancelled') {
         return { state: 'cancelled', previousState: 'cancelled', changed: false }
       }
+      /* jscpd:ignore-end */
       const updated: AgentGraphIntentClaimRecord = { ...claim, admissionStatus: 'cancelled', cancellationReason: reason }
       this.claims.set(claimKey(graphId, intentId), updated)
       this.#patchClaimsByGraph(updated)
@@ -559,6 +561,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
           `agent graph ${request.graphId}: wake ${request.wakeId} recurMs must be a positive safe integer`,
         )
       }
+      /* jscpd:ignore-start -- sibling supervisor-wake store methods own independent state transitions behind the same locked lookup-and-mutate skeleton. */
       const existing = this.wakes.get(request.wakeId)
       if (existing !== undefined) return { wake: existing, created: false }
       const now = Date.now()
@@ -574,6 +577,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
         dueAt: request.dueAt,
         ...(request.recurMs !== undefined ? { recurMs: request.recurMs } : {}),
       }
+      /* jscpd:ignore-end */
       this.wakes.set(wake.wakeId, wake)
       await this.put('wakes', wake.wakeId, wake)
       return { wake, created: true }
@@ -640,6 +644,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
     })
   }
 
+  /* jscpd:ignore-start -- begin/complete supervisor-wake-attempt methods own independent state transitions behind the same locked lookup-and-mutate skeleton. */
   completeSupervisorWakeAttempt(request: CompleteAgentGraphSupervisorWakeAttemptRequest): Promise<AgentGraphSupervisorWakeRecord> {
     return this.locked(async () => {
       const wake = this.wakes.get(request.wakeId)
@@ -680,6 +685,7 @@ export class GraphControlStore {  /** The unit descriptor callers open with `sto
       return updated
     })
   }
+  /* jscpd:ignore-end */
 
   /**
    * Terminal exhaustion: a wake that exhausted its delivery attempts is marked

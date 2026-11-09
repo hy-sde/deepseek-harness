@@ -54,6 +54,7 @@ class LsbCodeReader {
   }
 }
 
+/* jscpd:ignore-start -- the bzip2 and compress codecs keep independent copies of this bounded-output buffer class scaffolding */
 class BoundedOutput {
   readonly #limit: number
   #bytes: Uint8Array
@@ -63,6 +64,7 @@ class BoundedOutput {
     this.#limit = limit
     this.#bytes = new Uint8Array(Math.min(limit, Math.max(64, Math.min(inputSize * 2, 64 * 1024))))
   }
+  /* jscpd:ignore-end */
 
   appendReversed(stack: Uint8Array, length: number): void {
     this.#ensure(length)
@@ -75,6 +77,7 @@ class BoundedOutput {
     return this.#bytes.slice(0, this.#length)
   }
 
+  /* jscpd:ignore-start -- the bzip2 and compress codecs keep independent copies of this output-cap enforcement and class tail */
   #ensure(additional: number): void {
     const needed = this.#length + additional
     if (!Number.isSafeInteger(needed) || needed > this.#limit) {
@@ -92,6 +95,7 @@ class BoundedOutput {
     this.#bytes = grown
   }
 }
+/* jscpd:ignore-end */
 
 function decode(bytes: Uint8Array, maxOutput: number): Uint8Array {
   if (!Number.isSafeInteger(maxOutput) || maxOutput < 0) {

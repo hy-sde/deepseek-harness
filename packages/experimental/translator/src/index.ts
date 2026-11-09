@@ -52,7 +52,7 @@ function endpoint(value: string): string {
 /** One Host service with explicit routing, cancellation and quiescent unload. */
 export default class Translator extends Service {
   static Config = z.object({
-    provider: z.union(['google', 'bing', 'deepseek-account', 'deepseek-official'] as const).default('bing'),
+    provider: z.union(['google', 'bing', 'deepseek-official'] as const).default('bing'),
     googleEndpoint: z.transform(z.string(), endpoint).default('https://translate.googleapis.com/translate_a/single'),
     bingEndpoint: z.transform(z.string(), endpoint).default('https://edge.microsoft.com/translate/translatetext'),
     timeoutMs: z.natural().min(1).max(2_147_483_647).default(10_000),
@@ -103,7 +103,6 @@ export default class Translator extends Service {
     switch (provider) {
       case 'google':
       case 'bing': return { ...base, provider, ...request.sessionId === undefined ? {} : { sessionId: request.sessionId } }
-      case 'deepseek-account':
       case 'deepseek-official': {
         if (request.sessionId === undefined) throw new TranslationError('TRANSLATION_SESSION_REQUIRED', 'Paid translation requires a durable Session')
         return { ...base, provider, sessionId: request.sessionId }
@@ -129,7 +128,6 @@ export default class Translator extends Service {
         ? anonymousRecipe(spec.provider, this.config) : deepseekRecipe(this.config) }
     const inSession = (id: SessionId) => this.storage.run(id, identity, combined, async (log) => {
       switch (spec.provider) {
-        case 'deepseek-account':
         case 'deepseek-official':
           return translateWithDeepSeek(this.ctx, spec, this.config, combined, (work) => { this.track(work) }, log, identity)
         case 'google':
@@ -149,7 +147,6 @@ export default class Translator extends Service {
       switch (spec.provider) {
         case 'google':
         case 'bing': return spec.sessionId === undefined ? translateText(spec, this.config, combined) : inSession(spec.sessionId)
-        case 'deepseek-account':
         case 'deepseek-official': return inSession(spec.sessionId)
         /* v8 ignore next -- TranslationSpec has a closed provider union resolved before same-process dispatch. */
         default: return assertNever(spec)

@@ -59,6 +59,7 @@ export function computeHunkDiffs(path: string, before: string, after: string): F
 }
 
 /** Whether `value` is a valid {@link FileDiff} (defensive narrowing from opaque `meta`). */
+/* jscpd:ignore-start -- tool-fs and tool-edit narrow opaque diff metadata with independent isFileDiff guards. */
 function isFileDiff(value: unknown): value is FileDiff {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
   const { path, oldText, newText } = value as Record<string, unknown>
@@ -66,6 +67,7 @@ function isFileDiff(value: unknown): value is FileDiff {
     && (oldText === null || typeof oldText === 'string')
     && typeof newText === 'string'
 }
+/* jscpd:ignore-end */
 
 /**
  * Narrow opaque live or replayed result metadata to non-empty file diffs. Malformed metadata

@@ -5,7 +5,7 @@ import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 export type AnonymousTranslationProvider = 'google' | 'bing'
 
 /** Explicit native DeepSeek credential route selected for paid translation. */
-export type PaidTranslationProvider = 'deepseek-account' | 'deepseek-official'
+export type PaidTranslationProvider = 'deepseek-official'
 
 /** Explicit anonymous endpoint or native paid model route. */
 export type TranslationProvider = AnonymousTranslationProvider | PaidTranslationProvider

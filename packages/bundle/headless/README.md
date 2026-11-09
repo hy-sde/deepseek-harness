@@ -64,8 +64,6 @@ To restore stored authentication, add these rows to `$DSH_HOME/profiles/headless
   disabled: false
 - id: authorization
   disabled: false
-- id: deepseek-account
-  disabled: false
 ```
 
 The restored store uses [saved credentials before environment fallbacks](../../credentials/credentials-local/README.md). Web, SDK and ACP profiles keep that default ordering. Headless sessions, settings and tool behavior are unchanged; this profile choice is not a filesystem access boundary.

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-logseq-example",
   "description": "LogSeq diary/work-log model tools and /diary, /diary-work slash commands, ported from oh-my-pi",
-  "version": "0.2.1-rc.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

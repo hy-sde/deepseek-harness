@@ -28,8 +28,6 @@ it.each(['desktop', 'web'])('limits collection and its shutdown to the Desktop l
     name: profile, dir: '/profile', patchPath: '/profile/cordis.patch.yml', installAnchor: '/profile/package.json',
     cwd: '/workspace', home: '/home', startedBundles: [], overlays: [], telemetryDisabledEnv: undefined,
   })
-  const identity = vi.fn().mockResolvedValue(undefined)
-  ctx.provide('deepseekAccount', { getDeviceIdentity: identity } as never)
   await ctx.plugin(OTel)
   ctx.baseUrl = 'file:///'
   await ctx.plugin(Loader).await()
@@ -67,7 +65,6 @@ it.each(['desktop', 'web'])('limits collection and its shutdown to the Desktop l
     expect(entry.fiber === telemetryFiber).toBe(true)
     if (!enabled) {
       await analytics.report({ eventName: 'desktop_app_launch', timestamp: 1, attributes: {} })
-      expect(identity).not.toHaveBeenCalled()
     }
   }
   const emit = vi.spyOn(ctx.productTelemetry, 'emit')

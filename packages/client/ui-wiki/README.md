@@ -1,5 +1,5 @@
 ---
-description: "Browser-side wiki drawer for the LLM-wiki workflow: a frame-wide floating panel toggled from the sidebar foot that browses and edits the host Logseq graph, with pages, blocks, tags, and search behind a shared store."
+description: "Browser-side wiki panel for the LLM-wiki workflow: a docked main-column page behind a sidebar strip entry that browses and edits the host Logseq graph, with pages, blocks, tags, and search behind a shared store."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-client-ui-wiki` adds an embedded wiki drawer to the LLM-wiki workflow: a frame-wide floating panel toggled from the sidebar foot that browses and edits the host `wikiGraph` Logseq graph, with no desktop Logseq. Pages, blocks, tags, and search live behind a shared store with a typed wire face over the connection's `wiki` api-proxy domain. It registers two additive slots, `sidebar.footer.action` and `shell.overlay`, so mounting it never changes the host or the model plane. Choose it when the model's wiki work should stay inside the GUI; the model's own graph work runs through `@deepseek-ai/dsh-tool-logseq`, never through this drawer.
+`dsh-client-ui-wiki` adds an embedded wiki panel to the LLM-wiki workflow: a docked main-column page behind a sidebar-panel-strip entry that browses and edits the host `wikiGraph` Logseq graph, with no desktop Logseq. Pages, blocks, tags, and search live behind a shared store with a typed wire face over the connection's `wiki` api-proxy domain. It registers two additive slots, `sidebar.panellist` and `main`, so mounting it never changes the host or the model plane. Choose it when the model's wiki work should stay inside the GUI; the model's own graph work runs through `@deepseek-ai/dsh-tool-logseq`, never through this drawer.
 
 ## Table of Contents
 
@@ -20,18 +20,18 @@ English | [中文](README.zh.md)
 
 -----
 
-Embedded wiki drawer for the LLM-wiki workflow: a frame-wide floating panel toggled from the sidebar foot that browses and edits the Logseq graph served by the host `wikiGraph` service — no desktop Logseq. Pages, blocks, tags, and search live behind a shared store with a typed wire face over the connection's `wiki` api-proxy domain.
+Embedded wiki panel for the LLM-wiki workflow: a docked main-column page behind a sidebar-panel-strip entry that browses and edits the Logseq graph served by the host `wikiGraph` service — no desktop Logseq. Pages, blocks, tags, and search live behind a shared store with a typed wire face over the connection's `wiki` api-proxy domain.
 
 ## Surfaces
 
-- `sidebar.footer.action` — the **Wiki** toggle (wide label; rail shows a glyph only).
-- - `shell.overlay` — the floating **LLM Wiki** drawer: search, page list with inline creation, page view with a recursive outliner (inline block editing, add-child, delete, and page deletion) and linked references.
+- `sidebar.panellist` — the **Wiki** strip entry (icon glyph; the strip is icon-only).
+- - `main` — the docked **LLM Wiki** panel: search, page list with inline creation, page view with a recursive outliner (inline block editing, add-child, delete, and page deletion) and linked references.
 
 Slot registrations are additive — mounting this package never changes the host or the model plane.
 
 ## Model Experience
 
-None, as the drawer is a browser-only surface; the model's own wiki work runs through `@deepseek-ai/dsh-tool-logseq` and never through this package.
+None, as the panel is a browser-only surface; the model's own wiki work runs through `@deepseek-ai/dsh-tool-logseq` and never through this package.
 
 #### KV Cache effect
 
@@ -40,7 +40,7 @@ No prompt-shaping data comes from this package.
 ## Known Limitations and Deferred Work
 
 - - **Requires the host service** — mounts against `ctx.wikiGraph` (via the `wiki` apiproxy domain); without it every call answers a clean "wiki service absent" error.
-- - **CLI-backed latency** — every read/write spawns the `logseq` CLI process; the drawer shows loading/busy states but is not virtualized, so very large pages cost a full re-render.
+- - **CLI-backed latency** — every read/write spawns the `logseq` CLI process; the panel shows loading/busy states but is not virtualized, so very large pages cost a full re-render.
 - - **Property values are refs** — displayed inline as `key:: value`, edited via block text; the full property-value editor stays CLI-side.
 
 **Runtime invariant:** No companion is published. This package owns no continuous runtime relation that a same-process invariant could observe; its behavior is enforced by its package test suites.

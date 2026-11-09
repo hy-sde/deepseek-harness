@@ -2,7 +2,7 @@
 
 [English](wiki.md) | 中文
 
-Wiki 缝——通过 [dsh-logseq-graph](../../packages/logseq/logseq-graph) 服务把安装的 `logseq` CLI 包装成内嵌 LLM-wiki（`ctx.wikiGraph`），再由 [dsh-api-wiki-controller](../../packages/api/wiki-controller) 宿主控制器（`ctx.wikiController`）经 Typert `wiki` Remote 命名空间暴露给 GUI 客户端。浏览器端表面（抽屉 + 侧栏开关）位于 [dsh-client-ui-wiki](../../packages/client/ui-wiki)。
+Wiki 缝——通过 [dsh-logseq-graph](../../packages/logseq/logseq-graph) 服务把安装的 `logseq` CLI 包装成内嵌 LLM-wiki（`ctx.wikiGraph`），再由 [dsh-api-wiki-controller](../../packages/api/wiki-controller) 宿主控制器（`ctx.wikiController`）经 Typert `wiki` Remote 命名空间暴露给 GUI 客户端。浏览器端表面（主列停靠面板 + 侧栏图标条目）位于 [dsh-client-ui-wiki](../../packages/client/ui-wiki)。
 
 控制器把 logseq-graph 的线上数据投影到其声明形状上——页面行、带反向链接引用的嵌套块树、标签/属性列表、文本搜索、原始 Datalog 查询行以及 upsert/remove/server 操作——并对失败分类（图缝缺失时为 `wiki-unavailable`，携带 CLI 细节的 `wiki-cli-error`，其余为 `internal`）。
 
@@ -10,7 +10,7 @@ Wiki 缝——通过 [dsh-logseq-graph](../../packages/logseq/logseq-graph) 服�
 
 ## 坐标
 
-两个服务都是 web profile 的宿主层行：`logseq-graph` 拥有 `llm-wiki` 图谱配置，`wiki-controller` 每进程只注册一个 `wiki` Remote 命名空间，`ui-wiki` 挂载抽屉与侧栏开关而不声明任意槽位。
+两个服务都是 web profile 的宿主层行：`logseq-graph` 拥有 `llm-wiki` 图谱配置，`wiki-controller` 每进程只注册一个 `wiki` Remote 命名空间，`ui-wiki` 挂载停靠面板与侧栏图标条目而不声明任意槽位。
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

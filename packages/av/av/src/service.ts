@@ -246,6 +246,7 @@ export class AvService extends Service {
     } catch (error: unknown) {
       clearTimeout(timer)
       if (signal !== undefined) signal.removeEventListener('abort', forward)
+      /* jscpd:ignore-start -- the launch-failure and settlement-failure catch arms of AvService.run keep independent copies of the timeout/launch classification. */
       if (state.timedOut) {
         throw new AvCommandError(`av ${argv[0] ?? ''} timed out after ${limit}ms`, { exitCode: null, stderr: '', cause: error })
       }
@@ -255,6 +256,7 @@ export class AvService extends Service {
         cause: error,
       })
     }
+      /* jscpd:ignore-end */
     clearTimeout(timer)
     if (signal !== undefined) signal.removeEventListener('abort', forward)
     const stdout = handle.collected.stdout?.readFrom(0)

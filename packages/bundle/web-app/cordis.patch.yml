@@ -161,9 +161,6 @@
     - id: ui-settings-account
       name: '@deepseek-ai/dsh-client-ui-settings-account'
 
-    - id: account-controller
-      name: '@deepseek-ai/dsh-api-account-controller'
-
     - id: settings-controller
       name: '@deepseek-ai/dsh-api-settings-controller'
 
@@ -295,13 +292,6 @@
 
     - id: ui-sidebar
       name: '@deepseek-ai/dsh-client-ui-sidebar'
-
-    # Countdown timer cell beside Settings at the sidebar foot: start /
-    # restart, preset or custom duration (default 45 min), and a chime + Web
-    # notification when the time is up. Name comes from this package.
-    - id: ui-countdown
-      name: '@deepseek-ai/dsh-client-ui-countdown'
-
 
     # The right Sidebar: one docking surface per session over ui-dockkit.
     - id: ui-sidebar-right
@@ -495,7 +485,7 @@
 
     # LLM-wiki graph service (host-plane service backed by the `logseq` CLI):
     # exposes graph reads/writes to the browser via the Typert `wiki` Remote
-    # namespace, which the ui-wiki drawer consumes. Graph pinned to the llm-wiki
+    # namespace, which the ui-wiki panel consumes. Graph pinned to the llm-wiki
     # DB graph.
     - id: logseq-graph
       name: '@deepseek-ai/dsh-logseq-graph'

@@ -103,7 +103,6 @@ export async function hasProviderApiKey(ctx: Context): Promise<boolean> {
   }
   const namespaces = settings.describe({ redactSecrets: true })
   for (const provider of ctx.llm.listConfigurableProviders()) {
-    if (provider.provider === 'deepseek-account') continue
     let profile = namespaces.find(namespace => namespace.ns === provider.settingsNs)?.value
     for (const key of provider.settingsPath) {
       profile = typeof profile === 'object' && profile !== null ? Reflect.get(profile, key) : undefined

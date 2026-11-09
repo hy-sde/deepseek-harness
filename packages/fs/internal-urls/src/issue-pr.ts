@@ -441,6 +441,7 @@ async function fetchAndRenderSingle(
   const baseFields = 'number,title,state,isDraft,author,body,baseRefName,headRefName,createdAt,updatedAt'
   const fields = parsed.comments ? `${baseFields},comments` : baseFields
   const args = [scheme, 'view', String(parsed.number), '--repo', repo, '--json', fields]
+  /* jscpd:ignore-start -- renderSingle's item parameter and the gh view JSON cast keep independent copies of this issue/PR payload type */
   const item = await deps.cli.json(cwd, args, context?.signal) as {
     number?: number
     title?: string
@@ -453,6 +454,7 @@ async function fetchAndRenderSingle(
     headRefName?: string
     updatedAt?: string
   }
+  /* jscpd:ignore-end */
   // `gh view` renders comments by default; the `--json comments` field is what
   // brings them into the payload, so disabling comments drops the field and
   // strips whatever the payload carried anyway.

@@ -1,4 +1,5 @@
 /** The Composer model's private Lexical editor, projections, and node operations. */
+import { DRAFT_SUBMITTED_TAG } from '../../contract/draft-editor.ts'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type { LexicalEditor, NodeKey } from 'lexical'
 import {
@@ -62,8 +63,6 @@ function $appendParagraphs(text: string): void {
 /** Undo merge window for contiguous typing, in ms (the old machine's mergeWindowMs). */
 const HISTORY_MERGE_DELAY_MS = 1000
 
-/** Editor update that removes submitted content while retaining any newer draft suffix. */
-export const DRAFT_SUBMITTED_TAG = 'dsh-draft-submitted'
 
 /** One model-owned editor; registration and disposal remain with its model. */
 export class DraftEditorRuntime {

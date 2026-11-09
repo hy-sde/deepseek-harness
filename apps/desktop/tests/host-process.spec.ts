@@ -147,7 +147,7 @@ ${HTTP_HOST}`)
     onTestFinished(async () => { await journal.close() })
     const sink = vi.fn(value => journal.enqueue(JSON.stringify(value)))
     const first = new DesktopHostProcess(process.execPath, runtime, runtime, undefined, process.env,
-      undefined, undefined, undefined, undefined, sink)
+      undefined, undefined, undefined, sink)
     hosts.push(first)
     await first.start()
     await first.stop()
@@ -160,7 +160,7 @@ ${HTTP_HOST}`)
     try {
       const failure = vi.fn()
       const second = new DesktopHostProcess(process.execPath, runtime, runtime, undefined, process.env,
-        failure, undefined, undefined, undefined, () => { throw new Error('sink unavailable') })
+        failure, undefined, undefined, () => { throw new Error('sink unavailable') })
       hosts.push(second)
       await second.start()
       expect(await second.updateTasks('inspect')).toBe(false)
@@ -339,25 +339,3 @@ ${HTTP_HOST}`)
   })
 })
 
-it.each([null, 'stable-account'])('carries Platform identity %s over private IPC and clears credentials on shutdown', async (userId) => {
-  const runtime = projectWithHost(HTTP_HOST.replace("process.send({ type: 'ready'", "process.send({ type: 'platform-session', session: { origin: 'https://platform.deepseek.com', userId: " + JSON.stringify(userId) + ", token: 'fixture-secret', embeddedPageDist: 'feat/test' } }); process.send({ type: 'ready'"))
-  const changed = vi.fn()
-  const host = new DesktopHostProcess(process.execPath, runtime, runtime, undefined, process.env, undefined, undefined, undefined, changed)
-  hosts.push(host)
-  await host.start()
-  expect(changed).toHaveBeenCalledWith({ origin: 'https://platform.deepseek.com', userId, token: 'fixture-secret', embeddedPageDist: 'feat/test' })
-  await host.stop()
-  expect(changed).toHaveBeenLastCalledWith(null)
-})
-
-it.each([undefined, '', 7])('rejects malformed Platform account identity %s on private IPC', async (userId) => {
-  const session = { origin: 'https://platform.deepseek.com', token: 'fixture-secret', userId }
-  const runtime = projectWithHost(HTTP_HOST.replace("process.send({ type: 'ready'",
-    `process.send({ type: 'platform-session', session: ${JSON.stringify(session)} }); process.send({ type: 'ready'`))
-  const changed = vi.fn()
-  const host = new DesktopHostProcess(process.execPath, runtime, runtime, undefined, process.env, undefined, undefined, undefined, changed)
-  hosts.push(host)
-  await expect(host.start()).rejects.toThrow('invalid IPC event')
-  expect(changed.mock.calls).toEqual([[null]])
-  await host.stop()
-})

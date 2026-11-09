@@ -45,7 +45,7 @@
     "@deepseek-ai/dsh-compaction-tool-result-pruner": "workspace:*",
     "@deepseek-ai/dsh-skill": "workspace:*",
     "@deepseek-ai/dsh-skill-filesystem": "workspace:*",
-    "@deepseek-ai/dsh-yaml": "workspace:~",
+    "@deepseek-ai/dsh-yaml": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~"
   }
 }

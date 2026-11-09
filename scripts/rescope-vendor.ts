@@ -103,6 +103,14 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
   { file: 'packages/preset/agent-preset-registry/tests/session.spec.ts', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/src/index.ts', upstream: ['cordis'] },
+  // The tool catalog and the fs-observation upgrade guide name the Web `cordis`
+  // preset id in prose (and the catalog generator carries that sentence), so the
+  // bare name there is product data, not a package reference.
+  { file: 'docs/tool-catalog.md', upstream: ['cordis'] },
+  { file: 'docs/tool-catalog.zh.md', upstream: ['cordis'] },
+  { file: 'scripts/gen-tool-catalog.ts', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off/guide.md', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off/guide.zh.md', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/tests/creation.spec.ts', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/tests/loader-composition.spec.ts', upstream: ['cordis'] },
   // Preset selection, reminder policy and UI copy use the same product id.
@@ -188,9 +196,9 @@ const POSTCONDITIONS: readonly PostCondition[] = [
   { file: 'packages/typert/generator/src/analyzer.ts', text: '!== \'@deepseek-ai/cordis\'', count: 2 },
   { file: 'scripts/check-workspace-constraints.ts', text: '?.[\'@deepseek-ai/cordis\']', count: 2 },
   { file: 'packages/boot/app-boot/tsdown.config.ts', text: '[\'@deepseek-ai/cordis-plugin-include\']', count: 1 },
-  { file: 'tsconfig.base.json', text: '"@deepseek-ai/cordis-plugin-loader": ["./vendor/loader/src"]', count: 1 },
+  { file: 'tsconfig.base.json', text: '"@deepseek-ai/cordis-plugin-loader"', count: 1 },
   // The vendored README owns this required entry; reject its deletion or duplication.
-  { file: 'vendor/README.md', text: '17. **`@deepseek-ai` rescope**', count: 1 },
+  { file: 'vendor/README.md', text: '**V17 · `@deepseek-ai` rescope**', count: 1 },
   { file: 'pnpm-workspace.yaml', text: 'cordis@4.0.0-rc.7', count: 0 },
   // The preset ids in this table are product data, not package names.
   { file: 'packages/client/ui-agent-preset/tests/locales.client.spec.ts', text: '[\'cordis\', \'presetCordisName\'', count: 1 },
@@ -388,7 +396,7 @@ const VENDORED_LIBRARY = /^@deepseek-ai\\/(?:(?:cosmokit|schemastery)(?:\\/|$)|c
     id: 'notices-vendored-section',
     file: 'scripts/gen-third-party-notices.ts',
     find: 'The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm. All are MIT-licensed',
-    replace: 'The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the \\`@deepseek-ai\\` scope. All are MIT-licensed',
+    replace: 'The Cordis framework and its foundation libraries are source-vendored into this repository rather than consumed from npm, and republished under the \\`@deepseek-ai\\` scope. Each directory preserves its upstream \\`LICENSE\\` file; rows record the per-package license, with \\`MIT / Apache-2.0\\` marking upstreams mid MIT→Apache-2.0 relicensing where unconsented contributions remain MIT. Exact upstream commits and local modifications are recorded in [\\`vendor/README.md\\`](vendor/README.md).',
     expect: 1,
   },
   {
@@ -399,7 +407,7 @@ const VENDORED_LIBRARY = /^@deepseek-ai\\/(?:(?:cosmokit|schemastery)(?:\\/|$)|c
 \${vendored.map(row => \`| \\\`\${row.npmName}\\\` | [\${row.upstream.replace('https://', '')}](\${row.upstream}) | MIT |\`).join('\\n')}`,
     replace: `| Package | Upstream name | Source | License |
 | --- | --- | --- | --- |
-\${vendored.map(row => \`| \\\`\${row.npmName}\\\` | \\\`\${row.upstreamName}\\\` | [\${row.sourceDirectory}](\${row.sourceDirectory}/) | MIT |\`).join('\\n')}`,
+\${vendored.map(row => \`| \\\`\${row.npmName}\\\` | \\\`\${row.upstreamName}\\\` | [\${row.sourceDirectory}](\${row.sourceDirectory}/) | \${row.license} |\`).join('\\n')}`,
     expect: 1,
   },
   {
@@ -719,6 +727,9 @@ function main(): void {
 
   for (const file of files) {
     const path = resolve(root, file)
+    // `git ls-files` lists index entries, including files a work-in-progress
+    // tree has already deleted; a missing file carries no residue to check.
+    if (!existsSync(path)) continue
     const before = readFileSync(path, 'utf8')
     const { text: after, lines } = rewrite(before, file, all)
     if (after === before) continue

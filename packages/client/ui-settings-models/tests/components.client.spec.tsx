@@ -140,7 +140,7 @@ function wireNamespaces(): SettingsNamespaceView[] {
       revision: 4,
     },
     {
-      ns: 'llm-deepseek-account',
+      ns: 'fixture-ns',
       schema: JSON.parse(JSON.stringify(DeepSeekConfig.toJSON())) as JsonValue,
       value: {
         baseURL: 'https://base',
@@ -245,7 +245,7 @@ function ctxWith(face: object): PageContext {
   const existing = contexts.get(face)
   if (existing !== undefined) return existing
   const ctx = Object.assign(new Context(), { remote: { ...face,
-    session: { initializeDefaultModel: async () => ({ ok: true, value: undefined }) },
+    session: {},
   } })
   contexts.set(face, ctx)
   return ctx
@@ -1404,13 +1404,11 @@ describe('ModelsSection', () => {
   })
 
   it('saves credentials without changing the default model', async () => {
-    const { ctx, set } = await mountDeepSeekCard()
-    const initialize = vi.spyOn(ctx.remote.session, 'initializeDefaultModel')
+    const { set } = await mountDeepSeekCard()
     fireEvent.change(await screen.findByLabelText(en.keyInput), { target: { value: 'test-key' } })
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(screen.queryByText(en.apply)).toBeNull() })
     expect(set).toHaveBeenCalledOnce()
-    expect(initialize).not.toHaveBeenCalled()
   })
 
   it('reveals only the current key draft and masks it again on change', async () => {
@@ -2411,18 +2409,6 @@ it('keeps an inherited profile endpoint ahead of dynamic provider configuration'
   const input = screen.getByLabelText<HTMLInputElement>(en.baseUrl)
   expect(input.placeholder).toBe('https://team.example/openai/v1')
   expect(input.getAttribute('aria-describedby')).toBeNull()
-})
-
-it('renders the localized account row as signed in without an edit action', async () => {
-  const scripted = scriptedFace({})
-  const { controller } = await mountFace(scripted)
-  const row = controller.store.getSnapshot().rows[0]!
-  await act(async () => { controller.store.update((state) => {
-    state.rows = [{ ...row, accountAvailable: true, entry: { ...row.entry, provider: 'deepseek-account' } }]
-  }) })
-  const item = screen.getByText(en.deepSeekAccount).closest('li')!
-  expect(within(item).getByText(en.accountSignedIn)).toBeTruthy()
-  expect(within(item).queryByText(en.edit)).toBeNull()
 })
 
 it.each([es, fr, de, ru, pt])('keeps capacity examples in translated validation messages parseable', (dictionary) => {

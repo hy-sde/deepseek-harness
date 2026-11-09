@@ -6,7 +6,7 @@
 
 ## 请求与结果
 
-`TranslationProvider` 选择 `bing`、`google`、`deepseek-account` 或 `deepseek-official`。`TranslationRequest` 提供 `text`、`targetLanguage` 及可选的 `sourceLanguage`、`provider` 与带品牌类型的 `sessionId`。`resolve()` 将显式路由写入 `TranslationSpec`：配置的默认 Provider 为 Bing，省略源语言时自动检测。常见中文 locale 标签映射为所选 Provider 的语言代码。`translate()` 返回所选 Provider 翻译后的纯文本。
+`TranslationProvider` 选择 `bing`、`google` 或 `deepseek-official`。`TranslationRequest` 提供 `text`、`targetLanguage` 及可选的 `sourceLanguage`、`provider` 与带品牌类型的 `sessionId`。`resolve()` 将显式路由写入 `TranslationSpec`：配置的默认 Provider 为 Bing，省略源语言时自动检测。常见中文 locale 标签映射为所选 Provider 的语言代码。`translate()` 返回所选 Provider 翻译后的纯文本。
 
 服务公开配置的 `maxTextChars`，单位为 UTF-16 code unit。消费者先拆分超长输入，再请求翻译。每次调用限制响应字节数，并将响应体读取计入超时。调用者取消和服务卸载都会中止已接收的请求；卸载等待这些请求完成。
 
@@ -14,7 +14,7 @@
 
 `TranslationError` 的 `TranslationErrorCode` 区分文本超限、HTTP 失败、无效响应、响应超限、服务自身超时与请求失败。`TRANSLATION_SESSION_REQUIRED` 拒绝缺失的持久化后端或 Session，`TRANSLATION_SESSION_INACTIVE` 在调用 Provider 前拒绝未激活且缓存未命中的 Session，`TRANSLATION_STORAGE_ERROR` 拒绝无效保存记录或持久化失败。Provider 错误信息省略提交的文本与响应体。失败时不选择其他 Provider。响应作为外部 JSON 校验，重定向被拒绝。
 
-`TRANSLATION_UNAVAILABLE` 拒绝缺失的活跃内置所有者或已注册路由、未配置的凭据、目录中不存在精确的 `deepseek-flash`、派发前所有者、模型配置（官方路由的 `models` 或账号路由的 `modelOverrides`）或官方凭据引用变化、提供方卸载，以及准备后的调用推理强度不是 `off` 的情况。原生 `finish` 的原因为 `error` 时映射为 `TRANSLATION_REQUEST_FAILED`；缺失 finish 或其他非 `stop` 原因映射为 `TRANSLATION_INVALID_RESPONSE`。
+`TRANSLATION_UNAVAILABLE` 拒绝缺失的活跃内置所有者或已注册路由、未配置的凭据、目录中不存在精确的 `deepseek-flash`、派发前模型配置（官方路由的 `models`）或官方凭据引用变化、提供方卸载，以及准备后的调用推理强度不是 `off` 的情况。原生 `finish` 的原因为 `error` 时映射为 `TRANSLATION_REQUEST_FAILED`；缺失 finish 或其他非 `stop` 原因映射为 `TRANSLATION_INVALID_RESPONSE`。
 
 Google 在 form POST 请求体中接收原文，Bing 在 JSON POST 请求体中接收原文。两者都是远端服务。免登录端点不保证开发者 API 的可用性或免费额度。区域连通性须在用户网络上验证。
 
@@ -22,7 +22,7 @@ Google 在 form POST 请求体中接收原文，Bing 在 JSON POST 请求体中�
 
 绑定 Session 的调用对所有 Provider 使用 `plugin:translator/request` 与 `plugin:translator/result`。请求保留精确原文、语言标签、所选 Provider 和翻译规则标识，成功结果引用请求序号。可选请求 metadata 保存 Provider 专有细节，不改变记录类型。translator 在外部派发前完成请求检查点，在返回前完成结果检查点。只读缓存查找先于 Provider 调用，且不要求 Session 已激活；失败或未完成尝试不提供可复用译文。新记录使用已激活 Session 的现有写入器。translator 不打开写句柄，也不激活 Session。翻译记录保留原始事件与模型输入。不指定 Session 的匿名调用保持无状态；付费路由要求 Session。未来格式迁移对实验性记录的保留为尽力而为。
 
-付费缓存未命中时要求内置账号或官方 API 所有者处于活动状态、凭据已配置，且目录包含 ID 恰好为 `deepseek-flash` 的模型；名称和版本标签不参与匹配，pi-ai 路由被排除。每次未命中准备一次关闭思考的独立纯文本查询。精确配置、系统指令和唯一原文片段保存在同一请求记录的可选 `metadata.modelRequest` 中。读取保存结果先于此项准入，因此凭据缺失不会使既有译文失效。原生请求扩展不接收主 Session 身份，不能上传其完整日志。
+付费缓存未命中时要求内置官方 API 所有者处于活动状态、凭据已配置，且目录包含 ID 恰好为 `deepseek-flash` 的模型；名称和版本标签不参与匹配，pi-ai 路由被排除。每次未命中准备一次关闭思考的独立纯文本查询。精确配置、系统指令和唯一原文片段保存在同一请求记录的可选 `metadata.modelRequest` 中。读取保存结果先于此项准入，因此凭据缺失不会使既有译文失效。原生请求扩展不接收主 Session 身份，不能上传其完整日志。
 
 ## 思考内容展示
 

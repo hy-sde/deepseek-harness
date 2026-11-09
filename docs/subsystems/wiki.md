@@ -2,7 +2,7 @@
 
 English | [中文](wiki.zh.md)
 
-The wiki seam — an embedded LLM-wiki (`ctx.wikiGraph`) backed by the installed `logseq` CLI through the [dsh-logseq-graph](../../packages/logseq/logseq-graph) service, exposed to GUI clients over the Typert `wiki` Remote namespace by the [dsh-api-wiki-controller](../../packages/api/wiki-controller) host controller (`ctx.wikiController`). The browser-half surface (drawer + sidebar toggle) lives in [dsh-client-ui-wiki](../../packages/client/ui-wiki).
+The wiki seam — an embedded LLM-wiki (`ctx.wikiGraph`) backed by the installed `logseq` CLI through the [dsh-logseq-graph](../../packages/logseq/logseq-graph) service, exposed to GUI clients over the Typert `wiki` Remote namespace by the [dsh-api-wiki-controller](../../packages/api/wiki-controller) host controller (`ctx.wikiController`). The browser-half surface (docked main panel + sidebar strip entry) lives in [dsh-client-ui-wiki](../../packages/client/ui-wiki).
 
 The controller projects the logseq-graph wire onto its declared shapes — page rows, nested block trees with linked references, tag/property listings, text search, raw Datalog query rows, and upsert/remove/server actions — and classifies failures (`wiki-unavailable` when the graph seam is missing, `wiki-cli-error` carrying the CLI detail, `internal` otherwise).
 
@@ -10,7 +10,7 @@ Source: [`packages/logseq/logseq-graph/src/service.ts`](../../packages/logseq/lo
 
 ## Coordinates
 
-Both services are host-plane rows in the web profile: `logseq-graph` owns the `llm-wiki` graph configuration, `wiki-controller` registers the single `wiki` Remote namespace per process, and `ui-wiki` mounts the drawer and sidebar toggle without declaring slots.
+Both services are host-plane rows in the web profile: `logseq-graph` owns the `llm-wiki` graph configuration, `wiki-controller` registers the single `wiki` Remote namespace per process, and `ui-wiki` mounts the docked panel and sidebar strip entry without declaring slots.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

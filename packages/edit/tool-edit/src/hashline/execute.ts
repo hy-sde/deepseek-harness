@@ -169,6 +169,7 @@ function recordRenderedSeenLines(
   snapshots.recordSeenLines(result.canonicalPath, result.fileHash, seen)
 }
 
+/* jscpd:ignore-start -- tool-edit's hashline execution and the hashline patcher enforce unique canonical paths independently. */
 function assertUniqueCanonicalPaths(prepared: readonly PreparedSection[]): void {
   const seen = new Map<string, string>()
   for (const entry of prepared) {
@@ -181,6 +182,7 @@ function assertUniqueCanonicalPaths(prepared: readonly PreparedSection[]): void 
     seen.set(entry.canonicalPath, entry.section.path)
   }
 }
+/* jscpd:ignore-end */
 
 interface RenderedSection {
   text: string

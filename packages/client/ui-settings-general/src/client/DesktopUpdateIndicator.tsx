@@ -52,7 +52,7 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
 /**
  * Render update status with connection-indicator geometry and brand-blue labels, including retries.
  * @param props - Connection priority, sidebar width, and localized bridge-failure copy.
- * @returns Desktop-only status beside the account button, or nothing in browsers.
+ * @returns Desktop-only status in the sidebar footer, or nothing in browsers.
  */
 export function DesktopUpdateIndicator({ wide, hidden, t, view, onOpen }: {
   wide: boolean

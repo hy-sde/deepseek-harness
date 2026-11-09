@@ -846,6 +846,7 @@ export class DapClient {
       timer.unref()
     })
 
+    /* jscpd:ignore-start -- #spawnSocketUnix and #spawnSocketClientAddr keep parallel connect-and-cleanup tails for their transport modes */
     try {
       const socket = await Promise.race([connectionPromise, timeoutPromise, handleExitRejection(handle)])
       const proc = this.#procFromHandle(handle)
@@ -864,6 +865,7 @@ export class DapClient {
     } finally {
       server.close()
     }
+    /* jscpd:ignore-end */
   }
 
   static #procFromHandle(handle: SubprocessHandle): DapClient['proc'] {
@@ -991,6 +993,7 @@ async function handleExitRejection(handle: SubprocessHandle): Promise<never> {
 
 /** Reserve a free TCP port by binding a server to port 0, noting it, and closing. */
 async function reserveTcpPort(): Promise<number> {
+  /* jscpd:ignore-start -- the inline port reservation in #spawnSocketClientAddr and the reserveTcpPort helper keep independent copies of the bind-to-port-0 probe */
   const server = createServer()
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
@@ -1000,6 +1003,7 @@ async function reserveTcpPort(): Promise<number> {
   if (address === null || typeof address === 'string') {
     throw new Error('Failed to reserve a TCP port for a TCP-mode adapter')
   }
+  /* jscpd:ignore-end */
   const port = address.port
   await new Promise<void>((resolve, reject) => {
     server.close((error) => { if (error) reject(error); else resolve() })

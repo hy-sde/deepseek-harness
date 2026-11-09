@@ -12,6 +12,7 @@ import { execFile } from 'node:child_process'
  * @returns a promise settling once the probe succeeds.
  * @throws a descriptive error with an install hint when the probe fails.
  */
+/* jscpd:ignore-start -- the tool-codebase-memory and tool-logseq CLI availability probes keep independent copies of this execFile probe scaffolding; each package owns its CLI's install hint. */
 export function checkLogseqCli(cliPath: string = 'logseq'): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     execFile(cliPath, ['--version'], { timeout: 8000, windowsHide: true }, (err, _stdout, stderr) => {
@@ -27,3 +28,4 @@ export function checkLogseqCli(cliPath: string = 'logseq'): Promise<void> {
     })
   })
 }
+/* jscpd:ignore-end */

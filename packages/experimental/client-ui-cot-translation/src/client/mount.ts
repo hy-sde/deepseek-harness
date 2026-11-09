@@ -32,8 +32,6 @@ async function registerUi(ctx: Context, lifetime: AbortController): Promise<void
   ctx.effect(() => [
     ctx.remote.$on('settings/document-updated', invalidate),
     ctx.remote.$on('llm/adapters-updated', invalidate),
-    ctx.remote.$on('deepseek-account/session-expired', invalidate),
-    ctx.remote.$on('deepseek-account/model-sign-in-required', invalidate),
     ctx.remote.$on('credentials/record-updated', invalidate),
     ctx.remote.$on('credentials/reference-updated', invalidate),
   ])

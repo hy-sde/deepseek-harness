@@ -1,7 +1,12 @@
 /** Editor-facing ranges, reference projections, and the composer keyboard interface. */
+import type { MutableRefObject } from 'react'
 import type { LexicalEditor } from 'lexical'
 import type { InputState } from './input.ts'
-import type { InputSubmitMode } from './composer-submission.ts'
+import type { BusyEnterBehavior, InputSubmitMode } from './composer-submission.ts'
+
+/** Editor update that removes submitted content while retaining any newer draft suffix. */
+export const DRAFT_SUBMITTED_TAG = 'dsh-draft-submitted'
+
 
 /** Pick-time draft span guarded by the input revision. */
 export interface TokenSpan {
@@ -103,7 +108,33 @@ export interface ComposerKeyboard {
    * @returns the unbind disposer.
    */
   bindFilePicker(picker: { available(): boolean; open(): void }): () => void
+  /**
+   * Bind the editor's gesture keymap to the mounted composer's live guards.
+   * @param gate - live bar values read by the installed handlers at gesture time.
+   * @returns the keymap disposer.
+   */
+  bindKeymap(gate: MutableRefObject<DraftViewGate>): () => void
 }
+
+/**
+ * Live composer-bar values the editor keymap handlers read at gesture time,
+ * retained by the bar through a ref so the registration survives re-renders.
+ */
+export interface DraftViewGate {
+  locked: boolean
+  machineBusy: boolean
+  canSteerQueue: boolean
+  running: boolean
+  steeringAvailable: boolean
+  busyEnter: BusyEnterBehavior
+  intakeFiles: (files: readonly File[], directories?: ReadonlySet<File>) => void
+  uploadsPending: boolean
+  /** Toast text explaining why pending uploads hold the send. */
+  uploadsHeldText: string
+  showToast: (text: string) => void
+  canAcceptDrop: boolean
+}
+
 
 /** Half-open [start, end) range/selection in detect-projection coordinates. */
 export interface EditSelection {

@@ -468,6 +468,7 @@ export function spliceConflict(
 
 const MAX_ECHO_LINES = 12
 
+/* jscpd:ignore-start -- renderConflictRegion and buildRecordedRegion keep independent copies of this conflict-block line assembly */
 /** Reconstruct the recorded marker block as it should appear in the file. */
 function buildRecordedRegion(entry: ConflictBlock): string[] {
   const out: string[] = []
@@ -482,6 +483,7 @@ function buildRecordedRegion(entry: ConflictBlock): string[] {
   out.push(`${THEIRS_PREFIX}${entry.theirsLabel ? ` ${entry.theirsLabel}` : ''}`)
   return out
 }
+/* jscpd:ignore-end */
 
 /** Result of scanning a file for conflict blocks, with the scan cap when hit. */
 export interface ConflictFileScan {

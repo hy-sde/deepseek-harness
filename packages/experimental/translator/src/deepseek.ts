@@ -4,7 +4,6 @@ import type {} from '@deepseek-ai/cordis-plugin-loader'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { BlockAssembler, ReasoningEffortId, type LlmRuntime, type GenerateOptions, type RequestUserInput, type FinishReason, type TextBlock } from '@deepseek-ai/dsh-llm'
-import type { Config as AccountNativeConfig } from '@deepseek-ai/dsh-llm-deepseek-account'
 import type { Config as OfficialNativeConfig } from '@deepseek-ai/dsh-llm-deepseek-api-key'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
@@ -14,20 +13,16 @@ import { TranslationError } from './error.ts'
 import type { TranslationLog } from './storage.ts'
 
 const MODEL = 'deepseek-flash'
-const OWNER_PACKAGES = { 'deepseek-account': '@deepseek-ai/dsh-llm-deepseek-account',
-  'deepseek-official': '@deepseek-ai/dsh-llm-deepseek-api-key' } as const
+const OWNER_PACKAGES = { 'deepseek-official': '@deepseek-ai/dsh-llm-deepseek-api-key' } as const
 
 interface NativeOwnerFields { llm: LlmRuntime; fiber: Fiber }
-type NativeOwner = NativeOwnerFields & (
-  | { provider: 'deepseek-account'; config: AccountNativeConfig }
-  | { provider: 'deepseek-official'; config: OfficialNativeConfig }
-)
-/** Configured model input of an owner: Account overrides over its listing, or the Official catalog. */
-type ModelConfig = ReturnType<AccountNativeConfig['modelOverrides']['get']> | ReturnType<OfficialNativeConfig['models']['get']>
-type EligibleOwner = NativeOwner & { modelConfig: ModelConfig; apiKeyRef?: string }
+type NativeOwner = NativeOwnerFields & { provider: 'deepseek-official'; config: OfficialNativeConfig }
+/** Configured model input of an owner: the Official catalog. */
+type ModelConfig = ReturnType<OfficialNativeConfig['models']['get']>
+type EligibleOwner = NativeOwner & { modelConfig: ModelConfig; apiKeyRef: string }
 
 function modelConfigOf(owner: NativeOwner): ModelConfig {
-  return owner.provider === 'deepseek-account' ? owner.config.modelOverrides.get() : owner.config.models.get()
+  return owner.config.models.get()
 }
 
 /**
@@ -71,16 +66,14 @@ function nativeOwner(ctx: Context, provider: PaidTranslationProvider): NativeOwn
   if (directory === undefined || directory.settingsPath.length !== 0) return undefined
   const entry = [...loader.entries()].find(row => row.options.id === directory.settingsNs && row.options.name === OWNER_PACKAGES[provider])
   if (entry?.fiber?.state !== FiberState.ACTIVE) return undefined
-  return provider === 'deepseek-account'
-    ? { llm, fiber: entry.fiber.ctx.fiber, provider, config: entry.fiber.effectiveConfig as AccountNativeConfig }
-    : { llm, fiber: entry.fiber.ctx.fiber, provider, config: entry.fiber.effectiveConfig as OfficialNativeConfig }
+  return { llm, fiber: entry.fiber.ctx.fiber, provider, config: entry.fiber.effectiveConfig as OfficialNativeConfig }
 }
 
 function unchanged(ctx: Context, provider: PaidTranslationProvider, previous: EligibleOwner): NativeOwner | undefined {
   const current = nativeOwner(ctx, provider)
   if (current === undefined || current.fiber !== previous.fiber
     || modelConfigOf(current) !== previous.modelConfig
-    || (current.provider === 'deepseek-official' && current.config.apiKeyEnv.get() !== previous.apiKeyRef)) return undefined
+    || current.config.apiKeyEnv.get() !== previous.apiKeyRef) return undefined
   return current
 }
 
@@ -90,8 +83,8 @@ async function eligible(ctx: Context, provider: PaidTranslationProvider, signal:
   const owner = nativeOwner(ctx, provider)
   if (owner === undefined) return undefined
   const modelConfig = modelConfigOf(owner)
-  const apiKeyRef = owner.provider === 'deepseek-official' ? owner.config.apiKeyEnv.get() : undefined
-  if (apiKeyRef !== undefined) {
+  const apiKeyRef = owner.config.apiKeyEnv.get()
+  {
     const credentials = ctx.get('credentials')
     if (credentials === undefined) {
       if ((launchEnvironmentOf(ctx).get(apiKeyRef)?.value.length ?? 0) === 0) return undefined
@@ -100,7 +93,8 @@ async function eligible(ctx: Context, provider: PaidTranslationProvider, signal:
   const catalog = await awaitMetadata(() => owner.llm.listModels(provider), signal, track)
   signal.throwIfAborted()
   if (!catalog.some(model => model.id === MODEL)) return undefined
-  const accepted = { ...owner, modelConfig, ...apiKeyRef === undefined ? {} : { apiKeyRef } }
+  if (apiKeyRef === undefined) return undefined
+  const accepted = { ...owner, modelConfig, apiKeyRef }
   return unchanged(ctx, provider, accepted) === undefined ? undefined : accepted
 }
 
@@ -116,7 +110,7 @@ export async function availablePaidProviders(ctx: Context, config: Config, signa
   track: (work: Promise<unknown>) => void): Promise<readonly TranslationProvider[]> {
   using timeout = deadline(signal, config.deepseekTimeoutMs, 'TRANSLATION_TIMEOUT')
   const available: TranslationProvider[] = ['bing', 'google']
-  for (const provider of ['deepseek-account', 'deepseek-official'] as const) {
+  for (const provider of ['deepseek-official'] as const) {
     try {
       const candidate = await eligible(ctx, provider, timeout.signal, track)
       timeout.signal.throwIfAborted()

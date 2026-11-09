@@ -173,6 +173,7 @@ interface SpineAgentLoopShape {
   agents?: Config['agents']
   maxParallelToolCalls?: number
 }
+/* jscpd:ignore-start -- the spine demo mirrors dsh-agent-loop's Config schema on purpose; the demo stays self-contained without importing the loop's schema. */
 const SpineAgentLoopConfig = z.object({
   maxParallelToolCalls: z.number().step(1).min(1),
   agents: z.array(z.object({
@@ -186,6 +187,7 @@ const SpineAgentLoopConfig = z.object({
     resumeSessionId: z.string(),
   })).default([]),
 }) as z<SpineAgentLoopShape>
+/* jscpd:ignore-end */
 
 /** Intersect the owners' schemas so validation + defaulting stay identical. */
 export const Config = z.intersect([

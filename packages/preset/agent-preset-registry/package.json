@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-app-boot": "workspace:*",
-    "@deepseek-ai/dsh-yaml": "workspace:~",
+    "@deepseek-ai/dsh-yaml": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "@deepseek-ai/zod": "workspace:~"
   },

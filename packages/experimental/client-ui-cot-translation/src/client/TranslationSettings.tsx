@@ -21,7 +21,6 @@ function providerLabel(provider: string, t: TranslationSettingsProps['t']): stri
   switch (provider) {
     case 'bing': return t('bing')
     case 'google': return t('google')
-    case 'deepseek-account': return t('deepseekAccount')
     case 'deepseek-official': return t('deepseekOfficial')
     default: return provider
   }
@@ -39,7 +38,7 @@ export function TranslationSettings(props: TranslationSettingsProps) {
   const availableProviders = props.useAvailableProviders(value => value)
   useEffect(() => { props.refreshProviders() }, [props.refreshProviders])
   const missingProvider = state.provider.text !== '' && !availableProviders.some(provider => provider === state.provider.text)
-  const paid = state.provider.text === 'deepseek-account' || state.provider.text === 'deepseek-official'
+  const paid = state.provider.text === 'deepseek-official'
   const disabled = !state.writable || state.saving
   return <SettingsForm labels={formLabels(t)} state={state} onSave={props.save} onDiscard={props.discard}>
     <p className={css.notice}>{t('privacy')}</p>

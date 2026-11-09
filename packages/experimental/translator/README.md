@@ -29,7 +29,7 @@ Mount the package as a Cordis service. Call `resolve({ text, targetLanguage, sou
 
 | Config | Default | Meaning |
 |---|---|---|
-| `provider` | `bing` | `google`, `bing`, `deepseek-account`, or `deepseek-official` |
+| `provider` | `bing` | `google`, `bing`, or `deepseek-official` |
 | `googleEndpoint` | `https://translate.googleapis.com/translate_a/single` | Google-compatible anonymous endpoint |
 | `bingEndpoint` | `https://edge.microsoft.com/translate/translatetext` | Microsoft Edge browser translation endpoint |
 | `timeoutMs` | `10000` | Deadline for the request and complete response body |
@@ -44,7 +44,7 @@ Supply an existing `sessionId` to retain translation requests and successful res
 
 The GUI awaits the initial provider discovery before registering translation controls. If credential or model discovery stalls, this can delay anonymous controls for up to `deepseekTimeoutMs`; the service's discovery deadline returns the choices already discovered, including Bing and Google.
 
-A paid cache miss for nonempty text requires the actual `dsh-llm-deepseek-account` or `dsh-llm-deepseek-api-key` provider, its registered route, configured authentication, and the exact model id `deepseek-flash`. Displayed model names and version labels do not affect selection. `llm-pi-ai` does not qualify. Every fragment is a fresh query with thinking disabled, one user text, no conversation history, no tools, and no Agent turn.
+A paid cache miss for nonempty text requires the actual `dsh-llm-deepseek-api-key` provider, its registered route, configured authentication, and the exact model id `deepseek-flash`. Displayed model names and version labels do not affect selection. `llm-pi-ai` does not qualify. Every fragment is a fresh query with thinking disabled, one user text, no conversation history, no tools, and no Agent turn.
 
 The anonymous service maps `zh`, `zh-CN`, `zh-SG` and `zh-Hans` to Simplified Chinese, and `zh-TW`, `zh-HK`, `zh-MO` and `zh-Hant` to Traditional Chinese. Other tags pass through to the selected provider. Empty text returns an empty string without a network request.
 

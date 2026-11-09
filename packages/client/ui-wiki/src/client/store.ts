@@ -1,16 +1,15 @@
 /**
- * Module store for the wiki drawer: listener-subscription state + actions that
+ * Module store for the wiki panel: listener-subscription state + actions that
  * call the WikiClient face. Pure TS, no React — components subscribe via
- * useSyncExternalStore. The store is intentionally dumb about the two slots:
- * index.ts mounts the toggle and the drawer, both read here.
+ * useSyncExternalStore. The store is intentionally dumb about the slots:
+ * index.ts mounts the panel-strip icon and the main-column panel, both read
+ * here.
  */
 
 import { WikiClient, type WikiGetPageValue, type WikiSearchItem } from './api.ts'
 
-/** Snapshot of the drawer store. */
+/** Snapshot of the wiki panel store. */
 export interface WikiState {
-  /** Drawer open. */
-  open: boolean
   /** Loaded page list (built-ins excluded). */
   pages: { id: number; title: string | null; updatedAt: number | null }[]
   /** Search hit list for the active query. */
@@ -29,7 +28,6 @@ export interface WikiState {
 }
 
 const INITIAL: WikiState = {
-  open: false,
   pages: [],
   searchQuery: '',
   searchResults: [],
@@ -50,7 +48,7 @@ class WikiStore {
 
   /**
    * Bind the wire face once the connection exists. No network I/O happens
-   * here: the page list loads lazily when the drawer first opens (see
+   * here: the page list loads lazily when the panel first mounts (see
    * {@link ensurePages}), so a GUI page load never waits on the graph CLI.
    * Returns a settled promise so callers/tests can await binding.
    */
@@ -79,23 +77,13 @@ class WikiStore {
 
   // ---- navigation ----
 
-  toggleOpen(): void {
-    const opening = !this.state.open
-    if (opening) void this.ensurePages()
-    this.set({ open: opening })
-  }
-
-  close(): void {
-    this.set({ open: false, error: null })
-  }
-
   clearError(): void {
     this.set({ error: null })
   }
 
   /**
-   * Load the page list on first use of the drawer, single-flight across
-   * concurrent openers and re-binds. Refreshes on every open so external
+   * Load the page list on first use of the panel, single-flight across
+   * concurrent openers and re-binds. Refreshes on every mount so external
    * graph edits stay visible, but never starts two loads at once.
    */
   ensurePages(): Promise<void> {
@@ -253,5 +241,5 @@ class WikiStore {
   }
 }
 
-/** Singleton store for the wiki drawer. */
+/** Singleton store for the wiki panel. */
 export const wikiStore = new WikiStore()

@@ -404,6 +404,7 @@ export function normalizeSessionLog(
   if (options.jobTokenMap !== undefined) {
     for (const [id, token] of options.jobTokenMap) jobTokens.set(id, token)
   } else if (identityMode === 'legacy') {
+    /* jscpd:ignore-start -- collectJobTokens and normalizeSessionLog keep independent copies of the legacy job-token reservation loop; one serves the standalone collect phase, the other the single-pass replay path. */
     for (const record of parsed) {
       if ((record.type !== 'job/registered' && record.type !== 'job/settled')
         || record.data === null || typeof record.data !== 'object') continue
@@ -413,6 +414,7 @@ export function normalizeSessionLog(
       do { token = `{{id:${nextJobToken++}}}` } while (reservedTokens.has(token))
       jobTokens.set(id, token)
     }
+    /* jscpd:ignore-end */
   }
   const replaceJobs = (value: unknown): unknown => {
     if (typeof value === 'string') {

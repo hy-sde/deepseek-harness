@@ -61,13 +61,13 @@
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-timeout": "workspace:*",
     "@deepseek-ai/dsh-experimental-forge": "workspace:*",
-    "@deepseek-ai/dsh-fs": "workspace:*"
+    "@deepseek-ai/dsh-fs": "workspace:*",
+    "@deepseek-ai/zod": "workspace:~"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~",
     "@deepseek-ai/dsh-util-values": "workspace:*",
     "diff": "^9.0.0",
-    "@deepseek-ai/zod": "workspace:~",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
     "@deepseek-ai/dsh-storage-domain": "workspace:*"
   },
@@ -111,7 +111,8 @@
     "@deepseek-ai/dsh-timeout": "workspace:*",
     "@deepseek-ai/dsh-session-projection-cache": "workspace:*",
     "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-api-remote-access": "workspace:*"
+    "@deepseek-ai/dsh-api-remote-access": "workspace:*",
+    "@deepseek-ai/zod": "workspace:~"
   },
   "files": [
     "locale/*.json",

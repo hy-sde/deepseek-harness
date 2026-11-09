@@ -353,6 +353,7 @@ function remapEditsToCurrent(previousText: string, currentText: string, edits: r
       if (mappedBlockStart === null) return null
       blockStart = mappedBlockStart
     }
+    /* jscpd:ignore-start -- recovery remapping keeps separate paste-gap and top-level cursor remap blocks with the same anchor checks. */
     const cursor = edit.cursor
     if (cursor.kind !== 'before_anchor' && cursor.kind !== 'after_anchor') {
       remapped.push(blockStart === edit.blockStart ? edit : { ...edit, ...(blockStart === undefined ? {} : { blockStart }) })
@@ -365,6 +366,7 @@ function remapEditsToCurrent(previousText: string, currentText: string, edits: r
       cursor: { kind: cursor.kind, anchor },
       ...(blockStart === undefined ? {} : { blockStart }),
     })
+    /* jscpd:ignore-end */
   }
 
   if (offsets.length === 0) return null

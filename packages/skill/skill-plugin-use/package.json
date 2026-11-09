@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-skill-plugin-use",
   "description": "Composition-declared plugin-advice skill provider for the DeepSeek Harness",
-  "version": "0.2.1-rc.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

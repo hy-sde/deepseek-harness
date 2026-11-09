@@ -142,8 +142,7 @@ export interface TurnErrorNode {
   message: string
   /**
    * Stable provider failure code when recorded, or a Client display code:
-   * `ACCOUNT_SIGNED_OUT` for a sign-out cancellation, `INTERRUPTED` for a
-   * turn closed after DSH stopped.
+   * `INTERRUPTED` for a turn closed after DSH stopped.
    */
   code?: string
 }

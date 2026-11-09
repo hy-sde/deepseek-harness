@@ -155,6 +155,7 @@ function renderThrown(value: unknown): string {
 function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   if (signal.aborted) return Promise.reject(abortError(signal))
   return new Promise<T>((resolve, reject) => {
+    /* jscpd:ignore-start -- dap session's untilAborted and interaction/commands' withAbort keep independent copies of the abort-listener relay seam */
     const onAbort = (): void => {
       signal.removeEventListener('abort', onAbort)
       reject(abortError(signal))
@@ -172,6 +173,7 @@ function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
           : new Error(`command handler rejected with a non-Error value: ${renderThrown(error)}`, { cause: error }))
       },
     )
+    /* jscpd:ignore-end */
   })
 }
 

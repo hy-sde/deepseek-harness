@@ -131,6 +131,9 @@ describe('minimal agent preset', () => {
       bash: text(bash),
     }).toMatchInlineSnapshot(`
       {
+        "bash": "PERSISTED:{{cwd}}/persistent-state
+      [Command finished with exit code 0]",
+        "goalCommand": false,
         "prompt": "You are a helpful software engineer assistant.",
         "tools": [
           "bash",

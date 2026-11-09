@@ -49,6 +49,6 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/dsh-yaml": "workspace:~"
+    "@deepseek-ai/dsh-yaml": "workspace:*"
   }
 }

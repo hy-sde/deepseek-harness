@@ -14,9 +14,6 @@
       "path": "../../packages/client/ui-primitives"
     },
     {
-      "path": "../../packages/credentials/deepseek-account"
-    },
-    {
       "path": "../../packages/client/product-analytics/tsconfig.client.json"
     },
     {

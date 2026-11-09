@@ -43,16 +43,6 @@
     ".instruction: border-radius: 16px",
     ".delivery: border-radius: 8px"
   ],
-  "ui-settings-account/src/client/AccountNotice.module.css": [
-    ".card: border-radius: 16px"
-  ],
-  "ui-settings-account/src/client/DesktopOnboarding.module.css": [
-    ".card: border-radius: 32px",
-    ".confirmationClose: border-radius: 28px",
-    ".dialogButton: border-radius: 12px",
-    ".page .action: border-radius: 12px",
-    ".indicator: border-radius: 6px"
-  ],
   "ui-shortcuts/src/client/Reference.module.css": [
     ".dialog: border-radius: 24px",
     ".close: border-radius: 28px",
@@ -64,28 +54,16 @@
   "ui-chat/src/client/chat/ChatView.module.css": [
     ".openRetry button: border-radius: 14px"
   ],
-  "ui-countdown/src/client/CountdownCell.module.css": [
-    ".cell: border-radius: 10px",
-    ".btn: border-radius: 6px",
-    ".railPrimary: border-radius: 8px",
-    ".railGear: border-radius: 6px",
-    ".popover: border-radius: 10px",
-    ".popover input[type='number']: border-radius: 6px"
-  ],
   "ui-wiki/src/client/BlockTree.module.css": [
     ".line: border-radius: 6px",
     ".editor: border-radius: 6px",
     ".addInput: border-radius: 6px"
   ],
-  "ui-wiki/src/client/WikiDrawer.module.css": [
-    ".close: border-radius: 6px",
+  "ui-wiki/src/client/WikiPanel.module.css": [
     ".searchInput, .addInput: border-radius: 6px",
     ".action: border-radius: 6px",
     ".pageRow: border-radius: 6px",
     ".danger: border-radius: 6px",
     ".linkedRow: border-radius: 6px"
-  ],
-  "ui-wiki/src/client/WikiToggle.module.css": [
-    ".toggle: border-radius: 6px"
   ]
 }

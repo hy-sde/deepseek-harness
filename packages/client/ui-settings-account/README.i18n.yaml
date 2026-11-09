@@ -3,38 +3,38 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-settings-account/README.md
 /:
-  en: 13d891a226092817
-  zh: 90bf6ff56dd3c096
+  en: c9aaeca0951c0361
+  zh: 92bf63efae84e036
 /deepseek-ai-dsh-client-ui-settings-account:
-  en: 9ff7ac2d70f70b59
-  zh: ded522c4cfd6e040
+  en: f4c9934dbb7d3bc8
+  zh: 0fd8e51031bbe4a3
 /deepseek-ai-dsh-client-ui-settings-account/summary:
-  en: 54da65ea807d7af1
-  zh: 359f85d16724d71d
+  en: dba73f0a2d02878b
+  zh: c78da2f3e0a44b96
 /deepseek-ai-dsh-client-ui-settings-account/table-of-contents:
-  en: c26f81e8adf0128b
-  zh: e11ab371f51f66bc
+  en: d152484eb41ac6b4
+  zh: 364c80ee00a374ff
 /deepseek-ai-dsh-client-ui-settings-account/use-this-package:
-  en: 2e63a8b01d800894
-  zh: 42db1f28e2ddb2a3
-/deepseek-ai-dsh-client-ui-settings-account/use-this-package/desktop-onboarding:
-  en: 7ae4e68f9491b068
-  zh: f7478269bf8d28b3
+  en: ce99959cdcebaf78
+  zh: 771a57d9fdb1eaf8
+/deepseek-ai-dsh-client-ui-settings-account/use-this-package/layout-and-behavior:
+  en: 4da7079b9950a984
+  zh: fe694e5edbba6a9b
 /deepseek-ai-dsh-client-ui-settings-account/understand-the-implementation:
-  en: 186b2046cfb5ef76
-  zh: 57b042a618fb612e
+  en: 82a238d7506e9657
+  zh: 6058fcd54e03a76d
 /deepseek-ai-dsh-client-ui-settings-account/further-exploration:
-  en: f5ca95916ef486dc
-  zh: 1e238d8299e0d838
+  en: 79b93e908ecb7fb4
+  zh: 196cf32e89797d3d
 /deepseek-ai-dsh-client-ui-settings-account/model-experience:
-  en: ee1df7ca3467ee3f
-  zh: 84904a5148da3862
+  en: 07096fae8e76c764
+  zh: 1b0748430bf1d313
 /deepseek-ai-dsh-client-ui-settings-account/model-experience/kv-cache-effect:
   en: ca3015e252db0114
-  zh: ebca9253cf15e8e9
+  zh: 2e18d6a0e4cb842d
 /deepseek-ai-dsh-client-ui-settings-account/known-limitations-and-deferred-work:
-  en: 7afbd3f7afc20bd8
-  zh: f54c57e3d6738c7c
+  en: 23f58a1425ba5ca3
+  zh: 59bc7757fdc6a5a7
 /deepseek-ai-dsh-client-ui-settings-account/known-limitations-and-deferred-work/dev-note:
-  en: ebc93259d9f494e2
-  zh: dcc679e43cdbd594
+  en: 2f7aa4876bf6a5a1
+  zh: de6a62e1e0159915

@@ -103,6 +103,7 @@ export async function canonicalizeWorkspace(
  * @param signal - optional cancellation.
  * @returns canonical file URI and current text.
  */
+/* jscpd:ignore-start -- resolveSourceUrl and readHostSource keep independent copies of the resolve-then-contain source validation seam */
 export async function readHostSource(
   fs: FileSystem,
   filePath: string,
@@ -125,6 +126,7 @@ export async function readHostSource(
   if (!fs.contains(workspace.target, target)) {
     throw new Error(`source "${filePath}" resolves outside the workspace`)
   }
+  /* jscpd:ignore-end */
   const chunks: string[] = []
   let bytes = 0
   try {

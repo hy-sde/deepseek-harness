@@ -43,7 +43,6 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
   'packages/util/workspace-path': 'The package only formats Workspace paths for browser UI; it never constructs model input.',
   'packages/vcs/vcs': 'VCS service seam over the host working tree; dsh-tool-git owns every model-facing schema and prompt.',
   'packages/browser/browser': 'Browser automation primitives and the browser service seam; dsh-tool-browser owns every model-facing schema and rendering.',
-  'packages/client/ui-countdown': 'Browser-side countdown UI plugin layer; registers nothing model-facing.',
   'packages/examples/logseq-example': 'Example composition bundle; the model-facing wiring it demonstrates belongs to dsh-tool-logseq in a real profile.',
   'packages/fs/internal-urls': 'Internal URL grammar and resolver; the read/grep tools that resolve these refs own every model-facing effect.',
   'packages/memory/memory': 'Storage service for project memory; dsh-tool-memory owns every model-facing schema and prompt.',
@@ -98,10 +97,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/computer-use/computer-use': { kind: 'none', reason: 'The registry only reserves provider names; providers own all model-facing tools and guidance.' },
   'packages/document/office-to-pdf': { kind: 'none', reason: 'The provider returns PDF bytes without constructing model input.' },
 
-  'packages/credentials/deepseek-account': { kind: 'none', reason: 'Account authorization registers no model context or tools; credentials affect HTTP authentication only.' },
-  'packages/credentials/deepseek-account-platform': { kind: 'none', reason: 'Account authorization registers no model context or tools; credentials affect HTTP authentication only.' },
-  'packages/api/account-controller': { kind: 'none', reason: 'Account authorization registers no model context or tools; credentials affect HTTP authentication only.' },
-  'packages/client/ui-settings-account': { kind: 'none', reason: 'Account authorization registers no model context or tools; credentials affect HTTP authentication only.' },
+  'packages/client/ui-settings-account': { kind: 'none', reason: 'The settings launcher registers no model context or tools; it only opens the settings panel.' },
 
   'packages/attachment/attachment': { kind: 'indirect', reason: 'The storage seam delegates model request rendering to provider adapters.' },
   'packages/attachment/attachment-local': { kind: 'indirect', reason: 'The local backend delegates model request rendering to provider adapters.' },
@@ -288,7 +284,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/web/web-fetch-http': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/web/web-search-public': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/workflow/workflow': { kind: 'indirect', reason: 'The service delegates parent and child model rendering to its consumer and engine.' },
-  'packages/client/ui-wiki': { kind: 'none', reason: 'Browser-side wiki drawer over the host wiki domain; the model-facing logseq tools own every model-context effect.' },
+  'packages/client/ui-wiki': { kind: 'none', reason: 'Browser-side wiki panel over the host wiki domain; the model-facing logseq tools own every model-context effect.' },
   'packages/logseq/logseq-graph': { kind: 'none', reason: 'The host graph service registers no tool schema, prompt section, or result; the service data reaches the model only through dsh-tool-logseq and the drawer.' },
 }
 

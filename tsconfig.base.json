@@ -105,12 +105,6 @@
       "@deepseek-ai/dsh-anonymous-user-id": [
         "./packages/identity/anonymous-user-id/src"
       ],
-      "@deepseek-ai/dsh-api-account-controller": [
-        "./packages/api/account-controller/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-api-account-controller/types": [
-        "./packages/api/account-controller/src/types.ts"
-      ],
       "@deepseek-ai/dsh-api-gateway": [
         "./packages/api/gateway/src/index.ts"
       ],
@@ -350,9 +344,6 @@
       ],
       "@deepseek-ai/dsh-client-ui-cordis/client": [
         "./packages/extensions/ui-cordis/src/client"
-      ],
-      "@deepseek-ai/dsh-client-ui-countdown": [
-        "./packages/client/ui-countdown/src"
       ],
       "@deepseek-ai/dsh-client-ui-creation-recommendations": [
         "./packages/experimental/client-ui-creation-recommendations/src/index.ts"
@@ -701,18 +692,6 @@
       ],
       "@deepseek-ai/dsh-dap": [
         "./packages/debug/dap/src"
-      ],
-      "@deepseek-ai/dsh-deepseek-account": [
-        "./packages/credentials/deepseek-account/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-deepseek-account-platform": [
-        "./packages/credentials/deepseek-account-platform/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-deepseek-account-platform/types": [
-        "./packages/credentials/deepseek-account-platform/src/types.ts"
-      ],
-      "@deepseek-ai/dsh-deepseek-account/types": [
-        "./packages/credentials/deepseek-account/src/types.ts"
       ],
       "@deepseek-ai/dsh-deepseek-llm-api-extensions": [
         "./packages/llm/deepseek-llm-api-extensions/src"
@@ -1097,9 +1076,6 @@
       ],
       "@deepseek-ai/dsh-llm-deepseek": [
         "./packages/llm/llm-deepseek/src"
-      ],
-      "@deepseek-ai/dsh-llm-deepseek-account": [
-        "./packages/llm/llm-deepseek-account/src"
       ],
       "@deepseek-ai/dsh-llm-deepseek-api-key": [
         "./packages/llm/llm-deepseek-api-key/src"

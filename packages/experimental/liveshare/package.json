@@ -68,12 +68,12 @@
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
     "@deepseek-ai/dsh-util-values": "workspace:*",
-    "ws": "^8.18.3",
-    "zod": "4.4.3"
+    "ws": "^8.18.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-scope": "workspace:*"
+    "@deepseek-ai/dsh-scope": "workspace:*",
+    "@deepseek-ai/zod": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
@@ -146,7 +146,9 @@
     "@deepseek-ai/dsh-workspace": "workspace:*",
     "@types/ws": "^8.18.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@deepseek-ai/zod": "workspace:~",
+    "zod": "4.4.3"
   },
   "dsh": {
     "bundle": {

@@ -4,7 +4,7 @@ import * as uiPrimitives from '@deepseek-ai/dsh-client-ui-primitives'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { $getRoot, $getSelection, $isRangeSelection, SELECTION_CHANGE_COMMAND, UNDO_COMMAND } from 'lexical'
 import { DraftEditorRuntime } from '../src/client/input/editor/runtime.ts'
-import { focusDraftEditor, installDraftKeyboardDismissal } from '../src/client/input/editor/view-binding.ts'
+import { focusDraftEditor, installDraftKeyboardDismissal } from '../src/client/draft-view-binding.ts'
 
 function fixture(start = 1, end = 4) {
   // jsdom has no Range geometry; these cases observe selection and focus, not scrolling.

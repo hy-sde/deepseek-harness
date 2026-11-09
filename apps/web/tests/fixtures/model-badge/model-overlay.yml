@@ -1,0 +1,5 @@
+# The badge fixtures pin the default selection without network I/O or credentials.
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash

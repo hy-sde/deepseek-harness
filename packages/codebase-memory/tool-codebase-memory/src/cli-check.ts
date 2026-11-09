@@ -14,6 +14,7 @@ import { execFile } from 'node:child_process'
  */
 export function checkCodebaseMemoryCli(cliPath: string = 'codebase-memory-mcp'): Promise<void> {
   return new Promise<void>((resolve, reject) => {
+    /* jscpd:ignore-start -- the tool-agentsview and tool-codebase-memory CLI availability probes keep independent copies of this execFile probe callback; each package owns its CLI's install hint. */
     execFile(cliPath, ['--version'], { timeout: 8000, windowsHide: true }, (err, _stdout, stderr) => {
       if (!err) {
         resolve()
@@ -25,5 +26,6 @@ export function checkCodebaseMemoryCli(cliPath: string = 'codebase-memory-mcp'):
         : `\`${cliPath}\` was not found on PATH`
       reject(new Error(`tool-codebase-memory: ${hint}. Install the codebase-memory CLI from the codebase-memory-mcp releases (https://github.com/DeusData/codebase-memory-mcp/releases): tar xzf then ./install.sh, or set config.cliPath.`))
     })
+    /* jscpd:ignore-end */
   })
 }

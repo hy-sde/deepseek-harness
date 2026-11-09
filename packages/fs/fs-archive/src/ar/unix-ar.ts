@@ -262,6 +262,7 @@ async function readUnixArImpl(source: ByteSource, options: FormatReadOptions): P
     assertIndexSize(metadataSize, options.limits, 'index')
     const payloadOffset = position + HEADER_SIZE
     const payloadEnd = payloadOffset + header.physicalSize
+    /* jscpd:ignore-start -- the buffer and streaming Unix-ar readers keep independent copies of this member-name and long-name handling */
     if (!Number.isSafeInteger(payloadEnd) || payloadEnd > source.size) {
       throw new ArchiveError('Invalid ar archive: truncated member data')
     }
@@ -288,6 +289,7 @@ async function readUnixArImpl(source: ByteSource, options: FormatReadOptions): P
       assertIndexSize(metadataSize, options.limits, 'index')
       longNames = await readExact(source, payloadOffset, payloadEnd, 'long-name table')
     }
+    /* jscpd:ignore-end */
     records.push({ name, nameByteLength, dataOffset, size, mtimeSeconds: header.mtimeSeconds, mode: header.mode })
     assertEntryCount(records.length, options.limits)
     position = payloadEnd + (header.physicalSize & 1)

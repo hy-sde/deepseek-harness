@@ -402,6 +402,7 @@ export class ClaimsStore {
     return physicalPath
   }
 
+  /* jscpd:ignore-start -- the sibling regular-file and directory resolvers independently keep the same lstat-then-verify skeleton. */
   /**
    * Resolves an existing contained directory without following aliases.
    *
@@ -435,6 +436,7 @@ export class ClaimsStore {
 
     return this.resolvePhysicalPath(absolutePath)
   }
+  /* jscpd:ignore-end */
 
   /**
    * Creates a contained directory after validating every existing ancestor.

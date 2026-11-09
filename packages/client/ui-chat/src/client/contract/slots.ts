@@ -25,7 +25,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { createChatStore } from '../stores.ts'
 import type { ChatPresentationPolicy } from '../presentation-policy.ts'
-import type { FlowMotionRows } from '../chat/flow-motion.ts'
 import type { ToolCallId } from './store.ts'
 import type { ChatConversationViewNode, ChatNode, ChatNodeKind } from './chat-nodes.ts'
 import type {
@@ -36,6 +35,22 @@ import type { PerformanceUsageMode } from '../../chat-settings.ts'
 
 /** Selector hook over the current Conversation binding's Chat target. */
 export type UseChat = SnapshotSelectorHook<ChatSnapshot>
+
+/** Row-local operations supplied by the containing viewport. */
+export interface FlowMotionRows {
+  /** @param element - visible row. @param done - commits hidden state before idle callbacks run. */
+  collapse(element: HTMLElement, done: () => void): void
+  /** @param element - newly visible row to grow to its natural size. */
+  reveal(element: HTMLElement): void
+  /** @param element - row whose active transition should be cancelled without hiding it. */
+  cancelMotion(element: HTMLElement): void
+  /**
+   * Hide a row at once, outside a motion scope; the owning viewport measures the layout first.
+   * @param element - visible row.
+   * @param commit - applies the hidden state.
+   */
+  hideNow?(element: HTMLElement, commit: () => void): void
+}
 
 /** Per-key selector hook over one Chat Node. */
 export type UseChatNode = KeyedSnapshotSelectorHook<ChatConversationViewNode | undefined>
@@ -68,8 +83,8 @@ export interface AssistantActionOwnerProps {
   messageId: MessageId
 }
 
-/** Stable quota failure codes retained in the Session log; both raise the frame-wide notice. */
-export type QuotaNoticeCode = 'QUOTA' | 'ACCOUNT_QUOTA'
+/** Stable quota failure code retained in the Session log; it raises the frame-wide notice. */
+export type QuotaNoticeCode = 'QUOTA'
 
 /** The notice on display; `seq` keys remounts so an unretained later notice restarts its transient display. */
 export interface QuotaNoticeState {
@@ -194,9 +209,7 @@ export type UseGroupHeaderAction = (ref: RefObject<HTMLElement | null>, hidden: 
 /** Viewport capability supplied once for each rendered Chat flow. */
 export interface ChatFlowHookContext {
   readonly motion: FlowMotionRows
-}
-
-/** Flow-wide behavior hooks bound to one viewport, independently of Session identity. */
+}/** Flow-wide behavior hooks bound to one viewport, independently of Session identity. */
 export interface ChatFlowInjected {
   hooks: {
     groupAction: SlotHookFactory<'conversation.chat.flow', UseGroupAction>

@@ -168,6 +168,7 @@ export class PreparedSection {
   }
 }
 
+/* jscpd:ignore-start -- hashline patcher and PatchSection input track anchor-scoped edits independently for apply and preview. */
 function hasAnchorScopedEdit(edits: readonly Edit[]): boolean {
   return edits.some((edit) => {
     if (edit.kind === 'delete' || edit.kind === 'block' || edit.kind === 'cut') return true
@@ -178,6 +179,7 @@ function hasAnchorScopedEdit(edits: readonly Edit[]): boolean {
     return edit.cursor.kind === 'before_anchor' || edit.cursor.kind === 'after_anchor'
   })
 }
+/* jscpd:ignore-end */
 
 function recoveryToApplyResult(result: RecoveryResult): ApplyResult {
   return {

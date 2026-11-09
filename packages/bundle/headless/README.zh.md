@@ -64,8 +64,6 @@ agent 会完成该任务，把提供方的每个非空推理（reasoning）增�
   disabled: false
 - id: authorization
   disabled: false
-- id: deepseek-account
-  disabled: false
 ```
 
 恢复后，存储仍按[已保存凭据优先于环境后备](../../credentials/credentials-local/README.zh.md)解析。Web、SDK 和 ACP profile 保留这一默认顺序。headless 的会话、settings 和工具行为不变；这种 profile 配置选择不构成文件系统访问边界。

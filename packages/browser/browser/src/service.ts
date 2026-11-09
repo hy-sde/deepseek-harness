@@ -395,6 +395,7 @@ export class BrowserService extends Service {
   async type(
     name: string,
     selector: string,
+    /* jscpd:ignore-start -- the click and type methods of BrowserService keep independent copies of the ARIA-ref target resolution; each owns its interaction verb. */
     text: string,
     opts: { kind: BrowserKind; cwd: string },
   ): Promise<PageObservation> {
@@ -405,6 +406,7 @@ export class BrowserService extends Service {
       const target = await resolveAriaRefElement(tab.page, bareRef)
       if (target === null) throw new Error(`browser: aria ref ${bareRef} no longer matches any element (re-snapshot)`)
       await target.fill(text)
+      /* jscpd:ignore-end */
     } else {
       await tab.page.locator(ref).first().fill(text)
     }

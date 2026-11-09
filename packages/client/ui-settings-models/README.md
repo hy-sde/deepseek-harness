@@ -29,7 +29,7 @@ Desktop product events use the optional [product analytics service](../product-a
 
 Saving credentials or a custom provider preserves the selected model. The user can select an available model from the composer.
 
-DeepSeek Account appears first and DeepSeek second in the provider list; third-party providers retain their directory order.
+DeepSeek appears first in the provider list; third-party providers retain their directory order.
 
 Open the Models page from the Settings navigation to see every configured provider as a row. A whole-section provider whose key is not configured anywhere renders as its open setup card instead, but only in the first-run posture and only until the user closes that card. Each card kind owns its own open state, so closing one never discards a draft in another.
 
@@ -37,7 +37,7 @@ A provider with a stored catalog error remains visible with its diagnostic and e
 
 After Apply closes an editor, its saved status appears when the current provider, settings, and credential snapshot is ready. Opening any row's editor, adding a provider, and opening a removal confirmation wait for that refresh. A newly opened Models section, or one retrying after a page-load failure, waits for a ready snapshot before mounting editors. A background refresh preserves an open draft while its editor remains mounted; a failed page load or provider removal can close it.
 
-Host configuration `credentialOnboarding` defaults to `true`. The Electron preload marker suppresses automatic credential onboarding and the Web welcome notice; Models settings and explicit API-key editing remain available. The [account plugin](../ui-settings-account/README.md#desktop-onboarding) owns the Desktop introduction. Other native shells can disable only the credential step with `credentialOnboarding: false`. Host publishes this public boolean through `webserver/index-inject`, and Client validates it before registering dialogs. It is page initialization data, not a durable completion marker.
+Host configuration `credentialOnboarding` defaults to `true`. The Electron preload marker suppresses automatic credential onboarding and the Web welcome notice; Models settings and explicit API-key editing remain available. Other native shells can disable only the credential step with `credentialOnboarding: false`. Host publishes this public boolean through `webserver/index-inject`, and Client validates it before registering dialogs. It is page initialization data, not a durable completion marker.
 
 ### API keys
 
@@ -77,7 +77,6 @@ After the versioned notice step completes, the DeepSeek step projects first-run 
 
 The section declares two seats for plugins distributed outside this repository, typed in [`src/client/slot-contract.ts`](src/client/slot-contract.ts) and exported from `./client`. `settings.models.provider-card` (keyed) renders inside every card that shows a directory row — a saved row's card, its first-run setup posture, and the add-provider draft — dispatched with `entryKey = settingsNs` and owner props carrying the row's `ConfigurableProviderView`, its configured state, and its confirmed api-key credential state, so one registration under an adapter family's namespace receives every card of that family, hand-declared routes included; the hand-declared draft card has no directory row yet and dispatches nothing until saved. `settings.models.footer` (list) renders after the rows and the add controls. A registrant activates through `ctx.slots.inject` with a type-only import of this package's `/client` entry; without registrants both seats render nothing.
 
-The Models page includes **DeepSeek Account** (`deepseek-account`, **DeepSeek 账号** in Chinese). The row shows a **Signed in** status and offers no editor: the account listing supplies its models, and [model overrides](../../llm/llm-deepseek-account/README.md#use-this-package) live in `cordis.patch.yml`. The account row is hidden when its available model catalog is empty, including before sign-in and after sign-out; it returns when account models become available.
 
 -----
 
@@ -120,7 +119,6 @@ These pages cover the settings base, the seams this page joins, and the design r
 
 -----
 
-The `settings.models.sign-in` slot lets account login offer a choice before the credential editor; without a contributor the editor renders directly. Closing the account choice completes the whole onboarding step. Explicit reopening from the account menu enters the same editor even when a provider is already configured.
 
 <a id="model-experience"></a>
 ## Model Experience

@@ -29,12 +29,12 @@ import type {} from '@deepseek-ai/dsh-goal/client'
 // api-remotes import already places it in every client program.
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ComposerBarProps } from '../contract/slots.ts'
-import { DraftEditor } from '../input/editor/DraftEditor.tsx'
+import { DraftEditor } from '../DraftEditor.tsx'
 import {
-  focusDraftEditor, installDraftFilePicker, installDraftKeyboardDismissal, installDraftKeymap, installDraftWheel,
+  focusDraftEditor, installDraftFilePicker, installDraftKeyboardDismissal, installDraftWheel,
   keepDraftFocus, revealDraftSelection,
-} from '../input/editor/view-binding.ts'
-import { resolveSubmitMode } from '../input/submission-policy.ts'
+} from '../draft-view-binding.ts'
+import { resolveSubmitMode } from '../submission-policy.ts'
 import { attachmentErrorText, imageSizeText } from '../image-labels.ts'
 import { isImageMediaType } from '../service.ts'
 import { ContextMeter } from './ContextMeter.tsx'
@@ -301,7 +301,7 @@ export const InputBar = memo(function InputBar({
 
   useEffect(() => {
     if (editor === null || keyboard === undefined) return
-    return installDraftKeymap(editor, keyboard, gate)
+    return keyboard.bindKeymap(gate)
   }, [editor, keyboard])
 
   useEffect(() => {

@@ -28,6 +28,7 @@ export interface CommandRun {
   stderr: string
 }
 
+/* jscpd:ignore-start -- the av audit service and the gh internal-urls runner keep independent copies of this subprocess-failure error class */
 /** Thrown when a child command fails: exit or launch. Carries the stderr tail. */
 export class CommandFailure extends Error {
   readonly exitCode: number | null
@@ -39,6 +40,7 @@ export class CommandFailure extends Error {
     this.stderr = options.stderr
   }
 }
+/* jscpd:ignore-end */
 
 /**
  * Run `argv` (a plain vector, never shell-interpreted) with `cwd` through the

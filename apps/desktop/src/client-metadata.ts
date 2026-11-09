@@ -1,5 +1,5 @@
-/** Desktop client identity for one Platform account call. */
-import type { AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account/types'
+/** Desktop client identity for update-policy checks. */
+import type { DesktopPolicyClientMetadata } from './mandatory-update-policy.ts'
 
 /**
  * Read the client build version inlined by the Desktop build.
@@ -9,7 +9,7 @@ import type { AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account/ty
 export function desktopClientVersion(): string {
   const version = process.env.DSH_CLIENT_VERSION
   if (version === undefined || version === '') {
-    throw new Error('desktop account: this application build carries no DSH_CLIENT_VERSION')
+    throw new Error('desktop update policy: this application build carries no DSH_CLIENT_VERSION')
   }
   return version
 }
@@ -19,7 +19,7 @@ export function desktopClientVersion(): string {
  * @param locale - current resolved Desktop language.
  * @returns this call's build version, the raw active language, and the UTC offset in whole seconds east.
  */
-export function desktopClientMetadata(locale: string): AccountClientMetadata {
+export function desktopClientMetadata(locale: string): DesktopPolicyClientMetadata {
   return {
     version: desktopClientVersion(),
     locale,

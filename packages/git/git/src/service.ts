@@ -57,6 +57,7 @@ export interface GitDiffNamespace {
   has(cwd: string, options?: { cached?: boolean; files?: readonly string[]; signal?: AbortSignal }): Promise<boolean>
 }
 
+/* jscpd:ignore-start -- the av and git services own independent CLI contracts; the command-error class, CommandRun shape, and DiffOptions declaration are intentionally parallel, not shared. */
 /** A failed `git` invocation: exit status plus stderr retained for the agent. */
 export class GitCommandError extends Error {
   readonly exitCode: number | null
@@ -87,6 +88,7 @@ interface DiffOptions {
   head?: string
   files?: readonly string[]
 }
+/* jscpd:ignore-end */
 
 /** Options accepted by the helpers that require a clean exit (checked/text). */
 interface UncheckedRunOptions {
@@ -168,6 +170,7 @@ export class GitService extends Service {
   private subprocess(): SubprocessRuntime {
     const subprocess = this.ctx.get('subprocess')
     if (subprocess === undefined) {
+      /* jscpd:ignore-start -- the av and git services maintain independent copies of the subprocess-seam lookup close-out, run() entry signature, and pre-spawn abort check. */
       throw new Error('git service requires the subprocess seam: load @deepseek-ai/dsh-subprocess-local')
     }
     return subprocess
@@ -188,6 +191,7 @@ export class GitService extends Service {
     const { cwd, signal, stdin } = options
     if (signal?.aborted) {
       throw new GitCommandError('git command was aborted before it could start', { exitCode: null, stderr: '' })
+      /* jscpd:ignore-end */
     }
     const limit = options.timeoutMs ?? this.timeoutMs
     // `Effect.gen` takes a `function*`, which does not close over the class

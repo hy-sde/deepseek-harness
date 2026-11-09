@@ -27,6 +27,7 @@ import { serializeDraftPrompt } from './prompt.ts'
 import { SubmitMachine } from './machine.ts'
 import { resolveDraftInput, snapshotDraft } from '../draft.ts'
 import { DraftEditorRuntime } from './editor/runtime.ts'
+import { installDraftKeymap } from './editor/view-binding.ts'
 import type { EditorProjection } from './editor/projection.ts'
 
 /** Popup face the shell needs (dismissal only; typed structurally to avoid a value import). */
@@ -631,6 +632,15 @@ export class SessionInputShell implements SessionInput {
     return () => {
       if (this.filePicker === picker) this.filePicker = undefined
     }
+  }
+
+  /**
+   * Bind the borrowed editor's gesture keymap to this shell's live guards.
+   * @param gate - live composer-bar values read by the installed handlers at gesture time.
+   * @returns the keymap disposer.
+   */
+  bindKeymap(gate: Parameters<ComposerKeyboard['bindKeymap']>[0]): () => void {
+    return installDraftKeymap(this.draftEditor.editor, this, gate)
   }
 
   /**

@@ -86,7 +86,6 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`ajv`](https://github.com/ajv-validator/ajv) | MIT |
 | [`ajv-formats`](https://github.com/ajv-validator/ajv-formats) | MIT |
 | [`anser`](https://github.com/IonicaBizau/anser) | MIT |
-| [`big.js`](https://github.com/MikeMcl/big.js) | MIT |
 | [`birpc`](https://github.com/antfu-collective/birpc) | MIT |
 | [`buffer`](https://github.com/feross/buffer) | MIT |
 | [`chokidar`](https://github.com/paulmillr/chokidar) | MIT |
@@ -236,7 +235,6 @@ External packages **directly declared** for development, tests, types, or toolin
 | [`@testing-library/dom`](https://github.com/testing-library/dom-testing-library) | MIT |
 | [`@testing-library/react`](https://github.com/testing-library/react-testing-library) | MIT |
 | [`@types/babel__code-frame`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
-| [`@types/big.js`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/compression`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/content-type`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |
 | [`@types/cross-spawn`](https://github.com/DefinitelyTyped/DefinitelyTyped) | MIT |

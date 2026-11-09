@@ -29,7 +29,7 @@ kind: "package-reference"
 
 | 配置 | 默认值 | 含义 |
 |---|---|---|
-| `provider` | `bing` | `google`、`bing`、`deepseek-account` 或 `deepseek-official` |
+| `provider` | `bing` | `google`、`bing` 或 `deepseek-official` |
 | `googleEndpoint` | `https://translate.googleapis.com/translate_a/single` | 兼容 Google 的匿名端点 |
 | `bingEndpoint` | `https://edge.microsoft.com/translate/translatetext` | Microsoft Edge 浏览器翻译端点 |
 | `timeoutMs` | `10000` | 请求及完整响应正文的截止时间 |
@@ -44,7 +44,7 @@ kind: "package-reference"
 
 GUI 等待首次提供方发现完成后才注册翻译控件。如果凭据或模型发现停滞，免登录翻译控件可能最多延迟 `deepseekTimeoutMs` 才出现；服务的发现截止时间会返回已经发现的选项，包括 Bing 和 Google。
 
-非空文本的付费缓存未命中时，要求实际的 `dsh-llm-deepseek-account` 或 `dsh-llm-deepseek-api-key` 提供方、已注册路由、配置好的认证，以及精确的模型 id `deepseek-flash`。显示名称和版本标签不影响选择，`llm-pi-ai` 不符合条件。每个片段都是全新的查询：关闭思考，仅含一条用户文本，没有对话历史、工具或 Agent 轮次。
+非空文本的付费缓存未命中时，要求实际的 `dsh-llm-deepseek-api-key` 提供方、已注册路由、配置好的认证，以及精确的模型 id `deepseek-flash`。显示名称和版本标签不影响选择，`llm-pi-ai` 不符合条件。每个片段都是全新的查询：关闭思考，仅含一条用户文本，没有对话历史、工具或 Agent 轮次。
 
 匿名服务将 `zh`、`zh-CN`、`zh-SG` 和 `zh-Hans` 映射为简体中文，将 `zh-TW`、`zh-HK`、`zh-MO` 和 `zh-Hant` 映射为繁体中文。其他标签原样传给所选提供者。空文本直接返回空字符串，不发送网络请求。
 

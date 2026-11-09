@@ -241,7 +241,7 @@ describe('web e2e: live-turn interactions (cancel / error / retry)', () => {
     expect(tripwire.warnings).toEqual([])
   }, 120_000)
 
-  it.skipIf(MODE === 'record').each(['QUOTA', 'ACCOUNT_QUOTA'])(
+  it.skipIf(MODE === 'record').each(['QUOTA'])(
     'retains a %s failure after its Web notice expires and history reloads', async (code) => {
       await launch(() => ({
         patches: [{ at: 0, entry: { kind: 'throw', chunks: [], message: 'Provider quota exhausted', code } }],

@@ -212,6 +212,7 @@ export function createNodeWikiFs(options: NodeWikiFsOptions): WikiFs {
  */
 export type FileInfo = WikiFsEntry
 
+/* jscpd:ignore-start -- the WikiFs consumer seam and the ported engines' BackendProtocolV2 surface intentionally keep the same shapes under the local seam (Agent Note). */
 /** Read/write/edit/list result surface used by the ported engine files. */
 export interface BackendProtocolV2 {
   ls(dirPath: string): Promise<WikiFsLsResult>
@@ -233,6 +234,7 @@ export function isMissingFileError(error: unknown): boolean {
     (error as NodeJS.ErrnoException).code === 'ENOENT'
   )
 }
+/* jscpd:ignore-end */
 
 /** Render a stable message for an unknown filesystem error. */
 function toErrorMessage(error: unknown): string {

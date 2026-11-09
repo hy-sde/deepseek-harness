@@ -12,7 +12,7 @@ import { viewerStatus, viewerStatusFacts } from '../src/client/viewer-status.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { cleanup, render } from '@testing-library/react'
 import { createElement, createRef } from 'react'
-import { DraftEditor } from '@deepseek-ai/dsh-client-ui-conversation/src/client/input/editor/DraftEditor.tsx'
+import { DraftEditor } from '@deepseek-ai/dsh-client-ui-conversation/src/client/DraftEditor.tsx'
 import {
   provideViewerConnection, provideViewerLocale, provideViewerRemoteAccess, type ViewerRemoteAccess,
 } from './viewer-plugin-services.client.ts'

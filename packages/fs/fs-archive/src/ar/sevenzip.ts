@@ -514,6 +514,7 @@ class EmptyMemberSource implements MemberSource {
 
 const EMPTY_MEMBER_SOURCE = new EmptyMemberSource()
 
+/* jscpd:ignore-start -- the RAR and 7z indexers keep independent copies of this canonical link-target normalizer */
 function canonicalLinkTarget(recordPath: string, rawTarget: string): { targetPath: string; resolveTarget: boolean } {
   const portable = rawTarget.replace(/\\/g, '/')
   if (portable.startsWith('/')) return { targetPath: portable, resolveTarget: false }
@@ -528,6 +529,7 @@ function canonicalLinkTarget(recordPath: string, rawTarget: string): { targetPat
   }
   return { targetPath: parts.join('/'), resolveTarget: true }
 }
+/* jscpd:ignore-end */
 
 async function buildEntries(
   source: ByteSource,

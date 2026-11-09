@@ -103,7 +103,7 @@ async click( name: string, selector: string, opts: { kind: BrowserKind; cwd: str
  * @param opts - backend kind, working directory.
  * @returns the re-observed page after the fill.
  */
-async type( name: string, selector: string, text: string, opts: { kind: BrowserKind; cwd: string }, ): Promise<PageObservation>
+async type( name: string, selector: string, /* jscpd:ignore-start -- the click and type methods of BrowserService keep independent copies of the ARIA-ref target resolution; each owns its interaction verb. */ text: string, opts: { kind: BrowserKind; cwd: string }, ): Promise<PageObservation>
 
 /**
  * Close named tabs; `all` closes every tab, `kill` also closes browsers.

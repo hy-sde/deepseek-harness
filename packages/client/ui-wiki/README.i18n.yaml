@@ -3,29 +3,29 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-wiki/README.md
 /:
-  en: cf60750e206518cd
-  zh: 4024f9a6b0ace2be
+  en: 7db3e576bfca3b18
+  zh: 0410ae52f6770312
 /deepseek-ai-dsh-client-ui-wiki:
   en: a4cf360fffca7ef0
   zh: b3f73cdc3ea9f217
 /deepseek-ai-dsh-client-ui-wiki/summary:
-  en: fe7094c49f98b07e
-  zh: b2ef451803095125
+  en: 7d96ba8276169ae7
+  zh: b392b9aad66ed866
 /deepseek-ai-dsh-client-ui-wiki/table-of-contents:
-  en: b5a827bc8847ce31
-  zh: 72cf1372d19423fb
+  en: 6532ca1b4e919d63
+  zh: f86283a09d9c9ae0
 /deepseek-ai-dsh-client-ui-wiki/surfaces:
-  en: 4f882c6b5b0d3a94
-  zh: cfaf7faf1d23f734
+  en: bdb4cfae41283e08
+  zh: 0842bb8d508998fa
 /deepseek-ai-dsh-client-ui-wiki/model-experience:
-  en: 374c471af949ea52
-  zh: 6334cc6ce6e32ff2
+  en: 01b6186ed1cdfd3a
+  zh: 4af777783d4d92cb
 /deepseek-ai-dsh-client-ui-wiki/model-experience/kv-cache-effect:
   en: 3a337b4bfaf89bf5
   zh: d487fa6aa50e3be2
 /deepseek-ai-dsh-client-ui-wiki/known-limitations-and-deferred-work:
-  en: c9b6040e2195b825
-  zh: 98114f1c3975907c
+  en: f468bbad6d71466f
+  zh: 0208502c49633e54
 /deepseek-ai-dsh-client-ui-wiki/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 8ec3e73528ddb1a6

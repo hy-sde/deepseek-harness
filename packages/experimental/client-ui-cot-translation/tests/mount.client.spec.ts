@@ -23,8 +23,8 @@ async function fixture(failure = false, preferences: CotTranslationPreferences =
   class TestRemote extends Service {
     constructor() { super(ctx, 'remote') }
     $on(event: string, listener: () => void) {
-      expect(['settings/document-updated', 'llm/adapters-updated', 'deepseek-account/session-expired',
-        'deepseek-account/model-sign-in-required', 'credentials/record-updated', 'credentials/reference-updated']).toContain(event)
+      expect(['settings/document-updated', 'llm/adapters-updated',
+        'credentials/record-updated', 'credentials/reference-updated']).toContain(event)
       let group = listeners.get(event)
       if (group === undefined) { group = new Set(); listeners.set(event, group) }
       group.add(listener)
@@ -356,7 +356,7 @@ it('retains an invalidation raised synchronously while a refreshed snapshot is b
 
 it('advertises eligible paid routes without changing Bing selection or sending a translation', async () => {
   const b = await fixture()
-  b.setCatalog({ maxTextChars: 12, availableProviders: ['bing', 'google', 'deepseek-account', 'deepseek-official'],
+  b.setCatalog({ maxTextChars: 12, availableProviders: ['bing', 'google', 'deepseek-official'],
     preferences: { provider: 'bing', targetLanguage: 'auto' } })
   try {
     const dispose = await mountTranslation(b.ctx, contribution)
@@ -371,10 +371,10 @@ it('advertises eligible paid routes without changing Bing selection or sending a
   } finally { await b.ctx.fiber.dispose() }
 })
 
-it.each(['deepseek-account', 'deepseek-official'] as const)('binds selected paid route %s and delegates unavailable cache lookup to the Host', async (provider) => {
+it.each(['deepseek-official'] as const)('binds selected paid route %s and delegates unavailable cache lookup to the Host', async (provider) => {
   const b = await fixture(false, { provider, targetLanguage: 'auto' })
   const catalog: CotTranslationSnapshot = { maxTextChars: 12,
-    availableProviders: ['bing', 'google', 'deepseek-account', 'deepseek-official'], preferences: { provider, targetLanguage: 'auto' } }
+    availableProviders: ['bing', 'google', 'deepseek-official'], preferences: { provider, targetLanguage: 'auto' } }
   b.setCatalog(catalog)
   try {
     const dispose = await mountTranslation(b.ctx, contribution)
@@ -396,7 +396,7 @@ it.each(['deepseek-account', 'deepseek-official'] as const)('binds selected paid
   } finally { await b.ctx.fiber.dispose() }
 })
 
-it.each(['llm/adapters-updated', 'deepseek-account/session-expired', 'deepseek-account/model-sign-in-required',
+it.each(['llm/adapters-updated',
   'credentials/record-updated', 'credentials/reference-updated'])('refreshes eligibility when %s is forwarded', async (event) => {
   const b = await fixture()
   try {

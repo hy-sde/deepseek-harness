@@ -24,11 +24,8 @@ export class HarnessError extends Error {
 /** Canonical provider-neutral code for a model request rejected because its context window was exceeded. */
 export const CONTEXT_WINDOW_EXCEEDED_CODE = 'CONTEXT_WINDOW_EXCEEDED'
 
-/** Canonical provider-neutral code for an exhausted account quota or balance. */
+/** Canonical provider-neutral code for a request rejected because its quota or balance is exhausted. */
 export const QUOTA_EXCEEDED_CODE = 'QUOTA'
-
-/** Account-token quota that can be replenished through the first-party billing page. */
-export const ACCOUNT_QUOTA_EXCEEDED_CODE = 'ACCOUNT_QUOTA'
 
 /**
  * Canonical provider-neutral code for a response that completed normally but

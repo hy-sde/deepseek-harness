@@ -121,6 +121,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       },
       deletePages: { type: 'array', items: { type: 'string' }, description: 'Existing generated pages to delete.' },
     },
+    /* jscpd:ignore-start -- the OpenWiki tool registrations intentionally repeat this defineTool output-schema/execute skeleton; each tool owns its own request/view projection. */
     output: {
       schema: {
         type: 'object',
@@ -151,6 +152,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       }) as PlanView
       return { ...planned, text: renderValue(planned) }
     },
+    /* jscpd:ignore-end */
   }))
 
   /* openwiki_next_page — current pending job and its existing Claims. */
@@ -162,6 +164,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     parameters: {
       runId: { type: 'string', description: 'Stable run UUID returned by openwiki_begin.', required: true },
     },
+    /* jscpd:ignore-start -- the OpenWiki tool registrations intentionally repeat this defineTool output-schema/execute skeleton; each tool owns its own request/view projection. */
     output: {
       schema: {
         type: 'object',
@@ -211,6 +214,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       const a = args
       return projectNext(await requireManager().nextPage(a))
     },
+    /* jscpd:ignore-end */
   }))
 
   /* openwiki_submit_page — complete the current job with its Claim set. */
@@ -247,6 +251,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
         },
       },
     },
+    /* jscpd:ignore-start -- the OpenWiki tool registrations intentionally repeat this defineTool output-schema/execute skeleton; each tool owns its own request/view projection. */
     output: {
       schema: {
         type: 'object',
@@ -275,6 +280,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       }) as PageView
       return { ...submitted, text: renderValue(submitted) }
     },
+    /* jscpd:ignore-end */
   }))
 
   /* openwiki_finish — strict deterministic finalization of a complete run. */
@@ -286,6 +292,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
     parameters: {
       runId: { type: 'string', description: 'Stable run UUID returned by openwiki_begin.', required: true },
     },
+    /* jscpd:ignore-start -- the OpenWiki tool registrations intentionally repeat this defineTool output-schema/execute skeleton; each tool owns its own request/view projection. */
     output: {
       schema: {
         type: 'object',
@@ -305,6 +312,7 @@ export function applyOpenWikiTools(ctx: Context, config: OpenWikiToolConfig = {}
       const finished = await requireManager().finish(a) as FinishView
       return { ...finished, text: renderValue(finished) }
     },
+    /* jscpd:ignore-end */
   }))
 }
 

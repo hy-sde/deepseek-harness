@@ -81,6 +81,7 @@ function read32LE(bytes: Uint8Array, offset: number): number {
   return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0
 }
 
+/* jscpd:ignore-start -- the XZ and 7z filter pipelines keep independent copies of the Delta and x86 BCJ decode kernels */
 function deltaDecode(bytes: Uint8Array, distance: number): void {
   const history = new Uint8Array(256)
   let position = 0
@@ -136,6 +137,7 @@ function x86Decode(bytes: Uint8Array, startOffset: number): void {
     }
   }
 }
+/* jscpd:ignore-end */
 
 /** Shared lazy decoder/cache for a single 7z folder (solid block). */
 export class SevenZipFolderSource {

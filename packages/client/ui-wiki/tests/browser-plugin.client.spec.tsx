@@ -1,27 +1,29 @@
 // @vitest-environment jsdom
 /**
  * ui-wiki browser half over a real cordis Context with a SlotRegistry and a
- * scripted Remote: apply() registers the sidebar toggle and the overlay
- * drawer, and the rendered toggle opens the panel which lists pages and
- * navigates into a page through the wiki wire face.
+ * scripted Remote: apply() registers the sidebar-panel-strip Wiki entry and
+ * the docked main panel, and the rendered panel lists pages and navigates
+ * into a page through the wiki wire face.
  */
 
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { en } from '../src/client/locales.ts'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { WikiRemoteNamespace } from '../src/client/api.ts'
 import { wikiStore } from '../src/client/store.ts'
 import { apply, inject } from '../src/client/index.ts'
-import { WikiToggle } from '../src/client/WikiToggle.tsx'
-import { WikiDrawer } from '../src/client/WikiDrawer.tsx'
+import { WikiPanel } from '../src/client/WikiPanel.tsx'
+import { WikiPanelIcon } from '../src/client/WikiPanelIcon.tsx'
 
 afterEach(() => {
   cleanup()
-  wikiStore.close()
+  wikiStore.backToPages()
+  wikiStore.setSearchQuery('')
 })
 
 function scriptedWiki(calls: { method: string; args: unknown[] }[]): WikiRemoteNamespace {
@@ -52,11 +54,11 @@ async function bench(): Promise<{ ctx: Context }> {
   await ctx.plugin(SlotRegistry).await()
   ctx.slots.register({
     name: 'root', children: {
-      'shell.overlay': { kind: 'list', scope: 'root' },
-      'sidebar.footer.action': { kind: 'list', scope: 'root' },
+      'main': { kind: 'keyed', scope: 'root' },
+      'sidebar.panellist': { kind: 'list', scope: 'root' },
     },
   } as never, (() => null) as never)
-  ctx.provide('locale', { register: vi.fn(() => (() => {}) ) } as never)
+  ctx.provide('locale', { register: vi.fn(() => (() => {})), bind: vi.fn(() => (key: string) => (en as Record<string, string>)[key] ?? key) } as never)
   ctx.provide('remote', { wiki: scriptedWiki(calls) } as unknown as ClientRemote)
   ctx.provide('remote.wiki', scriptedWiki(calls))
   await ctx.plugin({ inject, apply }).await()
@@ -64,18 +66,21 @@ async function bench(): Promise<{ ctx: Context }> {
 }
 
 describe('ui-wiki browser plugin', () => {
-  it('registers the sidebar toggle and the overlay drawer', async () => {
+  it('registers the sidebar strip entry and the main panel', async () => {
     const { ctx } = await bench()
-    expect(ctx.slots.entries('sidebar.footer.action')[0]?.options).toMatchObject({ id: 'wiki', order: 90 })
-    expect(ctx.slots.entries('shell.overlay')[0]?.options).toMatchObject({ id: 'wiki-drawer', order: 10 })
+    expect(ctx.slots.entries('sidebar.panellist')[0]?.options).toMatchObject({ id: 'wiki', order: 30, label: expect.any(Function) })
+    expect(ctx.slots.entries('main')[0]?.options).toMatchObject({ key: 'wiki' })
   })
 
-  it('toggle opens the drawer, lists pages, and opens a page', async () => {
+  it('strip icon renders the wiki glyph and the panel lists and opens pages', async () => {
     await bench()
     const t = (key: string): string => (en as Record<string, string>)[key] ?? key
-    render(<WikiDrawer t={t} />) // closed → renders nothing
-    render(<WikiToggle wide t={t} />)
-    fireEvent.click(screen.getByTitle('Open wiki'))
+    // The aggregate typecheck folds the host's GlobalStandardProps augmentation
+    // into PropsRuntime; neither occupant consumes those hooks, so the fixtures
+    // cast the minimal render props instead of stubbing eleven unused hooks.
+    render(<WikiPanelIcon {...({ size: 18, active: false } as PropsRuntime<'sidebar.panellist'>)} />)
+    expect(screen.getByText('❖')).toBeDefined()
+    render(<WikiPanel {...({ t } as PropsRuntime<'main'> & { t: typeof t })} />)
     await waitFor(() => { expect(screen.getByText('LLM Wiki')).toBeDefined() })
     await waitFor(() => { expect(screen.getByText('Rust')).toBeDefined() })
     fireEvent.click(screen.getByText('Rust'))

@@ -9,8 +9,8 @@
   en: d2c50aae9d869902
   zh: ee9f3f0ff575cbf9
 /deepseek-ai-dsh-web-search-deepseek/summary:
-  en: 6b1267e732370877
-  zh: 64460aba0564cb44
+  en: ab6e9da9151bfae6
+  zh: e6e1723497000775
 /deepseek-ai-dsh-web-search-deepseek/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
@@ -18,14 +18,14 @@
   en: e0d352d6402d9d3b
   zh: a449234557ef8bd6
 /deepseek-ai-dsh-web-search-deepseek/use-this-package/when-to-choose-it:
-  en: 0187c8af8d2d98c5
-  zh: 1c9607b3a662bcaa
+  en: f22bdc09f42b7a25
+  zh: 50a71357c808c952
 /deepseek-ai-dsh-web-search-deepseek/use-this-package/minimal-configuration:
-  en: 0553b6c926c44cf4
-  zh: 5cd3221d3e8eebd9
+  en: 65eea3fed9a16037
+  zh: a3439cda36ac8e1b
 /deepseek-ai-dsh-web-search-deepseek/use-this-package/authentication:
-  en: e9104c20ee90b3be
-  zh: 5fcc71d403976eaa
+  en: 98e4842969fdd6f1
+  zh: e16cd3aeb2d9bc6c
 /deepseek-ai-dsh-web-search-deepseek/use-this-package/what-a-search-returns:
   en: e30442c90365357b
   zh: 9c9e2f1182963a8a
@@ -39,14 +39,14 @@
   en: 9842c69ad3636bb3
   zh: 3cdc3f816cbdd0cb
 /deepseek-ai-dsh-web-search-deepseek/understand-the-implementation/design-philosophy:
-  en: 1b1760efbf4568c1
-  zh: fca06c959e51ce16
+  en: b8a700550c2f6698
+  zh: 54a1e24b0067f184
 /deepseek-ai-dsh-web-search-deepseek/understand-the-implementation/source-map:
   en: 6488e1c85646339f
   zh: 2b5ca1c6b5939a8c
 /deepseek-ai-dsh-web-search-deepseek/understand-the-implementation/request-flow:
-  en: d6c3f30b70a5f4b5
-  zh: ab7c5b7d6fc3cae6
+  en: 8711ed3995972e9d
+  zh: 8d0ae56225ee7c23
 /deepseek-ai-dsh-web-search-deepseek/further-exploration:
   en: 4c0730d979693c5a
   zh: 74681ad82b7b45ed
@@ -69,8 +69,8 @@
   en: 666f5753c99783ab
   zh: b44328e99bcc45c9
 /deepseek-ai-dsh-web-search-deepseek/model-experience/conversation-tool-result-indirectly/what-the-model-sees:
-  en: 0764d19c9b82aa98
-  zh: 88b0ba22ef64225b
+  en: 951e98ff41f4cd72
+  zh: daf33228bf14ef08
 /deepseek-ai-dsh-web-search-deepseek/model-experience/conversation-tool-result-indirectly/token-effect:
   en: 01ec43a9b616139d
   zh: 0a5b7c28fde34bcf

@@ -110,12 +110,6 @@
     },
     {
       "path": "../../document/office-to-pdf"
-    },
-    {
-      "path": "../account-controller"
-    },
-    {
-      "path": "../../credentials/deepseek-account"
     }
   ]
 }

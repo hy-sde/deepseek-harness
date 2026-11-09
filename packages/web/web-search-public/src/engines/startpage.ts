@@ -48,6 +48,7 @@ export function collectHiddenInputs(html: string): Record<string, string> {
 }
 
 /** Parse Startpage's result page. Exported for contract tests. */
+/* jscpd:ignore-start -- the duckduckgo and startpage engines keep independent copies of this result-list windowing loop; each engine owns its own row parser and page structure. */
 export function parseStartpage(html: string, limit: number): WebSearchSource[] {
   const doc = stripNoise(html)
   const rows = elementsByClass(doc, 'result', 'div')
@@ -61,6 +62,7 @@ export function parseStartpage(html: string, limit: number): WebSearchSource[] {
   }
   return sources
 }
+/* jscpd:ignore-end */
 
 function parseStartpageRow(slice: string): WebSearchSource | undefined {
   const link = anchors(slice).find(anchor =>

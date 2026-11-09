@@ -25,7 +25,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
-  SidebarPanelActionsOwnerProps, SidebarPanelMetadata, SidebarRootComponentProps, SidebarRootInjected, SidebarSectionOwnerProps,
+  SidebarPanelActionsOwnerProps, SidebarPanelMetadata, SidebarRootComponentProps, SidebarRootInjected,
 } from './contract/slots.ts'
 import { FIXED_PANEL_ID } from './panel-pins.ts'
 import css from './SidebarRoot.module.css'
@@ -53,22 +53,22 @@ function localBuildVersion(): string | undefined {
 
 type PanelRowProps =
   Pick<SidebarPanelMetadata, 'id' | 'label'>
-  & Pick<SidebarSectionOwnerProps, 'wide'>
   & Pick<PropsRuntime<'sidebar'>, 'usePanelInfo'>
   & Pick<InjectFace<SidebarRootInjected>, 'selectPanel' | 'trackEntryClick'>
   & PropsRenderSlots<'sidebar.panellist'>
 
 /** Analytics category of an official panel; other panels are never reported. */
-function officialEntry(id: string): 'plugin' | 'cron' | undefined {
+function officialEntry(id: string): 'plugin' | 'cron' | 'wiki' | undefined {
   if (id === 'plugins') return 'plugin'
+  if (id === 'wiki') return 'wiki'
   return id === 'schedules' ? 'cron' : undefined
 }
 
 /** Each panel row subscribes only to its own selection state. */
-function PanelRow({ id, label, wide, usePanelInfo, selectPanel, trackEntryClick, renderSlot }: PanelRowProps) {
+function PanelRow({ id, label, usePanelInfo, selectPanel, trackEntryClick, renderSlot }: PanelRowProps) {
   const active = usePanelInfo(info => info.activePanelId === id)
   return (
-    <Tooltip label={label} delayMs={500} disabled={wide}>
+    <Tooltip label={label} delayMs={500}>
       <button
         type="button"
         className={clsx(css.panelRow, active && css.panelActive)}
@@ -81,40 +81,33 @@ function PanelRow({ id, label, wide, usePanelInfo, selectPanel, trackEntryClick,
         }}
       >
         <span className={css.panelGlyph} aria-hidden="true">
-          {renderSlot('sidebar.panellist', { size: wide ? 16 : 18, active }, { only: id })}
+          {renderSlot('sidebar.panellist', { size: 18, active }, { only: id })}
         </span>
-        {wide && (
-          <span className={clsx(css.panelTitle, css.wide)}>
-            {label}
-          </span>
-        )}
       </button>
     </Tooltip>
   )
 }
 
 type PanelMoreMenuProps =
-  Pick<SidebarSectionOwnerProps, 'wide'>
-  & Omit<SidebarPanelActionsOwnerProps, 'onDismiss'>
+  Omit<SidebarPanelActionsOwnerProps, 'onDismiss'>
   & PropsRenderSlots<'sidebar.panellist.actions'>
   & Pick<InjectFace<SidebarRootInjected>, 'trackEntryClick'>
   & { readonly label: string }
 
 /** The panel list's More launcher: a panel-row button whose menu rows come from `sidebar.panellist.actions`. */
-function PanelMoreMenu({ wide, label, entries, onOpen, onPinnedChange, trackEntryClick, renderSlot }: PanelMoreMenuProps) {
+function PanelMoreMenu({ label, entries, onOpen, onPinnedChange, trackEntryClick, renderSlot }: PanelMoreMenuProps) {
   const [open, setOpen] = useState(false)
   const onDismiss = (): void => { setOpen(false) }
   return (
     <Menu open={open} onClose={onDismiss} portal autoFocus className={css.moreAnchor} listClassName={css.moreMenu}
       anchor={(
-        <Tooltip label={label} delayMs={500} disabled={wide}>
+        <Tooltip label={label} delayMs={500}>
           <button type="button" className={css.panelRow} aria-label={label} aria-haspopup="menu" aria-expanded={open}
             onClick={() => {
               trackEntryClick({ menu_name: 'more', position: 'sidebar' })
               setOpen(value => !value)
             }}>
-            <span className={css.panelGlyph} aria-hidden="true"><IconAppsAddOutlineRegular size={wide ? 16 : 18} /></span>
-            {wide && <span className={clsx(css.panelTitle, css.wide)}>{label}</span>}
+            <span className={css.panelGlyph} aria-hidden="true"><IconAppsAddOutlineRegular size={18} /></span>
           </button>
         </Tooltip>
       )}>
@@ -376,40 +369,6 @@ export function SidebarRoot({
         </Tooltip>
       )}
 
-      {panels.length > 0 && (
-        <nav className={css.panelList} aria-label={t('panels.label')}>
-          {panels.filter(({ id }) => id === FIXED_PANEL_ID || !unpinned.includes(id)).map(({ id, label }) => (
-            <PanelRow
-              key={id}
-              id={id}
-              label={label}
-              wide={wide}
-              usePanelInfo={usePanelInfo}
-              selectPanel={selectPanel}
-              trackEntryClick={trackEntryClick}
-              renderSlot={renderSlot}
-            />
-          ))}
-          {hasEntryActions && (
-            <PanelMoreMenu
-              wide={wide}
-              label={t('panels.more')}
-              entries={panels.filter(({ id }) => id !== FIXED_PANEL_ID)
-                .map(({ id, label }) => ({ id, label, pinned: !unpinned.includes(id), active: id === activePanelId }))}
-              onOpen={(id) => {
-                const entry = officialEntry(id)
-                if (entry !== undefined) trackEntryClick({ menu_name: entry, position: 'sidebar_more' })
-                const panel = panels.find(candidate => candidate.id === id)
-                if (panel !== undefined) selectPanel(panel.id)
-              }}
-              onPinnedChange={setPinned}
-              trackEntryClick={trackEntryClick}
-              renderSlot={renderSlot}
-            />
-          )}
-        </nav>
-      )}
-
       {/* The browsing region fills the column between the controls and the
           foot in both states; its rail icon column rides the same slot. */}
       <div className={css.regionArea}>
@@ -423,8 +382,40 @@ export function SidebarRoot({
         <Toast key={copiedToast} tone="success" text={t('version.copied')} onDone={() => { setCopiedToast(null) }} />
       )}
 
-      {/* Footer actions stack above Settings in both sidebar widths. */}
+      {/* The panel strip, footer actions and Settings share the foot so the
+          workspaces region owns the column between the top controls and it. */}
       <div className={css.footArea}>
+        {panels.length > 0 && (
+          <nav className={css.panelStrip} aria-label={t('panels.label')}>
+            {panels.filter(({ id }) => id === FIXED_PANEL_ID || !unpinned.includes(id)).map(({ id, label }) => (
+              <PanelRow
+                key={id}
+                id={id}
+                label={label}
+                usePanelInfo={usePanelInfo}
+                selectPanel={selectPanel}
+                trackEntryClick={trackEntryClick}
+                renderSlot={renderSlot}
+              />
+            ))}
+            {hasEntryActions && (
+              <PanelMoreMenu
+                label={t('panels.more')}
+                entries={panels.filter(({ id }) => id !== FIXED_PANEL_ID)
+                  .map(({ id, label }) => ({ id, label, pinned: !unpinned.includes(id), active: id === activePanelId }))}
+                onOpen={(id) => {
+                  const entry = officialEntry(id)
+                  if (entry !== undefined) trackEntryClick({ menu_name: entry, position: 'sidebar_more' })
+                  const panel = panels.find(candidate => candidate.id === id)
+                  if (panel !== undefined) selectPanel(panel.id)
+                }}
+                onPinnedChange={setPinned}
+                trackEntryClick={trackEntryClick}
+                renderSlot={renderSlot}
+              />
+            )}
+          </nav>
+        )}
         <div className={css.footerActions}>
           {renderSlot('sidebar.footer.action', { wide })}
         </div>

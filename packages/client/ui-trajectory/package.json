@@ -55,7 +55,8 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/zod": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-agent": "workspace:*",
@@ -81,7 +82,9 @@
     "@tanstack/react-virtual": "3.14.10",
     "diff": "^9.0.0",
     "@deepseek-ai/dsh-api-gateway": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*"
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@deepseek-ai/zod": "workspace:~",
+    "zod": "4.4.3"
   },
   "files": [
     "locale/*.json",
@@ -95,7 +98,6 @@
   ],
   "dependencies": {
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "zod": "4.4.3",
     "@deepseek-ai/schemastery": "workspace:~"
   }
 }

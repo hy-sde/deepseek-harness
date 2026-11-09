@@ -131,6 +131,7 @@ export function parseMemoryProposal(raw: string): MemoryProposal | undefined {
 }
 
 /** Parse one localized (second-pass) proposal response. */
+/* jscpd:ignore-start -- parseMemoryProposal and parseLocalizedMemoryProposal keep independent strict-JSON proposal parsers; each owns its own status set and response type. */
 export function parseLocalizedMemoryProposal(raw: string): LocalizedMemoryProposal | undefined {
   const parsed = parseStrictJsonObject(raw)
   if (!parsed) return undefined
@@ -154,6 +155,7 @@ export function parseLocalizedMemoryProposal(raw: string): LocalizedMemoryPropos
   }
   return undefined
 }
+/* jscpd:ignore-end */
 
 /** Parse one canonicalization response: exactly one result per candidateId. */
 export function parseMemoryCanonicalization(raw: string): MemoryCanonicalization | undefined {

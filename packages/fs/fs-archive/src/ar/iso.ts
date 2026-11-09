@@ -623,6 +623,7 @@ async function readIsoImpl(source: ByteSource, options: Parameters<FormatReader>
       if (!normalizedPath) continue
       assertArchivePathBytes(Buffer.byteLength(normalizedPath, 'utf-8'), 'member path', options.limits.maxPathBytes)
       const isDirectory = (record.flags & 0x02) !== 0
+      /* jscpd:ignore-start -- readIsoImpl and the pre-parsed directory walker keep independent copies of the Rock Ridge symlink-entry handling */
       if (susp.symlink !== undefined) {
         assertArchivePathBytes(
           Buffer.byteLength(susp.symlink, 'utf-8'),
@@ -647,6 +648,7 @@ async function readIsoImpl(source: ByteSource, options: Parameters<FormatReader>
         assertEntryCount(entries.size, options.limits)
         continue
       }
+      /* jscpd:ignore-end */
       if (isDirectory) {
         upsertArchiveEntry(entries, {
           path: normalizedPath,

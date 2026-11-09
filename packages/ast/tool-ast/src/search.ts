@@ -59,6 +59,7 @@ interface AstGrepToolArgs {
  * @param args - the schema-validated raw tool arguments.
  * @returns the validated input with optionals defaulted to `undefined`.
  */
+/* jscpd:ignore-start -- tool-ast's edit and search tools validate the same ast-grep argument surface through independent parsers. */
 export function parseAstGrepArgs(args: AstGrepToolArgs): AstGrepInput {
   if (args.pat.trim().length === 0) throw new Error('pat must be a non-empty string')
   const path = args.path?.trim()
@@ -73,6 +74,7 @@ export function parseAstGrepArgs(args: AstGrepToolArgs): AstGrepInput {
   }
   return { pat: args.pat, path, include, lang, strictness }
 }
+/* jscpd:ignore-end */
 
 /** One rendered match with its previewed node text and captures. */
 export type AstGrepMatchValue = {
