@@ -14,6 +14,14 @@ import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import type { KernelExecResult, KernelHost } from './kernel.ts'
 import type { SnapshotSpec } from './protocol.ts'
 
+/**
+ * The synthetic log line a replacement kernel's result carries: state from
+ * earlier cells died with the previous kernel, so the model must re-run its
+ * setup instead of assuming continuity (omp d7197bd069).
+ */
+const restartNotice = (label: string): string =>
+  `Kernel restarted: the previous ${label} is dead; state is unavailable. Re-run needed setup: variables, imports and definitions from earlier cells are gone.`
+
 /** One live session: its kernel (spawned lazily) and the serialized run tail. */
 interface KernelSession {
   kernel: KernelHost | null
@@ -186,6 +194,11 @@ export class SessionRegistry {
       }
       this.#deleteSnapshot(sessionId)
     }
+    // A kernel that died after its last run is replaced by the acquire below:
+    // surface that replacement, because every prior cell's state died with it
+    // (omp d7197bd069). A reset discards the old kernel deliberately and is
+    // not a replacement.
+    const replacedDeadKernel = options.reset !== true && session.kernel !== null && !session.kernel.isAlive()
     let kernel = await this.#acquireKernel(sessionId, session)
     const first = await this.#executeOnce(kernel, sessionId, code, bindings, options)
     // A kernel that died or was killed settling the run is replaced once and
@@ -204,17 +217,31 @@ export class SessionRegistry {
     // The guard above proves the caller has not aborted by this point, so a
     // `cancelled` result here can only come from the kernel side.
     const cancelledButAlive = first.cancelled && dead
-    if (!first.killed && !cancelledButAlive) return first
+    if (!first.killed && !cancelledButAlive) {
+      return replacedDeadKernel ? this.#noticed(first) : first
+    }
     await kernel.shutdown().catch(() => { })
     if (session !== this.#sessions.get(sessionId)) return first
     kernel = await this.#acquireKernel(sessionId, session)
     const second = await this.#executeOnce(kernel, sessionId, code, bindings, options)
-    if (second.killed) {
+    // The retry ran on a replacement kernel: prior cells' state is gone, so
+    // the result carries the restart notice ahead of its output (omp
+    // d7197bd069).
+    const retried = this.#noticed(second)
+    if (retried.killed) {
       // Give up restoring state: report the second outcome with the first's
       // message so the caller sees that retries also died.
-      return { ...second, message: second.message || first.message }
+      return { ...retried, message: retried.message || first.message }
     }
-    return second
+    return retried
+  }
+
+  /** Prepend the restart notice to a result produced by a replacement kernel. */
+  #noticed(result: KernelExecResult): KernelExecResult {
+    return {
+      ...result,
+      logs: [{ text: `${restartNotice(this.#config.label)}\n`, stream: 'stdout' }, ...result.logs],
+    }
   }
 
   #executeOnce(

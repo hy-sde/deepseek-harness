@@ -8,9 +8,13 @@
  * dying on cue.
  */
 
+import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it } from 'vitest'
+import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import { KernelHost, nodejsKernelProfile } from '../src/core/kernel.ts'
 import { SessionRegistry } from '../src/core/session.ts'
+import { KernelManager } from '../src/index.ts'
+import { tempSnapshotDir } from './test-util.ts'
 
 function startConfig(env?: Record<string, string>) {
   return {
@@ -170,6 +174,70 @@ describe('KernelHost — pre-aborted signal (omp 6dde5ac2d4)', () => {
       expect(follow.value).toBe(4)
     } finally {
       await registry.disposeAll()
+    }
+  })
+})
+
+describe('SessionRegistry — restart notice (omp d7197bd069)', () => {
+  it('notices the replacement after a mid-run kernel death', { timeout: 60_000, skip: process.platform === 'win32' }, async () => {
+    // The binding kills the kernel's own process group mid-call: the run
+    // settles killed, the registry replaces the kernel and retries, and the
+    // retried result must carry the restart notice ahead of its output.
+    let kills = 0
+    const bindings: PtcBindingNamespace[] = [{
+      global: 'test',
+      functions: {
+        dieOnce: async (args: unknown) => {
+          const { pid } = args as { pid: number }
+          if (kills++ === 0) process.kill(-pid, 'SIGKILL')
+          return null
+        },
+      },
+    }]
+    const manager = new KernelManager({
+      languages: ['typescript'],
+      snapshotDir: tempSnapshotDir(),
+    })
+    try {
+      const result = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-notice',
+        code: 'await test.dieOnce({ pid: process.pid })\nreturn 42',
+        bindings,
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value).toBe(42)
+      expect(result.executionCount).toBe(1)
+      expect(result.logs.join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
+    } finally {
+      await manager.teardown()
+    }
+  })
+
+  it('notices a kernel that died between cells', { timeout: 60_000 }, async () => {
+    const manager = new KernelManager({
+      languages: ['typescript'],
+      snapshotDir: tempSnapshotDir(),
+    })
+    try {
+      const scheduled = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-between',
+        code: 'setTimeout(() => { process.exit(5) }, 300)\nreturn "scheduled"',
+      })
+      expect(scheduled.error).toBeUndefined()
+      expect(scheduled.logs.join('')).not.toContain('Kernel restarted')
+      await delay(600)
+      const second = await manager.run({
+        language: 'typescript',
+        sessionId: 'restart-between',
+        code: 'return 7',
+      })
+      expect(second.error).toBeUndefined()
+      expect(second.value).toBe(7)
+      expect(second.logs.join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
+    } finally {
+      await manager.teardown()
     }
   })
 })
