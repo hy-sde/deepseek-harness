@@ -123,7 +123,7 @@ The package is built on one deliberate separation:
 
 ### Data model
 
-The request and result types define the normalized vocabulary callers build on — one `Search` pair and one `Fetch` pair — and the exhaustive fields and JSDoc live in [`src/types.ts`](src/types.ts) and the [web subsystem](../../../docs/subsystems/web.md) reference. Two deliberate choices shape them: `WebFetchBody` is a closed union (`html` | `text`) owned here, so adding a kind breaks compilation until every consumer handles it; `WebError` extends `HarnessError` with an open-string `code`, so consumers must tolerate provider-specific values. Source fields stay optional because not every provider returns all of them.
+The request and result types define the normalized vocabulary callers build on — one `Search` pair and one `Fetch` pair — and the exhaustive fields and JSDoc live in [`src/types.ts`](src/types.ts) and the [web subsystem](../../../docs/subsystems/web.md) reference. Two deliberate choices shape them: `WebFetchBody` is a closed union (`html` | `text` | `blocked`) owned here, so adding a kind breaks compilation until every consumer handles it — `blocked` is not page content but the record that the site's bot protection answered instead of the page, naming the protection; `WebError` extends `HarnessError` with an open-string `code`, so consumers must tolerate provider-specific values. Source fields stay optional because not every provider returns all of them.
 
 ### Selection flow
 

@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { DeepSeekFetchApiProvider, DeepSeekSearchApiProvider } from '@deepseek-ai/dsh-web-deepseek-api'
+import type { WebFetchBody } from '@deepseek-ai/dsh-web'
 
 /** Real Search and Fetch API probes; the base names the deployment the key authenticates. */
 const apiKey = process.env.DEEPSEEK_API_KEY
 const baseURL = process.env.DEEPSEEK_SEARCH_API_TEST_BASE_URL ?? ''
 const maybe = apiKey !== undefined && apiKey.length > 0 && baseURL.length > 0 ? describe : describe.skip
+
+/** Narrows a fetch body to its text content; blocked bodies carry no page content. */
+function contentOf(body: WebFetchBody): string {
+  return body.kind === 'blocked' ? '' : body.content
+}
 
 maybe('DeepSeek Search and Fetch real API', () => {
   it('returns citeable sources from the Search API', async () => {
@@ -19,7 +25,7 @@ maybe('DeepSeek Search and Fetch real API', () => {
     const provider = new DeepSeekFetchApiProvider(() => ({ apiKey: apiKey!, baseURL }))
     const result = await provider.fetch({ url: 'https://example.com' }, AbortSignal.timeout(30_000))
     expect(result.body.kind).toBe('text')
-    expect(result.body.content.length).toBeGreaterThan(0)
+    expect(contentOf(result.body).length).toBeGreaterThan(0)
     expect(result.statusCode).toBe(200)
   }, 40_000)
 })

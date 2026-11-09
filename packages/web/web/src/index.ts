@@ -18,6 +18,10 @@ import type {
 } from './types.ts'
 import { WebError } from './types.ts'
 
+export { CHALLENGE_PAGE_MAX_CHARS, scanChallengePage } from './challenge.ts'
+export type { ChallengePageInput, ChallengeSource, ChallengeVerdict } from './challenge.ts'
+export { httpFetchPage } from './http.ts'
+export type { HttpFetchedPage, HttpFetchPageOptions, HttpRedirectPolicy } from './http.ts'
 export {
   WebError,
 } from './types.ts'
