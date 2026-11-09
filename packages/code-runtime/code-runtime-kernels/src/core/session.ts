@@ -9,15 +9,18 @@
  * @module @deepseek-ai/dsh-code-runtime-kernels/src/core/session
  */
 
-import { rmSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import type { PtcBindingNamespace } from '@deepseek-ai/dsh-ptc-runtime'
 import type { KernelExecResult, KernelHost } from './kernel.ts'
 import type { SnapshotSpec } from './protocol.ts'
 
 /**
- * The synthetic log line a replacement kernel's result carries: state from
+ * The synthetic log line a replacement kernel's result carries when no
+ * snapshot restores the prior state: variables, imports and definitions from
  * earlier cells died with the previous kernel, so the model must re-run its
- * setup instead of assuming continuity (omp d7197bd069).
+ * setup instead of assuming continuity (omp d7197bd069). Skipped when a
+ * snapshot restore returns the last successful run's namespace — the runner
+ * then reports the restore itself.
  */
 const restartNotice = (label: string): string =>
   `Kernel restarted: the previous ${label} is dead; state is unavailable. Re-run needed setup: variables, imports and definitions from earlier cells are gone.`
@@ -63,7 +66,8 @@ export interface SessionRunOptions {
  * Registers sessions and schedules every run onto its session's serialization
  * tail. A session kernel that died mid-run (or was killed settling a prior
  * run) is replaced with a fresh one and the run retried once, like omp's
- * kernel-session registry — state loss on a hard kill is the accepted cost.
+ * kernel-session registry — state loss on a hard kill is the accepted cost
+ * when no snapshot can restore it.
  */
 export class SessionRegistry {
   readonly #sessions = new Map<string, KernelSession>()
@@ -195,9 +199,9 @@ export class SessionRegistry {
       this.#deleteSnapshot(sessionId)
     }
     // A kernel that died after its last run is replaced by the acquire below:
-    // surface that replacement, because every prior cell's state died with it
-    // (omp d7197bd069). A reset discards the old kernel deliberately and is
-    // not a replacement.
+    // surface that replacement, because prior cells' state died with it —
+    // unless a snapshot restores it (omp d7197bd069). A reset discards the
+    // old kernel deliberately and is not a replacement.
     const replacedDeadKernel = options.reset !== true && session.kernel !== null && !session.kernel.isAlive()
     let kernel = await this.#acquireKernel(sessionId, session)
     const first = await this.#executeOnce(kernel, sessionId, code, bindings, options)
@@ -218,16 +222,16 @@ export class SessionRegistry {
     // `cancelled` result here can only come from the kernel side.
     const cancelledButAlive = first.cancelled && dead
     if (!first.killed && !cancelledButAlive) {
-      return replacedDeadKernel ? this.#noticed(first) : first
+      return replacedDeadKernel ? this.#noticed(first, sessionId) : first
     }
     await kernel.shutdown().catch(() => { })
     if (session !== this.#sessions.get(sessionId)) return first
     kernel = await this.#acquireKernel(sessionId, session)
     const second = await this.#executeOnce(kernel, sessionId, code, bindings, options)
-    // The retry ran on a replacement kernel: prior cells' state is gone, so
-    // the result carries the restart notice ahead of its output (omp
-    // d7197bd069).
-    const retried = this.#noticed(second)
+    // The retry ran on a replacement kernel: unless a snapshot restore
+    // returns prior cells' state, the result carries the restart notice
+    // ahead of its output (omp d7197bd069).
+    const retried = this.#noticed(second, sessionId)
     if (retried.killed) {
       // Give up restoring state: report the second outcome with the first's
       // message so the caller sees that retries also died.
@@ -236,8 +240,24 @@ export class SessionRegistry {
     return retried
   }
 
-  /** Prepend the restart notice to a result produced by a replacement kernel. */
-  #noticed(result: KernelExecResult): KernelExecResult {
+  /**
+   * Whether the next exec of this session restores a persisted namespace:
+   * snapshots are configured and the session's snapshot file exists — a
+   * successful run wrote it, and the runner restores it on a fresh kernel's
+   * first exec, so prior cells' state survives the replacement.
+   */
+  #willRestoreSnapshot(sessionId: string): boolean {
+    const spec = this.#config.snapshot?.(sessionId)
+    return spec !== undefined && existsSync(spec.path)
+  }
+
+  /**
+   * Prepend the restart notice to a result produced by a replacement kernel,
+   * unless a snapshot restore returns the prior state — the runner's restore
+   * log already reports what survived.
+   */
+  #noticed(result: KernelExecResult, sessionId: string): KernelExecResult {
+    if (this.#willRestoreSnapshot(sessionId)) return result
     return {
       ...result,
       logs: [{ text: `${restartNotice(this.#config.label)}\n`, stream: 'stdout' }, ...result.logs],

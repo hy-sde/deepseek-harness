@@ -182,7 +182,9 @@ describe('SessionRegistry — restart notice (omp d7197bd069)', () => {
   it('notices the replacement after a mid-run kernel death', { timeout: 60_000, skip: process.platform === 'win32' }, async () => {
     // The binding kills the kernel's own process group mid-call: the run
     // settles killed, the registry replaces the kernel and retries, and the
-    // retried result must carry the restart notice ahead of its output.
+    // retried result must carry the restart notice ahead of its output. No
+    // snapshot exists yet — the dying run is the session's first — so a
+    // restore cannot suppress the notice.
     let kills = 0
     const bindings: PtcBindingNamespace[] = [{
       global: 'test',
@@ -214,7 +216,11 @@ describe('SessionRegistry — restart notice (omp d7197bd069)', () => {
     }
   })
 
-  it('notices a kernel that died between cells', { timeout: 60_000 }, async () => {
+  it('stays silent when a snapshot restores the state of a kernel that died between cells', { timeout: 60_000 }, async () => {
+    // Cell 1 succeeds and its namespace is snapshotted; the kernel then dies
+    // before cell 2. The replacement kernel restores the snapshot, so a
+    // "state is unavailable" notice would contradict the restored state —
+    // the result carries only the runner's restore log instead.
     const manager = new KernelManager({
       languages: ['typescript'],
       snapshotDir: tempSnapshotDir(),
@@ -222,22 +228,61 @@ describe('SessionRegistry — restart notice (omp d7197bd069)', () => {
     try {
       const scheduled = await manager.run({
         language: 'typescript',
-        sessionId: 'restart-between',
-        code: 'setTimeout(() => { process.exit(5) }, 300)\nreturn "scheduled"',
+        sessionId: 'restart-between-restore',
+        code: 'globalThis.laneState = 41\nsetTimeout(() => { process.exit(5) }, 300)\nreturn "scheduled"',
       })
       expect(scheduled.error).toBeUndefined()
       expect(scheduled.logs.join('')).not.toContain('Kernel restarted')
       await delay(600)
       const second = await manager.run({
         language: 'typescript',
-        sessionId: 'restart-between',
-        code: 'return 7',
+        sessionId: 'restart-between-restore',
+        code: 'return globalThis.laneState + 1',
       })
       expect(second.error).toBeUndefined()
-      expect(second.value).toBe(7)
-      expect(second.logs.join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
+      expect(second.value).toBe(42)
+      expect(second.logs.join('')).not.toContain('Kernel restarted')
     } finally {
       await manager.teardown()
+    }
+  })
+
+  it('notices the replacement when snapshots are disabled', { timeout: 60_000, skip: process.platform === 'win32' }, async () => {
+    // No snapshot function on the registry: the replacement kernel cannot
+    // restore anything, so the notice must say the prior state is gone even
+    // where a manager-configured snapshot would have suppressed it.
+    let starts = 0
+    let kills = 0
+    const registry = new SessionRegistry({
+      label: 'nodejs kernel',
+      start: () => {
+        starts += 1
+        return KernelHost.start(nodejsKernelProfile(process.execPath), startConfig())
+      },
+      sessionIdleMs: 0,
+    })
+    const bindings: PtcBindingNamespace[] = [{
+      global: 'test',
+      functions: {
+        dieOnce: async (args: unknown) => {
+          const { pid } = args as { pid: number }
+          if (kills++ === 0) process.kill(-pid, 'SIGKILL')
+          return null
+        },
+      },
+    }]
+    try {
+      const result = await registry.executeOnSession(
+        'restart-notice-no-snapshot',
+        'await test.dieOnce({ pid: process.pid })\nreturn 42',
+        bindings,
+      )
+      expect(starts).toBe(2)
+      expect(result.value).toBe(42)
+      expect(result.executionCount).toBe(1)
+      expect(result.logs.map(log => log.text).join('')).toContain('Kernel restarted: the previous nodejs kernel is dead')
+    } finally {
+      await registry.disposeAll()
     }
   })
 })
