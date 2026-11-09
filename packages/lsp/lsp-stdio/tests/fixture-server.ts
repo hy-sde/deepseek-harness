@@ -29,6 +29,10 @@
  * - LSP_FAKE_SOURCE_CODE_ACTIONS: JSON array (or null) answer for a textDocument/codeAction request
  *   whose context.only includes a source kind, as servers like typescript-language-server answer
  *   source actions only when the kind is asked for.
+ * - LSP_FAKE_CODE_ACTIONS_ERROR: "1" answers an unfiltered textDocument/codeAction request with a
+ *   JSON-RPC error response while source-only codeAction requests keep their scripted answer.
+ * - LSP_FAKE_CODE_ACTION_MARKER: appends each received codeAction request's context.only (or null)
+ *   as one JSON line to this path, at receipt time, so tests can pin request order and count.
  * - LSP_FAKE_PUBLISH_DIAGNOSTICS: JSON `{ uri, diagnostics, version, forUri }` emitted as a
  *   textDocument/publishDiagnostics notification when a didOpen for `forUri` (default `uri`)
  *   arrives; `version` "open" uses the version from that didOpen, a number is sent verbatim (e.g.
@@ -61,8 +65,10 @@ const exitMarker = process.env.LSP_FAKE_EXIT_MARKER
 const noShutdown = process.env.LSP_FAKE_NO_SHUTDOWN === '1'
 const onOpen = process.env.LSP_FAKE_ON_OPEN
 const errorReply = process.env.LSP_FAKE_ERROR === '1'
+const codeActionsError = process.env.LSP_FAKE_CODE_ACTIONS_ERROR === '1'
 const garbage = process.env.LSP_FAKE_GARBAGE === '1'
 const formatMarker = process.env.LSP_FAKE_FORMAT_MARKER
+const codeActionMarker = process.env.LSP_FAKE_CODE_ACTION_MARKER
 const publishDelayMs = Number(process.env.LSP_FAKE_PUBLISH_DELAY_MS ?? 0)
 const closeStdinAfterInitialized = process.env.LSP_FAKE_CLOSE_STDIN === '1'
 const publishRawParams = process.env.LSP_FAKE_PUBLISH_RAW === '1'
@@ -87,13 +93,12 @@ function resultFor(method: string, params: unknown): unknown {
     case 'textDocument/references': return envJson('LSP_FAKE_REFS', null)
     case 'textDocument/implementation': return envJson('LSP_FAKE_IMPL', null)
     case 'textDocument/formatting': return envJson('LSP_FAKE_FORMAT_EDITS', null)
-    case 'textDocument/codeAction': {
+    case 'textDocument/codeAction':
       // Server behavior under test: source actions are answered only when the request's
       // context.only asks for a source kind (typescript-language-server behavior).
-      const context = (params as { context?: { only?: string[] } } | undefined)?.context
-      const wantsSource = context?.only?.some(kind => kind.startsWith('source')) ?? false
-      return wantsSource ? envJson('LSP_FAKE_SOURCE_CODE_ACTIONS', null) : envJson('LSP_FAKE_CODE_ACTIONS', null)
-    }
+      return wantsSourceOnly(params)
+        ? envJson('LSP_FAKE_SOURCE_CODE_ACTIONS', null)
+        : envJson('LSP_FAKE_CODE_ACTIONS', null)
     case 'textDocument/hover': {
       // LSP_FAKE_ECHO_ENV names a variable whose VALUE becomes the hover
       // contents — a test can assert exactly what env reached this process.
@@ -108,6 +113,21 @@ function resultFor(method: string, params: unknown): unknown {
 function envJson(name: string, fallback: unknown): unknown {
   const raw = process.env[name]
   return raw === undefined ? fallback : JSON.parse(raw)
+}
+
+/** Whether a codeAction request's context.only asks for a source kind. */
+function wantsSourceOnly(params: unknown): boolean {
+  const context = (params as { context?: { only?: string[] } } | undefined)?.context
+  return context?.only?.some(kind => kind.startsWith('source')) ?? false
+}
+
+/** The JSON-RPC error message answering this request, or undefined to answer with a result. */
+function errorReplyFor(method: string, params: unknown): string | undefined {
+  if (errorReply) return 'server refused the request'
+  if (method === 'textDocument/codeAction' && codeActionsError && !wantsSourceOnly(params)) {
+    return 'server refused the unfiltered code action request'
+  }
+  return undefined
 }
 
 let buffer = Buffer.alloc(0)
@@ -207,14 +227,19 @@ function handle(message: { id?: number; method?: string; params?: unknown; resul
     return
   }
   if (method?.startsWith('textDocument/')) {
+    if (method === 'textDocument/codeAction' && codeActionMarker !== undefined) {
+      const context = (message.params as { context?: { only?: string[] } } | undefined)?.context
+      appendFileSync(codeActionMarker, `${JSON.stringify(context?.only ?? null)}\n`)
+    }
     if (hang) return
     if (method === 'textDocument/formatting' && formatMarker !== undefined) {
       const params = message.params as { options?: unknown } | undefined
       appendFileSync(formatMarker, `${JSON.stringify(params?.options)}\n`)
     }
     const reply = (): void => {
-      if (errorReply) {
-        send({ id, error: { code: -32000, message: 'server refused the request' } })
+      const errorMessage = errorReplyFor(method, message.params)
+      if (errorMessage !== undefined) {
+        send({ id, error: { code: -32000, message: errorMessage } })
       } else {
         send({ id, result: resultFor(method, message.params) })
       }

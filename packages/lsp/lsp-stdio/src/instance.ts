@@ -528,22 +528,22 @@ export class LspInstance {
       end: { line: position.line, character: position.character },
     }
     const method = requestMethod(request.operation)
-    // Both requests issue back-to-back synchronously, so each peek pairs with its own request id
-    // and an abort races and cancels both through the same machinery as a single request.
-    const [unfiltered, sourceOnly] = await Promise.all([
-      this.sendLspRequest(method, {
-        textDocument: { uri },
-        position: { line: position.line, character: position.character },
-        range,
-        context: { diagnostics: [], triggerKind: 1 },
-      }, signal),
-      this.sendLspRequest(method, {
-        textDocument: { uri },
-        position: { line: position.line, character: position.character },
-        range,
-        context: { diagnostics: [], triggerKind: 1, only: ['source'] },
-      }, signal),
-    ])
+    // The two requests are serialized, not concurrent: at most one codeAction request is ever in
+    // flight, so a server error reply leaves no unsettled sibling for the next queued query's
+    // didOpen/didClose to overlap — the invariant the abort path's cancel-grace teardown upholds.
+    // The listing pays one extra round trip; the merged result is unchanged.
+    const unfiltered = await this.sendLspRequest(method, {
+      textDocument: { uri },
+      position: { line: position.line, character: position.character },
+      range,
+      context: { diagnostics: [], triggerKind: 1 },
+    }, signal)
+    const sourceOnly = await this.sendLspRequest(method, {
+      textDocument: { uri },
+      position: { line: position.line, character: position.character },
+      range,
+      context: { diagnostics: [], triggerKind: 1, only: ['source'] },
+    }, signal)
     return mergeCodeActions(unfiltered, sourceOnly)
   }
 

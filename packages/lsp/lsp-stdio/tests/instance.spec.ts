@@ -283,10 +283,12 @@ describe('LspInstance query and abort', () => {
 
 describe('LspInstance codeActions listing', () => {
   it('merges source-only actions the server returns only when asked for by kind', async () => {
+    const marker = join(root, 'code-action-order.log')
     const instance = makeInstance({
       LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }),
       LSP_FAKE_CODE_ACTIONS: JSON.stringify([{ title: 'Add missing import', kind: 'quickfix' }]),
       LSP_FAKE_SOURCE_CODE_ACTIONS: JSON.stringify([{ title: 'Organize Imports', kind: 'source.organizeImports' }]),
+      LSP_FAKE_CODE_ACTION_MARKER: marker,
     })
     await expect(run(instance, 'codeActions')).resolves.toEqual({
       kind: 'codeActions',
@@ -296,6 +298,8 @@ describe('LspInstance codeActions listing', () => {
       ],
       resolvedWorkspaceUri: pathToFileURL(ws).href,
     })
+    // The unfiltered request goes out first; the source-only request follows once it settles.
+    expect(await readFile(marker, 'utf8')).toBe('null\n["source"]\n')
   })
 
   it('lists an action both codeAction requests returned once', async () => {
@@ -332,9 +336,14 @@ describe('LspInstance codeActions listing', () => {
     })
   })
 
-  it('cancels both in-flight codeAction requests on abort and tears the instance down when ignored', async () => {
+  it('aborts the in-flight codeAction request and tears the instance down when the server ignores cancellation', async () => {
+    const marker = join(root, 'code-action-abort.log')
     const instance = makeInstance(
-      { LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }), LSP_FAKE_HANG: '1' },
+      {
+        LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }),
+        LSP_FAKE_HANG: '1',
+        LSP_FAKE_CODE_ACTION_MARKER: marker,
+      },
       { killGraceMs: 100 },
     )
     const controller = new AbortController()
@@ -343,6 +352,24 @@ describe('LspInstance codeActions listing', () => {
     controller.abort(new Error('mid-flight'))
     await expect(pending).rejects.toThrow(/mid-flight/)
     expect(instance.dead).toBe(true)
+    // The requests are serialized: the hung unfiltered request was the only one ever sent.
+    expect(await readFile(marker, 'utf8')).toBe('null\n')
+  })
+
+  it('fails the listing on a server error reply and leaves the instance reusable', async () => {
+    const marker = join(root, 'code-action-error.log')
+    const instance = makeInstance({
+      LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }),
+      LSP_FAKE_CODE_ACTIONS_ERROR: '1',
+      LSP_FAKE_SOURCE_CODE_ACTIONS: JSON.stringify([{ title: 'Organize Imports', kind: 'source.organizeImports' }]),
+      LSP_FAKE_CODE_ACTION_MARKER: marker,
+    })
+    // A JSON-RPC error reply is not a transport failure: the listing rejects with the server's
+    // message and the instance stays alive, with no source request sent behind the failed one.
+    await expect(run(instance, 'codeActions')).rejects.toThrow(/server refused the unfiltered code action request/)
+    expect(instance.dead).toBe(false)
+    expect(await readFile(marker, 'utf8')).toBe('null\n')
+    await expect(run(instance, 'hover')).resolves.toEqual({ kind: 'hover', hover: null })
   })
 })
 
