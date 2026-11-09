@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyEditsToText,
+  mergeCodeActions,
   negotiatePositionEncoding,
   normalizeCodeActions,
   normalizeDiagnostics,
@@ -427,6 +428,33 @@ describe('normalizeCodeActions', () => {
 
   it('rejects entries with a non-string title', () => {
     expect(() => normalizeCodeActions([{ title: 42, kind: 'quickfix' }])).toThrow(/without a title/)
+  })
+})
+
+describe('mergeCodeActions', () => {
+  it('appends source-request actions the unfiltered response lacks', () => {
+    const base = [{ title: 'Add missing import', kind: 'quickfix' }]
+    const extra = [{ title: 'Organize Imports', kind: 'source.organizeImports' }]
+    expect(mergeCodeActions(base, extra)).toEqual([...base, ...extra])
+  })
+
+  it('drops extra actions structurally identical to a base action', () => {
+    const action = { title: 'Fix All', kind: 'source.fixAll', data: { scope: 'file' } }
+    expect(mergeCodeActions([action], [{ ...action }])).toEqual([action])
+  })
+
+  it('keeps same-titled actions with different fields, and repeats within one response', () => {
+    const first = { title: 'Convert to namespace import', kind: 'refactor.rewrite', data: { target: 1 } }
+    const second = { title: 'Convert to namespace import', kind: 'refactor.rewrite', data: { target: 2 } }
+    expect(mergeCodeActions([first, first], [second])).toEqual([first, first, second])
+  })
+
+  it('treats null as empty and passes non-array payloads through for normalization to report', () => {
+    expect(mergeCodeActions(null, [{ title: 'x' }])).toEqual([{ title: 'x' }])
+    expect(mergeCodeActions([{ title: 'x' }], null)).toEqual([{ title: 'x' }])
+    expect(mergeCodeActions(null, null)).toEqual([])
+    expect(mergeCodeActions({ nope: 1 }, [])).toEqual({ nope: 1 })
+    expect(mergeCodeActions([], 'nope')).toEqual('nope')
   })
 })
 

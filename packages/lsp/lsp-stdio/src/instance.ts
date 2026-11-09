@@ -25,6 +25,7 @@ import type { HostSource } from './host.ts'
 import type { WireInitializeResult, WireServerCapabilities, WireTextEdit } from './protocol.ts'
 import {
   applyEditsToText,
+  mergeCodeActions,
   negotiatePositionEncoding,
   normalizeCodeActions,
   normalizeDiagnostics,
@@ -134,7 +135,8 @@ export class LspInstance {
    * @returns the formatted text, or `null` when the server cannot/does not format.
    */
   format(request: LspFormatRequest, uri: string, languageId: string, signal?: AbortSignal): Promise<LspFormatResult> {
-    /* jscpd:ignore-start -- query and format keep parallel copies of the serialized-queue tap (transport-failure teardown, queue retap, run forwarding) */
+    /* jscpd:ignore-start -- query and format keep parallel copies of the serialized-queue tap
+     * (transport-failure teardown, queue retap, run forwarding) */
     const run = abortable(this.queue, signal)
       .then(() => this.runFormat(request, uri, languageId, signal))
       .catch(async (error: unknown) => {
@@ -160,7 +162,8 @@ export class LspInstance {
     languageId: string,
     signal?: AbortSignal,
   ): Promise<LspDiagnosticsResult> {
-    /* jscpd:ignore-start -- format and collectDiagnostics keep parallel copies of the serialized-queue tap (transport-failure teardown, queue retap, run forwarding) */
+    /* jscpd:ignore-start -- format and collectDiagnostics keep parallel copies of the serialized-queue tap
+     * (transport-failure teardown, queue retap, run forwarding) */
     const run = abortable(this.queue, signal)
       .then(() => this.runCollectDiagnostics(request, uri, languageId, signal))
       .catch(async (error: unknown) => {
@@ -182,7 +185,8 @@ export class LspInstance {
    * @returns the normalized diagnostics (empty on no publish).
    */
   diagnostics(request: LspProviderQuery, source: HostSource, signal?: AbortSignal): Promise<LspQueryResult> {
-    /* jscpd:ignore-start -- query and diagnostics keep parallel copies of the serialized-queue tap (transport-failure teardown, queue retap, run forwarding) */
+    /* jscpd:ignore-start -- query and diagnostics keep parallel copies of the serialized-queue tap
+     * (transport-failure teardown, queue retap, run forwarding) */
     const run = abortable(this.queue, signal)
       .then(() => this.runDiagnostics(request, source, signal))
       .catch(async (error: unknown) => {
@@ -381,7 +385,8 @@ export class LspInstance {
     // caught (version freshness — not arrival order — is the correctness property). The deadline
     // fuses caller cancellation with the collection budget; a server that never publishes (no
     // diagnostic capability) times out into an empty result instead of an error.
-    /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies of the publish-wait setup (deadline arming, listener registration, freshness filter) */
+    /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies of the publish-wait setup
+     * (deadline arming, listener registration, freshness filter) */
     const deadlineSignal = deadline(signal, this.spec.diagnosticsTimeoutMs, 'LSP_DIAGNOSTICS_TIMEOUT')
     let opened = false
     let removeListener: (() => void) | undefined
@@ -400,7 +405,8 @@ export class LspInstance {
         received.resolve(params)
       })
       try {
-        /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies of the didOpen-plus-bounded-publish-wait sequence */
+        /* jscpd:ignore-start -- runDiagnostics and runCollectDiagnostics keep parallel copies
+         * of the didOpen-plus-bounded-publish-wait sequence */
         await abortable(this.connection.notify('textDocument/didOpen', {
           textDocument: { uri, languageId, version: request.version, text: request.text },
         }), signal)
@@ -490,6 +496,7 @@ export class LspInstance {
     signal?: AbortSignal,
   ): Promise<unknown> {
     const position = request.position
+    if (request.operation === 'codeActions') return this.sendCodeActionRequests(request, uri, signal)
     const params: Record<string, unknown> = {
       textDocument: { uri },
       position: { line: position.line, character: position.character },
@@ -498,20 +505,52 @@ export class LspInstance {
       ...(request.operation === 'findReferences' ? { context: { includeDeclaration: true } } : {}),
       // rename carries the requested new name on the wire.
       ...(request.operation === 'rename' && request.newName !== undefined ? { newName: request.newName } : {}),
-      // codeAction needs a range + context: the seam passes a zero-width range at the cursor and an
-      // empty trigger context (callers collect their own diagnostics for context if they need it).
-      ...(request.operation === 'codeActions'
-        ? {
-          range: {
-            start: { line: position.line, character: position.character },
-            end: { line: position.line, character: position.character },
-          },
-          context: { diagnostics: [], triggerKind: 1 },
-        }
-        : {}),
     }
+    return this.sendLspRequest(requestMethod(request.operation), params, signal)
+  }
+
+  /**
+   * List code actions: the unfiltered request plus a `context.only: ["source"]` request, merged.
+   * Servers such as typescript-language-server answer source actions (Organize Imports, Source Fix
+   * All) only when `context.only` asks for them, as VS Code does, and the listing has no kind
+   * filter, so both requests always go out and merge before normalization.
+   */
+  private async sendCodeActionRequests(
+    request: LspProviderQuery,
+    uri: string,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    const position = request.position
+    // codeAction needs a range + context: the seam passes a zero-width range at the cursor and an
+    // empty trigger context (callers collect their own diagnostics for context if they need it).
+    const range = {
+      start: { line: position.line, character: position.character },
+      end: { line: position.line, character: position.character },
+    }
+    const method = requestMethod(request.operation)
+    // The two requests are serialized, not concurrent: at most one codeAction request is ever in
+    // flight, so a server error reply leaves no unsettled sibling for the next queued query's
+    // didOpen/didClose to overlap — the invariant the abort path's cancel-grace teardown upholds.
+    // The listing pays one extra round trip; the merged result is unchanged.
+    const unfiltered = await this.sendLspRequest(method, {
+      textDocument: { uri },
+      position: { line: position.line, character: position.character },
+      range,
+      context: { diagnostics: [], triggerKind: 1 },
+    }, signal)
+    const sourceOnly = await this.sendLspRequest(method, {
+      textDocument: { uri },
+      position: { line: position.line, character: position.character },
+      range,
+      context: { diagnostics: [], triggerKind: 1, only: ['source'] },
+    }, signal)
+    return mergeCodeActions(unfiltered, sourceOnly)
+  }
+
+  /** Send one request, racing it against abort through the connection's cancel path. */
+  private sendLspRequest(method: string, params: unknown, signal?: AbortSignal): Promise<unknown> {
     const requestId = this.connection.peekNextId()
-    const send = this.connection.request(requestMethod(request.operation), params)
+    const send = this.connection.request(method, params)
     if (signal === undefined) return send
     return this.raceAbort(send, requestId, signal)
   }

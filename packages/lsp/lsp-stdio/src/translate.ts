@@ -313,6 +313,27 @@ export function normalizeCodeActions(payload: unknown): LspCodeAction[] {
 }
 
 /**
+ * Merge the two `textDocument/codeAction` responses a listing sends: the unfiltered request's
+ * actions first, then the `context.only: ["source"]` request's actions that do not already appear
+ * identically in it. The dedupe key is the full action structure, so same-titled actions differing
+ * in any field (edit, command, data) stay listed, as do repeats within one response. Servers such
+ * as typescript-language-server answer source actions (Organize Imports, Source Fix All) only when
+ * `context.only` asks for them, so an unfiltered listing alone misses them.
+ * @param base - the unfiltered request's result.
+ * @param extra - the `context.only: ["source"]` request's result.
+ * @returns the merged raw payload for normalization; `null` contributes nothing, and a non-array
+ *   response is returned as-is so normalization reports the malformed payload.
+ */
+export function mergeCodeActions(base: unknown, extra: unknown): unknown {
+  const baseActions: readonly unknown[] | undefined = base === null ? [] : Array.isArray(base) ? base : undefined
+  if (baseActions === undefined) return base
+  const extraActions: readonly unknown[] | undefined = extra === null ? [] : Array.isArray(extra) ? extra : undefined
+  if (extraActions === undefined) return extra
+  const seen = new Set(baseActions.map(action => JSON.stringify(action)))
+  return [...baseActions, ...extraActions.filter(action => !seen.has(JSON.stringify(action)))]
+}
+
+/**
  * Normalize a `textDocument/rename` result (`WorkspaceEdit | null`) into the seam's per-file edits,
  * taking only the `changes` map. `documentChanges` variants are unsupported and surface as an empty
  * result rather than guessing their shape.
