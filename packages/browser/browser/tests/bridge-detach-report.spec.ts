@@ -173,7 +173,7 @@ describe('relay bridge detach reporting', () => {
       params: { autoAttach: true, waitForDebuggerOnStart: false, flatten: true },
     }))
     await flush()
-    for (const frame of ext.sequence) {
+    for (const frame of ext.sequence.map(s => s.frame)) {
       if (frame.t === 'rpc' && frame.op === 'send') {
         ackRpc(bridge, ext, frame.id as number)
       }
