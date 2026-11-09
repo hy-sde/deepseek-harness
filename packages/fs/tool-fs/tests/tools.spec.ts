@@ -400,6 +400,37 @@ describe('read tool', () => {
     expect(text(result)).toContain('not editable until re-read with a higher maxLineLength input')
   })
 
+  it('names the read output cap when a wide line exceeds it in source bytes', async () => {
+    // A source line over the read output cap is dropped by every re-read (an
+    // uncut row's bytes are its source bytes), so the notice must not promise
+    // the raised-maxLineLength remedy; it names the cap instead.
+    const { ctx, fs } = await setup()
+    fs.files.set('key:giant.txt', `head\n${'a'.repeat(60_000)}TAIL\ntail\n`)
+    const result = await call(ctx, 'read', { file_path: 'giant.txt' })
+    if (result.isError) throw new Error('expected read success')
+    expect(text(result)).toContain('Line(s) 2 longer than 2000 chars')
+    expect(text(result)).toContain('exceed the 51200-byte read output cap')
+    expect(text(result)).toContain('no maxLineLength input can display them in full')
+    expect(text(result)).not.toContain('not editable until re-read')
+
+    // The mechanism holds: even a maximal per-call cap cannot display the row.
+    const raised = await call(ctx, 'read', { file_path: 'giant.txt', maxLineLength: 1_000_000 })
+    if (raised.isError) throw new Error('expected read success')
+    expect(text(raised)).not.toContain('TAIL')
+    expect(text(raised)).toContain('Output capped')
+  })
+
+  it('splits the wide notice between re-readable and byte-capped lines', async () => {
+    const { ctx, fs } = await setup()
+    fs.files.set('key:mixed.txt', `head\n${'b'.repeat(3000)}MID\n${'a'.repeat(60_000)}TAIL\ntail\n`)
+    const result = await call(ctx, 'read', { file_path: 'mixed.txt' })
+    if (result.isError) throw new Error('expected read success')
+    expect(text(result))
+      .toContain('Line(s) 2 longer than 2000 chars were shown truncated and are not editable until re-read with a higher maxLineLength input.')
+    expect(text(result))
+      .toContain('Line(s) 3 exceed the 51200-byte read output cap and cannot be displayed in full at any maxLineLength.')
+  })
+
   it('rejects a blank file_path', async () => {
     const { ctx } = await setup()
     const result = await call(ctx, 'read', { file_path: '   ' })
