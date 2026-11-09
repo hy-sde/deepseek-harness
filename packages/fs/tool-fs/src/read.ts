@@ -295,12 +295,40 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
             // The listed numbers are model-visible text on top of a
             // byte-capped window: bound the list so a tiny per-call column
             // cap cannot push the notice past the output budget.
-            const listed = window.wideLineNumbers.slice(0, MAX_WIDE_NOTICE_LINES)
-            const more = window.wideLineNumbers.length - listed.length
-            wideNotice =
-              `Line(s) ${listed.join(', ')}${more > 0 ? ` and ${more} more` : ''} longer than ` +
-              `${input.maxLineLength} chars were shown truncated and are not editable until re-read with a ` +
-              'higher maxLineLength input.'
+            const listWideLines = (numbers: readonly number[]): string => {
+              const listed = numbers.slice(0, MAX_WIDE_NOTICE_LINES)
+              const more = numbers.length - listed.length
+              return `${listed.join(', ')}${more > 0 ? ` and ${more} more` : ''}`
+            }
+            // A raised maxLineLength reveals a wide row only while its source
+            // bytes fit the read output cap: an uncut row displays its full
+            // source line, and a focused re-read starts at zero output bytes,
+            // so a source line over caps.maxBytes is dropped by every
+            // re-read. Measure the re-read basis — whole-text lines with one
+            // trailing \r stripped — not the normalized snapshot text, whose
+            // lone-\r conversion can shift line numbering.
+            const sourceLines = fullText.split('\n')
+            const byteCapped = window.wideLineNumbers.filter((number) => {
+              const line = sourceLines[number - 1] ?? ''
+              return Buffer.byteLength(line.endsWith('\r') ? line.slice(0, -1) : line, 'utf8') > caps.maxBytes
+            })
+            const cappedSet = new Set(byteCapped)
+            const achievable = window.wideLineNumbers.filter(number => !cappedSet.has(number))
+            if (byteCapped.length === 0) {
+              wideNotice =
+                `Line(s) ${listWideLines(achievable)} longer than ${input.maxLineLength} chars were shown truncated ` +
+                'and are not editable until re-read with a higher maxLineLength input.'
+            } else if (achievable.length > 0) {
+              wideNotice =
+                `Line(s) ${listWideLines(achievable)} longer than ${input.maxLineLength} chars were shown truncated ` +
+                'and are not editable until re-read with a higher maxLineLength input. ' +
+                `Line(s) ${listWideLines(byteCapped)} exceed the ${caps.maxBytes}-byte read output cap and cannot be ` +
+                'displayed in full at any maxLineLength.'
+            } else {
+              wideNotice =
+                `Line(s) ${listWideLines(byteCapped)} longer than ${input.maxLineLength} chars were shown truncated ` +
+                `and exceed the ${caps.maxBytes}-byte read output cap: no maxLineLength input can display them in full.`
+            }
           }
         }
       }
@@ -316,8 +344,9 @@ export function applyReadTool(ctx: Context, caps: ReadToolCaps): void {
       // Conflict surfacing: register any conflict block inside this read's
       // window with the session history so `write({ path: "conflict://<N>" })`
       // can resolve it, and append the resolution notice to the model text.
+      // Column-cut rows stay out: their window text is the truncated display.
       if (iu !== undefined) {
-        const notice = conflictNoticeForRead(ctx, iu, exec, target, outcome)
+        const notice = conflictNoticeForRead(ctx, iu, exec, target, outcome, window.wideLineNumbers)
         if (notice !== undefined) {
           // Record the present observation too: the read succeeded and the
           // model now holds a version it can splice against.

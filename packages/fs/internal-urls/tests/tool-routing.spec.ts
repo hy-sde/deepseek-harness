@@ -235,6 +235,76 @@ describe('read/grep/write scheme routing', () => {
     expect(now).not.toContain('<<<<<<<')
   })
 
+  it('does not register a conflict block whose side was column-cut in the read window', async () => {
+    // A side longer than the display cap reaches registration only as its
+    // truncated display ("... (line truncated to N chars)"). Recording that
+    // display as the side would make every resolve fail to locate the
+    // recorded region and make conflict://N/ours report cut content as the
+    // real side, so the block must stay unregistered (upstream c42ca58f89);
+    // the wide-line notice points at the raised-cap re-read instead.
+    const ours = 'O'.repeat(80_000)
+    const wide = `head\n${OURS_OPEN}\n${ours}\n${SEP}\n    return 2\n${THEIRS_CLOSE}\ntail\n`
+    const { ctx, fs } = await setup({ 'w.ts': wide })
+    const result = await call(ctx, 'read', { file_path: 'w.ts' })
+    const value = result.value as { notice?: string }
+    // The 80_000-char side is also over the 51200-byte read output cap, so
+    // the wide notice names the cap instead of the raised-maxLineLength remedy.
+    expect(value.notice).toContain('Line(s) 3 longer than 2000 chars')
+    expect(value.notice).toContain('exceed the 51200-byte read output cap')
+    expect(value.notice).not.toContain('⚠')
+    const region = await call(ctx, 'read', { file_path: 'conflict://1' })
+    expect(region.isError).toBe(true)
+    expect(text(region)).toMatch(/not registered/)
+    // The read never touches the file.
+    expect(fs.files.get('abs:/ws/w.ts')).toBe(wide)
+  })
+
+  it('keeps a column-cut window from clobbering the :conflicts registration', async () => {
+    const ours = 'O'.repeat(80_000)
+    const wide = `head\n${OURS_OPEN}\n${ours}\n${SEP}\n    return 2\n${THEIRS_CLOSE}\ntail\n`
+    const { ctx, fs } = await setup({ 'w.ts': wide })
+    // The whole-file summary scans untruncated text and registers the block
+    // with the full side; a later windowed read of the same file must not
+    // replace that registration with the cut display it holds.
+    await call(ctx, 'read', { file_path: 'w.ts:conflicts' })
+    await call(ctx, 'read', { file_path: 'w.ts' })
+    const result = await call(ctx, 'write', { file_path: 'conflict://1', content: '@ours' })
+    expect((result.value as { operation: string }).operation).toBe('update')
+    expect(fs.files.get('abs:/ws/w.ts')).toBe(`head\n${ours}\ntail\n`)
+  })
+
+  it('still registers conflict blocks that do not intersect a column-cut line', async () => {
+    const ours = 'O'.repeat(80_000)
+    const mixed = `${CONFLICTS}\nhead\n${OURS_OPEN}\n${ours}\n${SEP}\n    other\n${THEIRS_CLOSE}\ntail\n`
+    const { ctx, fs } = await setup({ 'm.ts': mixed })
+    const result = await call(ctx, 'read', { file_path: 'm.ts' })
+    const value = result.value as { notice?: string }
+    // Only the plain block registers; the wide block stays out.
+    expect(value.notice).toContain('⚠ 1 unresolved conflict detected')
+    const resolved = await call(ctx, 'write', { file_path: 'conflict://1', content: '@theirs' })
+    expect((resolved.value as { operation: string }).operation).toBe('update')
+    const now = fs.files.get('abs:/ws/m.ts') ?? ''
+    expect(now).toContain('    return 2')
+    expect(now).toContain(ours)
+    expect(now).toContain('<<<<<<<')
+  })
+
+  it('registers the full side after a raised-cap re-read of a column-cut block', async () => {
+    // The promised remedy: a side wide at the 2000-char default but under the
+    // 51200-byte read output cap displays in full on a raised-cap re-read,
+    // which then registers the block with the full side and resolves cleanly.
+    const ours = 'O'.repeat(3000)
+    const wide = `head\n${OURS_OPEN}\n${ours}\n${SEP}\n    return 2\n${THEIRS_CLOSE}\ntail\n`
+    const { ctx, fs } = await setup({ 'w.ts': wide })
+    const cut = await call(ctx, 'read', { file_path: 'w.ts' })
+    expect((cut.value as { notice?: string }).notice).not.toContain('⚠')
+    const full = await call(ctx, 'read', { file_path: 'w.ts', maxLineLength: 10_000 })
+    expect((full.value as { notice?: string }).notice).toContain('⚠ 1 unresolved conflict detected')
+    const result = await call(ctx, 'write', { file_path: 'conflict://1', content: '@ours' })
+    expect((result.value as { operation: string }).operation).toBe('update')
+    expect(fs.files.get('abs:/ws/w.ts')).toBe(`head\n${ours}\ntail\n`)
+  })
+
   it('resolves a BOM-prefixed line-1 block registered by the :conflicts summary', async () => {
     // readConflictSummary strips the BOM before scanning, so a line-1 block
     // registers; the splice must match BOM-blind and write the BOM back.
