@@ -10,10 +10,16 @@
  * browser via the injected {@link PageScraper}. The scraper lives in the
  * browser host service (`BrowserService.fetchPageHtml`) — never the tool —
  * and is optional: without one the engine simply stays fetch-only (the
- * previous behavior), so this package keeps zero hard dependency on it.
+ * previous behavior), so this package keeps zero hard dependency on it. A
+ * generic bot-protection scan (`scanChallengePage` in `@deepseek-ai/dsh-web`)
+ * runs on the plain-fetched page alongside each engine's own predicate so
+ * walls the engines do not know escalate too; scraper-rendered pages keep the
+ * engine predicates as the sole authority.
  * @module @deepseek-ai/dsh-web-search-public/engines/browser-page
  */
 
+import { scanChallengePage } from '@deepseek-ai/dsh-web'
+import type { ChallengeVerdict } from '@deepseek-ai/dsh-web'
 import { buildBrowserNavigationHeaders } from './browser-headers.ts'
 
 /** HTML plus the response status and final URL after redirects or browser navigation. */
@@ -21,6 +27,10 @@ export interface LoadedHtmlPage {
   html: string
   status: number
   url: string
+  /** Response `Content-Type` (plain fetch only; absent from scraper loads). */
+  contentType?: string | null
+  /** Response `cf-mitigated` header (plain fetch only; absent from scraper loads). */
+  cfMitigated?: string | null
 }
 
 /**
@@ -97,7 +107,13 @@ async function fetchHtmlPage(url: string, options: BrowserFetchOptions): Promise
     headers,
     ...(options.signal !== undefined ? { signal: options.signal } : {}),
   })
-  return { html: await response.text(), status: response.status, url: response.url || url }
+  return {
+    html: await response.text(),
+    status: response.status,
+    url: response.url || url,
+    contentType: response.headers.get('content-type'),
+    cfMitigated: response.headers.get('cf-mitigated'),
+  }
 }
 
 async function browseHtmlPage(
@@ -123,6 +139,20 @@ async function browseHtmlPage(
   throw new Error('browser search failed: every attempt answered with a challenge page')
 }
 
+/**
+ * Generic bot-protection scan of a plain-fetched page: the cf-mitigated
+ * header, a live js_challenge form, or a wall marker on a non-2xx response.
+ * Engine-specific predicates stay authoritative; this only widens escalation.
+ */
+function pageChallenge(page: LoadedHtmlPage): ChallengeVerdict | undefined {
+  return scanChallengePage({
+    status: page.status,
+    body: page.html,
+    cfMitigated: page.cfMitigated ?? null,
+    contentType: page.contentType ?? null,
+  })
+}
+
 /** Fetch with a browser profile; escalate rejected/challenged responses to the real browser. */
 export async function browserFetch(url: string, options: BrowserFetchOptions): Promise<LoadedHtmlPage> {
   const fallback = options.browser
@@ -136,6 +166,6 @@ export async function browserFetch(url: string, options: BrowserFetchOptions): P
 
   if (fallback === undefined || options.fetchImpl !== undefined) return page
   const isSuccessful = page.status >= 200 && page.status < 300
-  if (isSuccessful && !fallback.shouldFallback(page)) return page
+  if (isSuccessful && !fallback.shouldFallback(page) && pageChallenge(page) === undefined) return page
   return browseHtmlPage(url, fallback, options.pageTimeoutMs ?? BROWSER_PAGE_TIMEOUT_MS, options.signal)
 }

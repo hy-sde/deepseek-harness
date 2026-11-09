@@ -1,7 +1,14 @@
 /**
- * Shared anonymous HTML fetch used by the credential-free engines.
+ * Shared anonymous HTML fetch used by the credential-free engines. Delegates
+ * transport to the shared `httpFetchPage` in `@deepseek-ai/dsh-web` with a
+ * reject-before-contact redirect policy (the web-package AGENTS.md rule).
  * @module @deepseek-ai/dsh-web-search-public/engines/http
  */
+
+import { httpFetchPage } from '@deepseek-ai/dsh-web'
+
+/** Upper bound for one engine page. Search result pages stay far below this; the cap only stops a runaway response. */
+export const ENGINE_PAGE_MAX_BYTES = 10 * 1024 * 1024
 
 export interface FetchHtmlOptions {
   url: string
@@ -30,10 +37,15 @@ export async function fetchHtml(options: FetchHtmlOptions): Promise<string> {
   if (options.method === 'POST' && options.body !== undefined && !('content-type' in headers)) {
     headers['content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
   }
-  const init: RequestInit = { method: options.method ?? 'GET', headers, redirect: 'error' }
-  if (options.body !== undefined) init.body = options.body
-  if (options.signal !== undefined) init.signal = options.signal
-  const response = await fetch(options.url, init)
-  if (!response.ok) throw new Error(`HTTP ${response.status}`)
-  return await response.text()
+  const page = await httpFetchPage({
+    url: options.url,
+    ...(options.method !== undefined ? { method: options.method } : {}),
+    ...(options.body !== undefined ? { body: options.body } : {}),
+    headers,
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    redirect: { mode: 'reject' },
+    maxBytes: ENGINE_PAGE_MAX_BYTES,
+  })
+  if (page.status < 200 || page.status >= 300) throw new Error(`HTTP ${page.status}`)
+  return new TextDecoder('utf-8').decode(page.bytes)
 }
