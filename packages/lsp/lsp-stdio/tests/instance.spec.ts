@@ -281,6 +281,71 @@ describe('LspInstance query and abort', () => {
   })
 })
 
+describe('LspInstance codeActions listing', () => {
+  it('merges source-only actions the server returns only when asked for by kind', async () => {
+    const instance = makeInstance({
+      LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }),
+      LSP_FAKE_CODE_ACTIONS: JSON.stringify([{ title: 'Add missing import', kind: 'quickfix' }]),
+      LSP_FAKE_SOURCE_CODE_ACTIONS: JSON.stringify([{ title: 'Organize Imports', kind: 'source.organizeImports' }]),
+    })
+    await expect(run(instance, 'codeActions')).resolves.toEqual({
+      kind: 'codeActions',
+      actions: [
+        { title: 'Add missing import', kind: 'quickfix', diagnostics: [] },
+        { title: 'Organize Imports', kind: 'source.organizeImports', diagnostics: [] },
+      ],
+      resolvedWorkspaceUri: pathToFileURL(ws).href,
+    })
+  })
+
+  it('lists an action both codeAction requests returned once', async () => {
+    const fixAll = { title: 'Fix All', kind: 'source.fixAll' }
+    const instance = makeInstance({
+      LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }),
+      LSP_FAKE_CODE_ACTIONS: JSON.stringify([fixAll]),
+      LSP_FAKE_SOURCE_CODE_ACTIONS: JSON.stringify([fixAll]),
+    })
+    await expect(run(instance, 'codeActions')).resolves.toMatchObject({
+      kind: 'codeActions',
+      actions: [{ title: 'Fix All', kind: 'source.fixAll', diagnostics: [] }],
+    })
+  })
+
+  it('keeps same-titled actions with different fields distinct in the merged listing', async () => {
+    const refactors = [1, 2].map(target => ({
+      title: 'Convert to namespace import',
+      kind: 'refactor.rewrite',
+      data: { target },
+    }))
+    const instance = makeInstance({
+      LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }),
+      LSP_FAKE_CODE_ACTIONS: JSON.stringify(refactors),
+      LSP_FAKE_SOURCE_CODE_ACTIONS: JSON.stringify([{ title: 'Organize Imports', kind: 'source.organizeImports' }]),
+    })
+    await expect(run(instance, 'codeActions')).resolves.toMatchObject({
+      kind: 'codeActions',
+      actions: [
+        { title: 'Convert to namespace import', kind: 'refactor.rewrite', diagnostics: [] },
+        { title: 'Convert to namespace import', kind: 'refactor.rewrite', diagnostics: [] },
+        { title: 'Organize Imports', kind: 'source.organizeImports', diagnostics: [] },
+      ],
+    })
+  })
+
+  it('cancels both in-flight codeAction requests on abort and tears the instance down when ignored', async () => {
+    const instance = makeInstance(
+      { LSP_FAKE_CAPS: JSON.stringify({ codeActionProvider: true }), LSP_FAKE_HANG: '1' },
+      { killGraceMs: 100 },
+    )
+    const controller = new AbortController()
+    const pending = run(instance, 'codeActions', controller.signal)
+    await new Promise<void>(resolve => setTimeout(resolve, 300))
+    controller.abort(new Error('mid-flight'))
+    await expect(pending).rejects.toThrow(/mid-flight/)
+    expect(instance.dead).toBe(true)
+  })
+})
+
 describe('LspInstance disposal', () => {
   it('lets a server finish protocol exit before signal escalation', async () => {
     const marker = join(root, 'graceful-exit.log')

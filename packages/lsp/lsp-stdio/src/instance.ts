@@ -25,6 +25,7 @@ import type { HostSource } from './host.ts'
 import type { WireInitializeResult, WireServerCapabilities, WireTextEdit } from './protocol.ts'
 import {
   applyEditsToText,
+  mergeCodeActions,
   negotiatePositionEncoding,
   normalizeCodeActions,
   normalizeDiagnostics,
@@ -495,6 +496,7 @@ export class LspInstance {
     signal?: AbortSignal,
   ): Promise<unknown> {
     const position = request.position
+    if (request.operation === 'codeActions') return this.sendCodeActionRequests(request, uri, signal)
     const params: Record<string, unknown> = {
       textDocument: { uri },
       position: { line: position.line, character: position.character },
@@ -503,20 +505,52 @@ export class LspInstance {
       ...(request.operation === 'findReferences' ? { context: { includeDeclaration: true } } : {}),
       // rename carries the requested new name on the wire.
       ...(request.operation === 'rename' && request.newName !== undefined ? { newName: request.newName } : {}),
-      // codeAction needs a range + context: the seam passes a zero-width range at the cursor and an
-      // empty trigger context (callers collect their own diagnostics for context if they need it).
-      ...(request.operation === 'codeActions'
-        ? {
-          range: {
-            start: { line: position.line, character: position.character },
-            end: { line: position.line, character: position.character },
-          },
-          context: { diagnostics: [], triggerKind: 1 },
-        }
-        : {}),
     }
+    return this.sendLspRequest(requestMethod(request.operation), params, signal)
+  }
+
+  /**
+   * List code actions: the unfiltered request plus a `context.only: ["source"]` request, merged.
+   * Servers such as typescript-language-server answer source actions (Organize Imports, Source Fix
+   * All) only when `context.only` asks for them, as VS Code does, and the listing has no kind
+   * filter, so both requests always go out and merge before normalization.
+   */
+  private async sendCodeActionRequests(
+    request: LspProviderQuery,
+    uri: string,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
+    const position = request.position
+    // codeAction needs a range + context: the seam passes a zero-width range at the cursor and an
+    // empty trigger context (callers collect their own diagnostics for context if they need it).
+    const range = {
+      start: { line: position.line, character: position.character },
+      end: { line: position.line, character: position.character },
+    }
+    const method = requestMethod(request.operation)
+    // Both requests issue back-to-back synchronously, so each peek pairs with its own request id
+    // and an abort races and cancels both through the same machinery as a single request.
+    const [unfiltered, sourceOnly] = await Promise.all([
+      this.sendLspRequest(method, {
+        textDocument: { uri },
+        position: { line: position.line, character: position.character },
+        range,
+        context: { diagnostics: [], triggerKind: 1 },
+      }, signal),
+      this.sendLspRequest(method, {
+        textDocument: { uri },
+        position: { line: position.line, character: position.character },
+        range,
+        context: { diagnostics: [], triggerKind: 1, only: ['source'] },
+      }, signal),
+    ])
+    return mergeCodeActions(unfiltered, sourceOnly)
+  }
+
+  /** Send one request, racing it against abort through the connection's cancel path. */
+  private sendLspRequest(method: string, params: unknown, signal?: AbortSignal): Promise<unknown> {
     const requestId = this.connection.peekNextId()
-    const send = this.connection.request(requestMethod(request.operation), params)
+    const send = this.connection.request(method, params)
     if (signal === undefined) return send
     return this.raceAbort(send, requestId, signal)
   }

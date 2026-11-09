@@ -118,7 +118,7 @@ export function apply(ctx: Context, config: Config): void {
     name: 'lsp',
     device: true,
     description:
-      'Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, diagnostics. line and character are one-based UTF-16 cursor coordinates; pass 1 1 for documentSymbols and diagnostics, which use only the file. findReferences includes the declaration; codeActions lists available quick fixes/refactorings (never applies them); rename previews every edit for new_name (never writes files).',
+      'Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, diagnostics. line and character are one-based UTF-16 cursor coordinates; pass 1 1 for documentSymbols and diagnostics, which use only the file. findReferences includes the declaration; codeActions lists available quick fixes, refactorings, and source actions such as Organize Imports (never applies them); rename previews every edit for new_name (never writes files).',
     parameters: {
       operation: {
         type: 'string',

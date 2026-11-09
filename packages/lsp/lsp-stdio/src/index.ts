@@ -38,6 +38,7 @@ export { encodeMessage, MessageDecoder } from './framing.ts'
 export {
   applyEditsToText,
   negotiatePositionEncoding,
+  mergeCodeActions,
   normalizeCodeActions,
   normalizeDiagnostics,
   normalizeDocumentSymbols,

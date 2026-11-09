@@ -24,6 +24,11 @@
  * - LSP_FAKE_GARBAGE: "1" emits an unframed garbage byte before the initialize reply.
  * - LSP_FAKE_FORMAT_EDITS: JSON TextEdit[] (or null) answer for textDocument/formatting.
  * - LSP_FAKE_FORMAT_MARKER: appends the formatting request options object to this path.
+ * - LSP_FAKE_CODE_ACTIONS: JSON array (or null) answer for an unfiltered textDocument/codeAction
+ *   request.
+ * - LSP_FAKE_SOURCE_CODE_ACTIONS: JSON array (or null) answer for a textDocument/codeAction request
+ *   whose context.only includes a source kind, as servers like typescript-language-server answer
+ *   source actions only when the kind is asked for.
  * - LSP_FAKE_PUBLISH_DIAGNOSTICS: JSON `{ uri, diagnostics, version, forUri }` emitted as a
  *   textDocument/publishDiagnostics notification when a didOpen for `forUri` (default `uri`)
  *   arrives; `version` "open" uses the version from that didOpen, a number is sent verbatim (e.g.
@@ -76,12 +81,19 @@ process.on('SIGTERM', () => {
   process.exit(0)
 })
 
-function resultFor(method: string): unknown {
+function resultFor(method: string, params: unknown): unknown {
   switch (method) {
     case 'textDocument/definition': return envJson('LSP_FAKE_DEF', null)
     case 'textDocument/references': return envJson('LSP_FAKE_REFS', null)
     case 'textDocument/implementation': return envJson('LSP_FAKE_IMPL', null)
     case 'textDocument/formatting': return envJson('LSP_FAKE_FORMAT_EDITS', null)
+    case 'textDocument/codeAction': {
+      // Server behavior under test: source actions are answered only when the request's
+      // context.only asks for a source kind (typescript-language-server behavior).
+      const context = (params as { context?: { only?: string[] } } | undefined)?.context
+      const wantsSource = context?.only?.some(kind => kind.startsWith('source')) ?? false
+      return wantsSource ? envJson('LSP_FAKE_SOURCE_CODE_ACTIONS', null) : envJson('LSP_FAKE_CODE_ACTIONS', null)
+    }
     case 'textDocument/hover': {
       // LSP_FAKE_ECHO_ENV names a variable whose VALUE becomes the hover
       // contents — a test can assert exactly what env reached this process.
@@ -204,7 +216,7 @@ function handle(message: { id?: number; method?: string; params?: unknown; resul
       if (errorReply) {
         send({ id, error: { code: -32000, message: 'server refused the request' } })
       } else {
-        send({ id, result: resultFor(method) })
+        send({ id, result: resultFor(method, message.params) })
       }
       // Simulate an idle death: answer this request, then exit before the next one arrives so the
       // pool is left holding a dead instance.
