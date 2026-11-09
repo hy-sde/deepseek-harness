@@ -82,6 +82,12 @@ export interface KernelSandboxProvider {
   ): { argv: string[] }
 }
 
+/** Dying-runner stderr kept for the exit diagnosis (ported from oh-my-pi af92dbc0b2). */
+const STDERR_TAIL_CHARS = 2_000
+
+/** How long the exit diagnosis waits for the stderr pipe to drain before reporting. */
+const STDERR_SETTLE_MS = 200
+
 /** One in-flight run's host-side state. */
 interface PendingRun {
   id: string
@@ -94,6 +100,11 @@ interface PendingRun {
   invalidOutput: boolean
   message: string
   killed: boolean
+  /**
+   * True once the run's outcome is fixed (finalized, or claimed by an exit or
+   * shutdown) — late frames and interrupts must not overwrite it.
+   */
+  settled: boolean
   done: Promise<void>
   finalize: () => void
 }
@@ -281,6 +292,10 @@ export class KernelHost {
   #shutdownGraceMs: number
   /** Last stdin failure cause (omp #14196/#14199), surfaced in the next write's rejection. */
   #stdinFailure: string | undefined
+  /** Rolling tail of everything the kernel process wrote to stderr, for the death diagnosis. */
+  #strayTail = ''
+  /** Resolves when the stderr pipe has fully drained (closed); the exit diagnosis races it against a bounded wait. */
+  #strayDrained: Promise<void>
 
   /**
    * Spawn a kernel per the profile and wait for the bootstrap handshake.
@@ -377,7 +392,10 @@ export class KernelHost {
     // decoded per complete line — multibyte-safe across chunk boundaries.
     proc.stdout?.on('data', (chunk: Buffer) => { this.#ingest(chunk) })
     proc.stdout?.on('end', () => { this.#ingestEnd() })
-    proc.stderr?.on('data', (chunk: string) => { this.#ingestStray(chunk) })
+    proc.stderr?.on('data', (chunk: string) => {
+      this.#strayTail = (this.#strayTail + chunk).slice(-STDERR_TAIL_CHARS)
+      this.#ingestStray(chunk)
+    })
     // A failed write to a dead kernel's stdin surfaces twice: through the
     // write callback (the failing call owns that rejection) and as an 'error'
     // event on the stream itself. Without a listener, Node escalates that
@@ -388,6 +406,10 @@ export class KernelHost {
     proc.stdin?.on('error', (error: Error) => { this.#stdinFailure ??= messageOf(error) })
     this.#exited = new Promise<number>((resolve) => { proc.once('exit', (code) => { resolve(code ?? 0) }) })
     void this.#exited.then((code) => { this.#onProcessExit(code) })
+    const stderr = proc.stderr
+    this.#strayDrained = stderr === null
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => { stderr.once('close', () => { resolve() }) })
     this.#ready = new Promise<void>((resolve) => { this.#settleReady = resolve })
   }
 
@@ -428,10 +450,16 @@ export class KernelHost {
       invalidOutput: false,
       message: '',
       killed: false,
+      settled: false,
       done: Promise.resolve(),
       finalize: () => { },
     }
-    run.done = new Promise<void>((resolve) => { run.finalize = () => { resolve() } })
+    run.done = new Promise<void>((resolve) => {
+      run.finalize = () => {
+        run.settled = true
+        resolve()
+      }
+    })
     this.#runs.set(id, run)
     const onAbort = (): void => { void this.#interrupt(run) }
     if (options.signal?.aborted) onAbort()
@@ -502,6 +530,9 @@ export class KernelHost {
   }
 
   #interrupt(run: PendingRun): Promise<void> {
+    // The run's outcome is already fixed (exit claim, shutdown sweep, or a
+    // completion frame): keep that diagnosis instead of overwriting it.
+    if (run.settled) return run.done
     if (this.#disposed || !this.#alive) {
       run.cancelled = true
       run.message = 'kernel unavailable'
@@ -547,6 +578,9 @@ export class KernelHost {
     this.#alive = false
     this.#disposed = true
     for (const run of [...this.#runs.values()]) {
+      // An exit-claimed run keeps its diagnosis; its finalize lands through
+      // the stderr-drain wait, not this sweep.
+      if (run.settled) continue
       run.cancelled = true
       run.killed = true
       run.message = 'kernel shutting down'
@@ -594,22 +628,43 @@ export class KernelHost {
 
   #onProcessExit(code: number): void {
     this.#alive = false
-    // Finalize every still-registered run: an interrupt that had to escalate
-    // to SIGKILL lands here, exactly like a spontaneous death. finalize is
-    // idempotent, so a race with a `done` frame is harmless (the matching run
-    // is removed from the map by execute()'s finally once its promise
-    // resolves).
+    // Claim every still-registered run: an interrupt that had to escalate to
+    // SIGKILL lands here, exactly like a spontaneous death. The claim marks
+    // each run settled immediately so late frames (a dying runner's `done`, a
+    // racing interrupt, the shutdown sweep) cannot overwrite the diagnosis,
+    // then finalize waits briefly for stderr to drain so the message can
+    // carry the runner's last output (omp af92dbc0b2).
+    const claimed: PendingRun[] = []
     for (const run of [...this.#runs.values()]) {
+      if (run.settled) continue
+      run.settled = true
       run.status = 'error'
       run.message = `${this.profile.label} exited with code ${code} before completing`
       run.killed = true
-      run.finalize()
+      claimed.push(run)
     }
+    if (claimed.length > 0) void this.#settleExitedRuns(claimed)
     // The staged scratch script has served its purpose; remove it once the
     // process is gone so the shared tempdir does not accumulate.
     if (this.#stagedPath !== undefined) {
       try { rmSync(this.#stagedPath) } catch { /* best effort */ }
       this.#stagedPath = undefined
+    }
+  }
+
+  /** Settle exit-claimed runs once stderr has drained (bounded), appending the retained tail to the diagnosis. */
+  async #settleExitedRuns(claimed: PendingRun[]): Promise<void> {
+    await Promise.race([
+      this.#strayDrained,
+      new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, STDERR_SETTLE_MS)
+        timer.unref()
+      }),
+    ])
+    const tail = this.#strayTail.trim()
+    for (const run of claimed) {
+      if (tail !== '') run.message = `${run.message}; its last stderr output: ${tail}`
+      run.finalize()
     }
   }
 
@@ -666,12 +721,15 @@ export class KernelHost {
       }
       case 'error': {
         const run = this.#runs.get(frame.id)
-        if (run !== undefined) run.message = `${frame.ename}: ${frame.evalue}`
+        if (run !== undefined && !run.settled) run.message = `${frame.ename}: ${frame.evalue}`
         return
       }
       case 'done': {
         const run = this.#runs.get(frame.id)
-        if (run === undefined) return
+        // A settled run (exit claim, shutdown, or an earlier completion)
+        // keeps its outcome: a late done frame from a dying runner must not
+        // overwrite the death diagnosis (omp a19f742ef9).
+        if (run === undefined || run.settled) return
         run.status = frame.status
         if (frame.value !== undefined) run.value = frame.value
         if (frame.executionCount !== undefined) run.executionCount = frame.executionCount
@@ -686,7 +744,8 @@ export class KernelHost {
 
   #dispatchCall(frame: Extract<KernelFrame, { type: 'call' }>): void {
     const run = this.#runs.get(frame.id)
-    if (run === undefined) {
+    // A settled run is no longer active: a binding call racing the run's death is refused, not dispatched.
+    if (run === undefined || run.settled) {
       this.#sendReply(frame.id, frame.seq, {
         ok: false,
         message: `no active run for id ${frame.id}`,
