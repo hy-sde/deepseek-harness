@@ -146,7 +146,10 @@ function resolveBrowserScraper(ctx: Context): PageScraper | undefined {
   if (browser === null || browser === undefined) return undefined
   const service = browser as { fetchPageHtml?: PageScraper }
   if (typeof service.fetchPageHtml !== 'function') return undefined
-  const fetchPageHtml = service.fetchPageHtml
+  // Bind to the service: cordis wraps services in a traceable proxy whose methods rebind
+  // `this` only when invoked as a member of the service object, so a detached reference
+  // would call BrowserService.fetchPageHtml with `this` undefined and throw on first use.
+  const fetchPageHtml = service.fetchPageHtml.bind(service)
   return (url, options) => fetchPageHtml(url, options)
 }
 
