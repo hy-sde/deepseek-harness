@@ -162,7 +162,11 @@ export class HttpFetchProvider implements WebFetchProvider {
       url: page.finalUrl,
       statusCode: page.status,
       body,
-      truncated: page.truncatedByBytes || truncatedByChars,
+      // A blocked body carries no page content, so the wall response's own cap
+      // state must not drive the tool's "fetch a more specific URL" advice —
+      // no URL retrieves a walled page. Only an escalation render's truncation
+      // (reported below on that path) counts.
+      truncated: body.kind === 'blocked' ? false : page.truncatedByBytes || truncatedByChars,
     }
   }
 
