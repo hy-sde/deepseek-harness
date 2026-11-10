@@ -95,13 +95,11 @@ describe('browserFetch', () => {
   it('escalates a 2xx page the generic scan names a challenge (cf-mitigated header)', async () => {
     const fetch = fetchMock()
     fetch.mockResolvedValue(new Response(SERP, { status: 200, headers: { 'content-type': 'text/html', 'cf-mitigated': 'challenge' } }))
-    const scrape = vi.fn()
     const page = await browserFetch('https://duckduckgo.com/?q=x', {
       userAgent: UA,
       browser: { scrape: challengeScraper, shouldFallback: () => false },
     })
     expect(page.html).toBe(SERP)
-    expect(scrape).not.toHaveBeenCalled()
     expect(blockedScraperCalls).toContain('https://duckduckgo.com/?q=x')
   })
 
