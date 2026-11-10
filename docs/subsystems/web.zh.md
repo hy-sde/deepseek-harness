@@ -134,9 +134,10 @@ interface WebFetchResult {
  * fields the others lack.
  *
  * The `blocked` arm is not page content: the site's bot protection answered
- * instead of the page. `protection` names the answering protection and
- * `detail` the response evidence that identified it; a blocked body can carry
- * a 2xx status when the wall is a live challenge form.
+ * instead of the page (a challenge interstitial, a wall, or a header-declared
+ * mitigation). `protection` names the answering protection and `detail` the
+ * response evidence that identified it. A blocked body can carry a 2xx status
+ * when the wall is a live challenge form rather than a refusal page.
  */
 type WebFetchBody =
   | { readonly kind: 'html'; readonly content: string }

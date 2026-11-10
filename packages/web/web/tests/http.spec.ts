@@ -148,6 +148,70 @@ describe('httpFetchPage', () => {
     expect(text(page.bytes)).toBe('probe-value')
   })
 
+  it('downgrades a POST answered 301/302/303 to a bodyless GET on the redirected hop', async () => {
+    const seen: { body: string; contentType: string | undefined }[] = []
+    handler = (req, res) => {
+      const chunks: Buffer[] = []
+      req.on('data', chunk => chunks.push(chunk as Buffer))
+      req.on('end', () => {
+        seen.push({ body: Buffer.concat(chunks).toString(), contentType: req.headers['content-type'] })
+        if (seen.length === 1) {
+          res.writeHead(302, { location: '/landing' })
+          res.end()
+        } else {
+          res.writeHead(200, { 'content-type': 'text/plain' })
+          res.end('landing')
+        }
+      })
+    }
+    const page = await httpFetchPage({
+      url: `${base}/form`,
+      method: 'POST',
+      body: 'q=1',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      redirect: { mode: 'same-origin', maxRedirects: 3 },
+    })
+    expect(page.finalUrl).toBe(`${base}/landing`)
+    expect(text(page.bytes)).toBe('landing')
+    expect(hits).toEqual(['POST /form', 'GET /landing'])
+    expect(seen).toEqual([
+      { body: 'q=1', contentType: 'application/x-www-form-urlencoded' },
+      { body: '', contentType: undefined },
+    ])
+  })
+
+  it('keeps a POST verbatim across a 307 redirect', async () => {
+    const seen: { body: string; contentType: string | undefined }[] = []
+    handler = (req, res) => {
+      const chunks: Buffer[] = []
+      req.on('data', chunk => chunks.push(chunk as Buffer))
+      req.on('end', () => {
+        seen.push({ body: Buffer.concat(chunks).toString(), contentType: req.headers['content-type'] })
+        if (seen.length === 1) {
+          res.writeHead(307, { location: '/landing' })
+          res.end()
+        } else {
+          res.writeHead(200, { 'content-type': 'text/plain' })
+          res.end('landing')
+        }
+      })
+    }
+    const page = await httpFetchPage({
+      url: `${base}/form`,
+      method: 'POST',
+      body: 'q=1',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      redirect: { mode: 'same-origin', maxRedirects: 3 },
+    })
+    expect(page.finalUrl).toBe(`${base}/landing`)
+    expect(text(page.bytes)).toBe('landing')
+    expect(hits).toEqual(['POST /form', 'POST /landing'])
+    expect(seen).toEqual([
+      { body: 'q=1', contentType: 'application/x-www-form-urlencoded' },
+      { body: 'q=1', contentType: 'application/x-www-form-urlencoded' },
+    ])
+  })
+
   it('returns the raw bytes without scanning for challenges', async () => {
     handler = (_req, res) => { res.writeHead(403, { 'content-type': 'text/html' }); res.end('<script>window._cf_chl_opt</script>') }
     const page = await httpFetchPage({ url: `${base}/a`, redirect: { mode: 'reject' } })

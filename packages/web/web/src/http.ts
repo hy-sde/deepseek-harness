@@ -21,7 +21,11 @@ export type HttpRedirectPolicy =
     readonly mode: 'reject'
   }
   | {
-    /** Follow the redirect chain while every target stays on the current origin. */
+    /**
+     * Follow the redirect chain while every target stays on the current origin.
+     * A 301/302/303 answer to a POST downgrades the next hop to a bodyless GET;
+     * 307/308 keep the request verbatim.
+     */
     readonly mode: 'same-origin'
     /** Maximum redirect hops; the next hop past the cap throws `WEB_REDIRECT_BLOCKED`. */
     readonly maxRedirects: number
@@ -41,7 +45,7 @@ export interface HttpFetchPageOptions {
   readonly method?: 'GET' | 'POST'
   /** Request body (for `POST`). */
   readonly body?: string
-  /** Request headers sent verbatim on every hop. */
+  /** Request headers; a 301/302/303 POST downgrade also drops `Content-Type` on later hops. */
   readonly headers?: Readonly<Record<string, string>>
   /** Cancellation signal for the whole request-and-read. */
   readonly signal?: AbortSignal
@@ -82,7 +86,7 @@ export async function httpFetchPage(options: HttpFetchPageOptions): Promise<Http
   if (options.redirect.mode === 'reject') {
     // `redirect: 'error'` rejects the fetch itself on a redirect response, so no
     // `Location` target is ever contacted.
-    const response = await rawFetch(options.url, options, 'error')
+    const response = await rawFetch(options.url, hopRequest(options), options.signal, 'error')
     return await readPage(response, response.url, options.maxBytes)
   }
 
@@ -90,9 +94,10 @@ export async function httpFetchPage(options: HttpFetchPageOptions): Promise<Http
   const validateTarget = options.redirect.validateTarget
   let currentUrl = options.url instanceof URL ? options.url : new URL(options.url)
   let redirectsFollowed = 0
+  let hop = hopRequest(options)
 
   for (;;) {
-    const response = await rawFetch(currentUrl, options, 'manual')
+    const response = await rawFetch(currentUrl, hop, options.signal, 'manual')
     if (!isRedirectStatus(response.status)) {
       return await readPage(response, currentUrl.toString(), options.maxBytes)
     }
@@ -128,17 +133,50 @@ export async function httpFetchPage(options: HttpFetchPageOptions): Promise<Http
       throw error
     }
     await response.body?.cancel()
+    // A 301/302/303 answer to a POST downgrades the next hop to a bodyless GET
+    // (307/308 keep the request verbatim), matching undici's
+    // `redirect: 'follow'`; form data is never re-POSTed to the redirect target.
+    if ((response.status === 301 || response.status === 302 || response.status === 303) && hop.method === 'POST') {
+      const headers = dropHeader(hop.headers, 'content-type')
+      hop = { method: 'GET', ...(headers !== undefined ? { headers } : {}) }
+    }
     redirectsFollowed++
   }
 }
 
-/** Send one request with the transport's fixed shape through the global fetch. */
-async function rawFetch(url: string | URL, options: HttpFetchPageOptions, redirect: 'error' | 'manual'): Promise<Response> {
-  return await fetch(url, {
+/** Per-hop request fields; a 301/302/303 POST downgrade rewrites them between hops. */
+interface HopRequest {
+  method: 'GET' | 'POST'
+  body?: string
+  headers?: Readonly<Record<string, string>>
+}
+
+/** Initial request fields derived from the caller's options. */
+function hopRequest(options: HttpFetchPageOptions): HopRequest {
+  return {
     method: options.method ?? 'GET',
     ...(options.body !== undefined ? { body: options.body } : {}),
     ...(options.headers !== undefined ? { headers: options.headers } : {}),
-    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  }
+}
+
+/** Return the headers without the named one (case-insensitive); `undefined` passes through. */
+function dropHeader(headers: Readonly<Record<string, string>> | undefined, name: string): Readonly<Record<string, string>> | undefined {
+  if (headers === undefined) return undefined
+  const kept: Record<string, string> = {}
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() !== name) kept[key] = value
+  }
+  return kept
+}
+
+/** Send one request with the transport's fixed shape through the global fetch. */
+async function rawFetch(url: string | URL, hop: HopRequest, signal: AbortSignal | undefined, redirect: 'error' | 'manual'): Promise<Response> {
+  return await fetch(url, {
+    method: hop.method,
+    ...(hop.body !== undefined ? { body: hop.body } : {}),
+    ...(hop.headers !== undefined ? { headers: hop.headers } : {}),
+    ...(signal !== undefined ? { signal } : {}),
     redirect,
   })
 }

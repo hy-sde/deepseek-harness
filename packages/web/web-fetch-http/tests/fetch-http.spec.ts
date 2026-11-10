@@ -545,6 +545,27 @@ describe('web-fetch-http plugin registration', () => {
     await fiber.dispose()
   })
 
+  it('invokes fetchPageHtml as a member of the browser service (proxy this-binding)', async () => {
+    handler = (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<form method="post"><input type="hidden" name="js_challenge" value="1"></form>')
+    }
+    const ctx = new Context()
+    await ctx.plugin(WebRuntime, { fetchProvider: LOCAL_FETCH_PROVIDER_ID })
+    ctx.provide('browser', {
+      marker: 'instance-state',
+      // The real service is a traceable proxy that rebinds `this` for member
+      // calls; reading instance state fails under a detached method reference.
+      fetchPageHtml(this: { marker: string }, url: string) {
+        return Promise.resolve({ html: `<p>${this.marker}</p>`, status: 200, url })
+      },
+    } as never)
+    const fiber = await ctx.plugin(fetchPlugin, {})
+    await expect(ctx.web.fetch({ url: `${base}/` }))
+      .resolves.toMatchObject({ statusCode: 200, body: { kind: 'html', content: '<p>instance-state</p>' } })
+    await fiber.dispose()
+  })
+
   it('keeps the blocked result when browserEscalation is off', async () => {
     handler = (_req, res) => {
       res.writeHead(200, { 'content-type': 'text/html' })
