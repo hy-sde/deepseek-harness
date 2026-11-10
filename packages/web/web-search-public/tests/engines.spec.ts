@@ -1,9 +1,13 @@
 /**
- * Contract tests for the per-engine HTML parsers and href unwrappers.
+ * Contract tests for the per-engine HTML parsers, href unwrappers, and the
+ * fetchHtml transport delegation.
  * @module @deepseek-ai/dsh-web-search-public/tests/engines
  */
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import { AddressInfo } from 'node:net'
+import { fetchHtml } from '../src/engines/http.ts'
 import { parseDuckDuckGo, unwrapDdgHref } from '../src/engines/duckduckgo.ts'
 import { parseEcosia, isBlockedPage } from '../src/engines/ecosia.ts'
 import { parseGoogle, unwrapGoogleHref, blockReason } from '../src/engines/google.ts'
@@ -242,5 +246,68 @@ describe('bot-wall predicates', () => {
     expect(isRobotPage({ html: '<div id="altcha-widget"></div>', status: 200, url: 'u' })).toBe(true)
     expect(isRobotPage({ html: 'Sending automated queries', status: 403, url: 'u' })).toBe(true)
     expect(isRobotPage({ html: '<ul class="results-standard"><li>x</li></ul>', status: 200, url: 'u' })).toBe(false)
+  })
+})
+
+describe('fetchHtml transport', () => {
+  type Handler = (req: IncomingMessage, res: ServerResponse) => void
+  let server: Server
+  let base: string
+  let hits: string[]
+  let handler: Handler
+  const UA = 'test-agent/1.0'
+
+  beforeEach(async () => {
+    hits = []
+    handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/html' }); res.end('<html>ok</html>') }
+    server = createServer((req, res) => { hits.push(`${req.method} ${req.url}`); handler(req, res) })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const { port } = server.address() as AddressInfo
+    base = `http://127.0.0.1:${port}`
+  })
+
+  afterEach(async () => {
+    await new Promise<void>(resolve => server.close(() => { resolve() }))
+  })
+
+  it('returns the body text and sends the engine header set', async () => {
+    let sawHeaders: Record<string, string> = {}
+    handler = (req, res) => {
+      sawHeaders = { ...req.headers } as Record<string, string>
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('<html>ok</html>')
+    }
+    await expect(fetchHtml({ url: `${base}/search`, userAgent: UA })).resolves.toBe('<html>ok</html>')
+    expect(sawHeaders['user-agent']).toBe(UA)
+    expect(sawHeaders.accept).toBe('text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5')
+    expect(sawHeaders['accept-language']).toBe('en-US,en;q=0.8')
+  })
+
+  it('throws the exact `HTTP <status>` message engines classify on', async () => {
+    handler = (_req, res) => { res.writeHead(403, { 'content-type': 'text/html' }); res.end('blocked') }
+    await expect(fetchHtml({ url: `${base}/`, userAgent: UA })).rejects.toThrow(/^HTTP 403$/)
+  })
+
+  it('rejects a redirect without contacting the redirect target', async () => {
+    handler = (_req, res) => { res.writeHead(302, { location: `${base}/next` }); res.end() }
+    await expect(fetchHtml({ url: `${base}/start`, userAgent: UA })).rejects.toThrow()
+    expect(hits).toEqual(['GET /start'])
+  })
+
+  it('rejects a declared body over the engine page limit without reading it', async () => {
+    handler = (_req, res) => { res.writeHead(200, { 'content-type': 'text/html', 'content-length': String(10 * 1024 * 1024 + 1) }); res.end('x'.repeat(10 * 1024 * 1024 + 1)) }
+    await expect(fetchHtml({ url: `${base}/`, userAgent: UA }))
+      .rejects.toThrow(expect.objectContaining({ code: 'WEB_FETCH_TOO_LARGE' }))
+  })
+
+  it('keeps the POST form default content type', async () => {
+    let sawContentType: string | undefined
+    handler = (req, res) => {
+      sawContentType = req.headers['content-type']
+      res.writeHead(200, { 'content-type': 'text/html' })
+      res.end('posted')
+    }
+    await expect(fetchHtml({ url: `${base}/submit`, userAgent: UA, method: 'POST', body: 'q=x' })).resolves.toBe('posted')
+    expect(sawContentType).toBe('application/x-www-form-urlencoded; charset=UTF-8')
   })
 })

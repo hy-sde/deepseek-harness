@@ -1,6 +1,9 @@
 /**
  * Anonymous HTTP(S) `WebFetchProvider` plugin. It contributes to the
- * `ctx.web` registry without owning the service.
+ * `ctx.web` registry without owning the service. When the host `browser`
+ * service is mounted and `browserEscalation` is on, a response whose bot
+ * protection answered is re-rendered through the browser once before the
+ * blocked result is returned.
  *
  * @module @deepseek-ai/dsh-web-fetch-http
  */
@@ -8,16 +11,17 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-web'
-import { HttpFetchProvider } from './provider.ts'
-import type { HttpFetchLimits } from './provider.ts'
+import { BROWSER_ESCALATION_TIMEOUT_MS, HttpFetchProvider } from './provider.ts'
+import type { BrowserPageRenderer, HttpFetchEscalation, HttpFetchLimits } from './provider.ts'
 
 const MAX_NODE_TIMER_DELAY_MS = 2_147_483_647
 
 export {
+  BROWSER_ESCALATION_TIMEOUT_MS,
   LOCAL_FETCH_PROVIDER_ID,
   HttpFetchProvider,
 } from './provider.ts'
-export type { HttpFetchLimits } from './provider.ts'
+export type { BrowserPageRenderer, HttpFetchEscalation, HttpFetchLimits } from './provider.ts'
 
 /** Default `User-Agent`: an explicit product agent, never a browser disguise. */
 export const DEFAULT_USER_AGENT = 'deepseek-harness/0.0.1 (+https://github.com/deepseek-ai)'
@@ -40,6 +44,12 @@ export interface Config {
   maxRedirects?: number
   /** `User-Agent` header sent on every request. */
   userAgent?: string
+  /**
+   * Re-render bot-protection-blocked responses through the host browser once
+   * (needs the `browser` service mounted; without it, blocked results are
+   * returned as-is).
+   */
+  browserEscalation?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -48,6 +58,7 @@ export const Config: z<Config> = z.object({
   timeoutMs: z.number().default(30_000),
   maxRedirects: z.number().default(5),
   userAgent: z.string().default(DEFAULT_USER_AGENT),
+  browserEscalation: z.boolean().default(true),
 })
 
 /** Complete config after schemastery applies every field default. */
@@ -75,6 +86,29 @@ function assertNonNegativeInteger(name: string, value: number): void {
   }
 }
 
+/**
+ * Browser escalation is optional: when the host `browser` service is mounted
+ * (base bundle), a blocked fetch can re-render the URL through a real browser
+ * via `fetchPageHtml`. Without it, blocked results are returned as-is. Resolved
+ * at `apply` time — the base bundle mounts `browser` before this provider.
+ */
+function resolveBrowserRenderer(ctx: Context): BrowserPageRenderer | undefined {
+  let browser: unknown
+  try {
+    browser = ctx.get('browser')
+  } catch {
+    return undefined
+  }
+  if (browser === null || browser === undefined) return undefined
+  const service = browser as { fetchPageHtml?: BrowserPageRenderer }
+  if (typeof service.fetchPageHtml !== 'function') return undefined
+  // Bind to the service: cordis wraps services in a traceable proxy whose methods rebind
+  // `this` only when invoked as a member of the service object, so a detached reference
+  // would call BrowserService.fetchPageHtml with `this` undefined and throw on first use.
+  const fetchPageHtml = service.fetchPageHtml.bind(service)
+  return (url, options) => fetchPageHtml(url, options)
+}
+
 /** Register the local HTTP(S) fetch provider with `ctx.web`. */
 export function apply(ctx: Context, config: Config): void {
   // schemastery (Config) has already filled every defaulted field.
@@ -90,5 +124,10 @@ export function apply(ctx: Context, config: Config): void {
     maxRedirects: resolved.maxRedirects,
     userAgent: resolved.userAgent,
   }
-  ctx.web.registerFetchProvider(new HttpFetchProvider(limits))
+  let escalation: HttpFetchEscalation | undefined
+  if (resolved.browserEscalation) {
+    const render = resolveBrowserRenderer(ctx)
+    if (render !== undefined) escalation = { render, timeoutMs: BROWSER_ESCALATION_TIMEOUT_MS }
+  }
+  ctx.web.registerFetchProvider(new HttpFetchProvider(limits, escalation))
 }

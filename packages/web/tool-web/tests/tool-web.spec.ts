@@ -323,6 +323,21 @@ describe('fetch formatting', () => {
     expect(renderHtml('<p>y</p>')).toBe('y')
   })
 
+  it('renders a blocked body as a protection notice with the status and browser hint', () => {
+    const out = formatFetchOutput({
+      url: 'https://a.test', statusCode: 403, truncated: false,
+      body: { kind: 'blocked', protection: 'Cloudflare', detail: 'a bot-wall marker in the response body' },
+    }, NO_CAP)
+    expect(out).toContain('Fetched https://a.test (HTTP 403)')
+    expect(out).toContain('[Page not retrieved: Cloudflare answered this URL instead of the page (HTTP 403). The browser tool runs the page\'s JavaScript like Chrome and may get through.]')
+    expect(out).not.toContain('Content truncated')
+    const minimal = formatFetchOutput({
+      url: 'https://a.test', statusCode: 200, truncated: false,
+      body: { kind: 'blocked', protection: 'DataDome' },
+    }, NO_CAP)
+    expect(minimal).toContain('[Page not retrieved: DataDome answered this URL instead of the page (HTTP 200). The browser tool runs the page\'s JavaScript like Chrome and may get through.]')
+  })
+
   it('converts html via turndown and drops active or hidden content', () => {
     expect(renderHtml('<style>.x{}</style><script>bad()</script><noscript>ns</noscript><template>template</template><iframe>frame</iframe><object>object</object><embed src="hidden"><p hidden>hidden</p><p aria-hidden="true">aria</p><p style="display: none !important">display</p><p style="visibility:collapse">visibility</p><input type="hidden" value="secret"><p style="color red">Tom &amp; Jerry &copy; R&eacute;sum&eacute;</p><a href="https://a.test">link</a>'))
       .toBe('Tom & Jerry © Résumé\n\n[link](https://a.test)')

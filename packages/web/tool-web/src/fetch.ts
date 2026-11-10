@@ -233,17 +233,25 @@ interface RenderedBody {
  * Render a fetched body to model-facing markdown text.
  *
  * @param body - the decoded body; `html` is converted via turndown, `text`
- *   passes through verbatim.
+ *   passes through verbatim, and `blocked` is a fixed notice instead of page
+ *   content.
  * @param maxInputChars - maximum source characters processed synchronously.
+ * @param statusCode - HTTP status of the response the body came from; shown in
+ *   the `blocked` notice.
  * @returns the rendered prefix and whether the source was cut. HTML nested
  *   beyond {@link MAX_CONVERSION_DEPTH} or rejected by turndown is omitted so
  *   raw active markup never reaches the model-facing result.
  */
-function renderBody(body: WebFetchBody, maxInputChars: number): RenderedBody {
-  const content = body.content.slice(0, maxInputChars)
-  const sourceTruncated = content.length !== body.content.length
+function renderBody(body: WebFetchBody, maxInputChars: number, statusCode: number): RenderedBody {
   switch (body.kind) {
-    case 'html':
+    case 'blocked':
+      return {
+        text: `[Page not retrieved: ${body.protection} answered this URL instead of the page (HTTP ${statusCode}). The browser tool runs the page's JavaScript like Chrome and may get through.]`,
+        sourceTruncated: false,
+      }
+    case 'html': {
+      const content = body.content.slice(0, maxInputChars)
+      const sourceTruncated = content.length !== body.content.length
       if (exceedsConversionDepth(content)) return { text: '[HTML content omitted: unable to convert safely.]', sourceTruncated }
       try {
         return { text: turndown.turndown(content), sourceTruncated }
@@ -253,8 +261,12 @@ function renderBody(body: WebFetchBody, maxInputChars: number): RenderedBody {
         // structured upstream; conversion failure returns no source markup.
         return { text: '[HTML content omitted: unable to convert safely.]', sourceTruncated }
       }
-    case 'text':
+    }
+    case 'text': {
+      const content = body.content.slice(0, maxInputChars)
+      const sourceTruncated = content.length !== body.content.length
       return { text: content, sourceTruncated }
+    }
     /* v8 ignore next 2 -- WebFetchBody is a closed union; this arm is unreachable and only makes adding a kind a compile error. */
     default:
       return assertNever(body, 'unhandled web fetch body kind')
@@ -327,7 +339,7 @@ const renderCache = new WeakMap<WebFetchResult, Map<number, RenderedFetch>>()
  */
 function computeFetchOutput(result: WebFetchResult, maxOutputChars: number): RenderedFetch {
   const header = `Fetched ${result.url} (HTTP ${result.statusCode})\n\n${EXTERNAL_WEB_CONTENT_NOTICE}\n\n`
-  const rendered = renderBody(result.body, maxOutputChars)
+  const rendered = renderBody(result.body, maxOutputChars, result.statusCode)
   const prefix = `${header}${rendered.text}`
   const truncated = result.truncated || rendered.sourceTruncated || prefix.length > maxOutputChars
   const full = `${prefix}${truncated ? TRUNCATION_FOOTER : ''}`
@@ -487,6 +499,15 @@ export function applyWebFetchTool(ctx: Context, timeoutMs: number, maxOutputChar
                   content: { type: 'string', required: true },
                 },
               },
+              {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  kind: { type: 'string', required: true, const: 'blocked' },
+                  protection: { type: 'string', required: true },
+                  detail: { type: 'string' },
+                },
+              },
             ],
           },
           truncated: { type: 'boolean', required: true },
@@ -504,10 +525,16 @@ export function applyWebFetchTool(ctx: Context, timeoutMs: number, maxOutputChar
         { url: input.url },
         exec.signal,
       )
+      const body: WebFetchBody =
+        result.body.kind === 'blocked'
+          ? result.body.detail !== undefined
+            ? { kind: 'blocked', protection: result.body.protection, detail: result.body.detail }
+            : { kind: 'blocked', protection: result.body.protection }
+          : { kind: result.body.kind, content: result.body.content }
       return {
         url: result.url,
         statusCode: result.statusCode,
-        body: { kind: result.body.kind, content: result.body.content },
+        body,
         truncated: result.truncated,
       }
     },

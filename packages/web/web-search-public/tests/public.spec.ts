@@ -464,4 +464,33 @@ describe('plugin boot', () => {
     await fiber.dispose()
     delete process.env.DSH_WEB_SEARCH_PROVIDER
   })
+
+  it('escalates a challenged engine page through a service whose fetchPageHtml reads instance state', async () => {
+    // Every plain fetch answers with a Cloudflare wall; the engine escalates
+    // to the browser service, whose method reads instance state through `this`
+    // (a detached method reference would fail every escalation call).
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html><script>var _cf_chl_opt = {};</script></html>', {
+      status: 403,
+      headers: { 'content-type': 'text/html' },
+    })))
+
+    const ctx = new Context()
+    await ctx.plugin(WebRuntime, { searchProvider: PUBLIC_PROVIDER_ID })
+    ctx.provide('browser', {
+      marker: 'instance-state',
+      fetchPageHtml(this: { marker: string }, url: string) {
+        return Promise.resolve({
+          html: `<html><body><div class="result"><a class="result__a" href="https://bound.test/page">${this.marker} result</a></div></body></html>`,
+          status: 200,
+          url,
+        })
+      },
+    } as never)
+    const fiber = await ctx.plugin(publicPlugin, { softDeadlineMs: 500, engines: ['ecosia'] })
+    const result = await ctx.web.search({ query: 'example', maxResults: 5 })
+
+    expect(result.sources).toHaveLength(1)
+    expect(result.sources[0]).toMatchObject({ url: 'https://bound.test/page', title: 'instance-state result' })
+    await fiber.dispose()
+  })
 })

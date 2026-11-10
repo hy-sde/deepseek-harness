@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import WebRuntime, {
   WebError,
+  type WebFetchBody,
   type WebFetchProvider,
   type WebFetchResult,
   type WebSearchProvider,
   type WebSearchRequest,
   type WebSearchResult,
 } from '@deepseek-ai/dsh-web'
+
+/** Narrows a fetch body to its text content; blocked bodies carry no page content. */
+function contentOf(body: WebFetchBody): string {
+  return body.kind === 'blocked' ? '' : body.content
+}
 
 /** A scripted search provider for contract tests. */
 function makeSearchProvider(
@@ -270,7 +276,7 @@ describe('WebRuntime fetch capability', () => {
     const { web } = await mountWeb()
     web.registerFetchProvider(makeFetchProvider('http', available, fetchResult('http')))
     const result = await web.fetch({ url: 'https://example.com' })
-    expect(result.body.content).toBe('http')
+    expect(contentOf(result.body)).toBe('http')
     expect(result.statusCode).toBe(200)
   })
 

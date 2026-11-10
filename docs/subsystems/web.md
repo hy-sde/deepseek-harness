@@ -132,10 +132,17 @@ interface WebFetchResult {
  * so adding a kind breaks compilation at every consumer until handled. Each arm
  * stays its own object literal even where fields coincide, so an arm can gain
  * fields the others lack.
+ *
+ * The `blocked` arm is not page content: the site's bot protection answered
+ * instead of the page (a challenge interstitial, a wall, or a header-declared
+ * mitigation). `protection` names the answering protection and `detail` the
+ * response evidence that identified it. A blocked body can carry a 2xx status
+ * when the wall is a live challenge form rather than a refusal page.
  */
 type WebFetchBody =
   | { readonly kind: 'html'; readonly content: string }
   | { readonly kind: 'text'; readonly content: string }
+  | { readonly kind: 'blocked'; readonly protection: string; readonly detail?: string }
 ```
 
 ## Provider availability

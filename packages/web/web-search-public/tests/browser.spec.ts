@@ -92,6 +92,57 @@ describe('browserFetch', () => {
     expect(init.headers['Sec-Fetch-Site']).toBe('same-origin')
   })
 
+  it('escalates a 2xx page the generic scan names a challenge (cf-mitigated header)', async () => {
+    const fetch = fetchMock()
+    fetch.mockResolvedValue(new Response(SERP, { status: 200, headers: { 'content-type': 'text/html', 'cf-mitigated': 'challenge' } }))
+    const page = await browserFetch('https://duckduckgo.com/?q=x', {
+      userAgent: UA,
+      browser: { scrape: challengeScraper, shouldFallback: () => false },
+    })
+    expect(page.html).toBe(SERP)
+    expect(blockedScraperCalls).toContain('https://duckduckgo.com/?q=x')
+  })
+
+  it('escalates a non-2xx body marker the generic scan names (shouldFallback stays silent)', async () => {
+    const fetch = fetchMock()
+    fetch.mockResolvedValue(new Response('<script>var _cf_chl_opt = {};</script>', { status: 403, headers: { 'content-type': 'text/html' } }))
+    const page = await browserFetch('https://www.ecosia.org/search?q=x', {
+      userAgent: UA,
+      browser: { scrape: challengeScraper, shouldFallback: () => false },
+    })
+    expect(page.html).toBe(SERP)
+  })
+
+  it('escalates a small 2xx live js_challenge form the generic scan names', async () => {
+    const fetch = fetchMock()
+    fetch.mockResolvedValue(okResponse('<form method="post"><input type="hidden" name="js_challenge" value="1"></form>'))
+    const page = await browserFetch('https://www.mojeek.com/search?q=x', {
+      userAgent: UA,
+      browser: { scrape: challengeScraper, shouldFallback: () => false },
+    })
+    expect(page.html).toBe(SERP)
+  })
+
+  it('tolerates a scanned challenge as a fetch-only page when no browser is configured', async () => {
+    const fetch = fetchMock()
+    fetch.mockResolvedValue(new Response('<script>var _cf_chl_opt = {};</script>', { status: 403, headers: { 'content-type': 'text/html' } }))
+    const page = await browserFetch('https://www.ecosia.org/search?q=x', { userAgent: UA })
+    expect(page.status).toBe(403)
+    expect(page.html).toContain('_cf_chl_opt')
+  })
+
+  it('never escalates a scanned challenge when an injected fetch is bound', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('<script>var _cf_chl_opt = {};</script>', { status: 403, headers: { 'content-type': 'text/html' } }))
+    const scrape = vi.fn()
+    const page = await browserFetch('https://www.ecosia.org/search?q=x', {
+      userAgent: UA,
+      fetchImpl,
+      browser: { scrape, shouldFallback: () => false },
+    })
+    expect(page.status).toBe(403)
+    expect(scrape).not.toHaveBeenCalled()
+  })
+
   it('escalates a network failure (no injected fetch) to the browser', async () => {
     const fetch = fetchMock()
     fetch.mockRejectedValue(new Error('ECONNRESET'))
