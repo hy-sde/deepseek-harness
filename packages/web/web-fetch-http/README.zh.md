@@ -52,11 +52,11 @@ kind: "package-reference"
 
 ### 抓取返回什么
 
-成功调用产生 `WebFetchResult`：允许的重定向之后的最终 URL、HTTP 状态码、分类为 `html` 或 `text` 的解码正文，以及 `truncated` 标志。非 2xx 响应是结果而非错误——状态码是被抓取资源状态的一部分；`WebError` 只用于无法安全获取或表示资源的失败。
+成功调用产生 `WebFetchResult`：允许的重定向之后的最终 URL、HTTP 状态码、分类为 `html` 或 `text` 的解码正文——或以 `blocked` 正文指明代替页面应答的机器人防护——以及 `truncated` 标志。非 2xx 响应是结果而非错误——状态码是被抓取资源状态的一部分；`WebError` 只用于无法安全获取或表示资源的失败。
 
 ```text
 const page = await ctx.web.fetch({ url: 'https://example.com' })
-// page.body.kind === 'html' | 'text'; page.statusCode === 200 | 404 | ...
+// page.body.kind === 'html' | 'text' | 'blocked'; page.statusCode === 200 | 403 | 404 | ...
 ```
 
 ### 传输行为
@@ -64,6 +64,10 @@ const page = await ctx.web.fetch({ url: 'https://example.com' })
 提供方保持请求匿名且有界：只接受不含内嵌凭据且不超过 2,048 个字符的 `http:` 与 `https:` URL。请求经过进程级 dispatcher，因此已安装的代理策略生效，目标地址由系统解析器选择；任何目标地址都被允许。同源重定向会被跟随；跨源重定向会失败并要求重新调用。提供方还强制执行字节、字符、跳数和时间上限，拒绝不支持的内容类型，并发送显式产品 `User-Agent`。
 
 对于以逗号或空白拼接、且含有 UTF-8 标签的畸形 charset 声明（例如 `charset=utf-8,gbk`），提供方严格按 UTF-8 解码。恢复路径拒绝非法 UTF-8，不会尝试其他编码。字节上限在字符内部截断时，恢复路径省略不完整的末尾序列并返回 `truncated: true`；使用恢复路径的完整响应必须通过 EOF 检查。合法的单标签声明仍在遇到非法字节时使用替换字符。
+
+### 机器人防护升级
+
+当共享挑战扫描将解码正文分类为机器人墙（`cf-mitigated: challenge` 标头、存活的 `js_challenge` 表单、或非 2xx 状态下的墙标记）时，响应产生以 `blocked` 正文指明该防护的结果。当宿主 `browser` 服务已挂载且 `browserEscalation` 配置项开启（默认）时，提供方会通过浏览器的真实渲染（自带指纹与 JavaScript）再请求该 URL 一次，并用同一扫描校验渲染后的页面，通过后作为 `html` 返回。渲染失败、其截止时间（内部为 `WEB_FETCH_ESCALATION_TIMEOUT`，受外层抓取截止时间约束）、或渲染后仍是挑战页的情况都会回退到原始 `blocked` 结果——升级永远不会掩盖判定。
 
 ### 失败与恢复
 

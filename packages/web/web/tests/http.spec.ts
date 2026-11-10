@@ -58,6 +58,13 @@ describe('httpFetchPage', () => {
     expect(page.truncatedByBytes).toBe(false)
   })
 
+  it('fails with WEB_REDIRECT_BLOCKED on a redirect response and never contacts the target', async () => {
+    handler = (_req, res) => { res.writeHead(302, { location: '/b' }); res.end() }
+    await expect(httpFetchPage({ url: `${base}/a`, redirect: { mode: 'reject' } }))
+      .rejects.toThrow(expect.objectContaining({ code: 'WEB_REDIRECT_BLOCKED', message: 'redirect response refused by policy' }))
+    expect(hits).toEqual(['GET /a'])
+  })
+
   it('follows same-origin redirect hops to the final URL', async () => {
     handler = (req, res) => {
       if (req.url === '/a') { res.writeHead(302, { location: '/b' }); res.end() } else if (req.url === '/b') { res.writeHead(302, { location: '/c' }); res.end() } else { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('landed') }

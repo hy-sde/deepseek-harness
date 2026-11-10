@@ -84,9 +84,14 @@ export interface HttpFetchedPage {
  */
 export async function httpFetchPage(options: HttpFetchPageOptions): Promise<HttpFetchedPage> {
   if (options.redirect.mode === 'reject') {
-    // `redirect: 'error'` rejects the fetch itself on a redirect response, so no
-    // `Location` target is ever contacted.
-    const response = await rawFetch(options.url, hopRequest(options), options.signal, 'error')
+    // Classify the redirect here instead of letting `redirect: 'error'` reject with
+    // a raw TypeError: a policy violation is contractually a `WebError`, and `manual`
+    // guarantees no `Location` target is ever contacted.
+    const response = await rawFetch(options.url, hopRequest(options), options.signal, 'manual')
+    if (isRedirectStatus(response.status)) {
+      await response.body?.cancel()
+      throw new WebError('redirect response refused by policy', 'WEB_REDIRECT_BLOCKED')
+    }
     return await readPage(response, response.url, options.maxBytes)
   }
 
