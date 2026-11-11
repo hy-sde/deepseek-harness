@@ -8,6 +8,12 @@
  * `ctx.subagents` children with a typed `outputSchema`, so each reviewer
  * returns structured verdict + findings instead of prose; aggregation is local.
  * See port_omp.md item: commit/review.
+ *
+ * Mode "full" (default) records its result in a per-branch findings ledger
+ * (see `./ledger.ts`). Mode "verify" reads that record, re-reviews only what
+ * changed since it, and asks reviewers to close each prior finding; it fails
+ * closed when no record exists for the branch or history was rewritten since
+ * the review.
  * @module @deepseek-ai/dsh-tool-git/review
  */
 
@@ -16,11 +22,13 @@ import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { parseFileDiffs } from '@deepseek-ai/dsh-git'
-import type { SubagentActivation } from '@deepseek-ai/dsh-subagent'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { SubagentActivation, SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-spill'
 import { resolveCwd } from './commit.ts'
+import { diffHashOf, ledgerBranchKey, readLedger, resolveRev, toLedgerFindings, writeLedger, type LedgerFinding, type LedgerRecord } from './ledger.ts'
 import { openReads, type ReadSurface } from './reads.ts'
-import { headOf, indexTreeOf, recordReviewVerdict } from './push-gate.ts'
+import { headOf, indexTreeOf, recordReviewVerdict, type ReviewTarget } from './push-gate.ts'
 import type { GitService } from '@deepseek-ai/dsh-git'
 
 /** Configuration consumed by the review tool. */
@@ -62,7 +70,66 @@ interface SliceResult {
   findings: ReviewerFinding[]
 }
 
-export type { SliceResult, ReviewerFinding }
+export type { SliceResult, ReviewerFinding, ReviewFinding }
+
+/** Closure status a verify reviewer reports for one prior ledgered finding. */
+export type VerifyStatus = 'fixed' | 'partially_fixed' | 'not_fixed' | 'cannot_verify'
+
+/** Closure statuses in reporting order. */
+const VERIFY_STATUSES: readonly VerifyStatus[] = ['fixed', 'partially_fixed', 'not_fixed', 'cannot_verify']
+
+/** One prior ledgered finding with its closure status, as reported by verify mode. */
+export interface VerifyPriorFindingStatus {
+  /** Ledger finding id (`F1`, `F2`, …). */
+  id: string
+  /** Severity of the prior finding. */
+  priority: FindingPriority
+  /** Title of the prior finding. */
+  title: string
+  /** File the prior finding pointed at. */
+  file_path: string
+  /** Start line of the prior finding. */
+  line_start: number
+  /** End line of the prior finding. */
+  line_end: number
+  /** Closure status reported by the reviewer (or `cannot_verify`). */
+  status: VerifyStatus
+  /** One-line reviewer evidence for the status. */
+  evidence: string
+}
+
+/** Delta scan summary attached to verify-mode results. */
+export interface VerifyBlock {
+  /** Closure status for each prior ledgered finding. */
+  priorFindings: VerifyPriorFindingStatus[]
+  /**
+   * Files that changed since the recorded review (after the focus filter).
+   * Exception: on the focus-miss path — the focus filter matched no delta
+   * file — this lists the full delta instead, so the caller sees what the
+   * skipped closure left unreviewed.
+   */
+  deltaFiles: string[]
+  /** True when nothing changed since the recorded review. */
+  deltaEmpty: boolean
+}
+
+/** One prior ledgered finding as presented in a verify reviewer brief. */
+export interface VerifyClosureItem {
+  /** Ledger finding id. */
+  id: string
+  /** Severity. */
+  priority: FindingPriority
+  /** Title. */
+  title: string
+  /** Body. */
+  body: string
+  /** File path. */
+  file_path: string
+  /** Start line. */
+  line_start: number
+  /** End line. */
+  line_end: number
+}
 
 interface ReviewArgs {
   target?: 'worktree' | 'staged' | 'commits'
@@ -70,6 +137,8 @@ interface ReviewArgs {
   focus?: string[]
   maxReviewers?: number
   cwd?: string
+  /** `full` (default) overwrites the branch ledger; `verify` closes it against the delta. */
+  mode?: 'full' | 'verify'
 }
 
 interface ReviewValue {
@@ -83,11 +152,13 @@ interface ReviewValue {
   slices: SliceResult[]
   errors: string[]
   warnings: string[]
+  /** Present only in verify mode: the delta scan and prior-finding closure. */
+  verify?: VerifyBlock
 }
 
 /** Subagent `outputSchema` — the standard JSON-Schema dialect
  * (object-level `required` arrays; per-property must appear in `properties`). */
-const REVIEWER_SCHEMA: ObjectJsonSchema = {
+const REVIEWER_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: ['overall_correctness', 'explanation', 'confidence', 'findings'],
@@ -109,6 +180,28 @@ const REVIEWER_SCHEMA: ObjectJsonSchema = {
           file_path: { type: 'string' },
           line_start: { type: 'integer' },
           line_end: { type: 'integer' },
+        },
+      },
+    },
+  },
+} satisfies ObjectJsonSchema
+
+/** Verify-mode reviewer schema: the full schema plus the per-finding closure report. */
+const REVIEWER_VERIFY_SCHEMA: ObjectJsonSchema = {
+  ...REVIEWER_SCHEMA,
+  required: [...REVIEWER_SCHEMA.required, 'findingStatus'],
+  properties: {
+    ...REVIEWER_SCHEMA.properties,
+    findingStatus: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'status', 'evidence'],
+        properties: {
+          id: { type: 'string' },
+          status: { type: 'string', enum: [...VERIFY_STATUSES] },
+          evidence: { type: 'string' },
         },
       },
     },
@@ -142,6 +235,26 @@ async function recordStagedVerdict(
   })
 }
 
+/** Prompt-builder seam: full-mode builders ignore the prior-findings argument. */
+type PromptBuilder = (
+  label: string,
+  files: readonly string[],
+  patch: string,
+  prior: readonly VerifyClosureItem[],
+) => string
+
+/** One reviewer run outcome; `findingStatus` carries verify-mode closure entries. */
+type SliceOutcome =
+  | { kind: 'ok'; slice: SliceResult; findingStatus?: unknown }
+  | { kind: 'error'; error: string }
+
+/** The reviewed diff for one target plus the revision its tip resolves to. */
+interface ReviewedDiff {
+  diffText: string
+  /** Revision naming the reviewed tip (`HEAD`, or the range head when set). */
+  headTip: string
+}
+
 export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): void {
   const provider = config.provider ?? DEFAULT_PROVIDER
   const maxReviewers = config.maxReviewers ?? DEFAULT_MAX_REVIEWERS
@@ -153,7 +266,11 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
       'Run a parallel code review over git changes (working tree, staged, or a commit range) with dedicated reviewer '
       + 'subagents. Every finding is ranked P0–P3 with a confidence score; the tool returns all findings sorted by severity '
       + 'and a ship/reject verdict with explanation. Reviewers are read-only (git diff/log/show, read, grep, ast_grep) and '
-      + 'never edit files or run builds. Use the focus filter to review only the paths that matter.',
+      + 'never edit files or run builds. Use the focus filter to review only the paths that matter. '
+      + 'mode "full" (default) runs the complete review and records its findings in a per-branch ledger; mode "verify" '
+      + 're-reviews only what changed since that recorded review, asks reviewers to close each prior finding '
+      + '(fixed/partially_fixed/not_fixed/cannot_verify), and fails closed when no ledger record exists for the branch '
+      + 'or history was rewritten since it.',
     parameters: {
       target: {
         type: 'string',
@@ -174,6 +291,13 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
         description: `Cap on parallel reviewers (default ${maxReviewers}); the diff is split into at most this many slices.`,
       },
       cwd: { type: 'string', description: 'Working directory; defaults to the session workspace.' },
+      mode: {
+        type: 'string',
+        enum: ['full', 'verify'],
+        description: 'full (default): complete fan-out review that overwrites the branch findings ledger. verify: close '
+          + 'the ledgered findings against what changed since that review (cheaper delta scan); requires a prior full '
+          + 'review on this branch and fails closed when none exists or history was rewritten.',
+      },
     },
     output: {
       schema: {
@@ -214,7 +338,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
                 label: { type: 'string', required: true },
                 files: { type: 'array', required: true, items: { type: 'string' } },
                 overall_correctness: { type: 'string', required: true, enum: ['correct', 'incorrect'] },
-                /* jscpd:ignore-start -- the top-level findings items and the per-slice findings items of the review output schema keep independent copies of the finding property block. */
+                /* jscpd:ignore-start -- independent copies of the finding property block (review vs verify output). */
                 explanation: { type: 'string', required: true },
                 confidence: { type: 'number', required: true },
                 findings: {
@@ -240,6 +364,32 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           },
           errors: { type: 'array', required: true, items: { type: 'string' } },
           warnings: { type: 'array', required: true, items: { type: 'string' } },
+          verify: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              priorFindings: {
+                type: 'array',
+                required: true,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    id: { type: 'string', required: true },
+                    priority: { type: 'string', required: true, enum: ['P0', 'P1', 'P2', 'P3'] },
+                    title: { type: 'string', required: true },
+                    file_path: { type: 'string', required: true },
+                    line_start: { type: 'integer', required: true },
+                    line_end: { type: 'integer', required: true },
+                    status: { type: 'string', required: true, enum: ['fixed', 'partially_fixed', 'not_fixed', 'cannot_verify'] },
+                    evidence: { type: 'string', required: true },
+                  },
+                },
+              },
+              deltaFiles: { type: 'array', required: true, items: { type: 'string' } },
+              deltaEmpty: { type: 'boolean', required: true },
+            },
+          },
         },
       },
       render: (_args, value: ReviewValue) => [{
@@ -264,20 +414,239 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
       }
 
       const target = args.target ?? 'worktree'
-      const diffText = await resolveReviewDiff(reads, target, args.range)
+      if (args.mode === 'verify') {
+        // ── verify: close the ledgered findings against what changed ──
+        const branchKey = await ledgerBranchKey(ctx.git, cwd, exec.signal)
+        const record = (await readLedger(ctx.git, cwd, exec.signal))[branchKey]
+        if (record === undefined) {
+          throw new Error(`no findings ledger for branch "${branchKey}" — run a full review first (mode: full)`)
+        }
+        if (!(await isAncestorOfHead(ctx.git, cwd, record.headSha, exec.signal))) {
+          throw new Error('history was rewritten since the review — run a full review')
+        }
+        const warnings: string[] = []
+        if (target === 'commits' && args.range !== undefined) {
+          warnings.push('verify ignores the range argument: the delta runs from the recorded review tip to HEAD')
+        }
+        const deltaText = await resolveDeltaDiff(reads, target, record.headSha)
+        const deltaFor = new Map(parseFileDiffs(deltaText).map(file => [file.filename, file.content]))
+        const focus = (args.focus ?? []).map(prefix => prefix.replace(/\/+$/, ''))
+        const deltaFiles = focusFilter(focus, Array.from(deltaFor.keys()))
+        if (focus.length > 0 && deltaFiles.length === 0) {
+          warnings.push(`no changed files matched the focus filter: ${focus.join(', ')}`)
+        }
+        if (deltaFor.size > 0 && deltaFiles.length === 0) {
+          // Focus-filtered empty: the tree changed, but every changed file
+          // fell outside the focus filter. No reviewer examined the current
+          // state, so neither the push gate nor the ledger may treat the
+          // recorded verdict as re-established; report the honest delta,
+          // mirror the recorded verdict instead of affirmatively approving,
+          // and leave both untouched.
+          if (record.verdict !== 'ship') {
+            warnings.push('findings ledger unchanged: the previous record stands until a verify ships or a full review runs')
+          }
+          const value: ReviewValue = {
+            target,
+            files: [],
+            diffTruncated: false,
+            findings: [],
+            verdict: record.verdict,
+            verdictExplanation: record.verdict === 'ship'
+              ? 'No changed file matched the focus filter, so no closure review ran; the recorded ship verdict and its findings stand unchanged.'
+              : 'No changed file matched the focus filter, so no closure review ran; the recorded reject stands and its findings are unchanged.',
+            confidence: record.verdict === 'ship' ? 1 : 0,
+            slices: [],
+            errors: [],
+            warnings,
+            verify: { priorFindings: [], deltaFiles: Array.from(deltaFor.keys()), deltaEmpty: false },
+          }
+          return value
+        }
+        const prior: VerifyClosureItem[] = record.findings.map(finding => ({
+          id: finding.id,
+          priority: finding.priority,
+          title: finding.title,
+          body: finding.body,
+          file_path: finding.file_path,
+          line_start: finding.line_start,
+          line_end: finding.line_end,
+        }))
+        const priorBlocking = prior.filter(item => item.priority !== 'P3').length
+        // Verify shipping replaces the branch record with the fresh equivalent
+        // of a full review run right now.
+        const replaceLedgerOnShip = async (kept: LedgerFinding[]): Promise<void> => {
+          // The replacement is the fresh equivalent of a full review run right
+          // now. Verify never reads args.range here: a malformed caller range
+          // must not discard an already-run fan-out, and the fresh baseline is
+          // always the recorded tip to HEAD.
+          const fullNowRange = target === 'commits' ? `${record.headSha}..HEAD` : undefined
+          const fullNow = await resolveReviewDiff(reads, target, fullNowRange)
+          await writeLedgerSafely(ctx.git, cwd, exec.signal, ledgerRecord(
+            branchKey,
+            target,
+            fullNowRange,
+            await resolveRev(ctx.git, cwd, exec.signal, 'HEAD'),
+            diffHashOf(fullNow.diffText),
+            parseFileDiffs(fullNow.diffText).map(file => file.filename),
+            'ship',
+            kept,
+          ), warnings)
+        }
+        if (deltaFiles.length === 0) {
+          // Empty delta: no fan-out. The recorded verdict stands as-is.
+          if (record.verdict === 'ship') {
+            warnings.push('closure skipped: no files changed since the recorded review (deltaEmpty)')
+            // No closure ran, so nothing is marked fixed: keep every prior
+            // finding (ids preserved) instead of the ship-time re-selection.
+            await replaceLedgerOnShip(record.findings)
+            const value: ReviewValue = {
+              target,
+              files: [],
+              diffTruncated: false,
+              findings: [],
+              verdict: 'ship',
+              verdictExplanation: 'Nothing changed since the full review; its ship verdict stands and the closure checklist was skipped.',
+              confidence: 1,
+              slices: [],
+              errors: [],
+              warnings,
+              verify: { priorFindings: [], deltaFiles: [], deltaEmpty: true },
+            }
+            await recordStagedVerdict(ctx.git, cwd, exec.signal, value)
+            return value
+          }
+          warnings.push('findings ledger unchanged: the previous record stands until a verify ships or a full review runs')
+          const value: ReviewValue = {
+            target,
+            files: [],
+            diffTruncated: false,
+            findings: [],
+            verdict: 'reject',
+            verdictExplanation: 'Nothing changed since the full review: no fixes landed, so the previous reject stands.',
+            confidence: 0,
+            slices: [],
+            errors: [],
+            warnings,
+            verify: { priorFindings: [], deltaFiles: [], deltaEmpty: true },
+          }
+          await recordStagedVerdict(ctx.git, cwd, exec.signal, value)
+          return value
+        }
+        const owned: string[] = []
+        for (const file of [...deltaFiles, ...prior.map(item => item.file_path)]) {
+          if (!owned.includes(file)) owned.push(file)
+        }
+        const budget = Math.max(1, Math.min(args.maxReviewers ?? maxReviewers, owned.length))
+        const slices = sliceByWeight(owned, deltaFor, budget)
+        const settled = await Promise.allSettled(
+          slices.map((sliceFiles, index) =>
+            runSlice(subagents, parent, sliceFiles, index, slices, deltaFor, prior, REVIEWER_VERIFY_SCHEMA, buildVerifyReviewerPrompt)),
+        )
+        const { slices: slicesResult, errors } = settleReviewers(settled)
+        const findings = collectFindings(slicesResult)
+        const statusById = new Map<string, { status: VerifyStatus; evidence: string }>()
+        const closureReports = settled.flatMap(result =>
+          result.status === 'fulfilled' && result.value.kind === 'ok' && result.value.findingStatus !== undefined
+            ? [result.value.findingStatus]
+            : [],
+        )
+        for (const report of closureReports) {
+          for (const [id, entry] of toFindingStatuses(report)) {
+            if (statusById.has(id)) {
+              continue
+            }
+            statusById.set(id, entry)
+          }
+        }
+        const priorStatuses: VerifyPriorFindingStatus[] = prior.map((item) => {
+          const reported = statusById.get(item.id)
+          return {
+            id: item.id,
+            priority: item.priority,
+            title: item.title,
+            file_path: item.file_path,
+            line_start: item.line_start,
+            line_end: item.line_end,
+            status: reported?.status ?? 'cannot_verify',
+            evidence: reported?.evidence ?? 'no closure status reported by the reviewer',
+          }
+        })
+        const blockingUnfixed = priorStatuses.filter(entry => entry.priority !== 'P3' && entry.status !== 'fixed')
+        const incorrect = slicesResult.filter(slice => slice.overall_correctness === 'incorrect')
+        // Fail closed: reviewer failures void the closure evidence, and a
+        // blocking prior finding that is not exactly fixed blocks the ship.
+        // New findings never auto-reject — they surface for follow-up.
+        const verdict: 'ship' | 'reject' = errors.length > 0 || incorrect.length > 0 || blockingUnfixed.length > 0 ? 'reject' : 'ship'
+        const confidence = minConfidence(slicesResult)
+        const newFindingsSuffix = findings.length > 0
+          ? ` ${findings.length} new finding(s) reported for follow-up.`
+          : ' The delta introduced no new findings.'
+        const verdictExplanation = errors.length > 0
+          ? `verify rejected: ${errors.length} of ${slices.length} reviewer(s) failed — closure evidence is incomplete.`
+          : blockingUnfixed.length > 0
+            ? `${blockingUnfixed.length} prior finding(s) not fixed: ${blockingUnfixed.map(entry => `${entry.id} [${entry.priority}] ${entry.status}`).join(', ')}.`
+            : incorrect.length > 0
+              ? `${incorrect.length} of ${slicesResult.length} reviewers found blocking problems. `
+                + incorrect.map(slice => `[${slice.label}] ${slice.explanation}`).join(' ')
+              : priorBlocking > 0
+                ? `All ${priorBlocking} prior blocking finding(s) fixed.${newFindingsSuffix}`
+                : `No prior blocking findings.${newFindingsSuffix}`
+        if (verdict === 'ship') {
+          // Prior non-blocking (P3) findings survive until fixed; fixed ones
+          // drop. Ids are reassigned over the merged kept list.
+          const kept = toLedgerFindings([
+            ...findings,
+            ...record.findings.filter((finding) => {
+              const reported = statusById.get(finding.id)
+              return finding.priority === 'P3' && reported?.status !== 'fixed'
+            }),
+          ])
+          await replaceLedgerOnShip(kept)
+        } else {
+          warnings.push('findings ledger unchanged: the previous record stands until a verify ships or a full review runs')
+        }
+        const value: ReviewValue = {
+          target,
+          files: deltaFiles,
+          diffTruncated: false,
+          findings,
+          verdict,
+          verdictExplanation,
+          confidence,
+          slices: slicesResult,
+          errors,
+          warnings,
+          verify: { priorFindings: priorStatuses, deltaFiles, deltaEmpty: false },
+        }
+        await recordStagedVerdict(ctx.git, cwd, exec.signal, value)
+        return value
+      }
+      const { diffText, headTip } = await resolveReviewDiff(reads, target, args.range)
       const diffFor = new Map(parseFileDiffs(diffText).map(file => [file.filename, file.content]))
       const allFiles = Array.from(diffFor.keys())
 
       const focus = (args.focus ?? []).map(prefix => prefix.replace(/\/+$/, ''))
-      const files = focus.length > 0
-        ? allFiles.filter(file => focus.some(prefix => file === prefix || file.startsWith(`${prefix}/`)))
-        : allFiles
+      const files = focusFilter(focus, allFiles)
       const warnings: string[] = []
       if (focus.length > 0 && files.length === 0) {
         warnings.push(`no changed files matched the focus filter: ${focus.join(', ')}`)
       }
 
+      const branchKey = await ledgerBranchKey(ctx.git, cwd, exec.signal)
+
       if (files.length === 0) {
+        // No diff for this target: nothing to review, but the (trivial) review
+        // still forms the branch's recorded baseline.
+        await writeLedgerSafely(ctx.git, cwd, exec.signal, ledgerRecord(
+          branchKey,
+          target,
+          target === 'commits' ? args.range : undefined,
+          await resolveRev(ctx.git, cwd, exec.signal, headTip),
+          diffHashOf(diffText),
+          [],
+          'ship',
+          [],
+        ), warnings)
         const value: ReviewValue = {
           target,
           files: [],
@@ -298,43 +667,19 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
       const slices = sliceByWeight(files, diffFor, budget)
 
       const settled = await Promise.allSettled(
-        slices.map((sliceFiles, index) => collectSlice(sliceFiles, index)),
+        slices.map((sliceFiles, index) =>
+          runSlice(subagents, parent, sliceFiles, index, slices, diffFor, [], REVIEWER_SCHEMA, buildReviewerPrompt)),
       )
 
-      const slicesResult: SliceResult[] = []
-      const errors: string[] = []
-      for (const [i, result] of settled.entries()) {
-        if (result.status === 'fulfilled') {
-          if (result.value.kind === 'ok') {
-            slicesResult.push(result.value.slice)
-          } else {
-            errors.push(`reviewer ${i + 1}/${slices.length} failed: ${result.value.error}`)
-          }
-        } else {
-          errors.push(`reviewer ${i + 1}/${slices.length} failed: ${reasonOf(result.reason)}`)
-        }
-      }
+      const { slices: slicesResult, errors } = settleReviewers(settled)
 
-      const findings: ReviewFinding[] = []
-      for (const slice of slicesResult) {
-        for (const finding of slice.findings) {
-          findings.push({ ...finding, reviewer: slice.label })
-        }
-      }
-      findings.sort((a, b) => {
-        const pa = PRIORITY_LABELS.indexOf(a.priority)
-        const pb = PRIORITY_LABELS.indexOf(b.priority)
-        if (pa !== pb) return pa - pb
-        return b.confidence - a.confidence
-      })
+      const findings = collectFindings(slicesResult)
 
       const incorrect = slicesResult.filter(slice => slice.overall_correctness === 'incorrect')
       // If every reviewer failed, we cannot approve unreviewed changes.
       const noReviewerCompleted = slicesResult.length === 0 && errors.length > 0
       const verdict: 'ship' | 'reject' = incorrect.length > 0 || noReviewerCompleted ? 'reject' : 'ship'
-      const confidence = slicesResult.length === 0
-        ? 0
-        : Math.min(...slicesResult.map(slice => slice.confidence))
+      const confidence = minConfidence(slicesResult)
       const verdictExplanation = noReviewerCompleted
         ? `No reviewer completed (${errors.length} of ${slices.length} failed); refusing to approve unreviewed changes.`
         : verdict === 'reject'
@@ -343,6 +688,17 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           : 'All reviewers judged the change correct'
             + (slicesResult.length > 0 ? ` (${slicesResult.length} reviewer(s))` : '') + '.'
             + (findings.length > 0 ? ` ${findings.length} non-blocking finding(s) remain.` : '')
+
+      await writeLedgerSafely(ctx.git, cwd, exec.signal, ledgerRecord(
+        branchKey,
+        target,
+        target === 'commits' ? args.range : undefined,
+        await resolveRev(ctx.git, cwd, exec.signal, headTip),
+        diffHashOf(diffText),
+        files,
+        verdict,
+        toLedgerFindings(findings),
+      ), warnings)
 
       const value: ReviewValue = {
         target,
@@ -359,18 +715,28 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
       await recordStagedVerdict(ctx.git, cwd, exec.signal, value)
       return value
 
-      async function collectSlice(sliceFiles: string[], index: number): Promise<
-        { kind: 'ok'; slice: SliceResult } | { kind: 'error'; error: string }
-      > {
+      async function runSlice(
+        subagents: SubagentRuntime,
+        parent: Agent,
+        sliceFiles: string[],
+        index: number,
+        slices: string[][],
+        diffFor: Map<string, string>,
+        prior: readonly VerifyClosureItem[],
+        outputSchema: ObjectJsonSchema,
+        buildPrompt: PromptBuilder,
+      ): Promise<SliceOutcome> {
         const label = `reviewer ${index + 1}/${slices.length}`
-        // Narrowing from the outer scope does not flow into this closure; the
-        // checks were already performed above (parent exists, subagents provides
-        // the selected provider), so re-assert them for the type checker.
-        if (subagents === undefined || parent === undefined) {
-          return { kind: 'error', error: 'subagents or calling agent unavailable' }
-        }
         exec.signal.throwIfAborted()
-        const inline = sliceFiles.map(file => diffFor.get(file) ?? '').join('\n')
+        // Prior-only files have no delta section and are dropped from the
+        // patch; present files keep their joined order so spill line ranges
+        // stay aligned.
+        const sections: Array<{ file: string; content: string }> = []
+        for (const file of sliceFiles) {
+          const content = diffFor.get(file)
+          if (content !== undefined) sections.push({ file, content })
+        }
+        const inline = sections.map(section => section.content).join('\n')
         let patch = inline
         if (inline.length > maxReviewerDiffChars) {
           const spillStore = ctx.get('spillStore')
@@ -385,13 +751,12 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           })
           const ranges: string[] = []
           let startLine = 1
-          for (const file of sliceFiles) {
-            const content = diffFor.get(file) ?? ''
+          for (const section of sections) {
             let endLine = startLine
-            for (let offset = content.indexOf('\n'); offset !== -1; offset = content.indexOf('\n', offset + 1)) {
+            for (let offset = section.content.indexOf('\n'); offset !== -1; offset = section.content.indexOf('\n', offset + 1)) {
               endLine += 1
             }
-            ranges.push(`- ${file}: lines ${startLine}-${endLine}`)
+            ranges.push(`- ${section.file}: lines ${startLine}-${endLine}`)
             startLine = endLine + 1
           }
           patch = `Complete diff artifact: ${ref.locator}. ${ref.retrievalHint}\n`
@@ -399,7 +764,7 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
             + ranges.join('\n')
         }
         exec.signal.throwIfAborted()
-        const prompt = buildReviewerPrompt(label, sliceFiles, patch)
+        const prompt = buildPrompt(label, sliceFiles, patch, prior.filter(item => sliceFiles.includes(item.file_path)))
         const controller = new AbortController()
         const forwardAbort = (): void => { controller.abort() }
         exec.signal.addEventListener('abort', forwardAbort, { once: true })
@@ -411,14 +776,14 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
             request: {
               prompt: [{ type: 'text', text: prompt }] as ContentBlock[],
               parent,
-              outputSchema: REVIEWER_SCHEMA,
+              outputSchema,
             },
             delivery: 'caller',
             signal: controller.signal,
           })
         } catch (error: unknown) {
           exec.signal.removeEventListener('abort', forwardAbort)
-          return { kind: 'error', error: `start failed: ${String(error)}` }
+          return { kind: 'error', error: `start failed: ${reasonOf(error)}` }
         }
         try {
           const result = await run.result
@@ -431,14 +796,14 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
               confidence: result.structured.confidence,
               findings: (result.structured.findings ?? []).map(toReviewerFinding),
             }
-            return { kind: 'ok', slice }
+            return { kind: 'ok', slice, findingStatus: result.structured.findingStatus }
           }
           return {
             kind: 'error',
             error: `${result.stopReason}${result.diagnostic !== undefined ? ` (${result.diagnostic})` : ''}`,
           }
         } catch (error: unknown) {
-          return { kind: 'error', error: String(error) }
+          return { kind: 'error', error: reasonOf(error) }
         } finally {
           exec.signal.removeEventListener('abort', forwardAbort)
           try {
@@ -464,6 +829,7 @@ function isSliceStructured(value: unknown): value is {
   explanation: string
   confidence: number
   findings?: unknown[]
+  findingStatus?: unknown
 } {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
@@ -485,13 +851,37 @@ function toReviewerFinding(value: unknown): ReviewerFinding {
   }
 }
 
-/** Which diff to review for the given target. */
+/**
+ * Parse reviewer closure entries into an id→status map. Entries without a
+ * valid id or status are dropped; the matching prior finding then surfaces as
+ * `cannot_verify`.
+ * @param value - raw `findingStatus` payload from a reviewer.
+ * @returns first-wins map of ledger id to closure status.
+ */
+function toFindingStatuses(value: unknown): Map<string, { status: VerifyStatus; evidence: string }> {
+  const statuses = new Map<string, { status: VerifyStatus; evidence: string }>()
+  if (!Array.isArray(value)) {
+    return statuses
+  }
+  for (const entry of value) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const record = entry as Record<string, unknown>
+    const id = typeof record.id === 'string' ? record.id : undefined
+    const status = VERIFY_STATUSES.find(candidate => candidate === record.status)
+    if (id === undefined || status === undefined) continue
+    if (statuses.has(id)) continue
+    statuses.set(id, { status, evidence: typeof record.evidence === 'string' ? record.evidence : '' })
+  }
+  return statuses
+}
+
+/** Which diff to review for the given target, and where its tip resolves. */
 async function resolveReviewDiff(
   reads: ReadSurface,
-  target: 'worktree' | 'staged' | 'commits',
+  target: ReviewTarget,
   range: string | undefined,
-): Promise<string> {
-  if (target === 'staged') return reads.diffText({ cached: true })
+): Promise<ReviewedDiff> {
+  if (target === 'staged') return { diffText: await reads.diffText({ cached: true }), headTip: 'HEAD' }
   if (target === 'commits') {
     if (range === undefined || range.length === 0) {
       throw new Error('review target "commits" requires a range, e.g. HEAD~3..HEAD')
@@ -501,12 +891,127 @@ async function resolveReviewDiff(
       throw new Error(`review range must be base..head (e.g. HEAD~3..HEAD), got "${range}"`)
     }
     const base = range.slice(0, dash)
-    const head = range.slice(dash + 2)
-    return reads.diffText({ base, ...(head.length > 0 ? { head } : {}) })
+    // An open-ended range (`base..`) means `base..HEAD`, matching git range
+    // semantics; the delta resolver normalizes the same way.
+    const head = range.slice(dash + 2) || 'HEAD'
+    return { diffText: await reads.diffText({ base, head }), headTip: head }
   }
   // worktree: everything vs HEAD (staged + unstaged; untracked files are
   // excluded — reviewers judge tracked changes).
-  return reads.diffText({ base: 'HEAD' })
+  return { diffText: await reads.diffText({ base: 'HEAD' }), headTip: 'HEAD' }
+}
+
+/** The delta diff of what changed since `deltaBase` for one target. */
+async function resolveDeltaDiff(
+  reads: ReadSurface,
+  target: ReviewTarget,
+  deltaBase: string,
+): Promise<string> {
+  if (target === 'staged') return reads.diffText({ cached: true, base: deltaBase })
+  if (target === 'commits') return reads.diffText({ base: deltaBase, head: 'HEAD' })
+  return reads.diffText({ base: deltaBase })
+}
+
+/** Whether `ancestor` is an ancestor of (or equal to) HEAD. */
+async function isAncestorOfHead(
+  git: GitService,
+  cwd: string,
+  ancestor: string,
+  signal: AbortSignal | undefined,
+): Promise<boolean> {
+  const run = await git.run(['merge-base', '--is-ancestor', ancestor, 'HEAD'], { cwd, signal })
+  return run.exitCode === 0
+}
+
+/** Filter files by focus prefixes (`file === prefix` or under `prefix/`). */
+function focusFilter(prefixes: readonly string[], files: readonly string[]): string[] {
+  if (prefixes.length === 0) return [...files]
+  return files.filter(file => prefixes.some(prefix => file === prefix || file.startsWith(`${prefix}/`)))
+}
+
+/** Fold settled reviewer runs into completed slices and one error string per failed reviewer. */
+function settleReviewers(
+  settled: PromiseSettledResult<SliceOutcome>[],
+): { slices: SliceResult[]; errors: string[] } {
+  const slices: SliceResult[] = []
+  const errors: string[] = []
+  for (const [i, result] of settled.entries()) {
+    if (result.status === 'fulfilled') {
+      if (result.value.kind === 'ok') {
+        slices.push(result.value.slice)
+      } else {
+        errors.push(`reviewer ${i + 1}/${settled.length} failed: ${result.value.error}`)
+      }
+    } else {
+      errors.push(`reviewer ${i + 1}/${settled.length} failed: ${reasonOf(result.reason)}`)
+    }
+  }
+  return { slices, errors }
+}
+
+/** Collect reviewer findings tagged with their slice label, sorted by severity then descending confidence. */
+function collectFindings(slices: readonly SliceResult[]): ReviewFinding[] {
+  const findings: ReviewFinding[] = []
+  for (const slice of slices) {
+    for (const finding of slice.findings) {
+      findings.push({ ...finding, reviewer: slice.label })
+    }
+  }
+  findings.sort((a, b) => {
+    const pa = PRIORITY_LABELS.indexOf(a.priority)
+    const pb = PRIORITY_LABELS.indexOf(b.priority)
+    if (pa !== pb) return pa - pb
+    return b.confidence - a.confidence
+  })
+  return findings
+}
+
+/** Overall confidence: the minimum across completed reviewers (0 when none). */
+function minConfidence(slices: readonly SliceResult[]): number {
+  return slices.length === 0 ? 0 : Math.min(...slices.map(slice => slice.confidence))
+}
+
+/** Assemble a ledger record for one completed review. */
+function ledgerRecord(
+  branch: string,
+  target: ReviewTarget,
+  range: string | undefined,
+  headSha: string,
+  diffHash: string,
+  files: string[],
+  verdict: 'ship' | 'reject',
+  findings: LedgerFinding[],
+): LedgerRecord {
+  return {
+    version: 1,
+    branch,
+    target,
+    ...(range !== undefined ? { range } : {}),
+    headSha,
+    diffHash,
+    files,
+    verdict,
+    reviewedAt: Date.now(),
+    findings,
+  }
+}
+
+/**
+ * Write the ledger record; persistence failures surface as a warning and
+ * never change the verdict.
+ */
+async function writeLedgerSafely(
+  git: GitService,
+  cwd: string,
+  signal: AbortSignal | undefined,
+  record: LedgerRecord,
+  warnings: string[],
+): Promise<void> {
+  try {
+    await writeLedger(git, cwd, signal, record)
+  } catch (error: unknown) {
+    warnings.push(`ledger write failed: ${reasonOf(error)}`)
+  }
 }
 
 /** Split `files` into at most `budget` slices balanced by diff size. */
@@ -543,6 +1048,25 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/** Reviewer criteria block, shared by full and verify prompts. */
+const PROMPT_CRITERIA = 'CRITERIA — report only issues meeting ALL: provable impact (no speculation); actionable (discrete fix); '
+  + 'unintentional (not a deliberate design choice); introduced in the patch (do not flag pre-existing bugs); '
+  + 'no unstated assumptions; rigorous only to the level present elsewhere in the codebase.'
+
+/** Reviewer consumer-dispatch block, shared by full and verify prompts. */
+const PROMPT_CHECK = 'CHECK boundary-crossing values: every patch-introduced type/variant/value crossing a function or module '
+  + 'boundary (event, message, command, frame, enum variant, queue item, IPC payload) needs its consuming-side dispatch '
+  + 'point to forward it explicitly. A silent-drop/no-op at the consumer is a defect — read the consumer before concluding.'
+
+/** Reviewer severity block, shared by full and verify prompts. */
+const PROMPT_PRIORITY = 'PRIORITY — P0: blocks release/operations, universal impact (data corruption, auth bypass). '
+  + 'P1: high, fix next cycle (race under load). P2: medium, fix eventually (edge-case mishandling). '
+  + 'P3: info / nice to have (suboptimal but correct).'
+
+/** Reviewer read-only rules block, shared by full and verify prompts. */
+const PROMPT_RULES = 'RULES: This is READ-ONLY. NEVER edit files, never stage, never commit, never run builds or tests that mutate '
+  + 'state — git diff/log/show/status and file reads only.'
+
 /**
  * Build read-only review instructions for a captured patch.
  * @param label - Reviewer identity within the fan-out.
@@ -565,22 +1089,15 @@ export function buildReviewerPrompt(label: string, files: readonly string[], pat
   parts.push('3. Report each issue as a finding (see OUTPUT).')
   parts.push('4. Return the final verdict in the structured result (see OUTPUT).')
   parts.push('')
-  parts.push('CRITERIA — report only issues meeting ALL: provable impact (no speculation); actionable (discrete fix); '
-    + 'unintentional (not a deliberate design choice); introduced in the patch (do not flag pre-existing bugs); '
-    + 'no unstated assumptions; rigorous only to the level present elsewhere in the codebase.')
+  parts.push(PROMPT_CRITERIA)
   parts.push('')
-  parts.push('CHECK boundary-crossing values: every patch-introduced type/variant/value crossing a function or module '
-    + 'boundary (event, message, command, frame, enum variant, queue item, IPC payload) needs its consuming-side dispatch '
-    + 'point to forward it explicitly. A silent-drop/no-op at the consumer is a defect — read the consumer before concluding.')
+  parts.push(PROMPT_CHECK)
   parts.push('')
-  parts.push('PRIORITY — P0: blocks release/operations, universal impact (data corruption, auth bypass). '
-    + 'P1: high, fix next cycle (race under load). P2: medium, fix eventually (edge-case mishandling). '
-    + 'P3: info / nice to have (suboptimal but correct).')
+  parts.push(PROMPT_PRIORITY)
   parts.push('')
   parts.push(`CAPTURED PATCH (the requested review target; not truncated):\n\n${patch}`)
   parts.push('')
-  parts.push('RULES: This is READ-ONLY. NEVER edit files, never stage, never commit, never run builds or tests that mutate '
-    + 'state — git diff/log/show/status and file reads only.')
+  parts.push(PROMPT_RULES)
   parts.push('')
   parts.push('OUTPUT: Return the structured result with `overall_correctness` ("correct" = no bugs/blockers, ignoring '
     + 'style/docs/nits, or "incorrect") and `explanation` (1-3 sentences). `findings` is an array where each item has '
@@ -591,11 +1108,85 @@ export function buildReviewerPrompt(label: string, files: readonly string[], pat
   return parts.join('\n')
 }
 
+/**
+ * Build verify-mode reviewer instructions: close each prior ledgered finding
+ * against the current code, then scan the delta patch for new issues.
+ * @param label - Reviewer identity within the fan-out.
+ * @param files - Changed files assigned to this reviewer (delta files plus files of its prior findings).
+ * @param patch - Inline delta diff or a complete artifact locator with retrieval guidance and file line ranges.
+ * @param priorFindings - Ledgered findings this reviewer must close.
+ * @returns The reviewer task, including the closure checklist and structured output instructions.
+ */
+export function buildVerifyReviewerPrompt(
+  label: string,
+  files: readonly string[],
+  patch: string,
+  priorFindings: readonly VerifyClosureItem[],
+): string {
+  const parts: string[] = []
+  parts.push(`You are ${label}, a code review specialist performing a READ-ONLY verify review: the change since `
+    + 'a previous full review, plus closure of that review\'s findings.')
+  parts.push('')
+  parts.push('OWNED FILES (review these; other changed files are out of scope):')
+  for (const file of files) parts.push(`- ${file}`)
+  parts.push('')
+  parts.push('You have two duties.')
+  parts.push('')
+  parts.push('DUTY 1 — close every prior finding listed below. Locate each one by its content in the current code '
+    + '(the patch may have moved it). Report one `findingStatus` entry per prior finding:')
+  parts.push('- fixed: the flagged problem is fully resolved in the current code.')
+  parts.push('- partially_fixed: some of it is resolved, part of the problem remains.')
+  parts.push('- not_fixed: the flagged problem is still present.')
+  parts.push('- cannot_verify: you could not establish the state (e.g. the code moved out of the owned files).')
+  parts.push('Keep `evidence` to one line citing the current code (file:line or the deciding expression). Do not '
+    + 're-report a finding that is fixed; a still-broken one stays in `findings` only if it needs a fresh report.')
+  parts.push('')
+  parts.push('PRIOR FINDINGS')
+  for (const finding of priorFindings) {
+    parts.push(`- ${finding.id} [${finding.priority}] ${finding.title}`)
+    parts.push(`  ${finding.body}`)
+    parts.push(`  at ${finding.file_path}:${finding.line_start}-${finding.line_end}`)
+  }
+  if (priorFindings.length === 0) parts.push('- (none)')
+  parts.push('')
+  parts.push('DUTY 2 — scan the delta patch below for NEW issues introduced since the full review.')
+  parts.push('')
+  parts.push(PROMPT_CRITERIA)
+  parts.push('')
+  parts.push(PROMPT_CHECK)
+  parts.push('')
+  parts.push(PROMPT_PRIORITY)
+  parts.push('')
+  parts.push(`CAPTURED PATCH (changes since the full review; not truncated):\n\n${patch}`)
+  parts.push('')
+  parts.push(PROMPT_RULES)
+  parts.push('')
+  parts.push('OUTPUT: Return the structured result with `overall_correctness` ("correct" = the delta introduces no '
+    + 'bugs/blockers, ignoring style/docs/nits, or "incorrect") and `explanation` (1-3 sentences). `findingStatus` has '
+    + 'one entry per prior finding (see DUTY 1); `findings` reports NEW delta-introduced issues only, each with title '
+    + '(imperative, ≤80 chars), body (one paragraph: bug, trigger, impact), priority (0=P0 … 3=P3), confidence '
+    + '(0.0-1.0 it is a real bug), file_path, line_start, line_end (≤10-line range overlapping the delta). Never invent '
+    + 'findings: every status needs evidence and every finding must be patch-anchored.')
+  return parts.join('\n')
+}
+
 function renderReview(value: ReviewValue): string {
   const lines: string[] = []
   lines.push(`Review (${value.target}) — ${value.files.length} file(s), verdict: ${value.verdict.toUpperCase()}`
     + ` (confidence ${Math.round(value.confidence * 100)}%)`)
   lines.push(value.verdictExplanation)
+  if (value.verify !== undefined) {
+    lines.push(`Delta: ${value.verify.deltaFiles.length} file(s) since the recorded review`)
+    if (!value.verify.deltaEmpty && value.verify.priorFindings.length > 0) {
+      lines.push('')
+      lines.push(`Closure (${value.verify.priorFindings.length} prior finding(s) checked):`)
+      for (const entry of value.verify.priorFindings) {
+        lines.push(`  [${entry.priority}] ${entry.id} ${entry.status} — ${entry.title}`)
+        lines.push(`      ${entry.file_path}:${entry.line_start}-${entry.line_end}`)
+        if (entry.evidence.length > 0) lines.push(`      ${entry.evidence}`)
+      }
+    }
+  }
   if (value.findings.length > 0) {
     lines.push('')
     lines.push(`Findings (${value.findings.length}, sorted by severity):`)

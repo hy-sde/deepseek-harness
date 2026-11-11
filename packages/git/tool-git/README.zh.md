@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`commit`、`commit_apply` 与 `review` 驱动 agent 化 git 提交与评审工作流，`worktree` 提供面向模型的工作树池与持久租约，使并行任务获得同一仓库的隔离、重启安全的工作目录。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时路由到它，否则回退 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径不变。组合需要让模型编写确定性的拆分提交计划、并对已暂存 diff 做有界评审扇出时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；评审质量仍由模型自行协商。
+`commit`、`commit_apply` 与 `review` 驱动 agent 化 git 提交与评审工作流，`worktree` 提供面向模型的工作树池与持久租约，使并行任务获得隔离、重启安全的任务目录。读取在 `ctx.vcs` 的 `pi-vcs` 探测干净时路由到它，否则回退 `ctx.git`；变更输入始终留在 `ctx.git`，因此写入路径不变。组合需要让模型编写确定性的拆分提交计划、并对已暂存 diff 做有界评审扇出、且可只重新评审已记录评审之后的增量并关闭其既有 findings 时选用本包。成本是每次提交一次分析调用，外加由 `maxReviewers` 与 `maxReviewerDiffChars` 封顶的评审者扇出；评审质量仍由模型自行协商。
 
 ## 目录
 
@@ -39,8 +39,8 @@ kind: "package-reference"
 在 `ctx.tools` 上注册三个工具，一个带提交／评审协商语法的 `git:` 系统提示词 section，并注入 `ctx.git`：
 
 - **`commit`（分析，只读）** — 快照已暂存 diff（在无暂存内容且 `stagedOnly: false` 时自动暂存工作区），报告按文件的增删计数、有界 diff、`trivial` 分类、`lockFilesPending` 与 `suggestedPlan` 骨架。它从不写入仓库。
-- **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。`push: true` 把当前分支推送到 `origin` 并记录上游（`git push --set-upstream origin <branch>`），供 PR 工具取用；detached HEAD（默认工作树槽位）会被拒绝并给出指向 `worktree acquire --branch` 的指引——该命名分支组合就是发布路径。当挂载了 [`@deepseek-ai/dsh-orchestration-policy`](../../orchestration/policy/README.zh.md) 且其 `reviewGate` 生效时，推送还需要 `review --target staged` 对**完全相同**的暂存范围返回当前 `ship` 结论（身份 = 提交前 HEAD + 索引树）——否则 `commit_apply --push` 被拒绝并给出修复方法；结论由 `review` 工具按仓库记录，且只存在于宿主进程内。
-- **`review`** — 按权重把已暂存 diff 切成至多 `maxReviewers` 份子代理运行，采用结构化评审者契约，按评审者置信度的最小值聚合 `ship`／`reject` 结论，按严重度排序 findings，并把传输失败报告为 errors（绝不静默批准未受评审的变更）。
+- **`commit_apply`（执行）** — 对照实际暂存状态校验 `SplitCommitPlan`，然后确定性提交：每个已暂存文件恰好规划一次，hunk 选择对照真实 diff 解析，分组按拓扑排序（环在任何写入前被拒绝），锁文件自动归位到拥有其兄弟 manifest 的分组。`dryRun: true` 预览确切的提交消息而不提交；`cwd` 选择仓库。`push: true` 把当前分支推送到 `origin` 并记录上游（`git push --set-upstream origin <branch>`），供 PR 工具取用；detached HEAD（默认工作树槽位）会被拒绝并给出指向 `worktree acquire --branch` 的指引——该命名分支组合就是发布路径。当挂载了 [`@deepseek-ai/dsh-orchestration-policy`](../../orchestration/policy/README.zh.md) 且其 `reviewGate` 生效时，推送还需要 `review --target staged` 对**完全相同**的暂存范围返回当前 `ship` 结论（身份 = 提交前 HEAD + 索引树）——否则 `commit_apply --push` 被拒绝并给出修复方法；结论由 `review` 工具按仓库记录——进程内的暂存结论记录，外加 `<git-common-dir>/dsh-review/` 下的磁盘 findings ledger。
+- **`review`** — 按权重把已暂存 diff 切成至多 `maxReviewers` 份子代理运行，采用结构化评审者契约，按评审者置信度的最小值聚合 `ship`／`reject` 结论，按严重度排序 findings，并把传输失败报告为 errors（绝不静默批准未受评审的变更）。每次完整评审把结论与 findings 记入按分支的 ledger（`<git-common-dir>/dsh-review/ledger.json`，LRU 上限 20 个分支）；`mode: "verify"` 只重新评审该记录之后的增量，要求评审者逐一关闭既有 finding（`fixed`/`partially_fixed`/`not_fixed`/`cannot_verify`），且仅当每个既有阻塞 finding 被确认修复时才 ship（ship 替换记录；reject 保留记录）。
 - **`worktree`** — 池管理器：`acquire` 切出或复用隔离的 git 工作树（`--branch` 得到命名分支 HEAD，供 `commit_apply --push`／PR 流程使用），并返回持久 `leaseId`；`release` 归还槽位（以精确租约 id 为条件；非 `force` 时拒绝脏工作）；`list` 显示池的实时状态；`prune` 与 `destroy` 在 `yes` 前都是 dry-run，绝不自动触碰租借或脏槽位。切勿管理你不拥有的槽位——池是共享基础设施，清除或销毁兄弟槽位会毁掉另一任务的进行中工作。见 [Worktree 工具](#worktree-tool)。
 
 <a id="two-phase-contract"></a>
@@ -81,7 +81,7 @@ kind: "package-reference"
 <a id="export-shape"></a>
 ## 导出形状
 
-函数／命名空间插件，导出 `name`／`inject`／`apply` 且无默认导出（多余的 default 会让 Loader 的 `unwrapExports` 折叠模块并丢弃 `inject`）。辅助函数与类型（`resolveCwd`、`toPriority`、`sliceByWeight`、`gitDiffSection`、`buildReviewerPrompt`、`SliceResult`、`ReviewerFinding` 及通用提交类型）从 `/commit` 与 `/review` 再导出，供测试与其他消费方使用。
+函数／命名空间插件，导出 `name`／`inject`／`apply` 且无默认导出（多余的 default 会让 Loader 的 `unwrapExports` 折叠模块并丢弃 `inject`）。辅助函数与类型（`resolveCwd`、`toPriority`、`sliceByWeight`、`gitDiffSection`、`buildReviewerPrompt`、`SliceResult`、`ReviewerFinding` 及通用提交类型）从 `/commit` 与 `/review` 再导出，verify 模式提示词构建器与 findings-ledger 辅助函数（`buildVerifyReviewerPrompt`、`LEDGER_BRANCH_CAP`、`diffHashOf`、`toLedgerFindings`、`ledgerBranchKey`、`ledgerPath`、`readLedger`、`writeLedger`、`LedgerFinding`、`LedgerRecord`）从 `/review` 与 `/ledger` 再导出，供测试与其他消费方使用。
 
 <a id="model-experience"></a>
 ## Model Experience
@@ -104,7 +104,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-每次 `commit` 调用把分析结果（文件、diff、计划骨架）保留在调用参数中。`commit_apply` 返回 `{ mode, created: [{ hash, message, changes }], messages, warnings }`——确定、小巧、可作回放权威。`review` 返回紧凑 JSON：结论、排序后的 findings、置信度、文件与错误。稳定失败在任何写入前抛出并给出可读消息：`Split commit plan missing staged files: <...>`、`Split commit plan assigns files to multiple groups: <...>`、`Invalid hunk selections: …`、`Circular dependency…`、以及索引为空时的 `nothing is staged; run `commit`…`。
+每次 `commit` 调用把分析结果（文件、diff、计划骨架）保留在调用参数中。`commit_apply` 返回 `{ mode, created: [{ hash, message, changes }], messages, warnings }`——确定、小巧、可作回放权威。`review` 返回紧凑 JSON：结论、排序后的 findings、置信度、文件与错误；`verify` 模式额外返回 `deltaFiles`／`deltaEmpty` 以及每个既有 finding 的关闭状态与证据。稳定失败在任何写入前抛出并给出可读消息：`Split commit plan missing staged files: <...>`、`Split commit plan assigns files to multiple groups: <...>`、`Invalid hunk selections: …`、`Circular dependency…`、以及索引为空时的 `nothing is staged; run `commit`…`。
 
 #### Token effect
 

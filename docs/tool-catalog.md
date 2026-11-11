@@ -2537,7 +2537,7 @@ run_kernel_code executes model code in a persistent kernel (python3 subprocess o
 
 ### `lsp`
 
-Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, diagnostics. line and character are one-based UTF-16 cursor coordinates; pass 1 1 for documentSymbols and diagnostics, which use only the file. findReferences includes the declaration; codeActions lists available quick fixes/refactorings (never applies them); rename previews every edit for new_name (never writes files).
+Query a language server for precise code navigation. operation is one of goToDefinition, findReferences, goToImplementation, goToTypeDefinition, hover, documentSymbols, codeActions, rename, diagnostics. line and character are one-based UTF-16 cursor coordinates; pass 1 1 for documentSymbols and diagnostics, which use only the file. findReferences includes the declaration; codeActions lists available quick fixes, refactorings, and source actions such as Organize Imports (never applies them); rename previews every edit for new_name (never writes files).
 
 ```json
 {
@@ -3950,7 +3950,7 @@ Source: [`packages/git/tool-git/src/index.ts`](../packages/git/tool-git/src/inde
 
 ### `review`
 
-Run a parallel code review over git changes (working tree, staged, or a commit range) with dedicated reviewer subagents. Every finding is ranked P0–P3 with a confidence score; the tool returns all findings sorted by severity and a ship/reject verdict with explanation. Reviewers are read-only (git diff/log/show, read, grep, ast_grep) and never edit files or run builds. Use the focus filter to review only the paths that matter.
+Run a parallel code review over git changes (working tree, staged, or a commit range) with dedicated reviewer subagents. Every finding is ranked P0–P3 with a confidence score; the tool returns all findings sorted by severity and a ship/reject verdict with explanation. Reviewers are read-only (git diff/log/show, read, grep, ast_grep) and never edit files or run builds. Use the focus filter to review only the paths that matter. mode "full" (default) runs the complete review and records its findings in a per-branch ledger; mode "verify" re-reviews only what changed since that recorded review, asks reviewers to close each prior finding (fixed/partially_fixed/not_fixed/cannot_verify), and fails closed when no ledger record exists for the branch or history was rewritten since it.
 
 ```json
 {
@@ -3983,6 +3983,14 @@ Run a parallel code review over git changes (working tree, staged, or a commit r
     "cwd": {
       "type": "string",
       "description": "Working directory; defaults to the session workspace."
+    },
+    "mode": {
+      "type": "string",
+      "description": "full (default): complete fan-out review that overwrites the branch findings ledger. verify: close the ledgered findings against what changed since that review (cheaper delta scan); requires a prior full review on this branch and fails closed when none exists or history was rewritten.",
+      "enum": [
+        "full",
+        "verify"
+      ]
     }
   }
 }

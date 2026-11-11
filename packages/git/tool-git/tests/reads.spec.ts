@@ -7,7 +7,7 @@
  * that the git mutation paths (addAll) still work.
  */
 
-import { mkdtemp, rm, writeFile, chmod } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile, chmod, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -169,5 +169,28 @@ describe('read-preference routing (G7)', () => {
     expect(verbs).toContain('status')
     expect(verbs).toContain('staged-diff')
     expect(verbs).not.toContain('unknown')
+  })
+
+  it('reads staged changes against a base revision directly from git, bypassing the vcs shim', async () => {
+    runGit(['add', '-A'])
+    runGit(['commit', '-q', '-m', 'base2'])
+    const base = runGit(['rev-parse', 'HEAD']).trim()
+    await write('base.txt', 'v4-bypass\n')
+    runGit(['add', 'base.txt'])
+    const logFile = join(shimDir, 'calls.log')
+    await rm(logFile, { force: true })
+    const reads = await openReads(ctx, dir, undefined)
+    expect(reads.backend).toBe('vcs')
+    const stagedBase = await reads.diffText({ cached: true, base })
+    expect(stagedBase.trim()).toBe(runGit(['diff', '--cached', base]).trim())
+    expect(stagedBase).toContain('+v4-bypass')
+    const logged = await readFile(logFile, 'utf8')
+    expect(logged).not.toContain('[unknown')
+
+    await rm(logFile, { force: true })
+    const plainCached = await reads.diffText({ cached: true })
+    expect(plainCached.trim()).toBe(runGit(['diff', '--cached']).trim())
+    const loggedPlain = await readFile(logFile, 'utf8')
+    expect(loggedPlain).toContain('staged-diff')
   })
 })

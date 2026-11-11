@@ -2521,7 +2521,7 @@ run_kernel_code 在持久化 kernel（python3 或 node 子进程，仅标准库�
 
 ### `lsp`
 
-查询语言服务器，以精确导航代码。operation 可取 goToDefinition、findReferences、goToImplementation、goToTypeDefinition、hover、documentSymbols、codeActions、rename 或 diagnostics。line 和 character 是从 1 开始的 UTF-16 光标坐标；documentSymbols 与 diagnostics 仅使用文件，传入 1 1 即可。findReferences 包含声明；codeActions 列出可用的快速修复与重构但不会应用；rename 预览对 new_name 的全部编辑但不会写入文件。
+查询语言服务器，以精确导航代码。operation 可取 goToDefinition、findReferences、goToImplementation、goToTypeDefinition、hover、documentSymbols、codeActions、rename 或 diagnostics。line 和 character 是从 1 开始的 UTF-16 光标坐标；documentSymbols 与 diagnostics 仅使用文件，传入 1 1 即可。findReferences 包含声明；codeActions 列出可用的快速修复、重构以及诸如 Organize Imports 的 source actions 但不会应用；rename 预览对 new_name 的全部编辑但不会写入文件。
 
 ```json
 {
@@ -3936,7 +3936,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 ### `review`
 
-用专门的评审者 subagent 对 git 变更（工作区、已暂存区或一个提交区间）执行并行代码评审。每条发现按 P0–P3 分级并带置信度分数；工具返回按严重度排序的全部发现，以及带解释的 ship/reject 结论。评审者只读（git diff/log/show、read、grep、ast_grep），从不编辑文件或运行构建。可用 focus 过滤器只评审相关路径。
+用专门的评审者 subagent 对 git 变更（工作区、已暂存区或一个提交区间）执行并行代码评审。每条发现按 P0–P3 分级并带置信度分数；工具返回按严重度排序的全部发现，以及带解释的 ship/reject 结论。评审者只读（git diff/log/show、read、grep、ast_grep），从不编辑文件或运行构建。可用 focus 过滤器只评审相关路径。mode "full"（默认）运行完整评审并把发现记入按分支的 ledger；mode "verify" 只重新评审该记录之后发生的变化，要求评审者逐一关闭既有发现（fixed/partially_fixed/not_fixed/cannot_verify），并在该分支没有 ledger 记录或评审之后历史被改写时失败关闭。
 
 
 ```json
@@ -3970,6 +3970,14 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
     "cwd": {
       "type": "string",
       "description": "Working directory; defaults to the session workspace."
+    },
+    "mode": {
+      "type": "string",
+      "description": "full (default): complete fan-out review that overwrites the branch findings ledger. verify: close the ledgered findings against what changed since that review (cheaper delta scan); requires a prior full review on this branch and fails closed when none exists or history was rewritten.",
+      "enum": [
+        "full",
+        "verify"
+      ]
     }
   }
 }
