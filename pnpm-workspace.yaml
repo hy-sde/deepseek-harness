@@ -22,6 +22,10 @@ overrides:
   'extract-zip>yauzl': '3.4.0'
   '@deepseek-ai/cosmokit': 'link:vendor/cosmokit'
   '@deepseek-ai/schemastery': 'link:vendor/schemastery'
+  # Security floors (2026-11-10): qs < 6.16.1 and MCP SDK < 1.32.0 carry
+  # advisories (GHSA via pnpm audit); see port_maka.md upstream scan.
+  '@modelcontextprotocol/sdk': '>=1.32.0'
+  qs: '>=6.16.1'
 
 peerDependencyRules:
   allowedVersions:

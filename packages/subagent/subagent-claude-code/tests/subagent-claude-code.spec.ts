@@ -358,7 +358,7 @@ describe('task admission and package contracts', () => {
     )
     expect(manifest.dependencies).toHaveProperty(
       '@modelcontextprotocol/sdk',
-      '^1.31.0',
+      '^1.32.0',
     )
     // The fork pins zod 4.6.7 workspace-wide (pnpm-workspace.yaml overrides +
     // unified manifests); upstream's manifest pins 4.4.3.
