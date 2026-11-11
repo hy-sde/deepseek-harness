@@ -41,7 +41,7 @@ function runGit(args: string[]): string {
 
 const agent = { session: { header: { id: 's1', cwd: '' } } } as never
 
-async function call(name: string, args: unknown, signal = new AbortController().signal): Promise<{ value: unknown }> {
+async function call(name: string, args: unknown, signal = new AbortController().signal): Promise<{ value: unknown; content: ReadonlyArray<{ type: string; text?: string }> }> {
   const result = await executeToolFixture(ctx, {
     signal,
     callId: ToolCallId(`rev-${++counter}`),
@@ -60,7 +60,7 @@ async function call(name: string, args: unknown, signal = new AbortController().
 interface CannedReviewer {
   overall_correctness: 'correct' | 'incorrect'
   explanation: string
-  confidence: number
+  confidence?: number
   findings?: unknown[]
   findingStatus?: unknown
 }
@@ -962,6 +962,7 @@ describe('reviewer robustness', () => {
 describe('findings ledger helpers', () => {
   let ledgerDir: string
   let ledgerCtx: Context
+  let ledgerGit: Git.GitService
 
   const runLedgerGit = (args: string[]): string => {
     const result = spawnSync('git', args, { cwd: ledgerDir, encoding: 'utf8' })
@@ -991,6 +992,7 @@ describe('findings ledger helpers', () => {
     await ledgerCtx.plugin(ToolRuntime)
     await ledgerCtx.plugin(LocalSubprocessRuntime)
     await ledgerCtx.plugin(Git)
+    ledgerGit = ledgerCtx.get('git') as Git.GitService
   })
 
   afterAll(async () => {
@@ -1000,16 +1002,16 @@ describe('findings ledger helpers', () => {
 
   it('writeLedger applies the LRU branch cap', async () => {
     for (let index = 1; index <= LEDGER_BRANCH_CAP + 1; index += 1) {
-      await writeLedger(ledgerCtx.get('git'), ledgerDir, undefined, fakeRecord(`branch-${index}`, index))
+      await writeLedger(ledgerGit, ledgerDir, undefined, fakeRecord(`branch-${index}`, index))
     }
-    const doc = await readLedger(ledgerCtx.get('git'), ledgerDir, undefined)
+    const doc = await readLedger(ledgerGit, ledgerDir, undefined)
     expect(doc['branch-1']).toBeUndefined()
     expect(doc['branch-21']).toBeDefined()
     expect(Object.keys(doc)).toHaveLength(LEDGER_BRANCH_CAP)
   })
 
   it('writeLedger cleans up its temp file when a write fails and keeps the ledger parseable', async () => {
-    const git = ledgerCtx.get('git')
+    const git = ledgerGit
     const ledgerDirPath = join(ledgerDir, '.git', 'dsh-review')
     const ledgerFile = join(ledgerDirPath, 'ledger.json')
     await writeLedger(git, ledgerDir, undefined, fakeRecord('atomic-a', LEDGER_BRANCH_CAP + 100))
@@ -1029,7 +1031,7 @@ describe('findings ledger helpers', () => {
   })
 
   it('writeLedger serializes concurrent writes from two worktrees of one repository', async () => {
-    const git = ledgerCtx.get('git')
+    const git = ledgerGit
     const repoDir = await mkdtemp(join(tmpdir(), 'dsh-ledger-wt-'))
     const sibling = `${repoDir}-sibling`
     const runIn = (cwd: string, args: string[]): string => {
@@ -1066,25 +1068,25 @@ describe('findings ledger helpers', () => {
     await mkdir(dirname(path), { recursive: true })
     for (const payload of ['{not json', '[1,2,3]', '42']) {
       await writeFile(path, payload)
-      expect(await readLedger(ledgerCtx.get('git'), ledgerDir, undefined)).toEqual({})
+      expect(await readLedger(ledgerGit, ledgerDir, undefined)).toEqual({})
     }
   })
 
   it('ledgerPath resolves under the git common directory', async () => {
-    expect(await ledgerPath(ledgerCtx.get('git'), ledgerDir, undefined)).toBe(join(realpathSync(ledgerDir), '.git', 'dsh-review', 'ledger.json'))
+    expect(await ledgerPath(ledgerGit, ledgerDir, undefined)).toBe(join(realpathSync(ledgerDir), '.git', 'dsh-review', 'ledger.json'))
   })
 
   it('ledgerPath rejects outside a repository', async () => {
     const noGit = await mkdtemp(join(tmpdir(), 'dsh-nogit-'))
     try {
-      await expect(ledgerPath(ledgerCtx.get('git'), noGit, undefined)).rejects.toThrow('cannot resolve the git common directory for the findings ledger')
+      await expect(ledgerPath(ledgerGit, noGit, undefined)).rejects.toThrow('cannot resolve the git common directory for the findings ledger')
     } finally {
       rmSync(noGit, { recursive: true, force: true })
     }
   })
 
   it('resolveRev returns empty for an unknown revision', async () => {
-    expect(await resolveRev(ledgerCtx.get('git'), ledgerDir, undefined, 'no-such-rev')).toBe('')
+    expect(await resolveRev(ledgerGit, ledgerDir, undefined, 'no-such-rev')).toBe('')
   })
 
   it('ledgerBranchKey uses the branch name and a DETACHED-<sha8> fallback', async () => {
@@ -1092,10 +1094,10 @@ describe('findings ledger helpers', () => {
     runLedgerGit(['add', '-A'])
     runLedgerGit(['commit', '-q', '-m', 'seed'])
     const branch = runLedgerGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim()
-    expect(await ledgerBranchKey(ledgerCtx.get('git'), ledgerDir, undefined)).toBe(branch)
+    expect(await ledgerBranchKey(ledgerGit, ledgerDir, undefined)).toBe(branch)
     runLedgerGit(['checkout', '-q', '--detach'])
     const expected = `DETACHED-${runLedgerGit(['rev-parse', 'HEAD']).trim().slice(0, 8)}`
-    expect(await ledgerBranchKey(ledgerCtx.get('git'), ledgerDir, undefined)).toBe(expected)
+    expect(await ledgerBranchKey(ledgerGit, ledgerDir, undefined)).toBe(expected)
     runLedgerGit(['checkout', '-q', '-'])
   })
 
@@ -1114,7 +1116,7 @@ describe('findings ledger helpers', () => {
 
 describe('reviewer prompts', () => {
   it('buildReviewerPrompt keeps the full-mode contract', () => {
-    const prompt = buildReviewerPrompt('reviewer 1/2', ['src/a.ts'], 'PATCH', [])
+    const prompt = buildReviewerPrompt('reviewer 1/2', ['src/a.ts'], 'PATCH')
     expect(prompt).toContain('You are reviewer 1/2, a code review specialist performing a READ-ONLY review.')
     expect(prompt).toContain('- src/a.ts')
     expect(prompt).toContain('Find bugs the author wants fixed before merge.')
