@@ -430,6 +430,27 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
         if (focus.length > 0 && deltaFiles.length === 0) {
           warnings.push(`no changed files matched the focus filter: ${focus.join(', ')}`)
         }
+        if (deltaFor.size > 0 && deltaFiles.length === 0) {
+          // Focus-filtered empty: the tree changed, but every changed file
+          // fell outside the focus filter. No reviewer examined the current
+          // state, so neither the push gate nor the ledger may treat the
+          // recorded verdict as re-established; report the honest delta and
+          // leave both untouched.
+          const value: ReviewValue = {
+            target,
+            files: [],
+            diffTruncated: false,
+            findings: [],
+            verdict: 'ship',
+            verdictExplanation: 'No changed file matched the focus filter, so no closure review ran; the recorded verdict and findings stand unchanged.',
+            confidence: 1,
+            slices: [],
+            errors: [],
+            warnings,
+            verify: { priorFindings: [], deltaFiles: Array.from(deltaFor.keys()), deltaEmpty: false },
+          }
+          return value
+        }
         const prior: VerifyClosureItem[] = record.findings.map(finding => ({
           id: finding.id,
           priority: finding.priority,
@@ -443,14 +464,16 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
         // Verify shipping replaces the branch record with the fresh equivalent
         // of a full review run right now.
         const replaceLedgerOnShip = async (kept: LedgerFinding[]): Promise<void> => {
-          // The replacement is the fresh equivalent of a full review with the
-          // verify's target; commits need a range, supplied or since the tip.
-          const fullNowRange = target === 'commits' ? (args.range ?? `${record.headSha}..HEAD`) : args.range
+          // The replacement is the fresh equivalent of a full review run right
+          // now. Verify never reads args.range here: a malformed caller range
+          // must not discard an already-run fan-out, and the fresh baseline is
+          // always the recorded tip to HEAD.
+          const fullNowRange = target === 'commits' ? `${record.headSha}..HEAD` : undefined
           const fullNow = await resolveReviewDiff(reads, target, fullNowRange)
           await writeLedgerSafely(ctx.git, cwd, exec.signal, ledgerRecord(
             branchKey,
             target,
-            target === 'commits' ? fullNowRange : undefined,
+            fullNowRange,
             await resolveRev(ctx.git, cwd, exec.signal, 'HEAD'),
             diffHashOf(fullNow.diffText),
             parseFileDiffs(fullNow.diffText).map(file => file.filename),

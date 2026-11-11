@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { rmSync, realpathSync } from 'node:fs'
+import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -662,7 +662,7 @@ describe('review findings ledger and verify mode', () => {
     resetFake()
   })
 
-  it('verify with a focus that matches no delta file warns and closes nothing', async () => {
+  it('verify with a focus that matches no delta file leaves the ledger and gate untouched', async () => {
     await fullReviewWith([
       { title: 'fix b', body: 'b', priority: 2, confidence: 0.8, file_path: 'src/b.ts', line_start: 1, line_end: 1 },
       { title: 'fix readme', body: 'r', priority: 3, confidence: 0.5, file_path: 'README.md', line_start: 1, line_end: 1 },
@@ -670,21 +670,37 @@ describe('review findings ledger and verify mode', () => {
     await writeFile(join(dir, 'src/b.ts'), 'const b = 22;\n')
     runGit(['add', 'src/b.ts'])
     cannedRuns = [{ overall_correctness: 'correct', explanation: 'unused', confidence: 1 }]
+    const ledgerBefore = readFileSync(ledgerFile(), 'utf8')
+    const root = runGit(['rev-parse', '--show-toplevel']).trim()
+    const stagedBefore = latestStagedVerdict(root)
     const value = (await call('review', { mode: 'verify', target: 'staged', focus: ['docs/'] })).value as VerifyValueShape
     expect(value.warnings).toContain('no changed files matched the focus filter: docs')
-    expect(value.verify?.deltaFiles).toEqual([])
+    expect(value.verify?.deltaEmpty).toBe(false)
+    expect(value.verify?.deltaFiles).toEqual(['src/a.ts', 'src/b.ts'])
     expect(value.verify?.priorFindings).toEqual([])
     expect(value.verdict).toBe('ship')
-    expect(value.verdictExplanation).toBe('Nothing changed since the full review; its ship verdict stands and the closure checklist was skipped.')
+    expect(value.verdictExplanation).not.toContain('Nothing changed since the full review')
+    // No closure review ran over the staged delta, so the ledger and gate state stand unchanged.
+    expect(readFileSync(ledgerFile(), 'utf8')).toBe(ledgerBefore)
+    expect(latestStagedVerdict(root)).toBe(stagedBefore)
+    const decision = decidePushGate({
+      posture: 'review-gated',
+      record: stagedBefore,
+      beforeHead: runGit(['rev-parse', 'HEAD']).trim(),
+      indexTree: runGit(['write-tree']).trim() || null,
+      requireVerdict: 'ship',
+      onUnavailable: 'block',
+    })
+    expect(decision.allowed).toBe(false)
     resetFake()
   })
-
   it('verify spills oversized delta patches and ignores the range argument', async () => {
     await fullReviewWith([{ title: 'handle null', body: 'deref risk', priority: 2, confidence: 0.8, file_path: 'src/a.ts', line_start: 1, line_end: 1 }])
     runGit(['reset', '-q', '--hard'])
     await writeFile(join(dir, 'src/b.ts'), 'const b = 5;\n' + 'const pad = 1;\n'.repeat(6000))
     runGit(['add', 'src/b.ts'])
     runGit(['commit', '-q', '-m', 'big'])
+    const before = await readRecord()
     const save = vi.spyOn(ctx.spillStore, 'saveText')
     cannedRuns = [{ overall_correctness: 'correct', explanation: 'ok', confidence: 1, findingStatus: [{ id: 'F1', status: 'fixed', evidence: 'done' }] }]
     const value = (await call('review', { mode: 'verify', target: 'commits', range: 'HEAD~5..HEAD' })).value as VerifyValueShape
@@ -698,6 +714,23 @@ describe('review findings ledger and verify mode', () => {
     const ref = (await save.mock.results[0]!.value) as { locator: string }
     expect(prompt).toContain(`${ref.locator}.`)
     expect(value.files).toEqual(['src/b.ts'])
+    const record = await readRecord()
+    expect(record.range).toBe(`${before.headSha}..HEAD`)
+    expect(record.headSha).toBe(runGit(['rev-parse', 'HEAD']).trim())
+    expect(record.diffHash).toBe(diffHashOf(runGit(['diff', before.headSha, 'HEAD'])))
+    resetFake()
+  })
+
+  it('verify ship ignores a malformed range and replaces the record from the recorded tip', async () => {
+    await fullReviewWith([{ title: 'handle null', body: 'deref risk', priority: 2, confidence: 0.8, file_path: 'src/a.ts', line_start: 1, line_end: 1 }])
+    const before = await readRecord()
+    const value = (await call('review', { mode: 'verify', target: 'commits', range: 'not-a-range..bogus..worse' })).value as VerifyValueShape
+    expect(value.warnings).toContain('verify ignores the range argument: the delta runs from the recorded review tip to HEAD')
+    expect(value.verdict).toBe('ship')
+    expect(value.verify?.deltaEmpty).toBe(true)
+    const after = await readRecord()
+    expect(after.range).toBe(`${before.headSha}..HEAD`)
+    expect(after.headSha).toBe(runGit(['rev-parse', 'HEAD']).trim())
     resetFake()
   })
 
@@ -919,10 +952,10 @@ describe('findings ledger helpers', () => {
     runLedgerGit(['config', 'user.email', 't@example.com'])
     runLedgerGit(['config', 'user.name', 't'])
     ledgerCtx = new Context()
-    ledgerCtx.plugin(SystemPrompt)
-    ledgerCtx.plugin(ToolRuntime)
-    ledgerCtx.plugin(LocalSubprocessRuntime)
-    ledgerCtx.plugin(Git)
+    await ledgerCtx.plugin(SystemPrompt)
+    await ledgerCtx.plugin(ToolRuntime)
+    await ledgerCtx.plugin(LocalSubprocessRuntime)
+    await ledgerCtx.plugin(Git)
   })
 
   afterAll(async () => {
@@ -938,6 +971,26 @@ describe('findings ledger helpers', () => {
     expect(doc['branch-1']).toBeUndefined()
     expect(doc['branch-21']).toBeDefined()
     expect(Object.keys(doc)).toHaveLength(LEDGER_BRANCH_CAP)
+  })
+
+  it('writeLedger cleans up its temp file when a write fails and keeps the ledger parseable', async () => {
+    const git = ledgerCtx.get('git')
+    const ledgerDirPath = join(ledgerDir, '.git', 'dsh-review')
+    const ledgerFile = join(ledgerDirPath, 'ledger.json')
+    await writeLedger(git, ledgerDir, undefined, fakeRecord('atomic-a', LEDGER_BRANCH_CAP + 100))
+    expect(Object.keys(JSON.parse(readFileSync(ledgerFile, 'utf8')) as Record<string, unknown>)).toContain('atomic-a')
+    // Temp creation fails: the ledger directory is read-only.
+    chmodSync(ledgerDirPath, 0o555)
+    await expect(writeLedger(git, ledgerDir, undefined, fakeRecord('atomic-b', 2))).rejects.toThrow()
+    chmodSync(ledgerDirPath, 0o755)
+    // Temp rename fails: the target path is occupied by a directory.
+    rmSync(ledgerFile)
+    mkdirSync(ledgerFile)
+    await expect(writeLedger(git, ledgerDir, undefined, fakeRecord('atomic-c', LEDGER_BRANCH_CAP + 102))).rejects.toThrow()
+    expect(readdirSync(ledgerDirPath).filter(name => name !== 'ledger.json')).toEqual([])
+    rmSync(ledgerFile, { recursive: true })
+    await writeLedger(git, ledgerDir, undefined, fakeRecord('atomic-a', LEDGER_BRANCH_CAP + 101))
+    expect(Object.keys(JSON.parse(readFileSync(ledgerFile, 'utf8')) as Record<string, unknown>)).toContain('atomic-a')
   })
 
   it('readLedger self-heals corrupt or wrong-shaped files to an empty document', async () => {

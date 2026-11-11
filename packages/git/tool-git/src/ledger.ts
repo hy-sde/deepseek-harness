@@ -12,9 +12,10 @@
  * them, so a damaged ledger degrades to "no record" instead of failing.
  */
 
-import { createHash } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { withRepoLock } from '@deepseek-ai/dsh-git'
 import type { GitService } from '@deepseek-ai/dsh-git'
 import type { ReviewTarget } from './push-gate.ts'
 import type { ReviewFinding } from './review.ts'
@@ -156,6 +157,11 @@ function isLedgerDocument(value: unknown): value is LedgerDocument {
 /**
  * Store one branch record, trimming the document to the
  * {@link LEDGER_BRANCH_CAP} most recently reviewed branches.
+ *
+ * The read-modify-write runs under the repository write lock (worktrees of
+ * one repository share that queue), and the document is replaced atomically
+ * by writing a sibling temp file and renaming it over the target, so a failed
+ * write never truncates the previous content.
  * @param record - the record to keep under its branch key.
  */
 export async function writeLedger(
@@ -164,14 +170,28 @@ export async function writeLedger(
   signal: AbortSignal | undefined,
   record: LedgerRecord,
 ): Promise<void> {
-  const path = await ledgerPath(git, cwd, signal)
-  const records = await readLedgerFile(path)
-  records[record.branch] = record
-  const kept = Object.entries(records)
-    .sort(([, a], [, b]) => b.reviewedAt - a.reviewedAt)
-    .slice(0, LEDGER_BRANCH_CAP)
-  const next: LedgerDocument = {}
-  for (const [branch, entry] of kept) next[branch] = entry
-  await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, `${JSON.stringify(next, null, 2)}\n`, 'utf8')
+  await withRepoLock(cwd, async () => {
+    const path = await ledgerPath(git, cwd, signal)
+    const records = await readLedgerFile(path)
+    records[record.branch] = record
+    const kept = Object.entries(records)
+      .sort(([, a], [, b]) => b.reviewedAt - a.reviewedAt)
+      .slice(0, LEDGER_BRANCH_CAP)
+    const next: LedgerDocument = {}
+    for (const [branch, entry] of kept) next[branch] = entry
+    await mkdir(dirname(path), { recursive: true })
+    await writeAtomic(path, `${JSON.stringify(next, null, 2)}\n`)
+  }, signal)
+}
+
+/** Replace `path` atomically: write a sibling temp file, then rename it over the target. */
+async function writeAtomic(path: string, text: string): Promise<void> {
+  const temp = `${path}.${randomUUID()}.tmp`
+  try {
+    await writeFile(temp, text, 'utf8')
+    await rename(temp, path)
+  } finally {
+    // A leftover temp is harmless, and cleanup must not mask the write error.
+    await rm(temp, { force: true }).catch(() => undefined)
+  }
 }

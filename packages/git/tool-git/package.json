@@ -26,6 +26,10 @@
       "types": "./lib/types/review.d.ts",
       "default": "./lib/types/review.js"
     },
+    "./ledger": {
+      "types": "./lib/types/ledger.d.ts",
+      "default": "./lib/types/ledger.js"
+    },
     "./worktree": {
       "types": "./lib/types/worktree.d.ts",
       "default": "./lib/types/worktree.js"
