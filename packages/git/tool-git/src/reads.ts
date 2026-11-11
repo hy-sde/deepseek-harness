@@ -4,6 +4,9 @@
  * when its probe is clean, with the TS/git-CLI `ctx.git` service as the
  * fallback. Mutation inputs — `stageHunks` raw diffs, `commit` trees —
  * always stay on `ctx.git`; this facade deliberately has no add/commit/apply.
+ * One exception: index-vs-base diffs (`cached` with `base`) route to
+ * `ctx.git`, because `pi-vcs` has no verb for that combination and its
+ * `base` handling would silently widen to base→worktree.
  *
  * The facade is created once per tool execution (a single probe), so the
  * read surfaces share one backend decision for that call.
@@ -48,6 +51,7 @@ class VcsReads implements ReadSurface {
   readonly backend = 'vcs' as const
   constructor(
     private readonly vcs: VcsService,
+    private readonly git: GitService,
     private readonly cwd: string,
     private readonly signal: AbortSignal | undefined,
   ) {}
@@ -73,6 +77,11 @@ class VcsReads implements ReadSurface {
   }
 
   async diffText(options: ReadRange = {}): Promise<string> {
+    if (options.cached === true && options.base !== undefined) {
+      // pi-vcs has no index-vs-base verb; the git service builds
+      // `git diff --cached <base>` natively.
+      return this.git.diffText(this.cwd, { ...options, binary: true }, this.signal)
+    }
     return this.vcs.diff(this.cwd, options, this.signal)
   }
 }
@@ -136,7 +145,7 @@ export async function openReads(
   const vcs = ctx.get('vcs')
   if (vcs !== undefined) {
     const probe = await vcs.probe()
-    if (probe.available) return new VcsReads(vcs, cwd, signal)
+    if (probe.available) return new VcsReads(vcs, ctx.git, cwd, signal)
   }
   return new GitBackendReads(ctx.git, cwd, signal)
 }
