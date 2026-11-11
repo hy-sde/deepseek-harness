@@ -158,10 +158,15 @@ function isLedgerDocument(value: unknown): value is LedgerDocument {
  * Store one branch record, trimming the document to the
  * {@link LEDGER_BRANCH_CAP} most recently reviewed branches.
  *
- * The read-modify-write runs under the repository write lock (worktrees of
- * one repository share that queue), and the document is replaced atomically
- * by writing a sibling temp file and renaming it over the target, so a failed
- * write never truncates the previous content.
+ * The read-modify-write runs under the repository write lock keyed on the
+ * resolved ledger path: every worktree of one repository resolves the same
+ * `<git-common-dir>/dsh-review/ledger.json`, and `withRepoLock` maps that
+ * path to the primary repo root (or falls back to the path itself when the
+ * common dir lies outside any work tree), so concurrent ledger writes from
+ * different worktrees serialize on one key instead of racing on the shared
+ * document. The document is replaced atomically by writing a sibling temp
+ * file and renaming it over the target, so a failed write never truncates
+ * the previous content.
  * @param record - the record to keep under its branch key.
  */
 export async function writeLedger(
@@ -170,8 +175,8 @@ export async function writeLedger(
   signal: AbortSignal | undefined,
   record: LedgerRecord,
 ): Promise<void> {
-  await withRepoLock(cwd, async () => {
-    const path = await ledgerPath(git, cwd, signal)
+  const path = await ledgerPath(git, cwd, signal)
+  await withRepoLock(path, async () => {
     const records = await readLedgerFile(path)
     records[record.branch] = record
     const kept = Object.entries(records)

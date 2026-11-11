@@ -102,7 +102,12 @@ export interface VerifyPriorFindingStatus {
 export interface VerifyBlock {
   /** Closure status for each prior ledgered finding. */
   priorFindings: VerifyPriorFindingStatus[]
-  /** Files that changed since the recorded review (after the focus filter). */
+  /**
+   * Files that changed since the recorded review (after the focus filter).
+   * Exception: on the focus-miss path — the focus filter matched no delta
+   * file — this lists the full delta instead, so the caller sees what the
+   * skipped closure left unreviewed.
+   */
   deltaFiles: string[]
   /** True when nothing changed since the recorded review. */
   deltaEmpty: boolean
@@ -434,16 +439,22 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           // Focus-filtered empty: the tree changed, but every changed file
           // fell outside the focus filter. No reviewer examined the current
           // state, so neither the push gate nor the ledger may treat the
-          // recorded verdict as re-established; report the honest delta and
-          // leave both untouched.
+          // recorded verdict as re-established; report the honest delta,
+          // mirror the recorded verdict instead of affirmatively approving,
+          // and leave both untouched.
+          if (record.verdict !== 'ship') {
+            warnings.push('findings ledger unchanged: the previous record stands until a verify ships or a full review runs')
+          }
           const value: ReviewValue = {
             target,
             files: [],
             diffTruncated: false,
             findings: [],
-            verdict: 'ship',
-            verdictExplanation: 'No changed file matched the focus filter, so no closure review ran; the recorded verdict and findings stand unchanged.',
-            confidence: 1,
+            verdict: record.verdict,
+            verdictExplanation: record.verdict === 'ship'
+              ? 'No changed file matched the focus filter, so no closure review ran; the recorded ship verdict and its findings stand unchanged.'
+              : 'No changed file matched the focus filter, so no closure review ran; the recorded reject stands and its findings are unchanged.',
+            confidence: record.verdict === 'ship' ? 1 : 0,
             slices: [],
             errors: [],
             warnings,

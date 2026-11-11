@@ -694,6 +694,41 @@ describe('review findings ledger and verify mode', () => {
     expect(decision.allowed).toBe(false)
     resetFake()
   })
+
+  it('verify with a focus that matches no delta file mirrors a standing reject', async () => {
+    await commitUnique('seed')
+    seedCounter += 1
+    await writeFile(join(dir, 'src/a.ts'), `const a = ${seedCounter};\n`)
+    runGit(['add', 'src/a.ts'])
+    // A reviewer judging the change incorrect is the full-review path to a standing reject record.
+    cannedRuns = [{
+      overall_correctness: 'incorrect',
+      explanation: 'broken',
+      confidence: 1,
+      findings: [{ title: 'handle null', body: 'deref risk', priority: 2, confidence: 0.8, file_path: 'src/a.ts', line_start: 1, line_end: 1 }],
+    }]
+    await call('review', { target: 'staged' })
+    resetFake()
+    expect((await readRecord()).verdict).toBe('reject')
+    await writeFile(join(dir, 'src/b.ts'), 'const b = 22;\n')
+    runGit(['add', 'src/b.ts'])
+    cannedRuns = [{ overall_correctness: 'correct', explanation: 'unused', confidence: 1 }]
+    const ledgerBefore = readFileSync(ledgerFile(), 'utf8')
+    const root = runGit(['rev-parse', '--show-toplevel']).trim()
+    const stagedBefore = latestStagedVerdict(root)
+    const value = (await call('review', { mode: 'verify', target: 'staged', focus: ['docs/'] })).value as VerifyValueShape
+    expect(value.warnings).toContain('no changed files matched the focus filter: docs')
+    expect(value.warnings).toContain('findings ledger unchanged: the previous record stands until a verify ships or a full review runs')
+    expect(value.verdict).toBe('reject')
+    expect(value.verdictExplanation).toContain('the recorded reject stands')
+    expect(value.confidence).toBe(0)
+    expect(value.verify?.deltaEmpty).toBe(false)
+    expect(value.verify?.deltaFiles).toEqual(['src/a.ts', 'src/b.ts'])
+    expect(readFileSync(ledgerFile(), 'utf8')).toBe(ledgerBefore)
+    expect(latestStagedVerdict(root)).toBe(stagedBefore)
+    resetFake()
+  })
+
   it('verify spills oversized delta patches and ignores the range argument', async () => {
     await fullReviewWith([{ title: 'handle null', body: 'deref risk', priority: 2, confidence: 0.8, file_path: 'src/a.ts', line_start: 1, line_end: 1 }])
     runGit(['reset', '-q', '--hard'])
@@ -991,6 +1026,39 @@ describe('findings ledger helpers', () => {
     rmSync(ledgerFile, { recursive: true })
     await writeLedger(git, ledgerDir, undefined, fakeRecord('atomic-a', LEDGER_BRANCH_CAP + 101))
     expect(Object.keys(JSON.parse(readFileSync(ledgerFile, 'utf8')) as Record<string, unknown>)).toContain('atomic-a')
+  })
+
+  it('writeLedger serializes concurrent writes from two worktrees of one repository', async () => {
+    const git = ledgerCtx.get('git')
+    const repoDir = await mkdtemp(join(tmpdir(), 'dsh-ledger-wt-'))
+    const sibling = `${repoDir}-sibling`
+    const runIn = (cwd: string, args: string[]): string => {
+      const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+      if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
+      return result.stdout
+    }
+    try {
+      runIn(repoDir, ['init', '-q'])
+      runIn(repoDir, ['config', 'user.email', 't@example.com'])
+      runIn(repoDir, ['config', 'user.name', 't'])
+      await writeFile(join(repoDir, 'seed.txt'), 'seed\n')
+      runIn(repoDir, ['add', 'seed.txt'])
+      runIn(repoDir, ['commit', '-q', '-m', 'seed'])
+      runIn(repoDir, ['worktree', 'add', '-q', '-b', 'wb', sibling, 'HEAD'])
+      // Both writes target the shared <git-common-dir>/dsh-review/ledger.json; the lock
+      // must serialize them even though the two cwds are different worktrees.
+      await Promise.all([
+        writeLedger(git, repoDir, undefined, fakeRecord('wa', LEDGER_BRANCH_CAP + 200)),
+        writeLedger(git, sibling, undefined, fakeRecord('wb', LEDGER_BRANCH_CAP + 201)),
+      ])
+      const shared = join(repoDir, '.git', 'dsh-review', 'ledger.json')
+      const keys = Object.keys(JSON.parse(readFileSync(shared, 'utf8')) as Record<string, unknown>)
+      expect(keys).toContain('wa')
+      expect(keys).toContain('wb')
+    } finally {
+      rmSync(sibling, { recursive: true, force: true })
+      rmSync(repoDir, { recursive: true, force: true })
+    }
   })
 
   it('readLedger self-heals corrupt or wrong-shaped files to an empty document', async () => {
