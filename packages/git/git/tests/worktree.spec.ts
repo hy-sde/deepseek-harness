@@ -2,8 +2,8 @@
  * Real-repository integration for the worktree pool: temp repositories are
  * initialized, slots are acquired/released/pruned/destroyed through the
  * engine against actual `git` through the subprocess seam, and every safety
- * invariant (lease ids, dirty/leased/unmerged guards, corrupt-state recovery)
- * is exercised with the real filesystem.
+ * invariant (durable lease ids, persisted slot phases, verify-driven damage
+ * recovery, corrupt-state recovery) is exercised with the real filesystem.
  */
 
 import { mkdtemp, mkdir, rm, writeFile, readFile } from 'node:fs/promises'
@@ -11,7 +11,7 @@ import { tmpdir, homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { realpathSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import { GitService } from '../src/service.ts'
@@ -19,6 +19,7 @@ import {
   acquireWorktree,
   releaseWorktree,
   listWorktrees,
+  verifyWorktrees,
   pruneWorktrees,
   destroyWorktree,
   primaryRepoRoot,
@@ -351,6 +352,86 @@ describe('maxSlots cap', () => {
   })
 })
 
+describe('slot lifecycle (persisted phases)', () => {
+  it('listWorktrees reads persisted phases and forks git only for pool resolution', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const spy = vi.spyOn(f.git, 'run')
+    const listed = await listWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(listed).toHaveLength(2)
+    // Exactly the pool resolution (inside-work-tree + git-common-dir): no per-slot probes.
+    expect(spy.mock.calls).toHaveLength(2)
+    // External mutations are invisible to a read: the parked slot stays idle.
+    await writeFile(join(a.path, 'wip.txt'), 'wip\n')
+    const again = await listWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(again.find(item => item.path === a.path)).toMatchObject({ status: 'idle', dirty: false })
+    expect(spy.mock.calls).toHaveLength(4)
+    spy.mockRestore()
+  })
+
+  it('verifyWorktrees parks a repaired slot and acquire reuses it', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    await writeFile(join(a.path, 'wip.txt'), 'wip\n')
+    const b = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    expect(b.path).not.toBe(a.path)
+    // acquire recorded the failed probe as damage with its cause.
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    const damaged = JSON.parse(await readFile(statePath, 'utf8')) as {
+      worktrees: Array<{ path: string; phase: string; cause?: string }>
+    }
+    expect(damaged.worktrees.find(item => item.path === a.path)).toMatchObject({
+      phase: 'damaged',
+      cause: 'dirty',
+    })
+    // Repair, then verify re-probes and parks the slot again.
+    await rm(join(a.path, 'wip.txt'))
+    const verified = await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(verified.find(item => item.path === a.path)).toMatchObject({ status: 'idle', dirty: false })
+    const again = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    expect(again.path).toBe(a.path)
+  })
+
+  it('verifyWorktrees records a missing slot as damaged/missing and prune refuses damaged', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    await rm(a.path, { recursive: true, force: true })
+    // list computes missing from the filesystem stat only.
+    const listed = await listWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(listed[0]).toMatchObject({ status: 'damaged', exists: false })
+    // verify persists the phase + cause.
+    await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    const state = JSON.parse(await readFile(statePath, 'utf8')) as {
+      worktrees: Array<{ path: string; phase: string; cause?: string }>
+    }
+    expect(state.worktrees[0]).toMatchObject({ path: a.path, phase: 'damaged', cause: 'missing' })
+    // prune trusts persisted phases: damaged slots are skipped, not removed.
+    const plan = await pruneWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(plan.candidates).toHaveLength(0)
+    expect(plan.skipped).toContainEqual(expect.objectContaining({ path: a.path, reason: 'damaged (missing)' }))
+  })
+
+  it('acquire records damage with its cause and prune skips it', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    await writeFile(join(a.path, 'wip.txt'), 'wip\n')
+    const b = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    expect(b.path).not.toBe(a.path)
+    const plan = await pruneWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(plan.candidates).toHaveLength(0)
+    expect(plan.skipped).toContainEqual(expect.objectContaining({ path: a.path, reason: 'damaged (dirty)' }))
+    expect(plan.skipped).toContainEqual(expect.objectContaining({ path: b.path, reason: 'leased' }))
+    // The damaged slot still exists — prune never touches it.
+    expect(f.runIn(a.path, ['rev-parse', '--is-inside-work-tree']).trim()).toBe('true')
+  })
+})
+
 describe('corrupt state recovery', () => {
   it('rebuilds entries as damaged/unverified and keeps the safety guards', async () => {
     const f = await makeFixture()
@@ -360,7 +441,15 @@ describe('corrupt state recovery', () => {
     const listed = await listWorktrees(f.git, f.dir, { settings: { root: f.pool } })
     expect(listed).toHaveLength(1)
     expect(listed[0]).toMatchObject({ status: 'damaged', exists: true })
-    // Unverified rebuilt entry has no lease id → the original lease cannot release it.
+    // verify re-probes the adopted entry and persists the verdict (parked when clean+merged).
+    const verified = await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(verified[0]).toMatchObject({ status: 'idle', exists: true })
+    const verifiedState = JSON.parse(await readFile(statePath, 'utf8')) as {
+      worktrees: Array<{ phase: string; cause?: string }>
+    }
+    expect(verifiedState.worktrees[0]).toMatchObject({ phase: 'parked' })
+    expect(verifiedState.worktrees[0].cause).toBeUndefined()
+    // The rebuilt entry has no lease id → the original lease cannot release it.
     await expectCode(
       releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } }),
       'LeaseMismatch',
