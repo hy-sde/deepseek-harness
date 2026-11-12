@@ -18,7 +18,7 @@ import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { openReads } from './reads.ts'
 import type { OrchestrationPolicyService } from '@deepseek-ai/dsh-orchestration-policy'
 import { resolvePosture } from '@deepseek-ai/dsh-orchestration-policy'
-import { decidePushGate, headOf, indexTreeOf, latestStagedVerdict } from './push-gate.ts'
+import { decidePushGate, headOf, indexTreeOf, loadStagedVerdict } from './push-gate.ts'
 import {
   formatCommitMessage,
   assignLockFilesToPlan,
@@ -30,7 +30,7 @@ import {
   vcs,
   conventional,
 } from '@deepseek-ai/dsh-git'
-import type { CommitType, NumstatEntry, SplitCommitGroup, SplitCommitPlan } from '@deepseek-ai/dsh-git'
+import type { CommitType, GitService, NumstatEntry, SplitCommitGroup, SplitCommitPlan } from '@deepseek-ai/dsh-git'
 
 /** Commit-type vocabulary for schema + validation (llm-git canonical, 22 types). */
 const COMMIT_TYPES: readonly CommitType[] = [...conventional.COMMIT_TYPE_ORDER]
@@ -545,7 +545,7 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
         if (posture === 'review-gated') {
           const gateDecision = decidePushGate({
             posture,
-            record: latestStagedVerdict(root),
+            record: await loadStagedVerdict(git, cwd, exec.signal, root),
             beforeHead: await headOf(git, cwd, exec.signal),
             indexTree: await indexTreeOf(git, cwd, exec.signal),
             requireVerdict: pushGate.requireVerdict,
@@ -646,6 +646,11 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
               { type: group.type, scope: group.scope, details: group.details, issueRefs: group.issueRefs },
               normalizeSummary(group.summary),
             )
+            // Commit-boundary integrity: the baseline is captured after this
+            // group's hunks are staged and verified immediately after the
+            // commit (hooks included), so a pre-commit hook that silently
+            // drops staged content cannot pass unnoticed.
+            const boundary = await captureCommitBoundary(git, cwd, exec.signal)
             try {
               await git.commit(cwd, message, { signal: exec.signal })
             } catch (error: unknown) {
@@ -655,6 +660,7 @@ export function applyCommitApplyTool(ctx: Context, _config: { timeoutMs?: number
                  + `${position} of ${order.length} commits created; no changes were lost.`,
               )
             }
+            await assertCommitBoundary(git, cwd, exec.signal, boundary, warnings, `commit ${position + 1} of ${order.length}`)
             const hash = (await git.log(cwd, { max: 1, signal: exec.signal }))[0]?.hash ?? ''
             created.push({
               position: position + 1,
@@ -755,4 +761,127 @@ function renderCommitApply(value: CommitApplyValue): string {
   }
   for (const warning of value.warnings) lines.push(`warning: ${warning}`)
   return lines.join('\n')
+}
+
+/** Totals of a `git diff --stat` summary line: files changed, insertions, deletions. */
+export interface CommitBoundaryTotals {
+  files: number
+  insertions: number
+  deletions: number
+}
+
+/** The empty tree object — stand-in for HEAD when the repository has no commits yet. */
+const EMPTY_TREE_SHA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
+const STAT_TOTALS_PATTERN = /(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/
+
+/**
+ * Parse the summary totals line of `git diff --stat` output.
+ * @param statText - raw `--stat` output (only its summary line is read).
+ * @returns the totals; all zeros when the diff is empty or unparseable.
+ */
+export function parseStatTotals(statText: string): CommitBoundaryTotals {
+  const match = STAT_TOTALS_PATTERN.exec(statText)
+  if (match === null) return { files: 0, insertions: 0, deletions: 0 }
+  return { files: Number(match[1]), insertions: Number(match[2] ?? 0), deletions: Number(match[3] ?? 0) }
+}
+
+function formatTotals(totals: CommitBoundaryTotals): string {
+  return `${totals.files} file(s), +${totals.insertions}/-${totals.deletions}`
+}
+
+/**
+ * Thrown when the content that left `git commit` diverges from the staged
+ * baseline that entered it — the signature of a pre-commit hook (lefthook)
+ * that hid unstaged changes and failed to restore them, dropping staged work
+ * silently while the commit itself reports success. Carries the pre-commit
+ * HEAD and the recovery ref written before this error was raised.
+ */
+export class CommitBoundaryError extends Error {
+  /** Staged baseline totals the commit was expected to contain. */
+  readonly expected: CommitBoundaryTotals
+  /** Totals the commit actually contains. */
+  readonly actual: CommitBoundaryTotals
+  /** Pre-commit HEAD (the empty-tree sha when the repository had no commits). */
+  readonly oldHead: string
+  /** Ref pointing at the pre-commit HEAD; undefined for an unborn HEAD. */
+  readonly recoveryRef: string | undefined
+
+  constructor(args: {
+    expected: CommitBoundaryTotals
+    actual: CommitBoundaryTotals
+    oldHead: string
+    recoveryRef: string | undefined
+    label: string
+  }) {
+    const recoveryHint = args.recoveryRef === undefined
+      ? 'The repository had no commits before this one, so no recovery ref was written.'
+      : `The pre-commit HEAD was saved to ${args.recoveryRef}.`
+    super(
+      `commit boundary integrity check failed for ${args.label}: staged content did not survive the commit `
+      + `(expected ${formatTotals(args.expected)}, actual ${formatTotals(args.actual)}). `
+      + 'A pre-commit hook may have failed to restore the worktree changes it hid — the known silent lefthook '
+      + 'restore failure drops staged work while the commit itself succeeds. '
+      + `${recoveryHint} Dangling pre-commit worktree state can also be recovered with `
+      + '`git fsck --unreachable | grep commit`: the dangling two-parent stash-style commit tree is the pre-commit worktree.',
+    )
+    this.name = 'CommitBoundaryError'
+    this.expected = args.expected
+    this.actual = args.actual
+    this.oldHead = args.oldHead
+    this.recoveryRef = args.recoveryRef
+  }
+}
+
+/** Per-commit boundary snapshot: pre-commit HEAD identity plus the staged totals entering the commit. */
+interface CommitBoundary {
+  oldHead: string
+  expected: CommitBoundaryTotals
+}
+
+async function captureCommitBoundary(git: GitService, cwd: string, signal: AbortSignal | undefined): Promise<CommitBoundary> {
+  // Two cheap reads: HEAD identity (empty-tree sha on an unborn HEAD) and the
+  // staged-diff totals this commit is expected to carry.
+  const headRun = await git.run(['rev-parse', '--verify', 'HEAD'], { cwd, signal })
+  const oldHead = headRun.exitCode === 0 ? headRun.stdout.trim() : EMPTY_TREE_SHA
+  const statRun = await git.run(['diff', '--cached', '--stat'], { cwd, signal })
+  return { oldHead, expected: parseStatTotals(statRun.stdout) }
+}
+
+/**
+ * Verify one commit against its staged baseline. A deficit in any total means
+ * staged content was silently dropped: the recovery ref is written FIRST, then
+ * the typed error is thrown. A surplus is tolerated with a warning — hooks may
+ * legitimately add content (lefthook's `stage_fixed: true` re-stages lint
+ * fixes) but must never remove it.
+ */
+async function assertCommitBoundary(
+  git: GitService,
+  cwd: string,
+  signal: AbortSignal | undefined,
+  boundary: CommitBoundary,
+  warnings: string[],
+  label: string,
+): Promise<void> {
+  const statRun = await git.run(['diff', '--stat', `${boundary.oldHead}..HEAD`], { cwd, signal })
+  const actual = parseStatTotals(statRun.stdout)
+  const deficit = actual.files < boundary.expected.files
+    || actual.insertions < boundary.expected.insertions
+    || actual.deletions < boundary.expected.deletions
+  if (deficit) {
+    const recoveryRef = boundary.oldHead === EMPTY_TREE_SHA
+      ? undefined
+      : `refs/recovery/pre-commit-${boundary.oldHead.slice(0, 8)}`
+    if (recoveryRef !== undefined) {
+      await git.run(['update-ref', recoveryRef, boundary.oldHead], { cwd, signal })
+    }
+    throw new CommitBoundaryError({ expected: boundary.expected, actual, oldHead: boundary.oldHead, recoveryRef, label })
+  }
+  const surplus: string[] = []
+  if (actual.files > boundary.expected.files) surplus.push(`${actual.files - boundary.expected.files} file(s)`)
+  if (actual.insertions > boundary.expected.insertions) surplus.push(`${actual.insertions - boundary.expected.insertions} insertion(s)`)
+  if (actual.deletions > boundary.expected.deletions) surplus.push(`${actual.deletions - boundary.expected.deletions} deletion(s)`)
+  if (surplus.length > 0) {
+    warnings.push(`commit boundary: the commit carries more than its staged baseline (${surplus.join(', ')}) — a pre-commit hook added content (e.g. lefthook \`stage_fixed: true\`)`)
+  }
 }
