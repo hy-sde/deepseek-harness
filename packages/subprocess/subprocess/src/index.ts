@@ -15,6 +15,7 @@ import type { SubprocessHandle, SubprocessSpawnSpec } from './types.ts'
 import type { SubprocessTerminalEnvironment, SubprocessTerminalHandle, SubprocessTerminalSpawnSpec } from './types.ts'
 
 export { DSH_ENV_PREFIX } from './types.ts'
+export * from './termination-ladder.ts'
 export type {
   CollectedOutput,
   DshEnvironment,

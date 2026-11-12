@@ -28,6 +28,8 @@ import {
 } from '@deepseek-ai/dsh-subagent'
 import {
   scrubbedParentEnv,
+  subprocessHandleTarget,
+  TerminationLadder,
   type SubprocessHandle,
   type SubprocessOutcome,
   type SubprocessSpawnSpec,
@@ -262,7 +264,9 @@ export async function consumeClaudeQuery(
 
 /**
  * Close the official query, terminate the managed range, and wait for the
- * subprocess owner to prove it is quiescent.
+ * subprocess owner to prove it is quiescent. The ladder runs with zero grace
+ * windows and without ending stdin: the official SDK query owns the child's
+ * stdin writer.
  * @param query - official SDK query, when creation reached that point.
  * @param child - shared-service handle that owns the CLI managed range, including
  * a published handle whose direct result later rejects.
@@ -283,11 +287,17 @@ export async function disposeClaudeCodeChild(
     failures.push(thrown(error))
   }
 
-  child.terminate()
+  // The official SDK query owns the child's stdin writer, so the ladder target
+  // omits `endStdin`.
+  const { endStdin: _ownedByQuery, ...target } = subprocessHandleTarget(child)
   try {
-    await child.waitForExit()
+    await new TerminationLadder({ eofGraceMs: 0, termGraceMs: 0 }).run(target)
   } catch (error: unknown) {
-    failures.push(thrown(error))
+    if (error instanceof AggregateError) {
+      for (const inner of error.errors) failures.push(thrown(inner))
+    } else {
+      failures.push(thrown(error))
+    }
   }
 
   const firstFailure = failures[0]

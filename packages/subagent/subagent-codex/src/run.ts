@@ -22,6 +22,7 @@ import {
   type SubagentStartRequest,
   type SubagentStopReason,
 } from '@deepseek-ai/dsh-subagent'
+import { subprocessHandleTarget, TerminationLadder } from '@deepseek-ai/dsh-subprocess'
 import type {
   SubprocessHandle,
   SubprocessOutcome,
@@ -183,7 +184,9 @@ export function textTask(prompt: readonly ContentBlock[]): string[] {
 
 /**
  * Close the private wire, terminate the managed range, and wait for the
- * subprocess owner to prove it is quiescent.
+ * subprocess owner to prove it is quiescent. The ladder runs with zero grace
+ * windows: this backend intentionally ends stdin and terminates back-to-back,
+ * relying on the shared service's own escalation.
  * @param wire - private app-server protocol connection.
  * @param child - shared-service handle that owns the managed range.
  */
@@ -199,13 +202,7 @@ export async function disposeCodexChild(
     () => {},
   )
   try {
-    child.stdin?.end()
-  } catch {
-    // A concurrently closed stdin does not change range ownership below.
-  }
-  child.terminate()
-  try {
-    await child.waitForExit()
+    await new TerminationLadder({ eofGraceMs: 0, termGraceMs: 0 }).run(subprocessHandleTarget(child))
   } catch (error: unknown) {
     throw new CodexRunFailure({
       stage: 'teardown',

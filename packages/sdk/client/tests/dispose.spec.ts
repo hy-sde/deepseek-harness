@@ -105,7 +105,7 @@ describe('disposeRuntimeProcess', () => {
 
   it('tier 2: a child that ignores EOF but honors SIGTERM dies on the middle rung', async () => {
     const fake = new FakeChild({ diesOn: 'SIGTERM', delayMs: 5 })
-    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 1000 }, 'linux')
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 20 }, 'linux')
     expect(fake.stdinEnded).toBe(true)
     expect(fake.kills).toEqual(['SIGTERM'])
     expect(fake.signalCode).toBe('SIGTERM')
@@ -114,7 +114,7 @@ describe('disposeRuntimeProcess', () => {
 
   it('recognizes a child that exits synchronously on SIGTERM', async () => {
     const fake = new FakeChild({ diesOn: 'SIGTERM', synchronousExit: true })
-    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 1000 }, 'linux')
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 20 }, 'linux')
     expect(fake.kills).toEqual(['SIGTERM'])
     expect(fake.signalCode).toBe('SIGTERM')
     expect(fake.listenerCount('exit')).toBe(0)
@@ -147,19 +147,19 @@ describe('disposeRuntimeProcess', () => {
       return true
     })
 
-    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1, disposeGraceMs: 10 }, 'linux')
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 10, disposeGraceMs: 10 }, 'linux')
     expect(fake.kills).toEqual(['SIGTERM'])
   })
 
   it('walks the ladder for a child spawned without a stdin pipe', async () => {
     const fake = new FakeChild({ stdin: false, diesOn: 'SIGTERM', delayMs: 5 })
-    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 1000 }, 'linux')
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 20 }, 'linux')
     expect(fake.kills).toEqual(['SIGTERM'])
   })
 
   it('skips the redundant SIGTERM tier on Windows and awaits forced exit', async () => {
     const fake = new FakeChild({ diesOn: 'SIGTERM', delayMs: 5 })
-    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 1000 }, 'win32')
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 20, disposeGraceMs: 20 }, 'win32')
     expect(fake.kills).toEqual(['SIGKILL'])
     expect(fake.signalCode).toBe('SIGKILL')
   })
@@ -175,7 +175,7 @@ describe('disposeRuntimeProcess', () => {
 
     await expect(disposeRuntimeProcess(
       asChild(fake),
-      { disposeEofGraceMs: 1, disposeGraceMs: 1000 },
+      { disposeEofGraceMs: 1, disposeGraceMs: 1 },
       'win32',
     )).rejects.toBe(failure)
     expect(fake.kills).toEqual(['SIGKILL'])
@@ -190,7 +190,7 @@ describe('disposeRuntimeProcess', () => {
 
     await expect(disposeRuntimeProcess(
       asChild(fake),
-      { disposeEofGraceMs: 1, disposeGraceMs: 1000 },
+      { disposeEofGraceMs: 1, disposeGraceMs: 1 },
       'win32',
     )).rejects.toMatchObject({ message: 'SIGKILL failed', cause: failure })
     expect(fake.listenerCount('error')).toBe(0)
@@ -206,7 +206,7 @@ describe('disposeRuntimeProcess', () => {
 
     await expect(disposeRuntimeProcess(
       asChild(fake),
-      { disposeEofGraceMs: 1, disposeGraceMs: 10 },
+      { disposeEofGraceMs: 10, disposeGraceMs: 10 },
       'win32',
     )).rejects.toThrow('runtime process did not exit within 10ms after SIGKILL was refused')
     expect(fake.listenerCount('error')).toBe(0)
@@ -222,7 +222,7 @@ describe('disposeRuntimeProcess', () => {
 
     await expect(disposeRuntimeProcess(
       asChild(fake),
-      { disposeEofGraceMs: 1, disposeGraceMs: 10 },
+      { disposeEofGraceMs: 10, disposeGraceMs: 10 },
       'win32',
     )).rejects.toThrow('runtime process did not exit within 10ms after SIGKILL was accepted')
     expect(fake.listenerCount('error')).toBe(0)

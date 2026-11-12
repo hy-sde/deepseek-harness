@@ -15496,6 +15496,9 @@ importers:
       '@deepseek-ai/dsh':
         specifier: workspace:*
         version: link:../../../apps/cli
+      '@deepseek-ai/dsh-subprocess':
+        specifier: workspace:*
+        version: link:../../subprocess/subprocess
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~

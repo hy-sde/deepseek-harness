@@ -26,7 +26,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh": "workspace:*"
+    "@deepseek-ai/dsh": "workspace:*",
+    "@deepseek-ai/dsh-subprocess": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-llm": "workspace:*",

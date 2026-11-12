@@ -21,6 +21,7 @@ import { brandString } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { AssistantOutputFold, settleRunResult, subprocessRunHandle } from '@deepseek-ai/dsh-subagent'
 import type { SubagentResult, SubagentRun, SubagentStartRequest, SubagentStopReason } from '@deepseek-ai/dsh-subagent'
+import { subprocessHandleTarget, TerminationLadder } from '@deepseek-ai/dsh-subprocess'
 import type { SubprocessHandle, SubprocessOutcome, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 
 /** Fixed response to child permission requests: reject by default, or select the first allow option. */
@@ -57,11 +58,12 @@ export interface AcpRunSpec {
    */
   disposeEofGraceMs: number
   /**
-   * Process-observation and termination-escalation grace (ms). Failure
-   * classification waits at most this long for structured exit facts; POSIX
-   * dispose also waits this long after `SIGTERM` before `SIGKILL`, while
-   * Windows force-terminates directly. The plugin fills it from
-   * `disposeGraceMs`.
+   * POSIX SIGTERM observation window (ms) between the EOF grace and the
+   * managed range's own SIGTERM→SIGKILL escalation; Windows skips this tier
+   * and force-terminates directly. Failure classification also waits at most
+   * this long for structured exit facts. The plugin fills it from
+   * `disposeGraceMs`; the provider config rejects `disposeEofGraceMs` values
+   * below it at load.
    */
   disposeGraceMs: number
   /**
@@ -169,46 +171,22 @@ function permissionRequestKind(kind: ToolKind | null | undefined): ToolKind | 'u
     : 'unknown'
 }
 
-/** Bounded managed-range exit wait: observes the handle's range until it is empty or `ms` elapses. */
-async function rangeExitsWithin(child: SubprocessHandle, ms: number): Promise<boolean> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => { controller.abort() }, ms)
-  try {
-    return await child.waitForExit(controller.signal)
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 /**
- * Cooperative teardown ladder for an out-of-process agent, over the seam's
- * public verbs; resolves only at whole-range quiescence: stdin EOF (the child's
- * window to flush persistence and reap its own descendants), then the
- * terminate() escalation (SIGTERM → spec grace → SIGKILL) and its
- * whole-range exit proof.
+ * Cooperative teardown for an out-of-process agent, riding the shared
+ * `TerminationLadder` over the seam's public verbs; resolves only at
+ * whole-range quiescence: stdin EOF (the child's window to flush persistence
+ * and reap its own descendants), then the POSIX SIGTERM window, then the
+ * terminate() escalation and its whole-range exit proof.
  * @param child - the spawned ACP child's handle.
  * @param eofGraceMs - tier-1 window after stdin EOF.
+ * @param termGraceMs - POSIX SIGTERM window before the forced-escalation wait.
  */
-export async function disposeAcpChild(child: SubprocessHandle, eofGraceMs: number): Promise<void> {
-  const failures: Error[] = []
-  child.stdin?.end()
-  let exited = false
-  try {
-    exited = await rangeExitsWithin(child, eofGraceMs)
-  } catch (error: unknown) {
-    failures.push(toError(error))
-  }
-  if (exited) return
-  // terminate() owns the bounded SIGTERM→SIGKILL timer. Its unbounded wait is
-  // the process owner's exit proof, not a second derived grace that can overflow.
-  child.terminate()
-  try {
-    await child.waitForExit()
-  } catch (error: unknown) {
-    failures.push(toError(error))
-  }
-  if (failures.length === 1) throw failures[0] as Error
-  if (failures.length > 1) throw new AggregateError(failures, 'ACP subprocess teardown failed')
+export async function disposeAcpChild(
+  child: SubprocessHandle,
+  eofGraceMs: number,
+  termGraceMs: number,
+): Promise<void> {
+  await new TerminationLadder({ eofGraceMs, termGraceMs }).run(subprocessHandleTarget(child))
 }
 
 /**
@@ -408,7 +386,7 @@ export async function startAcpRun(request: SubagentStartRequest, spec: AcpRunSpe
 
   // Startup rollback and the published handle share one process teardown.
   let processDisposal: Promise<void> | undefined
-  const disposeProcess = (): Promise<void> => (processDisposal ??= disposeAcpChild(child, spec.disposeEofGraceMs))
+  const disposeProcess = (): Promise<void> => (processDisposal ??= disposeAcpChild(child, spec.disposeEofGraceMs, spec.disposeGraceMs))
 
   // ACP exposes no complete assistant messages, so the shared fold selects its
   // accumulated assistant text.
