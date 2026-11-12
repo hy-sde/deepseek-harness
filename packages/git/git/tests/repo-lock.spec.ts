@@ -1,75 +1,148 @@
 /**
- * Tests for `withRepoLock`: per-primary-root serialization of in-process
- * mutating blocks (worktree-unified keying), failure isolation, abort checks.
+ * Tests for `withRepoLock`/`withPathLock`: queue keying by git common dir
+ * (worktrees of one repository share one queue), explicit path-scope keying,
+ * reentrance detection, failure isolation, and abort checks.
+ * @module
  */
 
-import { mkdtemp } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { rmSync } from 'node:fs'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { mkdirSync, rmSync } from 'node:fs'
+import { realpathSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { withRepoLock } from '../src/repo-lock.ts'
+import { ReentrantLockError, withPathLock, withRepoLock } from '../src/repo-lock.ts'
 
-let root: string
-let sub: string
+let root = ''
+let sub = ''
+const realRepos: string[] = []
 
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'dsh-git-lock-'))
-  mkdirSync(join(root, '.git'), { recursive: true })
+  // An empty .git dir keeps this fixture out of real git's hands: the queue
+  // key falls back to the in-process discovery of ./vcs.ts.
+  await mkdir(join(root, '.git'), { recursive: true })
   sub = join(root, 'sub')
-  mkdirSync(sub, { recursive: true })
+  await mkdir(sub, { recursive: true })
 })
 
 afterAll(() => {
   rmSync(root, { recursive: true, force: true })
+  for (const dir of realRepos) rmSync(dir, { recursive: true, force: true })
 })
+
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve!: () => void
+  const promise = new Promise<void>((resolvePromise) => { resolve = resolvePromise })
+  return { promise, resolve }
+}
+
+function gitRun(cwd: string, args: string[]): void {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
+}
+
+/** Real repository with one linked worktree, for common-dir keying proofs. */
+async function makeRealRepo(): Promise<{ dir: string; wt: string }> {
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-git-lock-repo-'))
+  realRepos.push(dir)
+  gitRun(dir, ['init', '-q', '-b', 'master'])
+  gitRun(dir, ['config', 'user.email', 'lock@test'])
+  gitRun(dir, ['config', 'user.name', 'lock'])
+  gitRun(dir, ['config', 'commit.gpgsign', 'false'])
+  await writeFile(join(dir, 'seed.txt'), 'seed\n')
+  gitRun(dir, ['add', '.'])
+  gitRun(dir, ['commit', '-q', '-m', 'init'])
+  const wt = join(dir, 'wt')
+  gitRun(dir, ['worktree', 'add', '--detach', wt, 'master'])
+  return { dir, wt }
+}
 
 describe('withRepoLock', () => {
   it('keys worktrees/subdirs of the same repo on one queue (shared serialization)', async () => {
     const order: string[] = []
-    const release: Array<() => void> = []
-    const slow = async () => {
-      await new Promise<void>(resolve => release.push(resolve))
+    const started = deferred()
+    const gate = deferred()
+    const slow = async (): Promise<void> => {
+      started.resolve()
+      await gate.promise
       order.push('slow')
     }
-    const fast = async () => {
+    const fast = async (): Promise<void> => {
       order.push('fast')
     }
     const first = withRepoLock(sub, slow)
-    // Second acquisition on the SAME repo must queue behind the first.
+    await started.promise
+    expect(order).toEqual([])
     const second = withRepoLock(root, fast)
-    await new Promise(setImmediate)
-    expect(order).toEqual([]) // nothing ran yet — second queued behind first
-    release[0]?.()
+    gate.resolve()
     await first
+    expect(order).toEqual(['slow'])
     await second
     expect(order).toEqual(['slow', 'fast'])
   })
 
+  it('keys a linked worktree and the main checkout on one queue', async () => {
+    const { dir, wt } = await makeRealRepo()
+    // Same queue key: nesting the worktree cwd inside the main checkout's
+    // block reports the reentrance instead of running as a second queue.
+    const error = await withRepoLock(dir, () => withRepoLock(wt, async () => 'inner')).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(ReentrantLockError)
+    expect(error).toMatchObject({ key: `repo:${realpathSync(join(dir, '.git'))}` })
+  })
+
+  it('throws ReentrantLockError on nested same-key acquisition', async () => {
+    const error = await withRepoLock(root, () => withRepoLock(sub, async () => 'inner')).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(ReentrantLockError)
+    expect(error).toMatchObject({ code: 'ReentrantLock', key: `repo:${root}`, holder: expect.any(String) })
+  })
+
+  it('allows nesting a different key', async () => {
+    const inner = await withRepoLock(root, () => withPathLock(join(root, 'other'), async () => 'nested'))
+    expect(inner).toBe('nested')
+  })
+
   it('a failing block does not poison the queue for the next caller', async () => {
-    const attempts: string[] = []
-    await expect(
-      withRepoLock(root, async () => {
-        attempts.push('fail')
-        throw new Error('boom')
-      }),
-    ).rejects.toThrow('boom')
-    await withRepoLock(root, async () => {
-      attempts.push('ok')
-    })
-    expect(attempts).toEqual(['fail', 'ok'])
+    await expect(withRepoLock(sub, async () => {
+      throw new Error('boom')
+    })).rejects.toThrow('boom')
+    await expect(withRepoLock(root, async () => 'after')).resolves.toBe('after')
   })
 
   it('honors an already-aborted signal by refusing to run', async () => {
     const controller = new AbortController()
     controller.abort()
-    await expect(
-      withRepoLock(root, async () => 'ran', controller.signal),
-    ).rejects.toThrow(/aborted/)
+    await expect(withRepoLock(root, async () => 'never', controller.signal)).rejects.toThrow('operation was aborted while waiting for the repository lock')
   })
 
   it('returns the block result', async () => {
-    const result = await withRepoLock(root, async () => 42)
-    expect(result).toBe(42)
+    await expect(withRepoLock(sub, async () => 42)).resolves.toBe(42)
+  })
+})
+
+describe('withPathLock', () => {
+  it('keeps distinct paths distinct', async () => {
+    const order: string[] = []
+    const aStarted = deferred()
+    const aGate = deferred()
+    const bStarted = deferred()
+    const first = withPathLock(join(root, 'a'), async () => {
+      aStarted.resolve()
+      await aGate.promise
+      order.push('a')
+    })
+    await aStarted.promise
+    const second = withPathLock(join(root, 'b'), async () => {
+      bStarted.resolve()
+      order.push('b')
+    })
+    // b runs to completion while a still holds its queue: distinct keys.
+    await bStarted.promise
+    expect(order).toEqual(['b'])
+    aGate.resolve()
+    await first
+    await second
+    expect(order).toEqual(['b', 'a'])
   })
 })

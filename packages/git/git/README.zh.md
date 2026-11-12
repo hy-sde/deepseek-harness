@@ -56,7 +56,7 @@ diff 词汇位于 [`types.ts`](src/types.ts) 与 `diff.ts`（带重命名处理�
 `import { acquireWorktree, releaseWorktree, listWorktrees, pruneWorktrees, destroyWorktree } from '@deepseek-ai/dsh-git/worktree'` — 仿照 treehouse（`get --lease`）的每仓库 `git` 工作树池：
 
 - **池布局** — `<root>/<repo>-<hash6>/<n>/<repo>`，其中 `root` 可配置（默认 `~/.treehouse`），hash 为规范主仓库根的 sha256（链接工作树经 `--git-common-dir` 解析到主检出，因此一个仓库 = 一个池，即使 `realpath` 不同）。
-- **持久租约** — `acquireWorktree` 返回 `path` 与随机 `leaseId`，持久化到每池的 `treehouse-state.json`（原子 temp+rename 提交、跨进程 `withFileLock`、进程内 `withRepoLock` 于主仓库根）；已租借槽位在 `releaseWorktree` 以匹配 id 清除前绝不再次分配或被 prune。
+- **持久租约** — `acquireWorktree` 返回 `path` 与随机 `leaseId`，持久化到每池的 `treehouse-state.json`（原子 temp+rename 提交、跨进程 `withFileLock`、进程内 `withRepoLock` 以 git common dir 为键，同一仓库的所有 checkout 共享一个队列）；已租借槽位在 `releaseWorktree` 以匹配 id 清除前绝不再次分配或被 prune。
 - **安全** — 仅在未租借＋干净（`--untracked-files=all`）＋HEAD 已并入精确重置目标时复用；release 在非 `force`（`git clean -fdqx`）时拒绝脏工作树；prune／destroy 默认 dry-run，无显式标志时拒绝租借／脏／未并入槽位；损坏／截断状态从 `git worktree list --porcelain` 重建并标记为租借未验证。
 - **命名分支（D1）** — `acquireWorktree({ branch })` 以 `git worktree add -b <branch>` 切出分支 HEAD，使 `commit_apply --push`／PR 流程有分支可取（git 拒绝 `--detach -b`）；该槽位仅对同名分支可复用。默认仍为 detached（与 treehouse 兼容）。
 

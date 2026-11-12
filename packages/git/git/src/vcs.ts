@@ -13,7 +13,7 @@
  * `requireGit()` feature gates, the `VcsError` taxonomy with `isVcsError` /
  * `isEmptyCherryPick`, `joinPatches` (newline-safe), and `watch()` /
  * `HEAD_WATCH_INTERVAL_MS`. `withRepoLock` lives in `./repo-lock.ts` and keys on
- * `repo(cwd).primaryRoot()`.
+ * the repository's git common dir.
  * @module @deepseek-ai/dsh-git/vcs
  */
 
