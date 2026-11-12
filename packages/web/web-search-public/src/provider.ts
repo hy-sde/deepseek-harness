@@ -240,13 +240,18 @@ export function mergeSources(merged: Map<string, MergedSource>, sources: readonl
   }
 }
 
-/** Resolve a `WebSearchResult` from merged consensus sources, capped to `maxResults`. */
-function toResult(merged: Map<string, MergedSource>, maxResults: number | undefined): WebSearchResult {
+/**
+ * Resolve the full consensus list. The web seam remains the sole owner of
+ * `maxResults` truncation: it caps `sources[]` and flags `truncated` when the
+ * provider over-returns, so the model still learns that results were cut
+ * instead of receiving a silently shortened list.
+ */
+function toResult(merged: Map<string, MergedSource>): WebSearchResult {
   const all = [...merged.values()]
     .sort((a, b) => b.engines - a.engines || a.bestRank - b.bestRank || a.order - b.order)
     .map(entry => entry.source)
   return {
-    sources: maxResults === undefined ? all : all.slice(0, maxResults),
+    sources: all,
     truncated: false,
   }
 }
@@ -428,7 +433,7 @@ export class PublicSearchProvider implements WebSearchProvider {
     if (merged.size === 0 && failures.length + skipped.length === engines.length) {
       throw new AllFailedError(failures, skipped, hardFailed, softFailed, tripCounter.count)
     }
-    return toResult(merged, request.maxResults)
+    return toResult(merged)
   }
 
   /** Whether an engine's circuit breaker is open right now. */

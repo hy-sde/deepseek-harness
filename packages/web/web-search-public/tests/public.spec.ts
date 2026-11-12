@@ -139,13 +139,17 @@ describe('PublicSearchProvider', () => {
     })
   })
 
-  it('keeps each engine result when engines do not overlap and caps to maxResults', async () => {
+  it('returns the full merged list and leaves maxResults truncation to the web seam', async () => {
     const first = stubEngine('startpage', { sources: [{ url: 'https://s.test/1', title: 'S One' }] })
     const second = stubEngine('duckduckgo', { sources: [{ url: 'https://d.test/2', title: 'D Two' }] })
     const result = await provider([first.engine, second.engine]).search({ query: 'q', maxResults: 1 })
-    // No consensus anywhere: ties break on best rank then engine order, and the
-    // provider caps the merged list to maxResults before returning.
-    expect(result.sources).toEqual([{ url: 'https://s.test/1', title: 'S One' }])
+    // No consensus anywhere: ties break on best rank then engine order. The
+    // provider returns every merged source; the web seam caps `maxResults`
+    // itself and flags `truncated`, so a shortened list is never silent.
+    expect(result.sources).toEqual([
+      { url: 'https://s.test/1', title: 'S One' },
+      { url: 'https://d.test/2', title: 'D Two' },
+    ])
   })
 
   it('tolerates individual engine failures and returns the surviving results', async () => {
