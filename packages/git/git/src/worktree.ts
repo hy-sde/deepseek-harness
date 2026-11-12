@@ -777,7 +777,8 @@ async function cutNewSlot(
  * slot parks: a non-forced release requires a clean tree (tracked AND
  * untracked) and then resets HEAD to the recorded base (or the inferred
  * default) at detached HEAD; `force` additionally runs `git clean -fdqx`.
- * A refused dirty release records the slot as damaged with cause `dirty`.
+ * A refused dirty release fails with code `DirtyWorktree` and leaves the
+ * lease and phase untouched (the slot does not become damaged).
  * D2: this engine never kills processes — a busy slot surfaces as a
  * {@link WorktreeError} with code `DirtyWorktree` instead.
  * @param git - the git service.

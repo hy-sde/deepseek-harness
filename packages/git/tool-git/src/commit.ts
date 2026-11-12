@@ -849,11 +849,13 @@ async function captureCommitBoundary(git: GitService, cwd: string, signal: Abort
 }
 
 /**
- * Verify one commit against its staged baseline. A deficit in any total means
- * staged content was silently dropped: the recovery ref is written FIRST, then
- * the typed error is thrown. A surplus is tolerated with a warning — hooks may
- * legitimately add content (lefthook's `stage_fixed: true` re-stages lint
- * fixes) but must never remove it.
+ * Verify one commit against its staged baseline. A deficit in the file count
+ * means a staged file never made it into the commit — staged content was
+ * silently dropped: the recovery ref is written FIRST, then the typed error
+ * is thrown. Line-total deficits alone are tolerated with a warning: hooks
+ * may legitimately rewrite staged content (lefthook's `stage_fixed: true`
+ * re-staging lint fixes can collapse or remove lines without losing files),
+ * and a surplus is likewise a warning — hooks may add content.
  */
 async function assertCommitBoundary(
   git: GitService,
@@ -865,10 +867,7 @@ async function assertCommitBoundary(
 ): Promise<void> {
   const statRun = await git.run(['diff', '--stat', `${boundary.oldHead}..HEAD`], { cwd, signal })
   const actual = parseStatTotals(statRun.stdout)
-  const deficit = actual.files < boundary.expected.files
-    || actual.insertions < boundary.expected.insertions
-    || actual.deletions < boundary.expected.deletions
-  if (deficit) {
+  if (actual.files < boundary.expected.files) {
     const recoveryRef = boundary.oldHead === EMPTY_TREE_SHA
       ? undefined
       : `refs/recovery/pre-commit-${boundary.oldHead.slice(0, 8)}`
@@ -876,6 +875,12 @@ async function assertCommitBoundary(
       await git.run(['update-ref', recoveryRef, boundary.oldHead], { cwd, signal })
     }
     throw new CommitBoundaryError({ expected: boundary.expected, actual, oldHead: boundary.oldHead, recoveryRef, label })
+  }
+  const rewritten: string[] = []
+  if (actual.insertions < boundary.expected.insertions) rewritten.push(`${boundary.expected.insertions - actual.insertions} insertion(s)`)
+  if (actual.deletions < boundary.expected.deletions) rewritten.push(`${boundary.expected.deletions - actual.deletions} deletion(s)`)
+  if (rewritten.length > 0) {
+    warnings.push(`commit boundary: the commit carries fewer line changes than its staged baseline (${rewritten.join(', ')}) — a pre-commit hook rewrote staged content (e.g. lefthook \`stage_fixed: true\`)`)
   }
   const surplus: string[] = []
   if (actual.files > boundary.expected.files) surplus.push(`${actual.files - boundary.expected.files} file(s)`)

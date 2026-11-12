@@ -20,7 +20,8 @@ import type { ChildProcess } from 'node:child_process'
  * skips directly to forced termination because Node maps both signals to
  * `TerminateProcess`.
  * @param child - the runtime child process to tear down.
- * @param graces - the EOF and termination-confirmation windows (ms).
+ * @param graces - the EOF and termination-confirmation windows (ms; the EOF
+ * window is widened to at least the termination window).
  * @param platform - the host platform, injectable for unit coverage.
  * @throws When forced termination errors or the child does not report exit
  * within `disposeGraceMs`.
@@ -30,8 +31,13 @@ export async function disposeRuntimeProcess(
   graces: { disposeEofGraceMs: number; disposeGraceMs: number },
   platform: NodeJS.Platform = process.platform,
 ): Promise<void> {
+  // The shared ladder keeps the EOF window at least as wide as the termination
+  // window. Public dispose options never documented that invariant, so widen
+  // the EOF window instead of rejecting a config whose teardown always
+  // completed before the ladder existed — close() must not skip transport
+  // close over a grace-ordering quibble.
   await new TerminationLadder({
-    eofGraceMs: graces.disposeEofGraceMs,
+    eofGraceMs: Math.max(graces.disposeEofGraceMs, graces.disposeGraceMs),
     termGraceMs: graces.disposeGraceMs,
     platform,
   }).run(childProcessTarget(child))

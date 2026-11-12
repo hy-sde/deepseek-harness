@@ -263,7 +263,11 @@ describe('childProcessTarget', () => {
         .run(childProcessTarget(child))
       const outcome = await exited
       expect(kill.mock.calls.map(([signal]) => signal)).toEqual(['SIGKILL'])
-      expect(outcome.signal).toBe('SIGKILL')
+      if (process.platform === 'win32') {
+        expect(outcome.exitCode).not.toBeNull()
+      } else {
+        expect(outcome.signal).toBe('SIGKILL')
+      }
     } finally {
       child.kill('SIGKILL')
     }

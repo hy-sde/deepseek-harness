@@ -21,6 +21,7 @@ import {
   acquireWorktree,
   releaseWorktree,
   listWorktrees,
+  verifyWorktrees,
   pruneWorktrees,
   destroyWorktree,
   WorktreeError,
@@ -281,6 +282,14 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
             return { action: 'list', cwd, worktrees, warnings } satisfies WorktreeToolValue
           }
           case 'prune': {
+            // Re-probe unleased slots before trusting the persisted phases:
+            // a slot parked earlier but dirtied externally flips to damaged
+            // here and is skipped, instead of being force-removed.
+            const verified = await verifyWorktrees(ctx.git, cwd, { settings, signal })
+            const damaged = verified.filter(entry => entry.status === 'damaged').length
+            if (verified.length > 0) {
+              warnings.push(`worktree: re-probed ${verified.length} unleased slot(s) before prune (${damaged} damaged)`)
+            }
             const prune = await pruneWorktrees(ctx.git, cwd, {
               ...args.yes === true ? { yes: true } : {},
               ...args.all === true ? { all: true } : {},
