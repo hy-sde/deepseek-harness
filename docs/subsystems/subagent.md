@@ -390,9 +390,9 @@ interface SubagentProvider {
 
 ## Durable enumeration: `listChildren()`, `listDescendants()`, and their entries
 
-The model-facing `list_agents` adapter reports current activity as `running` or `inactive`. These values do not describe task completion or guarantee that `send_message` will succeed.
+The model-facing `list_agents` adapter reports current activity as `running` or `inactive`. These values do not describe task completion or guarantee that `send_message` will succeed. Each child row also reports its observational lifecycle phase with `closingScope` and `draining` flags.
 
-`SubagentRuntime.listChildren(parentSessionId, signal?)` reads the parent's `subagentCatalog` view through a live-preferred Session observation and releases that observation on success or failure. It returns direct-child entries in parent event order without reading child logs or enumerating the Session corpus. Query failures propagate; a missing catalog projection fails explicitly. Browser rows derive membership from the shared projection store and add activity from Session status; the control stream pushes complete catalog updates. `listDescendants()` recursively reads those catalogs and derives `hasChildren` from each child catalog. [The parent-catalog Agent Note](../../.agents/notes/implemented/architecture/2026-09-01-parent-owned-subagent-catalog.md) owns creation, fork isolation, ordering, and persistence costs.
+`SubagentRuntime.listChildren(parentSessionId, signal?)` reads the parent's `subagentCatalog` view through a live-preferred Session observation and releases that observation on success or failure. It returns direct-child entries in parent event order without reading child logs or enumerating the Session corpus. Each entry carries the child's observational phase and teardown overlays; rows report `closed` when the manager is not running. Query failures propagate; a missing catalog projection fails explicitly. Browser rows derive membership from the shared projection store and add activity from Session status; the control stream pushes complete catalog updates. `listDescendants()` recursively reads those catalogs and derives `hasChildren` from each child catalog. [The parent-catalog Agent Note](../../.agents/notes/implemented/architecture/2026-09-01-parent-owned-subagent-catalog.md) owns creation, fork isolation, ordering, and persistence costs.
 
 `SubagentRuntime.listDescendants(rootSessionId)` recursively calls the same catalog reader in stable pre-order, preserving each parent's event order. External entries are leaves without local Sessions. One-shot and unknown-mode entries remain traversal nodes; unknown modes produce `unsupported` diagnostics. An unreadable child catalog produces `corrupt` or `unavailable` and stops only that branch. Root read failures, missing services or projections, and cancellation reject the listing. Each reachable catalog is observed once and released before the next read; repeated ids and cycles are skipped. Sessions absent from reachable catalogs are not discovered, including ordinary Session forks and any subagents below those forks. Each row carries its catalog parent and root-relative depth:
 
@@ -403,6 +403,20 @@ type SubagentDescendantListEntry = SubagentListEntry & {
   readonly parentId: SessionId
   /** Edge distance from the requested root; direct children are `1`. */
   readonly depth: number
+}
+```
+
+Child rows additionally report the manager's observational state at listing time:
+
+```ts type-equiv
+/** Phase plus teardown overlays observed for one child at listing time. */
+interface SubagentChildPhaseState {
+  /** Lifecycle phase derived from the manager's activation books. */
+  readonly phase: SubagentChildPhase
+  /** The child sits inside a scoped-teardown root's closing scope. */
+  readonly closingScope: boolean
+  /** The manager is draining every activation (host teardown). */
+  readonly draining: boolean
 }
 ```
 
@@ -536,14 +550,16 @@ async drainChildren(parent: Agent, childIds: readonly SessionId[]): Promise<void
 
 /**
  * Read the parent's durable direct-child catalog without loading or resuming an Agent.
- * The service owns and releases the live-preferred Session observation.
+ * The service owns and releases the live-preferred Session observation. Each row is
+ * enriched with the child's observational phase and teardown overlays; rows report
+ * the closed phase when the manager is not running.
  * @param parentSessionId - parent whose direct children are requested.
  * @param signal - cancellation forwarded to the Session query.
  * @returns catalog children in parent event order.
  * @throws {@link SubagentError} when query or catalog projection is unavailable.
  * @throws SessionQueryError when the parent cannot be read or the query is cancelled.
  */
-listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentCatalogEntry[]>
+listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentLiveCatalogEntry[]>
 
 /**
  * Recursively list reachable parent catalogs in stable pre-order, preserving
@@ -555,13 +571,15 @@ listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<Subagent
  * missing services or projections, and cancellation reject the whole listing.
  * Each catalog is observed once and released before the next read. No Agent
  * is loaded or resumed; Sessions absent from reachable catalogs are omitted.
+ * Child rows are enriched with the child's observational phase and teardown
+ * overlays; they report the closed phase when the manager is not running.
  * @param rootSessionId - session whose catalog starts descendant discovery.
  * @param signal - cancellation forwarded to and checked around each catalog read.
  * @returns children and branch diagnostics in parent-catalog pre-order.
  * @throws {@link SubagentError} when listing dependencies are unavailable or the caller cancels.
  * @throws SessionQueryError when the root catalog cannot be read.
  */
-listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentDescendantListEntry[]>
+listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentLiveDescendantListEntry[]>
 
 /**
  * Deliver one browser-authored message to a continuable child through the
