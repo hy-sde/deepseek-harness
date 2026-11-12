@@ -286,9 +286,10 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
             // a slot parked earlier but dirtied externally flips to damaged
             // here and is skipped, instead of being force-removed.
             const verified = await verifyWorktrees(ctx.git, cwd, { settings, signal })
-            const damaged = verified.filter(entry => entry.status === 'damaged').length
-            if (verified.length > 0) {
-              warnings.push(`worktree: re-probed ${verified.length} unleased slot(s) before prune (${damaged} damaged)`)
+            const probed = verified.filter(entry => entry.status !== 'leased')
+            const damaged = probed.filter(entry => entry.status === 'damaged').length
+            if (probed.length > 0) {
+              warnings.push(`worktree: re-probed ${probed.length} unleased slot(s) before prune (${damaged} damaged)`)
             }
             const prune = await pruneWorktrees(ctx.git, cwd, {
               ...args.yes === true ? { yes: true } : {},
