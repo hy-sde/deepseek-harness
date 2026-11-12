@@ -9,7 +9,7 @@ import { mkdir, mkdtemp, writeFile, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { rmSync } from 'node:fs'
+import { chmodSync, rmSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -493,5 +493,73 @@ describe('P2 review gate on commit_apply --push', () => {
       push: false,
     })
     expect((result.value as { mode: string }).mode).toBe('single')
+  })
+})
+
+describe('commit boundary integrity (pre-commit hook silent-drop guard)', () => {
+  let boundaryVersion = 0
+
+  /** Fresh baseline commit so each test modifies tracked files with a real diff. */
+  async function settleBoundaryBaseline(): Promise<void> {
+    resetRepo()
+    boundaryVersion += 1
+    await write('src/a.ts', `export const a = ${boundaryVersion};\n`)
+    await write('src/b.ts', `export const b = ${boundaryVersion};\n`)
+    runGit(['add', '-A'])
+    runGit(['commit', '-qm', `chore: boundary baseline v${boundaryVersion}`])
+  }
+
+  it('rejects with CommitBoundaryError and writes the recovery ref when a hook silently drops staged content', async () => {
+    await settleBoundaryBaseline()
+    await write('src/a.ts', 'export const a = 100;\n')
+    await write('src/b.ts', 'export const b = 200;\n')
+    runGit(['add', '-A'])
+    const oldHead = runGit(['rev-parse', 'HEAD']).trim()
+    // Simulated silent restore failure: the hook un-stages src/a.ts so the
+    // commit silently carries only src/b.ts while reporting success.
+    const hookPath = join(dir, '.git', 'hooks', 'pre-commit')
+    await writeFile(hookPath, '#!/bin/sh\ngit reset -q HEAD -- src/a.ts\n')
+    chmodSync(hookPath, 0o755)
+    try {
+      await expect(call('commit_apply', {
+        commits: [{
+          changes: [{ path: 'src/a.ts', hunks: { type: 'all' } }, { path: 'src/b.ts', hunks: { type: 'all' } }],
+          type: 'feat',
+          scope: 'src',
+          summary: 'update both',
+          dependencies: [],
+        }],
+      })).rejects.toThrow(/commit boundary integrity check failed/)
+      const recovery = spawnSync('git', ['rev-parse', '--verify', `refs/recovery/pre-commit-${oldHead.slice(0, 8)}`], { cwd: dir, encoding: 'utf8' })
+      expect(recovery.status).toBe(0)
+      expect(recovery.stdout.trim()).toBe(oldHead)
+      // The dropped change survives in the worktree — nothing was lost.
+      expect(await readFile(join(dir, 'src', 'a.ts'), 'utf8')).toBe('export const a = 100;\n')
+    } finally {
+      rmSync(hookPath, { force: true })
+    }
+  })
+
+  it('tolerates a hook that adds content (stage_fixed) and warns on the surplus', async () => {
+    await settleBoundaryBaseline()
+    await write('src/a.ts', 'export const a = 300;\n')
+    runGit(['add', '-A'])
+    // stage_fixed simulation: the hook creates and stages an extra file.
+    const hookPath = join(dir, '.git', 'hooks', 'pre-commit')
+    await writeFile(hookPath, '#!/bin/sh\nprintf \'export const extra = true;\\n\' > src/extra.ts\ngit add src/extra.ts\n')
+    chmodSync(hookPath, 0o755)
+    try {
+      const result = await call('commit_apply', {
+        commits: [{ changes: [{ path: 'src/a.ts', hunks: { type: 'all' } }], type: 'feat', scope: 'src', summary: 'add a', dependencies: [] }],
+      })
+      const value = result.value as { mode: string; warnings: string[]; created: Array<{ hash: string }> }
+      expect(value.created).toHaveLength(1)
+      expect(value.warnings.some(text => text.includes('commit boundary') && text.includes('added content'))).toBe(true)
+      // The hook-added file genuinely landed in the commit.
+      const show = spawnSync('git', ['show', '--stat', '--format=', 'HEAD'], { cwd: dir, encoding: 'utf8' })
+      expect(show.stdout).toContain('src/extra.ts')
+    } finally {
+      rmSync(hookPath, { force: true })
+    }
   })
 })
