@@ -779,6 +779,8 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   AgentMessageSource: 'subagent.md',
   SubagentCatalogEntry: 'subagent.md',
   SubagentCatalogState: 'subagent.md',
+  SubagentLiveCatalogEntry: 'subagent.md',
+  SubagentLiveDescendantListEntry: 'subagent.md',
   SessionLogUploadRequest: 'session.md',
   SessionLogUploadExclusion: 'session.md',
   SessionProjectionsRequest: 'session.md',

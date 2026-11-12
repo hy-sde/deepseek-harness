@@ -390,9 +390,9 @@ interface SubagentProvider {
 
 ## 持久化枚举：`listChildren()`、`listDescendants()` 与其条目
 
-模型侧的 `list_agents` 适配器将当前活动表示为 `running` 或 `inactive`。这些值不描述任务完成情况，也不保证 `send_message` 会成功。
+模型侧的 `list_agents` 适配器将当前活动表示为 `running` 或 `inactive`。这些值不描述任务完成情况，也不保证 `send_message` 会成功。每个 child 行还报告其观察到的生命周期阶段以及 `closingScope` 与 `draining` 标志。
 
-`SubagentRuntime.listChildren(parentSessionId, signal?)` 通过优先使用在线 Session 的观察读取父会话的 `subagentCatalog` 视图，并在成功或失败时释放观察。它按父会话事件顺序返回直接子级条目，不读取子级日志，也不枚举 Session 语料库。查询失败直接传播；缺少目录投影时显式失败。浏览器条目从共享 projection store 派生成员关系，并从 Session 状态补充活动状态；control stream 推送完整目录更新。`listDescendants()` 递归读取这些目录，并从每个子级目录推导 `hasChildren`。[父目录 Agent Note](../../.agents/notes/implemented/architecture/2026-09-01-parent-owned-subagent-catalog.zh.md) 说明创建、fork 隔离、排序和持久化成本。
+`SubagentRuntime.listChildren(parentSessionId, signal?)` 通过优先使用在线 Session 的观察读取父会话的 `subagentCatalog` 视图，并在成功或失败时释放观察。它按父会话事件顺序返回直接子级条目，不读取子级日志，也不枚举 Session 语料库。每个条目携带子级的观察阶段与 teardown 覆盖标志；manager 未运行时行报告 `closed`。查询失败直接传播；缺少目录投影时显式失败。浏览器条目从共享 projection store 派生成员关系，并从 Session 状态补充活动状态；control stream 推送完整目录更新。`listDescendants()` 递归读取这些目录，并从每个子级目录推导 `hasChildren`。[父目录 Agent Note](../../.agents/notes/implemented/architecture/2026-09-01-parent-owned-subagent-catalog.zh.md) 说明创建、fork 隔离、排序和持久化成本。
 
 `SubagentRuntime.listDescendants(rootSessionId)` 以稳定前序递归调用同一目录读取函数，保留每个父级的事件顺序。外部条目是没有本地 Session 的叶节点。一次性和未知模式条目仍是遍历节点；未知模式产生 `unsupported` 诊断。无法读取的子级目录产生 `corrupt` 或 `unavailable`，只停止该分支。根读取失败、服务或投影缺失、取消会使整个查询失败。每个可达目录只观察一次，并在下一次读取前释放；重复 id 和循环引用会被跳过。可达目录中不存在的 Session 不会被发现，包括普通 Session fork 及其下的子 agent。每行携带目录中的父级和相对根的深度：
 
@@ -403,6 +403,20 @@ type SubagentDescendantListEntry = SubagentListEntry & {
   readonly parentId: SessionId
   /** Edge distance from the requested root; direct children are `1`. */
   readonly depth: number
+}
+```
+
+child 行还会在列出时报告管理器的观察状态：
+
+```ts type-equiv
+/** Phase plus teardown overlays observed for one child at listing time. */
+interface SubagentChildPhaseState {
+  /** Lifecycle phase derived from the manager's activation books. */
+  readonly phase: SubagentChildPhase
+  /** The child sits inside a scoped-teardown root's closing scope. */
+  readonly closingScope: boolean
+  /** The manager is draining every activation (host teardown). */
+  readonly draining: boolean
 }
 ```
 
@@ -538,14 +552,16 @@ async drainChildren(parent: Agent, childIds: readonly SessionId[]): Promise<void
 
 /**
  * Read the parent's durable direct-child catalog without loading or resuming an Agent.
- * The service owns and releases the live-preferred Session observation.
+ * The service owns and releases the live-preferred Session observation. Each row is
+ * enriched with the child's observational phase and teardown overlays; rows report
+ * the closed phase when the manager is not running.
  * @param parentSessionId - parent whose direct children are requested.
  * @param signal - cancellation forwarded to the Session query.
  * @returns catalog children in parent event order.
  * @throws {@link SubagentError} when query or catalog projection is unavailable.
  * @throws SessionQueryError when the parent cannot be read or the query is cancelled.
  */
-listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentCatalogEntry[]>
+listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentLiveCatalogEntry[]>
 
 /**
  * Recursively list reachable parent catalogs in stable pre-order, preserving
@@ -557,13 +573,15 @@ listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<Subagent
  * missing services or projections, and cancellation reject the whole listing.
  * Each catalog is observed once and released before the next read. No Agent
  * is loaded or resumed; Sessions absent from reachable catalogs are omitted.
+ * Child rows are enriched with the child's observational phase and teardown
+ * overlays; they report the closed phase when the manager is not running.
  * @param rootSessionId - session whose catalog starts descendant discovery.
  * @param signal - cancellation forwarded to and checked around each catalog read.
  * @returns children and branch diagnostics in parent-catalog pre-order.
  * @throws {@link SubagentError} when listing dependencies are unavailable or the caller cancels.
  * @throws SessionQueryError when the root catalog cannot be read.
  */
-listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentDescendantListEntry[]>
+listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentLiveDescendantListEntry[]>
 
 /**
  * Deliver one browser-authored message to a continuable child through the

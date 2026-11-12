@@ -52,7 +52,7 @@ External executions stop permanently and cannot receive follow-ups. Local target
 
 ### list_agents
 
-Lists the continuable children below the calling agent: `children` (default) reads direct children from the parent catalog without opening child logs; `descendants` recursively reads child catalogs in stable pre-order, annotating each entry with its durable direct-parent session id and depth. Status comes from the live Agent registry — `running` or `inactive`. External entries are omitted without reading a child Session. Readable one-shot children are omitted from output but their catalogs remain traversal nodes. Unknown modes and unreadable child catalogs, including one-shot children, appear as diagnostics only in `descendants` scope. Ordinary Session forks are not catalog entries, so neither those forks nor their descendants are listed from the source Session.
+Lists the continuable children below the calling agent: `children` (default) reads direct children from the parent catalog without opening child logs; `descendants` recursively reads child catalogs in stable pre-order, annotating each entry with its durable direct-parent session id and depth. Status comes from the live Agent registry — `running` or `inactive`. Each child also reports its lifecycle phase — `materializing`, `resident`, `settling`, or `closed` — with `closingScope` and `draining` flags read from the service's live books. External entries are omitted without reading a child Session. Readable one-shot children are omitted from output but their catalogs remain traversal nodes. Unknown modes and unreadable child catalogs, including one-shot children, appear as diagnostics only in `descendants` scope. Ordinary Session forks are not catalog entries, so neither those forks nor their descendants are listed from the source Session.
 
 -----
 
@@ -74,7 +74,7 @@ The tool forwards its execution signal, which owns admission only until inbox ac
 
 ### Listing projection
 
-`list_agents` derives the root id from the calling agent, reads the service catalog without a cursor, refines each candidate's status through the live Agent registry, and omits one-shot children because they cannot accept `send_message`. Descendant traversal preserves each parent catalog's event order. Unknown modes produce diagnostics while their catalogs remain traversable; unreadable catalogs produce diagnostics and stop that branch. Descendants absent from reachable catalogs cannot be discovered.
+`list_agents` derives the root id from the calling agent, reads the service catalog without a cursor, refines each candidate's status through the live Agent registry, projects each entry's lifecycle phase and closing/draining flags from the service rows, and omits one-shot children because they cannot accept `send_message`. Descendant traversal preserves each parent catalog's event order. Unknown modes produce diagnostics while their catalogs remain traversable; unreadable catalogs produce diagnostics and stop that branch. Descendants absent from reachable catalogs cannot be discovered.
 
 ### Source map
 

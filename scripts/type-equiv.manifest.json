@@ -2468,6 +2468,11 @@
       "source": "packages/subagent/subagent/src/list-children.ts"
     },
     {
+      "doc": "docs/subsystems/subagent.md",
+      "symbol": "SubagentChildPhaseState",
+      "source": "packages/subagent/subagent/src/control-types.ts"
+    },
+    {
       "doc": "docs/subsystems/system-prompt.md",
       "symbol": "AssembledContext",
       "source": "packages/core/system-prompt/src/index.ts"

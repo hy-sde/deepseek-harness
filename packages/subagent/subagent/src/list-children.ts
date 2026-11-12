@@ -6,7 +6,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { SubagentListEntry } from './control-types.ts'
+import type { SubagentChildPhaseState, SubagentListEntry } from './control-types.ts'
 import { SubagentError } from './error.ts'
 import type { SubagentCatalogEntry } from './projection-types.ts'
 
@@ -19,6 +19,14 @@ export type SubagentDescendantListEntry = SubagentListEntry & {
   /** Edge distance from the requested root; direct children are `1`. */
   readonly depth: number
 }
+
+/** One catalog row enriched with the live phase and teardown overlays observed for its id. */
+export type SubagentLiveCatalogEntry = SubagentCatalogEntry & SubagentChildPhaseState
+
+/** One {@link SubagentDescendantListEntry} enriched with the live phase where a child row exists. */
+export type SubagentLiveDescendantListEntry =
+  | (Extract<SubagentDescendantListEntry, { kind: 'child' }> & SubagentChildPhaseState)
+  | Extract<SubagentDescendantListEntry, { kind: 'diagnostic' }>
 
 /**
  * Read one parent's durable catalog through a live-preferred Session observation.
