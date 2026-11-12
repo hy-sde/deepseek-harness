@@ -20,7 +20,7 @@ const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/sidebar-scrol
 /** Geometry and resolved style are absent from ARIA snapshots, so this scenario records them directly. */
 const GEOMETRY_EXPECTED = join(SNAPSHOT_DIR, 'geometry.expected.md')
 const MODE = webSnapshotMode()
-/** Enough rows that the list overflows the 800px-tall viewport's sidebar; the scenario asserts the overflow rather than trusting it. */
+/** Enough rows that the list overflows the 740px-tall viewport's sidebar; the scenario asserts the overflow rather than trusting it. */
 const SEED_COUNT = 24
 
 /** Geometry and resolved scrollbar style of one scroll container, measured in the page. */
@@ -297,9 +297,10 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
       await seedSession(scaffold, fixture, `sidebar-scrollbar-web-e2e-${String(index).padStart(2, '0')}`)
     }
     browser = await chromium.launch()
-    // Shorter than the other scenarios' 1000px so SEED_COUNT rows overflow
-    // the list with room to spare.
-    page = await newEnglishPage(browser, 800)
+    // Shorter than the other scenarios' 1000px — and than the pre-merge 800px,
+    // since the foot's single-row layout leaves the list taller — so SEED_COUNT
+    // rows overflow the list with room to spare.
+    page = await newEnglishPage(browser, 740)
     tripwire = watchConsole(page)
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })

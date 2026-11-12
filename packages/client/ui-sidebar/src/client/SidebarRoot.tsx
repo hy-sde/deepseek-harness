@@ -5,11 +5,14 @@
  * while the sliding column (AppFrame grid tracks) clips it — nothing reflows
  * mid-slide. At settle the wide-only content unmounts and the upper
  * controls enter the 56px rail from the same horizontal offset (one icon each,
- * same top-down order) on one fade that ends with the slide. The bottom-pinned
- * settings control only fades. The workspace/session browsing region between
- * global panel rows and the foot is the `sidebar.workspaces` registrant's,
- * and the foot holds `sidebar.settings` plus `sidebar.footer.action`; the shell
- * hands them the wide flag (plus an expand request callback for the browser).
+ * same top-down order) on one fade that ends with the slide; the foot (New
+ * Session, the panel strip, and the settings seat) only fades. The
+ * workspace/session browsing region between the upper controls and the foot
+ * is the `sidebar.workspaces` registrant's; the foot's first row opens with
+ * the New Session icon control, then holds the panel strip plus
+ * `sidebar.settings`, and `sidebar.footer.action` keeps its own row below;
+ * the shell hands them the wide flag (plus an expand request callback for
+ * the browser).
  *
  * The column also owns whether the scroll regions nested in it draw a
  * scrollbar at all: the shell tracks the pointer and rebinds ui-theme's
@@ -19,8 +22,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  FishLogo, IconAppsAddOutlineRegular, IconNewChatOutlineMedium, IconNewChatOutlineRegular,
-  IconPanelLeftOutlineRegular, focusWithoutRing, isBehindModal, isDarwinDesktop, Menu, ShortcutKeys, Toast, Tooltip, useModalLayer,
+  FishLogo, IconAppsAddOutlineRegular, IconNewChatOutlineRegular,
+  IconPanelLeftOutlineRegular, focusWithoutRing, isBehindModal, isDarwinDesktop, Menu, Toast, Tooltip, useModalLayer,
   writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -346,28 +349,6 @@ export function SidebarRoot({
         {!darwinDesktop && toggle}
       </div>
 
-      {/* The label fades before the hover/focus shortcut, including on translucent backgrounds. */}
-      {canStartSession && (
-        <Tooltip label={t('session.new.label')} shortcutKeys={newShortcut?.keys} delayMs={500} side={captionTooltipSide} disabled={wide}>
-          <button
-            type="button"
-            className={css.newSession}
-            aria-label={t('session.new.label')}
-            aria-keyshortcuts={newShortcut?.aria}
-            onClick={openNewSession}
-          >
-            <span className={css.newSessionLabelMask}><span className={css.newSessionContent}>
-              {wide
-                ? <IconNewChatOutlineMedium size={14} />
-                : <IconNewChatOutlineRegular size={windowsTitlebar ? 16 : 18} />}
-              {wide && <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>}
-            </span></span>
-            {wide && newShortcut !== undefined && newShortcut.keys.length > 0 && <span className={css.newSessionShortcut} aria-hidden="true">
-              <ShortcutKeys keys={newShortcut.keys} />
-            </span>}
-          </button>
-        </Tooltip>
-      )}
 
       {/* The browsing region fills the column between the controls and the
           foot in both states; its rail icon column rides the same slot. */}
@@ -382,45 +363,64 @@ export function SidebarRoot({
         <Toast key={copiedToast} tone="success" text={t('version.copied')} onDone={() => { setCopiedToast(null) }} />
       )}
 
-      {/* The panel strip, footer actions and Settings share the foot so the
-          workspaces region owns the column between the top controls and it. */}
+      {/* The foot's first row opens with the New Session icon control, then the
+          panel strip and the Settings launcher share it; footer actions stack
+          below so the workspaces region owns the column between the top
+          controls and the foot. */}
       <div className={css.footArea}>
-        {panels.length > 0 && (
-          <nav className={css.panelStrip} aria-label={t('panels.label')}>
-            {panels.filter(({ id }) => id === FIXED_PANEL_ID || !unpinned.includes(id)).map(({ id, label }) => (
-              <PanelRow
-                key={id}
-                id={id}
-                label={label}
-                usePanelInfo={usePanelInfo}
-                selectPanel={selectPanel}
-                trackEntryClick={trackEntryClick}
-                renderSlot={renderSlot}
-              />
-            ))}
-            {hasEntryActions && (
-              <PanelMoreMenu
-                label={t('panels.more')}
-                entries={panels.filter(({ id }) => id !== FIXED_PANEL_ID)
-                  .map(({ id, label }) => ({ id, label, pinned: !unpinned.includes(id), active: id === activePanelId }))}
-                onOpen={(id) => {
-                  const entry = officialEntry(id)
-                  if (entry !== undefined) trackEntryClick({ menu_name: entry, position: 'sidebar_more' })
-                  const panel = panels.find(candidate => candidate.id === id)
-                  if (panel !== undefined) selectPanel(panel.id)
-                }}
-                onPinnedChange={setPinned}
-                trackEntryClick={trackEntryClick}
-                renderSlot={renderSlot}
-              />
-            )}
-          </nav>
-        )}
+        <div className={css.footRow}>
+          {canStartSession && (
+            <Tooltip label={t('session.new.label')} shortcutKeys={newShortcut?.keys} delayMs={500} side={captionTooltipSide}>
+              <button
+                type="button"
+                className={css.newSession}
+                aria-label={t('session.new.label')}
+                aria-keyshortcuts={newShortcut?.aria}
+                onClick={openNewSession}
+              >
+                <span className={css.panelGlyph} aria-hidden="true">
+                  <IconNewChatOutlineRegular size={windowsTitlebar ? 16 : 18} />
+                </span>
+              </button>
+            </Tooltip>
+          )}
+          {panels.length > 0 && (
+            <nav className={css.panelStrip} aria-label={t('panels.label')}>
+              {panels.filter(({ id }) => id === FIXED_PANEL_ID || !unpinned.includes(id)).map(({ id, label }) => (
+                <PanelRow
+                  key={id}
+                  id={id}
+                  label={label}
+                  usePanelInfo={usePanelInfo}
+                  selectPanel={selectPanel}
+                  trackEntryClick={trackEntryClick}
+                  renderSlot={renderSlot}
+                />
+              ))}
+              {hasEntryActions && (
+                <PanelMoreMenu
+                  label={t('panels.more')}
+                  entries={panels.filter(({ id }) => id !== FIXED_PANEL_ID)
+                    .map(({ id, label }) => ({ id, label, pinned: !unpinned.includes(id), active: id === activePanelId }))}
+                  onOpen={(id) => {
+                    const entry = officialEntry(id)
+                    if (entry !== undefined) trackEntryClick({ menu_name: entry, position: 'sidebar_more' })
+                    const panel = panels.find(candidate => candidate.id === id)
+                    if (panel !== undefined) selectPanel(panel.id)
+                  }}
+                  onPinnedChange={setPinned}
+                  trackEntryClick={trackEntryClick}
+                  renderSlot={renderSlot}
+                />
+              )}
+            </nav>
+          )}
+          <div className={css.settingsArea}>
+            {renderSlot('sidebar.settings', { wide })}
+          </div>
+        </div>
         <div className={css.footerActions}>
           {renderSlot('sidebar.footer.action', { wide })}
-        </div>
-        <div className={css.settingsArea}>
-          {renderSlot('sidebar.settings', { wide })}
         </div>
       </div>
     </div>

@@ -129,11 +129,10 @@ describe('SidebarRoot shell', () => {
     for (const button of screen.getAllByRole('button', { name: 'New session' })) {
       expect(button.getAttribute('aria-keyshortcuts')).toBe('Control+N')
     }
-    const expanded = screen.getAllByRole('button', { name: 'New session' }).find(button => button.querySelector('kbd') !== null)!
-    fireEvent.pointerEnter(expanded)
+    const expanded = screen.getAllByRole('button', { name: 'New session' }).find(button => button.className.includes('newSession'))!
     fireEvent.focus(expanded)
-    expect(screen.queryByRole('tooltip')).toBeNull()
-    expect(Array.from(expanded.querySelectorAll('kbd'), key => key.textContent)).toEqual(['Ctrl', 'N'])
+    const tooltip = screen.getByRole('tooltip')
+    expect(Array.from(tooltip.querySelectorAll('kbd'), key => key.textContent)).toEqual(['Ctrl', 'N'])
     cleanup()
     document.documentElement.dataset.platform = 'darwin'
     render(<HeaderLeadingControls toggleSidebar={vi.fn()} startSession={vi.fn()} selectPanel={vi.fn()} trackEntryClick={vi.fn()} t={t}

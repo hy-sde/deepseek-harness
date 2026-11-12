@@ -81,13 +81,11 @@
   padding: 0;
 }
 
-:global([data-windows-titlebar]) .root:not(.collapsed) .newSession {
-  margin-top: 6px;
-}
 
 :global([data-windows-titlebar]) .collapsed .panelStrip,
 :global([data-windows-titlebar]) .collapsed .regionArea,
-:global([data-windows-titlebar]) .collapsed .footArea {
+:global([data-windows-titlebar]) .collapsed .settingsArea,
+:global([data-windows-titlebar]) .collapsed .footerActions {
   display: none;
 }
 
@@ -106,8 +104,7 @@
   -webkit-app-region: no-drag;
 }
 
-:global([data-windows-titlebar]) .railIn .iconButton,
-:global([data-windows-titlebar]) .railIn .newSession {
+:global([data-windows-titlebar]) .railIn .iconButton {
   animation: none;
 }
 
@@ -154,11 +151,10 @@
 
 /* At the 150ms rail settle, the upper controls enter from the former
    rail right edge over the remaining 150ms of the AppFrame track transition.
-   The bottom-pinned settings seat shares their opacity timeline but stays
-   horizontally fixed. Only a live collapse gets .railIn; a cold collapsed
+   The foot (New Session, the panel strip, and the settings seat) shares the
+   opacity fade instead. Only a live collapse gets .railIn; a cold collapsed
    render stays static. */
 .railIn .iconButton,
-.railIn .newSession,
 .railIn .panelStrip,
 .railIn .regionArea {
   animation: rail-in 150ms var(--ds-ease-in-out) backwards;
@@ -415,119 +411,41 @@
   white-space: nowrap;
 }
 
-/* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
-   corners); collapsed it renders as the rail's plain icon control. */
+/* New Session joins the foot's first row as a plain icon control beside the
+   panel strip; the tooltip carries the label and the rebound shortcut. */
 .newSession {
-  container-type: inline-size;
-  position: relative;
-  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  height: 38px;
-  padding: 8px 12px;
-  margin: 0 calc(var(--dsh-sidebar-paint-inset) + 1px) 10px;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
-  border: 0.5px solid var(--dsw-alias-border-l3);
+  border: none;
   border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-button-elevated-fill);
+  background: transparent;
+  background-clip: border-box;
   color: var(--dsw-alias-label-primary);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 22px;
+  font: inherit;
   cursor: pointer;
-  overflow: hidden;
 }
 
 @media (hover: hover) {
   .newSession:hover {
-    background: var(--dsw-alias-button-floating-hover);
-  }
-}
-
-/* macOS: the themed elevated fill reads as a foreign slab on the vibrancy
-   sidebar; a white wash sits in the glass like native macOS sidebar
-   controls. Dark keeps the same white ink at lower alpha. */
-:global([data-platform='darwin']) :where(.root:not([role='dialog'])) .newSession {
-  background: rgb(255 255 255 / 0.55);
-}
-
-@media (hover: hover) {
-  :global([data-platform='darwin']) :where(.root:not([role='dialog'])) .newSession:hover {
-    background: rgb(255 255 255 / 0.3);
-  }
-}
-
-:global([data-platform='darwin']) :global([data-ds-dark-theme]) :where(.root:not([role='dialog'])) .newSession {
-  background: rgb(255 255 255 / 0.15);
-}
-
-@media (hover: hover) {
-  :global([data-platform='darwin']) :global([data-ds-dark-theme]) :where(.root:not([role='dialog'])) .newSession:hover {
-    background: rgb(255 255 255 / 0.2);
-  }
-}
-
-.collapsed .newSession {
-  align-self: flex-start;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  margin: 0 0 12px;
-  gap: 0;
-  border-color: transparent;
-  background: transparent;
-}
-
-@media (hover: hover) {
-  .collapsed .newSession:hover {
     background-color: var(--dsw-alias-interactive-bg-hover);
   }
 }
 
-.newSessionLabel {
-  max-width: 200px;
-  overflow: hidden;
-  white-space: nowrap;
+.newSession:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: -2px;
 }
 
-.collapsed .newSessionLabel {
-  max-width: 0;
-}
-
-.newSessionLabelMask { flex: 1; min-width: 0; }
-
-.newSession:focus-visible .newSessionLabelMask:has(+ .newSessionShortcut) {
-  overflow: hidden;
-  mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
-}
-
-@media (hover: hover) {
-  .newSession:hover .newSessionLabelMask:has(+ .newSessionShortcut) {
-    overflow: hidden;
-    mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
-  }
-}
-.newSessionContent { display: flex; width: 100cqw; align-items: center; justify-content: center; gap: 6px; }
-.newSessionContent > svg { flex: none; }
-
-.newSessionShortcut {
-  opacity: 0;
-  display: inline-flex;
-  flex: none;
-  pointer-events: none;
-  font-weight: 400;
-}
-
-.newSession:focus-visible .newSessionShortcut {
-  opacity: 1;
-}
-
-@media (hover: hover) {
-  .newSession:hover .newSessionShortcut {
-    opacity: 1;
-  }
+/* The rail stacks the row's controls in a column; New Session opens it. */
+.collapsed .newSession {
+  margin-bottom: 12px;
 }
 
 .panelStrip {
@@ -536,7 +454,6 @@
   flex-direction: row;
   align-items: center;
   gap: 2px;
-  margin-bottom: 8px;
 }
 
 /* Panel entries are icon buttons (tooltips carry the labels): the New
@@ -625,12 +542,34 @@
   padding-left: 0;
 }
 
-/* Footer seats: additive actions stack above Settings. Each occupant owns its
-   button geometry and hover chrome. */
+/* Footer seats: the foot's first row opens with the New Session icon control,
+   then the panel strip and the settings seat share it (the settings seat
+   shrinks before the icons do, and its occupant owns its button geometry and
+   hover chrome); the rail stacks them back with the settings centered under
+   the icons. Additive footer actions keep their own row below. */
 .footArea {
   flex: none;
   display: flex;
   flex-direction: column;
+}
+
+.footRow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.footRow .settingsArea {
+  flex: 0 1 auto;
+  width: auto;
+}
+
+.collapsed .footRow {
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0;
 }
 
 .settingsArea,
@@ -660,7 +599,6 @@
   .wide,
   .fading > *,
   .railIn .iconButton,
-  .railIn .newSession,
   .railIn .panelStrip,
   .railIn .footArea,
   .railIn .regionArea {

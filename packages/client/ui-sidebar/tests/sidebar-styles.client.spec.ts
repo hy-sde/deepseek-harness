@@ -29,6 +29,7 @@ describe('SidebarRoot.module.css', () => {
   it('uses a compact expanded navigation gap without shrinking the collapsed rail spacing', () => {
     expect(declarations('.panelStrip')?.get('gap')).toBe('2px')
     expect(declarations('.collapsed .panelStrip')?.get('gap')).toBe('12px')
+    expect(declarations('.footRow')?.get('gap')).toBe('2px')
   })
 
   it('shares and cancels the wide shell trailing padding structurally', () => {
@@ -51,20 +52,19 @@ describe('SidebarRoot.module.css', () => {
   it('keeps the reviewed expanded spacing separate from rail and caption controls', () => {
     expect(declarations('.logoRow')?.get('padding')).toBe('8px 0 8px 8px')
     expect(declarations('.logoRow')?.get('margin-bottom')).toBe('0')
-    expect(declarations('.newSession')?.get('margin')).toBe('0 calc(var(--dsh-sidebar-paint-inset) + 1px) 10px')
-    expect(declarations('.newSessionContent')?.get('justify-content')).toBe('center')
+    expect(declarations('.newSession')?.get('width')).toBe('36px')
+    expect(declarations('.newSession')?.get('height')).toBe('36px')
     expect(declarations(":global(html[data-platform='darwin']:not([data-fullscreen])) .root:not(.collapsed) > .topStrip > .toggle")?.get('transform')).toBe('translateX(4px)')
     expect(css).not.toContain(':not(.fading)')
-    expect(declarations(':global([data-windows-titlebar]) .root:not(.collapsed) .newSession')?.has('margin-left')).toBe(false)
     expect(declarations('.topStrip')?.get('height')).toBe('52px')
     expect(declarations('.root.collapsed')?.get('padding')).toBe('18px 10px 6px')
   })
 
-  it('moves the four upper controls while the settings seat only fades', () => {
+  it('moves the upper controls while the foot only fades', () => {
     const animation = 'rail-in 150ms var(--ds-ease-in-out) backwards'
     for (const selector of [
       '.railIn .iconButton',
-      '.railIn .newSession',
+      '.railIn .panelStrip',
       '.railIn .regionArea',
     ]) {
       expect(declarations(selector)?.get('animation')).toBe(animation)
@@ -78,10 +78,10 @@ describe('SidebarRoot.module.css', () => {
     expect(css).toMatch(/@keyframes rail-fade-in\s*\{\s*from\s*\{\s*opacity: 0;\s*}\s*}/)
   })
 
-  it('gives shell rail controls the same base anchor for their shared translation', () => {
+  it('stacks the collapsed foot row and keeps the rail anchor shared', () => {
     expect(declarations('.collapsed .logoRow')?.get('justify-content')).toBe('flex-start')
-    expect(declarations('.collapsed .newSession')?.get('align-self')).toBe('flex-start')
-    expect(declarations('.collapsed .newSession')?.get('width')).toBe('36px')
+    expect(declarations('.collapsed .footRow')?.get('flex-direction')).toBe('column')
+    expect(declarations('.collapsed .newSession')?.get('margin-bottom')).toBe('12px')
   })
 
   it('keeps full-size brand artwork with a compact mark-to-name gap', () => {

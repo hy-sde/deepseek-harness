@@ -30,5 +30,4 @@ it('registers all launcher dictionaries', async ({ start }) => {
   const t = c.ctx.get('locale')!.bind('settings.account') as (key: string) => string
   expect(t('settings')).toBe(en.settings)
   expect(t('menu')).toBe(en.menu)
-  expect(t('more')).toBe(en.more)
 }, 60_000)

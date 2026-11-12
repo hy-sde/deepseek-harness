@@ -326,13 +326,16 @@ describe('web e2e: shortcut reference', () => {
   it.each([
     { platform: 'Win32', primary: 'Control', keys: 'Ctrl + Alt + N' },
     { platform: 'MacIntel', primary: 'Meta', keys: '⌥ ⇧ ⌘ F12' },
-  ])('shows the shortcut inside New Session on hover and keyboard focus at wide and narrow widths on $platform', async ({ platform, primary, keys }) => {
+  ])('shows the rebound New Session shortcut in its tooltip on hover and keyboard focus on $platform', async ({ platform, primary, keys }) => {
     const context = await browser.newContext({ locale: 'en-US', viewport: { width: 1440, height: 1000 } })
     try {
       await context.addInitScript((value) => { Object.defineProperty(navigator, 'platform', { value }) }, platform)
       const page = await context.newPage()
       await page.goto(scaffold.authenticatedUrl)
-      const newSession = page.getByRole('button', { name: 'New session', exact: true }).filter({ hasText: 'New Session' })
+      // The foot's first row hosts the icon-only New Session control; the
+      // tooltip carries the label and the rebound binding.
+      const newSession = page.locator('[class*="footRow"]').getByRole('button', { name: 'New session', exact: true })
+      const tooltip = page.getByRole('tooltip', { name: /New session/ })
       await newSession.waitFor()
       if (platform === 'MacIntel') await page.evaluate(() => { document.documentElement.dataset.platform = 'darwin' })
       await page.keyboard.press(`${primary}+/`)
@@ -348,35 +351,20 @@ describe('web e2e: shortcut reference', () => {
           await page.mouse.down()
           await page.mouse.move(width, 240, { steps: 10 })
           await page.mouse.up()
-          await expect.poll(() => newSession.locator('kbd').allTextContents()).toEqual(keys.split(' '))
-          const centerOffset = () => newSession.evaluate((element) => {
-            const button = element.getBoundingClientRect()
-            const content = element.querySelector('[class*="newSessionContent"]')!.getBoundingClientRect()
-            return Math.abs(button.x + button.width / 2 - content.x - content.width / 2)
-          })
-          expect(await centerOffset()).toBeLessThan(1)
-          const hintStyle = () => newSession.locator('[class*="newSessionShortcut"]').evaluate(element => ({
-            opacity: getComputedStyle(element).opacity, mask: getComputedStyle(element.previousElementSibling!).maskImage,
-          }))
-          expect(await hintStyle()).toEqual({ opacity: '0', mask: 'none' })
+          await expect.poll(() => tooltip.count()).toBe(0)
           await newSession.hover()
-          expect(await centerOffset()).toBeLessThan(1)
-          const mask = await newSession.locator('[class*="newSessionLabelMask"]').boundingBox()
-          const hint = await newSession.locator('[class*="newSessionShortcut"]').boundingBox()
-          expect(mask!.x + mask!.width).toBeLessThanOrEqual(hint!.x + 1)
-          expect((await hintStyle()).opacity).toBe('1')
-          expect((await hintStyle()).mask).toContain('linear-gradient')
-          await newSession.screenshot({ path: fileURLToPath(new URL(`../../../.artifacts/new-session-${process.pid}-${platform}-${colorScheme}-${width}.png`, import.meta.url)) })
-          expect(await page.getByRole('tooltip').count()).toBe(0)
+          await expect.poll(() => tooltip.count()).toBe(1)
+          await expect.poll(() => tooltip.locator('kbd').allTextContents()).toEqual(keys.split(' '))
           await page.mouse.move(700, 100)
-          expect(await hintStyle()).toEqual({ opacity: '0', mask: 'none' })
+          await expect.poll(() => tooltip.count()).toBe(0)
           await newSession.focus()
           await page.keyboard.press('Shift+Tab')
           await page.keyboard.press('Tab')
           expect(await newSession.evaluate(element => element.matches(':focus-visible'))).toBe(true)
-          expect((await hintStyle()).opacity).toBe('1')
-          expect(await page.getByRole('tooltip').count()).toBe(0)
+          await expect.poll(() => tooltip.count()).toBe(1)
+          await expect.poll(() => tooltip.locator('kbd').allTextContents()).toEqual(keys.split(' '))
           await newSession.evaluate((element) => { element.blur() })
+          await expect.poll(() => tooltip.count()).toBe(0)
         }
       }
     } finally { await context.close() }

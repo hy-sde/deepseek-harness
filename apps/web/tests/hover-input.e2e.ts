@@ -6,7 +6,7 @@ import { launchWebScaffold, seedSession, watchConsole } from './scaffold.ts'
 import { createChatScrollFixture } from './chat-scroll-fixture.ts'
 import { connectFreshWorkspace, saveFailureShot } from './support.ts'
 
-it.each([false, true])('shows the new-session shortcut on keyboard focus with touch=%s', async (hasTouch) => {
+it.each([false, true])('shows the new-session shortcut tooltip on keyboard focus with touch=%s', async (hasTouch) => {
   const scaffold = await launchWebScaffold()
   onTestFinished(() => scaffold.close())
   const browser = await chromium.launch()
@@ -16,33 +16,28 @@ it.each([false, true])('shows the new-session shortcut on keyboard focus with to
   const page = await context.newPage()
   onTestFailed(() => saveFailureShot(page, `new-session-focus-${String(hasTouch)}`))
   await page.goto(scaffold.authenticatedUrl)
-  const button = page.getByRole('button', { name: 'New session', exact: true }).filter({ has: page.locator('kbd') })
+  // The foot's first row hosts the icon-only New Session control (darwin keeps
+  // the brand a plain span, so the foot row holds the only button); the
+  // tooltip carries the label and the rebound binding.
+  const button = page.locator('[class*="footRow"]').getByRole('button', { name: 'New session', exact: true })
+  const tooltip = page.getByRole('tooltip', { name: /New session/ })
   await button.waitFor()
-  const shortcut = button.locator('[class*="newSessionShortcut"]')
-  const mask = button.locator('[class*="newSessionLabelMask"]')
-  const opacity = () => shortcut.evaluate(element => getComputedStyle(element).opacity)
-  const maskImage = () => mask.evaluate(element => getComputedStyle(element).maskImage)
   expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(hasTouch)
-  expect(await opacity()).toBe('0')
-  expect(await maskImage()).toBe('none')
+  expect(await tooltip.count()).toBe(0)
   await button.focus()
   await page.keyboard.press('Shift+Tab')
   await page.keyboard.press('Tab')
   expect(await button.evaluate(element => element === document.activeElement && element.matches(':focus-visible'))).toBe(true)
-  expect(await opacity()).toBe('1')
-  expect(await maskImage()).not.toBe('none')
+  await expect.poll(() => tooltip.count()).toBe(1)
   await page.keyboard.press('Tab')
-  expect(await opacity()).toBe('0')
-  expect(await maskImage()).toBe('none')
+  await expect.poll(() => tooltip.count()).toBe(0)
   if (hasTouch) {
     await button.tap()
     expect(await button.evaluate(element => element.matches(':focus-visible'))).toBe(false)
-    expect(await opacity()).toBe('0')
-    expect(await maskImage()).toBe('none')
+    expect(await tooltip.count()).toBe(0)
   } else {
     await button.hover()
-    expect(await opacity()).toBe('1')
-    expect(await maskImage()).not.toBe('none')
+    await expect.poll(() => tooltip.count()).toBe(1)
   }
 })
 

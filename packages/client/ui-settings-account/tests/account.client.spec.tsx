@@ -36,11 +36,11 @@ it.each([en, zh, ja])('offers only Settings from the launcher menu', (copy) => {
   expect(document.activeElement).toBe(trigger)
 })
 
-it.each([false, true])('labels the trigger by sidebar width (wide: %s)', (wide) => {
+it.each([false, true])('keeps the rail flag on the icon-only trigger (wide: %s)', (wide) => {
   render(<AccountMenu {...propsOf(en, { wide })} />)
   const trigger = screen.getByRole('button', { name: en.menu })
   expect(trigger.dataset.collapsed).toBe(String(!wide))
-  expect(trigger.textContent).toBe(wide ? en.more : '')
+  expect(trigger.textContent).toBe('')
 })
 
 it('shows the settings shortcut as a keycap', () => {

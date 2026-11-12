@@ -20,8 +20,8 @@ const ACTION_CENTER_SPACING = 29
 const ACTION_TRAILING_INSET = 7
 const SEARCH_HEIGHT = 32
 const SEARCH_TRANSITION_MS = 180
-const HEADER_LABEL_OFFSET = 7
-const HEADER_ACTION_RIGHT_OFFSETS = { search: -61, view: -29, add: 3 }
+const HEADER_LABEL_OFFSET = 11
+const HEADER_ACTION_RIGHT_OFFSETS = { search: -65, view: -33, add: -1 }
 
 /**
  * Measure painted glyphs and pointer targets independently of the row's layout cells.
@@ -137,38 +137,40 @@ describe('web e2e: sidebar search alignment and row action targets', () => {
     try { await browser?.close() } finally { await scaffold?.close() }
   })
 
-  it('aligns the 32px expanded search with both edges of New session', async () => {
+  it('aligns the Workspaces header and expanded search with the sidebar content edges', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-search-alignment'))
     const searchButton = page.getByRole('button', { name: 'Search sessions', exact: true })
     const input = page.getByPlaceholder('Search session names', { exact: true })
     const search = input.locator('..')
-    const newSession = page.locator('button[class*="newSession"]')
+    // The foot row spans the sidebar's content box edge to edge; the header
+    // keeps its own inset relative to those edges.
+    const footRow = page.locator('[class*="footRow"]')
     const measure = async () => {
       const searchBox = await search.boundingBox()
-      const newSessionBox = await newSession.boundingBox()
-      if (searchBox === null || newSessionBox === null) throw new Error('sidebar controls have no layout box')
+      const footRowBox = await footRow.boundingBox()
+      if (searchBox === null || footRowBox === null) throw new Error('sidebar controls have no layout box')
       return {
         height: searchBox.height,
-        leftOffset: searchBox.x - newSessionBox.x,
-        rightOffset: searchBox.x + searchBox.width - newSessionBox.x - newSessionBox.width,
+        leftOffset: searchBox.x - footRowBox.x,
+        rightOffset: searchBox.x + searchBox.width - footRowBox.x - footRowBox.width,
       }
     }
     for (const dark of [false, true]) {
       await page.evaluate(dark => document.body.toggleAttribute('data-ds-dark-theme', dark), dark)
       await expect.poll(async () => {
-        const reference = await newSession.boundingBox()
-        if (reference === null) throw new Error('New session has no layout box')
+        const reference = await footRow.boundingBox()
+        if (reference === null) throw new Error('sidebar foot row has no layout box')
         const controls = [searchButton, page.getByRole('button', { name: 'View options', exact: true }), page.getByRole('button', { name: 'Add workspace', exact: true })]
         const boxes = await Promise.all(controls.map(control => control.boundingBox()))
         return boxes.map(box => box === null ? null : box.x + box.width - reference.x - reference.width)
       }).toEqual(Object.values(HEADER_ACTION_RIGHT_OFFSETS))
       const labelBox = await page.locator('[class*="sectionHeader"] [class*="sectionLabel"]').boundingBox()
-      const referenceBox = await newSession.boundingBox()
+      const referenceBox = await footRow.boundingBox()
       if (labelBox === null || referenceBox === null) throw new Error('Sidebar heading has no layout box')
       expect(labelBox.x - referenceBox.x).toBe(HEADER_LABEL_OFFSET)
       await searchButton.click()
       await expect.poll(() => searchButton.getAttribute('aria-expanded')).toBe('true')
-      await expect.poll(measure, { timeout: 10_000 }).toEqual({ height: SEARCH_HEIGHT, leftOffset: 0, rightOffset: 0 })
+      await expect.poll(measure, { timeout: 10_000 }).toEqual({ height: SEARCH_HEIGHT, leftOffset: 4, rightOffset: -4 })
       expect(await input.evaluate(element => element === document.activeElement)).toBe(true)
       await input.press('Escape')
       await expect.poll(() => searchButton.getAttribute('aria-expanded')).toBe('false')
@@ -419,33 +421,33 @@ describe('web e2e: sidebar search alignment and row action targets', () => {
       const accountButton = page.getByRole('button', { name: 'Account menu', exact: true })
       const measure = () => accountButton.evaluate((element) => {
         const button = element.getBoundingClientRect()
-        const style = getComputedStyle(element)
-        const newSession = document.querySelector('button[class*="newSession"]')
-        if (newSession === null) throw new Error('New session reference is missing')
-        const reference = newSession.getBoundingClientRect()
-        const footer = element.closest('[class*="footArea"]')?.getBoundingClientRect()
-        if (footer === undefined) throw new Error('Account footer is missing')
+        const footerElement = element.closest('[class*="footArea"]')
+        if (footerElement === null) throw new Error('Account footer is missing')
+        const footer = footerElement.getBoundingClientRect()
+        const strip = footerElement.querySelector('nav')
+        if (strip === null) throw new Error('Panel strip is missing')
+        const stripRect = strip.getBoundingClientRect()
+        const icons = strip.querySelectorAll('button')
+        const lastIcon = icons[icons.length - 1]?.getBoundingClientRect()
+        if (lastIcon === undefined) throw new Error('Panel icons are missing')
         return {
           height: button.height, width: button.width,
           footerCenterOffset: (button.left + button.right - footer.left - footer.right) / 2,
-          leftOffset: button.left - reference.left, rightOffset: button.right - reference.right,
-          paintedLeftOffset: button.left + Number.parseFloat(style.borderLeftWidth) - reference.left,
-          paintedRightOffset: button.right - Number.parseFloat(style.borderRightWidth) - reference.right,
+          stripCenterOffset: (button.top + button.bottom - stripRect.top - stripRect.bottom) / 2,
+          trailingGap: button.left - lastIcon.right,
         }
       })
       const wide = await measure()
-      expect(wide.height).toBe(32)
-      expect(wide.leftOffset).toBe(-4)
-      expect(wide.rightOffset).toBe(4)
-      expect(wide.paintedLeftOffset).toBe(-1)
-      expect(wide.paintedRightOffset).toBe(1)
+      expect(wide.height).toBe(36)
+      expect(wide.stripCenterOffset).toBe(0)
+      expect(wide.trailingGap).toBe(2)
       await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
       await expect.poll(() => accountButton.getAttribute('data-collapsed')).toBe('true')
       await expect.poll(async () => {
         const rect = await accountButton.boundingBox()
         return rect === null ? null : { width: rect.width, height: rect.height }
       }).toEqual({ width: 36, height: 36 })
-      await page.locator('button[class*="newSession"]').evaluate(async (element) => {
+      await page.locator('[class*="footArea"]').evaluate(async (element) => {
         await Promise.all(element.getAnimations().map(animation => animation.finished))
       })
       const rail = await measure()

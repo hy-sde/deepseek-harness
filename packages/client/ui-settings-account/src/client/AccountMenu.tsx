@@ -16,7 +16,6 @@ export function AccountMenu({ wide, settingsShortcut, openSettings, t }: Account
       anchor={<button ref={trigger} type="button" className={css.trigger} data-collapsed={!wide} aria-label={t('menu')}
         aria-haspopup="menu" aria-expanded={open} onClick={() => { setOpen(value => !value) }}>
         <IconEllipsisOutlineMedium size={14} />
-        {wide && <span className={css.label}>{t('more')}</span>}
       </button>}
       items={[{ id: 'settings', label: t('settings'), icon: <IconSettingsOutlineMedium size={16} />,
         ...(settingsShortcut === undefined ? {} : { shortcut: settingsShortcut }) }]}

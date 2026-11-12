@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Own the sidebar settings launcher: a More row that opens a menu with a single Settings entry. Selecting Settings closes the menu, returns focus, and opens the Settings panel with the effective keyboard shortcut. The launcher keeps no account, credential, or model state.
+Own the sidebar settings launcher: an icon-only trigger that opens a menu with a single Settings entry. Selecting Settings closes the menu, returns focus, and opens the Settings panel with the effective keyboard shortcut. The launcher keeps no account, credential, or model state.
 
 ## Table of Contents
 
