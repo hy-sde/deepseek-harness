@@ -13,8 +13,6 @@
 - button "已完成，用时 {{duration}}" [disabled]
 - paragraph: MESSAGES_WEB_READY
 - button "复制"
-- button "好的回答"
-- button "有问题的回答"
 - button "在新对话中分支"
 - button "用量 8.2K tok"
 - text: {{clock}}

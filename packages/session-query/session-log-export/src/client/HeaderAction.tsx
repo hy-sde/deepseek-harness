@@ -5,7 +5,7 @@ import type { InjectFace } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import {
   Button, IconCopyOutlineRegular, IconDownloadOutlineRegular, IconEllipsisOutlineRegular,
-  IconPaperPlaneOutlineRegular, Menu,
+  Menu,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SessionLogDownloadDialog, type SessionLogDownloadDialogProps } from './Dialog.tsx'
 import type { SessionLogDownloadDialogInjected } from './Dialog.tsx'
@@ -22,34 +22,23 @@ export interface SessionMarkdownCopyHeaderInjected {
   copyMarkdown: (sessionId: SessionId) => Promise<void>
 }
 
-/** Session download controls plus Markdown copy and observable feedback availability. */
-export interface SessionLogDownloadHeaderInjected
-  extends SessionLogDownloadDialogInjected, SessionMarkdownCopyHeaderInjected {
-  hooks: SessionLogDownloadDialogInjected['hooks']
-    & SessionMarkdownCopyHeaderInjected['hooks']
-    & { feedbackAvailable: ObservableSnapshot<boolean> }
-  /**
-   * Open the existing Session feedback draft without recording feedback; no-op after the feedback plugin unloads.
-   * @param sessionId - Session whose feedback form to open.
-   */
-  openFeedback: (sessionId: SessionId) => void
-}
+/** Session download controls plus Markdown copy state. */
+export type SessionLogDownloadHeaderInjected = SessionLogDownloadDialogInjected
+  & SessionMarkdownCopyHeaderInjected
 
-/** Session download props plus the optional feedback action. */
+/** Session download props plus the Markdown copy action. */
 export type SessionLogDownloadHeaderProps = SessionLogDownloadDialogProps & InjectFace<SessionLogDownloadHeaderInjected>
 
 /**
- * Render the Session Header menu with Markdown copy, download, and optional
- * feedback actions.
+ * Render the Session Header menu with Markdown copy and download actions.
  * @param props - Session runtime, download and copy state, and localized copy.
  * @returns the persistent Header action and Session-scoped dialog.
  */
 export function SessionLogDownloadHeaderAction(props: SessionLogDownloadHeaderProps): ReactNode {
   const {
-    sessionId, useSessionLogDownload, useSessionMarkdownCopy, useFeedbackAvailable,
-    request, copyMarkdown, openFeedback, t,
+    sessionId, useSessionLogDownload, useSessionMarkdownCopy,
+    request, copyMarkdown, t,
   } = props
-  const feedbackAvailable = useFeedbackAvailable(value => value)
   const entry = useSessionLogDownload(state => state.bySession[String(sessionId)])
   const copying = useSessionMarkdownCopy(state => state.copying)
   const busy = entry?.status === 'downloading'
@@ -65,12 +54,10 @@ export function SessionLogDownloadHeaderAction(props: SessionLogDownloadHeaderPr
         items={[
           { id: 'copy', label: t('menu.copyMarkdown'), icon: <IconCopyOutlineRegular />, disabled: copying },
           { id: 'download', label: t('menu.download'), icon: <IconDownloadOutlineRegular />, disabled: busy },
-          ...feedbackAvailable ? [{ id: 'feedback', label: t('menu.feedback'), icon: <IconPaperPlaneOutlineRegular /> }] : [],
         ]}
         onSelect={(id) => {
           setOpen(false)
-          if (id === 'feedback') openFeedback(sessionId)
-          else if (id === 'copy') void copyMarkdown(sessionId)
+          if (id === 'copy') void copyMarkdown(sessionId)
           else void request(sessionId)
         }}
         anchor={(

@@ -8,7 +8,5 @@
 - paragraph: DONE
 - button "View changes to edited.txt": Edited edited.txt +1 -0
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}

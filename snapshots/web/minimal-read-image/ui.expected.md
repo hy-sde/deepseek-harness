@@ -21,8 +21,6 @@
 - button "Inspect"
 - paragraph: MINIMAL_IMAGE_OK
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

@@ -36,8 +36,6 @@
 - button "在侧边栏预览 {{cwd}}/workspace/von-neumann.svg"
 - text: von-neumann.svg 冯诺依曼架构示意图 SVG
 - button "复制"
-- button "好的回答"
-- button "有问题的回答"
 - button "在新对话中分支"
 - button "用量 32K tok"
 - text: {{clock}}

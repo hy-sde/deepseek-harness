@@ -1,4 +1,4 @@
-// Recorded model replay drives the shipped feedback UI and canonical log.
+// Recorded model replay drives the /feedback command and the canonical log.
 // The loopback collector must receive each authorized suffix before the next UI action.
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -22,7 +22,6 @@ const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/feedback-rele
 const FIXTURE = fileURLToPath(new URL('../../../snapshots/web/feedback-command/session.v3.jsonl', import.meta.url))
 const ACK_EXPECTED = join(SNAPSHOT_DIR, 'ack.expected.md')
 const ACK_EXPANDED_EXPECTED = join(SNAPSHOT_DIR, 'ack-expanded.expected.md')
-const RELEASE_EXPECTED = join(SNAPSHOT_DIR, 'feedback-release.expected.json')
 const MODE = webSnapshotMode()
 
 interface OtlpCapture {
@@ -44,7 +43,6 @@ describe.each(MODE === 'record' ? ['deepseek-official'] : ['deepseek-official', 
   let sessionId: SessionId
   let authorized: readonly SessionEvent[] = []
   let releasedCount = 0
-  const suffixes: string[][] = []
   const uploads: string[] = []
   let headerlessExpected: [string, number, string][] = []
 
@@ -79,7 +77,6 @@ describe.each(MODE === 'record' ? ['deepseek-official'] : ['deepseek-official', 
       .flatMap(resource => resource.scopeLogs.flatMap(scope => scope.logRecords))
       .map(record => JSON.parse(record.attributes.find(attribute => attribute.key === 'content')!.value.stringValue!) as SessionEvent))
     expect(uploadedEvents).toEqual(authorized)
-    suffixes.push(authorized.slice(releasedCount).map(event => event.type))
     releasedCount = authorized.length
     expect(scaffold.ctx.agents.get(sessionId)).toBe(agent)
   }
@@ -216,74 +213,6 @@ describe.each(MODE === 'record' ? ['deepseek-official'] : ['deepseek-official', 
     expect(captured()).toHaveLength(releasedCount)
   })
 
-  it.skipIf(MODE === 'record')('persists text, ratings, notes, and retractions in the canonical session', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-feedback-release-suffix'))
-    const input = page.locator('[data-composer-input]').first()
-    await input.fill('/feedback the second remark')
-    await input.press('Enter')
-    await expect.poll(() => page.getByText(/Feedback recorded for session/).count()).toBe(2)
-    await expectFeedbackRelease('feedback/record', 2)
-    const like = page.getByRole('button', { name: 'Good response' })
-    await like.hover()
-    await like.click()
-    const dialog = page.getByRole('dialog', { name: 'Submit feedback' })
-    await dialog.getByRole('button', { name: 'Instruction understanding and following', exact: true }).click()
-    await dialog.getByRole('textbox', { name: 'Feedback details' }).fill('Clear and complete.')
-    expect(captured()).toHaveLength(releasedCount)
-    await dialog.getByRole('button', { name: 'Submit', exact: true }).click()
-    await expect.poll(() => dialog.count()).toBe(0)
-    const rated = page.getByRole('button', { name: 'Remove rating' })
-    await expect.poll(() => rated.getAttribute('aria-pressed')).toBe('true')
-    await expectFeedbackRelease('feedback/message-put', 1)
-    // The second rating uses the same dialog; typing releases nothing.
-    await page.getByRole('button', { name: 'Bad response' }).click()
-    await dialog.getByRole('button', { name: 'Task result', exact: true }).click()
-    await dialog.getByRole('textbox', { name: 'Feedback details' }).fill('Read both files before answering.')
-    expect(captured()).toHaveLength(releasedCount)
-    await dialog.getByRole('button', { name: 'Submit', exact: true }).click()
-    await expect.poll(() => dialog.count()).toBe(0)
-    await expectFeedbackRelease('feedback/message-put', 2)
-    await rated.click()
-    await expect.poll(() => page.getByRole('button', { name: 'Bad response' }).getAttribute('aria-pressed')).toBe('false')
-    await expectFeedbackRelease('feedback/message-delete', 1)
-    const agent = scaffold.ctx.agents.get(sessionId)
-    if (agent === undefined) throw new Error('feedback session has no active agent')
-    await scaffold.ctx.sessions.flush(agent.session)
-    const events = await readPersistedEvents(scaffold, sessionId)
-    expect(events.filter(event => event.type === 'feedback/record')).toMatchObject([
-      { data: { text: 'the diff view is unreadable' } },
-      { data: { text: 'the second remark' } },
-    ])
-    expect(events.filter(event => event.type === 'feedback/message-put')).toMatchObject([
-      { data: { sessionId, item: { rating: 'positive', note: 'Clear and complete.', category: 'instruction-following' } } },
-      { data: { sessionId, item: { rating: 'negative', note: 'Read both files before answering.', category: 'task-result' } } },
-    ])
-    expect(events.filter(event => event.type === 'feedback/message-delete')).toMatchObject([{ data: { sessionId } }])
-    expect(events.filter(event => event.type === 'turn/end')).toHaveLength(1)
-    expect(agent.session.requestHeader()?.config.provider).toBe(provider)
-    expect(captured()).toHaveLength(releasedCount)
-    const wire = uploads.join('\n')
-    for (const text of ['the diff view is unreadable', 'the second remark',
-      'Clear and complete.', 'Read both files before answering.']) expect(wire).toContain(text)
-    const feedback = events.flatMap<Record<string, string | undefined>>((event) => {
-      switch (event.type) {
-        case 'feedback/record': return [{ type: event.type, text: event.data.text }]
-        case 'feedback/message-put': return [{
-          type: event.type, rating: event.data.item.rating, note: event.data.item.note, category: event.data.item.category,
-        }]
-        case 'feedback/message-delete': return [{ type: event.type }]
-        default: return []
-      }
-    })
-    await compareOrRefreshGolden(RELEASE_EXPECTED, JSON.stringify({
-      mode: 'FEEDBACK_ONLY',
-      eventName: (JSON.parse(uploads[0]!) as OtlpCapture).resourceLogs[0]!.scopeLogs[0]!.logRecords[0]!.eventName,
-      feedback,
-      // The prefix is compared with each provider's actual canonical log above.
-      laterSubmissionSuffixes: suffixes.slice(1),
-    }, null, 2), MODE)
-  }, 60_000)
-
   it.skipIf(MODE === 'record')('releases headerless feedback without capturing another session’s provider-change tail', async () => {
     await selectModel('Feedback mock')
     await selectModel('DeepSeek-V4-Flash')
@@ -315,6 +244,6 @@ describe.each(MODE === 'record' ? ['deepseek-official'] : ['deepseek-official', 
   })
 
   it.skipIf(MODE === 'record')('keeps the fixture inventory closed', async () => {
-    await assertFixtureInventory(SNAPSHOT_DIR, ['ack.expected.md', 'ack-expanded.expected.md', 'feedback-release.expected.json'])
+    await assertFixtureInventory(SNAPSHOT_DIR, ['ack.expected.md', 'ack-expanded.expected.md'])
   })
 })

@@ -16,8 +16,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: MINIMAL_COMPACT_READY
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - button "compact Compacted 2 history items (~{{tokens}} tokens)" [expanded]
@@ -28,8 +26,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: MINIMAL_COMPACT_OK
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

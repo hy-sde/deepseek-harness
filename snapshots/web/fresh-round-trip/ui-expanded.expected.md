@@ -17,8 +17,6 @@
 - button "Think The command executed successfully and output \"WEB_E2E_OK\". I just need to reply with \"DONE\"."
 - paragraph: DONE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

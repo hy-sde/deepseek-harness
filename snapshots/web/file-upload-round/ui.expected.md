@@ -16,8 +16,6 @@
 - button "Completed in {{duration}}"
 - paragraph: UPLOAD_ROUND_OK
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - button "Usage 17.3K tok"
 - text: {{clock}}

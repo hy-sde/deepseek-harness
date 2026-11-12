@@ -13,8 +13,6 @@
 - button "Completed in {{duration}}"
 - paragraph: LIGHTHOUSE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - 'button "feedback Feedback recorded for session session-{{uuid}} Anonymous user: {{uuid}}."'

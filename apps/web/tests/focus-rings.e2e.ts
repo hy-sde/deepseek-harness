@@ -193,6 +193,40 @@ it.each(['light', 'dark'] as const)('assembled app (%s): the sidebar toggle keep
 })
 
 /**
+ * The FeedbackDialog field that owned the only plain `:focus` box-shadow in the UI left with
+ * the feedback plugin; this stand-in keeps the same paint contract (border ring in the
+ * business-primary colour, outline suppressed) for the blanket-suppression negative control.
+ */
+const FIXTURE_DETAIL_CSS = `
+.focus-fixture-detail {
+  display: block;
+  width: 100%;
+  min-height: 116px;
+  box-sizing: border-box;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: var(--dsw-radius-lg);
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  resize: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.focus-fixture-detail:focus {
+  outline: none;
+  border-color: var(--dsw-alias-border-l3);
+  box-shadow: 0 0 0 1px var(--dsw-alias-state-business-primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-fixture-detail {
+    transition: none;
+  }
+}
+`
+/**
  * Supplementary fixture, not an assembled app: Vite compiles the actual Menu,
  * Switch, input-modality module and CSS Modules in memory. Only arrangement and
  * state ownership belong to the fixture; no test writes the modality attribute.
@@ -211,7 +245,6 @@ async function compileFixture(): Promise<{ script: string; css: string }> {
     import ${source('ui-theme/src/styles/focus.css')}
     import ${source('ui-theme/src/styles/gradient-shadow-text.css')}
     import triggerCss from ${source('ui-permission-presets/src/client/PermissionSelect.module.css')}
-    import feedbackCss from ${source('ui-message-feedback/src/client/FeedbackDialog.module.css')}
     import workflowCss from ${source('ui-workflow-run/src/client/WorkflowRunPanel.module.css')}
     import cardCss from ${source('ui-primitives/src/HoverCard.module.css')}
     import pillCss from ${source('ui-primitives/src/Pill.module.css')}
@@ -226,7 +259,7 @@ async function compileFixture(): Promise<{ script: string; css: string }> {
         <Menu open={open} autoFocus onClose={() => setOpen(false)}
           anchor={<button className={triggerCss.trigger} onClick={() => setOpen(!open)}>Open menu</button>}
           items={[{ id: 'first', label: 'First item' }, { id: 'last', label: 'Last item' }]} />
-        <textarea aria-label="Feedback" className={feedbackCss.detail} />
+        <textarea aria-label="Feedback" className="focus-fixture-detail" />
         <button aria-label="Workflow member" className={workflowCss.memberButton}>
           <span data-member-ring className={workflowCss.memberLabelWrap}>
             <span className={workflowCss.memberLabel}>Member</span>
@@ -269,7 +302,7 @@ async function compileFixture(): Promise<{ script: string; css: string }> {
     css: outputs.flatMap((output) => {
       if (output.type !== 'asset' || !output.fileName.endsWith('.css')) return []
       return [typeof output.source === 'string' ? output.source : new TextDecoder().decode(output.source)]
-    }).join('\n'),
+    }).join('\n') + '\n' + FIXTURE_DETAIL_CSS,
   }
 }
 

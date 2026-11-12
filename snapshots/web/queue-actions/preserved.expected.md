@@ -14,8 +14,6 @@
 - paragraph: partial
 - text: Stopped
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - button "2 queued messages" [expanded]

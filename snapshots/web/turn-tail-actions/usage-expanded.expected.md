@@ -14,8 +14,6 @@
 - paragraph: Reading the workspace now.
 - paragraph: DONE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - button "Usage 15.8K tok" [expanded]
 - text: {{clock}}

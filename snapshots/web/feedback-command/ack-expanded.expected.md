@@ -15,8 +15,6 @@
 - button "Think The user wants me to reply with a single word. Let me comply."
 - paragraph: LIGHTHOUSE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - 'button "feedback Feedback recorded for session session-{{uuid}} Anonymous user: {{uuid}}."'

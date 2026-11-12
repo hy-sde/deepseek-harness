@@ -159,8 +159,6 @@
   - listitem:
     - paragraph: Footnote references stay inert superscripts. ↩
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - button "Back to bottom"

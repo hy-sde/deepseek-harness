@@ -19,8 +19,6 @@
 - paragraph: I will read both files before answering.
 - button "Read files"
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation" [disabled]
 - text: Available only on the last message of a completed turn {{clock}} Now give the final answer. {{clock}}
 - button "Copy"
@@ -28,8 +26,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: DONE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}} Keep this later input in the original conversation. {{clock}}
 - button "Copy"
@@ -37,8 +33,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: ORIGINAL ONLY
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

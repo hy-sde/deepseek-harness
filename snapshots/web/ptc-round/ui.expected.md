@@ -24,8 +24,6 @@
 - button "Think The program ran successfully. Let me now reply DONE as instructed."
 - paragraph: DONE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

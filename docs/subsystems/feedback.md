@@ -294,13 +294,7 @@ By default, [`session-log-deepseek`](../../packages/session/session-log-deepseek
 
 ## Web surface
 
-[`@deepseek-ai/dsh-client-ui-message-feedback`](../../packages/client/ui-message-feedback) is the browser consumer. `@deepseek-ai/dsh-api-remotes` mounts the generated `messageFeedback` and `sessionFeedback` contributions, so the plugin calls `ctx.remote.messageFeedback` and `ctx.remote.sessionFeedback` and never touches the transport.
-
-The controls are the `feedback` entry (order 10) of the `conversation.chat.assistant-actions` list slot, which `ui-conversation` declares and renders inside the finalized assistant message's IconActions row. `AssistantMessageNode` carries the optional `messageId` from the `assistant/message` event. The field is absent on interruption-frozen partials, and the render site skips the slot when it is absent. The strip renders once per turn, on the closing assistant message: the Host accepts every append-origin step message as a target, but earlier steps of a multi-step turn render tool rows rather than a rateable body, so the UI exposes a narrower set than the Host contract allows.
-
-One `MessageFeedbackController` per Session backs every message control in that Session: a single `list` read seeds the whole transcript, deferred to first hover or focus rather than fired on mount. Each mutation sends the version that controller last observed as `ifVersion`; a `version-conflict` reply carries the authoritative item, so the controller reconciles from the reply instead of refetching. Mutations serialize per Session so a queued operation compares against the committed version. The injected `retract` operation rechecks the committed rating inside that queue and becomes a no-op after a concurrent change, so stale UI cannot bypass the dialog by recording a bare rating. A `connection/reset` refreshes only Sessions already read.
-
-Either unrecorded rating opens the Session's feedback dialog, the `feedback-dialog` entry of `conversation.input.overlay`: the shared Modal card with seven category chips and a detail box. Submit puts the selected judgment carrying the chosen category and the trimmed description, or neither; success closes the dialog and shows the acknowledgement toast, while failure keeps the dialog and draft open and shows a warning toast. The same dialog opens for the Session from a bare `/feedback` — a decoration `ui-commands` routes as an `action` — and then records through `sessionFeedback.record`; `/feedback <text>` keeps the Host command path. Clicking a recorded rating retracts it without opening the dialog.
+`@deepseek-ai/dsh-api-remotes` mounts the generated `messageFeedback` and `sessionFeedback` contributions for browser clients; the Web build ships no first-party feedback UI, so the browser reaches the contract only through the `/feedback` command. `/feedback <text>` records a Session remark through `sessionFeedback.record`, and the command result confirms recording with the Session and anonymous user ids. A bare `/feedback` answers the Host command's usage error.
 
 ## Boundaries and limitations
 
@@ -309,10 +303,8 @@ Either unrecorded rating opens the Session's feedback dialog, the `feedback-dial
 - A request in the narrow interval after live detach but before the persistence catalog materializes the header can receive `session-not-found`; callers retry after retirement materialization.
 - Cold requests read the complete log; the service has no item-count or aggregate-byte cap. `maxNoteBytes` bounds only each note.
 - The Host contract records no authenticated actor or audit identity and therefore assumes a trusted caller boundary.
-- The Web controls appear in the chat view only. The trajectory and waterfall views render no feedback entry even though their assistant nodes carry the same `messageId`.
-- The Web controller does not consume feedback log events, so a second tab's rating becomes visible on reconnect or on the next conflict reply rather than immediately.
-- The dialog does not pre-check `maxNoteBytes`; an oversized description for a message fails on submit with `note-too-large` rather than while typing. A Session remark has no size bound, as the `/feedback` command never had one.
-- `sessionFeedback.record` serves live Sessions only and answers `session-not-found` otherwise; the dialog reports that failure when its Session retires while it is open.
+- Message notes are bounded by `maxNoteBytes`; an oversized note fails with `note-too-large`. A Session remark has no size bound, as the `/feedback` command never had one.
+- `sessionFeedback.record` serves live Sessions only and answers `session-not-found` otherwise.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

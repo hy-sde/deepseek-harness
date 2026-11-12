@@ -41,8 +41,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r1
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m2 7/25 {{clock}}
 - button "Copy"
@@ -50,8 +48,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r2
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m3 7/25 {{clock}}
 - button "Copy"
@@ -59,8 +55,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r3
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m4 7/25 {{clock}}
 - button "Copy"
@@ -68,8 +62,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r4
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m5 7/25 {{clock}}
 - button "Copy"
@@ -77,8 +69,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r5
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m6 7/25 {{clock}}
 - button "Copy"
@@ -86,8 +76,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r6
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m7 7/25 {{clock}}
 - button "Copy"
@@ -95,8 +83,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r7
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m8 7/25 {{clock}}
 - button "Copy"
@@ -104,8 +90,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r8
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m9 7/25 {{clock}}
 - button "Copy"
@@ -113,8 +97,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r9
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m10 7/25 {{clock}}
 - button "Copy"
@@ -122,8 +104,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r10
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m11 7/25 {{clock}}
 - button "Copy"
@@ -131,8 +111,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r11
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m12 7/25 {{clock}}
 - button "Copy"
@@ -140,8 +118,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r12
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m13 7/25 {{clock}}
 - button "Copy"
@@ -149,8 +125,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r13
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m14 7/25 {{clock}}
 - button "Copy"
@@ -158,8 +132,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r14
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m15 7/25 {{clock}}
 - button "Copy"
@@ -167,8 +139,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r15
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m16 7/25 {{clock}}
 - button "Copy"
@@ -176,8 +146,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r16
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m17 7/25 {{clock}}
 - button "Copy"
@@ -185,8 +153,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r17
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m18 7/25 {{clock}}
 - button "Copy"
@@ -194,8 +160,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r18
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m19 7/25 {{clock}}
 - button "Copy"
@@ -203,8 +167,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r19
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m20 7/25 {{clock}}
 - button "Copy"
@@ -212,8 +174,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r20
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m21 7/25 {{clock}}
 - button "Copy"
@@ -221,8 +181,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r21
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m22 7/25 {{clock}}
 - button "Copy"
@@ -230,8 +188,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r22
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m23 7/25 {{clock}}
 - button "Copy"
@@ -239,8 +195,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r23
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m24 7/25 {{clock}}
 - button "Copy"
@@ -248,8 +202,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r24
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m25 7/25 {{clock}}
 - button "Copy"
@@ -257,8 +209,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r25
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m26 7/25 {{clock}}
 - button "Copy"
@@ -266,8 +216,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r26
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m27 7/25 {{clock}}
 - button "Copy"
@@ -275,8 +223,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r27
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}} m28 7/25 {{clock}}
 - button "Copy"
@@ -284,8 +230,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r28
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: 7/25 {{clock}}
 - button "Back to bottom"

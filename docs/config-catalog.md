@@ -4060,7 +4060,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-subagent-acp`
 
 - `inject`: `subagents` · `subprocess`
-- `source`: [`packages/subagent/subagent-acp/src/index.ts:25`](../packages/subagent/subagent-acp/src/index.ts)
+- `source`: [`packages/subagent/subagent-acp/src/index.ts:26`](../packages/subagent/subagent-acp/src/index.ts)
 
 ```ts config-catalog
 /** Config: how to spawn and drive the child ACP agent process. */
@@ -4091,7 +4091,11 @@ export interface Config {
    * `MAX_TIMER_DELAY_MS`.
    */
   disposeEofGraceMs?: number
-  /** Failure-observation and termination-escalation grace (ms); must not exceed `MAX_TIMER_DELAY_MS`. */
+  /**
+   * POSIX SIGTERM window and forced-termination observation grace (ms) on
+   * dispose; must not exceed `MAX_TIMER_DELAY_MS` nor exceed
+   * `disposeEofGraceMs` (enforced at load).
+   */
   disposeGraceMs?: number
 }
 
@@ -5805,7 +5809,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-layout` | — | [`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts) |
-| `@deepseek-ai/dsh-client-ui-message-feedback` | — | [`packages/client/ui-message-feedback/src/index.ts`](../packages/client/ui-message-feedback/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-model-selection` | — | [`packages/client/ui-model-selection/src/index.ts`](../packages/client/ui-model-selection/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-open-in-app` | — | [`packages/client/ui-open-in-app/src/index.ts`](../packages/client/ui-open-in-app/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-permission-presets` | — | [`packages/client/ui-permission-presets/src/index.ts`](../packages/client/ui-permission-presets/src/index.ts) |

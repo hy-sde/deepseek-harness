@@ -24,8 +24,6 @@
 - button "Completed in {{duration}}" [disabled]
 - paragraph: "Review complete: no actionable findings."
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

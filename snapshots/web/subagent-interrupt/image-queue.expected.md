@@ -20,8 +20,6 @@
 - paragraph: partial
 - text: Stopped
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}} Keep working until I stop you again. {{clock}}
 - button "Copy"

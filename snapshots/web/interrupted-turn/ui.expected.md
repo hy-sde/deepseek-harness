@@ -14,8 +14,6 @@
 - paragraph: DONE
 - status: Task stoppedThe DSH process exited before this turn finished (for example, it was killed, crashed, or timed out while shutting down), so the turn was closed when DSH restarted. Unfinished tool calls have unknown outcomes.
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation" [disabled]
 - text: Available only on the last message of a completed turn {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

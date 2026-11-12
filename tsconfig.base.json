@@ -405,9 +405,6 @@
       "@deepseek-ai/dsh-client-ui-layout": [
         "./packages/client/ui-layout/src"
       ],
-      "@deepseek-ai/dsh-client-ui-message-feedback": [
-        "./packages/client/ui-message-feedback/src"
-      ],
       "@deepseek-ai/dsh-client-ui-model-selection": [
         "./packages/client/ui-model-selection/src"
       ],
