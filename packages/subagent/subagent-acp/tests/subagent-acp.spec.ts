@@ -275,7 +275,7 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
 
   it('tier 1: a cooperative child exits on stdin EOF without any signal', async () => {
     const child = node('process.stdin.resume(); process.stdin.on("end", () => process.exit(0))')
-    await disposeAcpChild(child, 5_000)
+    await disposeAcpChild(child, 5_000, 200)
     const outcome = await child.done
     expect(outcome.exitCode).toBe(0)
     expect(outcome.signal).toBeNull()
@@ -283,7 +283,7 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
 
   it('tier 2: an EOF-deaf child reaches the host terminate outcome', async () => {
     const child = node('setInterval(() => {}, 60_000)')
-    await disposeAcpChild(child, 100)
+    await disposeAcpChild(child, 100, 100)
     const outcome = await child.done
     expectHostTermination(outcome, 'SIGTERM')
   })
@@ -294,7 +294,7 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
     while (!child.collected.stdout!.readFrom(0).text.includes('armed')) {
       await new Promise(resolve => setTimeout(resolve, 10))
     }
-    await disposeAcpChild(child, 50)
+    await disposeAcpChild(child, 50, 50)
     const outcome = await child.done
     expectHostTermination(outcome, 'SIGKILL')
   })
@@ -326,14 +326,15 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
     let disposal: Promise<void> | undefined
     try {
       let disposed = false
-      disposal = disposeAcpChild(child, 150).then(() => { disposed = true })
+      disposal = disposeAcpChild(child, 150, 150).then(() => { disposed = true })
       expect(stdin.writableEnded).toBe(true)
       await vi.advanceTimersByTimeAsync(149)
       expect(calls).toEqual(['wait for EOF'])
       await vi.advanceTimersByTimeAsync(1)
-      expect(calls).toEqual(['wait for EOF', 'terminate', 'wait for exit'])
+      expect(calls).toEqual(['wait for EOF', 'terminate', 'wait for EOF'])
       // Advancing the clock cannot stand in for the process owner's exit proof.
       await vi.advanceTimersByTimeAsync(10_000)
+      expect(calls).toEqual(['wait for EOF', 'terminate', 'wait for EOF', 'wait for exit'])
       expect(disposed).toBe(false)
       exited.resolve(true)
       await disposal
@@ -357,7 +358,7 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
       stdio: { stdin: 'ignore', stdout: { maxBytes: 1000 }, stderr: { maxBytes: 1000 } },
       graceMs: 200,
     })
-    await expect(disposeAcpChild(child, 1_000)).resolves.toBeUndefined()
+    await expect(disposeAcpChild(child, 1_000, 500)).resolves.toBeUndefined()
     await expect(child.done).rejects.toThrow()
   })
 
@@ -378,7 +379,7 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
       waitForExit,
     }
 
-    await expect(disposeAcpChild(child, 1_000)).rejects.toBe(initialFailure)
+    await expect(disposeAcpChild(child, 1_000, 500)).rejects.toBe(initialFailure)
     expect(terminate).toHaveBeenCalledOnce()
     expect(waitForExit).toHaveBeenCalledTimes(2)
   })
@@ -402,7 +403,7 @@ describe('disposeAcpChild (the backend-owned teardown ladder over seam verbs)', 
 
     let failure: unknown
     try {
-      await disposeAcpChild(child, 1_000)
+      await disposeAcpChild(child, 1_000, 500)
     } catch (error: unknown) {
       failure = error
     }
@@ -867,10 +868,12 @@ describe('dsh-subagent-acp', () => {
     // Its EOF teardown can itself await a signal-trapping grandchild (a bash
     // subprocess in its own SIGTERM→SIGKILL grace) plus a flush, so the EOF window
     // must be a SEPARATE, WIDER grace than the SIGTERM tier — not the same value.
-    // The mock models a flush that takes LONGER than the SIGTERM grace but well
-    // under the EOF grace: it lands only because tier 1 waits eofGraceMs, not
-    // graceMs. (If dispose reused the small SIGTERM grace for the EOF wait — the
-    // round-2 bug — SIGTERM would fire mid-flush and the marker would be missing.)
+    // That ordering is now enforced where the graces are configured: the provider
+    // config rejects eofGraceMs < termGraceMs at load, and the shared ladder
+    // re-validates the pair at construction. This test keeps proving the
+    // behavioral point: the flush beat (400ms) outlasts the 50ms SIGTERM grace
+    // but fits the 2000ms EOF grace, so the marker lands only because tier 1
+    // waits its own wider grace instead of reusing the SIGTERM one.
     const tmp = mkdtempSync(join(tmpdir(), 'acp-eof-'))
     const ready = join(tmp, 'ready')
     const flushed = join(tmp, 'flushed')
@@ -923,9 +926,10 @@ describe('dsh-subagent-acp', () => {
           MOCK_HANG: '1', MOCK_IGNORE_EOF: '1', MOCK_TEXT: 'x',
           MOCK_READY_FILE: ready, MOCK_SIGTERM_FILE: sigterm,
         },
-        // Tiny EOF grace so the ignored-EOF window elapses quickly.
+        // Tiny EOF grace so the ignored-EOF window elapses quickly; the SIGTERM
+        // window stays wide enough to absorb the handler's exit.
         disposeEofGraceMs: 150,
-        disposeGraceMs: 2000,
+        disposeGraceMs: 100,
         spawn: (spec) => {
           child = spawnSubprocess(spec)
           return child
@@ -1120,7 +1124,7 @@ describe('dsh-subagent-acp', () => {
       permission: 'reject',
       env: { MOCK_HANG: '1' },
       disposeEofGraceMs: 100,
-      disposeGraceMs: 5000,
+      disposeGraceMs: 100,
       spawn: (spec) => {
         const child = spawnSubprocess(spec)
         return closeProtocolOnPrompt(

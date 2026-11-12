@@ -16,6 +16,7 @@ import type {
 } from '@deepseek-ai/dsh-subagent'
 import { assertUsableCwd } from '@deepseek-ai/dsh-subagent'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
+import { TerminationLadder } from '@deepseek-ai/dsh-subprocess'
 import { acpConfigurationFailure, type AcpRunSpec, DEFAULT_DISPOSE_EOF_GRACE_MS, DEFAULT_DISPOSE_GRACE_MS, type PermissionPolicy, startAcpRun } from './run.ts'
 
 export const name = 'subagent-acp'
@@ -49,7 +50,11 @@ export interface Config {
    * `MAX_TIMER_DELAY_MS`.
    */
   disposeEofGraceMs?: number
-  /** Failure-observation and termination-escalation grace (ms); must not exceed `MAX_TIMER_DELAY_MS`. */
+  /**
+   * POSIX SIGTERM window and forced-termination observation grace (ms) on
+   * dispose; must not exceed `MAX_TIMER_DELAY_MS` nor exceed
+   * `disposeEofGraceMs` (enforced at load).
+   */
   disposeGraceMs?: number
 }
 
@@ -125,5 +130,12 @@ export function apply(ctx: Context, config: Config): void {
   const resolved = config as ResolvedConfig
   assertPositiveFinite('disposeEofGraceMs', resolved.disposeEofGraceMs)
   assertPositiveFinite('disposeGraceMs', resolved.disposeGraceMs)
+  // Construction validates the shared ladder invariant — the EOF quiesce
+  // window must not be shorter than the SIGTERM window — and fails loud at
+  // load, before any child exists.
+  new TerminationLadder({
+    eofGraceMs: resolved.disposeEofGraceMs,
+    termGraceMs: resolved.disposeGraceMs,
+  })
   ctx.subagents.registerProvider(new AcpProvider(resolved.providerName, ctx, resolved))
 }
