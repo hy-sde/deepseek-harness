@@ -27,6 +27,12 @@
  *   persisted phase, so a status never costs a per-slot git fork and outside
  *   changes surface only after verify. Destructive paths keep their explicit
  *   flags and live guards.
+ * - TERMINAL STATE: parked is not a forever home — `sweepWorktrees` (run
+ *   automatically inside `acquireWorktree` unless `settings.autoPrune` is
+ *   false) evicts parked slots idle past `settings.maxIdleMs` (default 7
+ *   days, stamped `parkedAt` at park time) after re-probing clean+merged,
+ *   and deletes an evicted slot's pool-owned cut-branch when it is merged
+ *   into the reset target (`git branch -d`; unmerged branches are retained).
  * - DEVIATIONS vs treehouse (see the scope doc): named-branch support (D1), no
  *   process scan/termination in release (D2 — reports instead of killing),
  *   lease holder identifies the session/agent rather than a PID (D3), and the
@@ -102,6 +108,14 @@ export interface WorktreeSettings {
    * leaving release/prune/destroy (or raising the cap) as the fix.
    */
   maxSlots?: number
+  /**
+   * Auto-sweep parked slots during `acquireWorktree` (default true): evict
+   * parked slots idle past `maxIdleMs` after re-probing clean+merged, and
+   * delete their merged pool-owned cut-branches. See {@link sweepWorktrees}.
+   */
+  autoPrune?: boolean
+  /** Max ms a parked slot may sit idle before the auto-sweep may evict it (default 7 days). */
+  maxIdleMs?: number
 }
 
 /** Per-acquire options. */
@@ -135,6 +149,8 @@ export interface WorktreeLease {
   baseBranch: string
   /** Present when the slot was cut at a named branch (D1). */
   branch?: string
+  /** Present when the acquire-time auto-sweep evicted slots or touched branches. */
+  sweep?: WorktreeSweepResult
 }
 
 /** One pool slot as reported by {@link listWorktrees}. */
@@ -155,6 +171,8 @@ export interface WorktreeStatus {
   baseBranch: string
   /** The named branch this slot was cut at (D1), when any. */
   branch?: string
+  /** ISO timestamp stamped when the slot parked; present only while idle. */
+  parkedAt?: string
   /**
    * True when the recorded damage cause is `dirty`. Not a live probe —
    * {@link verifyWorktrees} refreshes it.
@@ -183,6 +201,35 @@ export interface WorktreePruneResult {
   skipped: WorktreePruneItem[]
   /** Paths actually removed when `yes` was passed. */
   removed: string[]
+}
+
+/** One slot the sweep considered but refused, with the reason. */
+export interface WorktreeSweepSkippedItem {
+  name: string
+  path: string
+  reason: string
+}
+
+/** One pool-owned cut-branch kept after its slot was evicted. */
+export interface WorktreeSweepBranchItem {
+  branch: string
+  /** Why the branch was retained: `unmerged`, or the delete refusal. */
+  reason?: string
+}
+
+/**
+ * Result of {@link sweepWorktrees} and of the acquire-time auto-sweep
+ * (attached to {@link WorktreeLease.sweep} when anything happened).
+ */
+export interface WorktreeSweepResult {
+  /** Parked slots idle past the TTL, re-probed clean+merged, and removed. */
+  evicted: Array<{ name: string; path: string; branch?: string }>
+  /** Slots that reached the eviction gate but were refused (never silently). */
+  skipped: WorktreeSweepSkippedItem[]
+  /** Pool-owned cut-branches deleted with their slot (merged into the target). */
+  deletedBranches: string[]
+  /** Pool-owned cut-branches retained despite eviction (unmerged or delete refused). */
+  retainedBranches: WorktreeSweepBranchItem[]
 }
 
 /** Result of {@link destroyWorktree}. */
@@ -241,6 +288,8 @@ export interface WorktreeStateEntry {
   baseBranch: string
   /** Named branch this slot was cut at (D1). */
   branch?: string
+  /** ISO timestamp stamped when the slot parked; present only while `parked`. */
+  parkedAt?: string
 }
 
 /** The pool state file shape. */
@@ -255,6 +304,8 @@ const STATE_FILE_NAME = 'treehouse-state.json'
 const STATE_SCHEMA = 1 as const
 const DEFAULT_ROOT = join(homedir(), '.treehouse')
 const DEFAULT_LOCK_WAIT_MS = 30_000
+/** Default auto-sweep idle TTL: 7 days. */
+const DEFAULT_MAX_IDLE_MS = 604_800_000
 
 function fail(code: WorktreeErrorCode, message: string, path?: string): never {
   throw new WorktreeError(code, message, path)
@@ -401,6 +452,8 @@ function normalizeEntry(item: unknown): WorktreeStateEntry | null {
     ...(phase === 'leased' && leaseId !== undefined ? { leaseId } : {}),
     ...(phase === 'leased' && typeof raw.leaseHolder === 'string' && raw.leaseHolder.length > 0 ? { leaseHolder: raw.leaseHolder } : {}),
     ...(phase === 'leased' && typeof raw.leasedAt === 'string' && raw.leasedAt.length > 0 ? { leasedAt: raw.leasedAt } : {}),
+    ...(phase === 'parked' && typeof raw.parkedAt === 'string' && raw.parkedAt.length > 0
+      && !Number.isNaN(Date.parse(raw.parkedAt)) ? { parkedAt: raw.parkedAt } : {}),
   }
 }
 
@@ -427,14 +480,17 @@ function serializeState(state: WorktreeState): string {
   return `${JSON.stringify(state, null, 2)}\n`
 }
 
-/** Phase transition to `parked`: drops the damage cause and lease fields. */
-function parkEntry(entry: WorktreeStateEntry): WorktreeStateEntry {
+/** Phase transition to `parked`: drops the damage cause and lease fields, stamps `parkedAt`.
+ * A carried `parkedAt` (same-phase re-verify of an already-parked slot) keeps the idle clock
+ * running instead of silently restarting it; only a real transition into `parked` re-stamps. */
+function parkEntry(entry: WorktreeStateEntry, carriedParkedAt?: string): WorktreeStateEntry {
   return {
     name: entry.name,
     path: entry.path,
     createdAt: entry.createdAt,
     phase: 'parked',
     baseBranch: entry.baseBranch,
+    parkedAt: carriedParkedAt ?? new Date().toISOString(),
     ...entry.branch !== undefined ? { branch: entry.branch } : {},
   }
 }
@@ -607,7 +663,10 @@ function poolRootFromLeasePath(worktreePath: string): string {
  * Acquire a durable lease on one clean worktree slot. A parked candidate is
  * re-probed before reuse — clean (`--untracked-files=all`), HEAD merged into
  * the reset target, directory present — and a failed probe records the slot
- * as damaged (with the matching cause) before a fresh slot is cut. Holding
+ * as damaged (with the matching cause) before a fresh slot is cut. Before
+ * choosing, the auto-sweep may evict parked slots idle past
+ * `settings.maxIdleMs` (see {@link sweepWorktrees}); a non-empty sweep
+ * outcome is attached to the lease as `sweep`. Holding
  * the pool-state file lock for the whole choose-cut-reset cycle makes
  * concurrent acquires (in any process) serialize, and `withRepoLock` on the
  * repository's git common dir serializes with other in-process git mutations
@@ -648,7 +707,25 @@ export async function acquireWorktree(
         }
 
         const { state } = await loadState(git, repoRoot, poolRoot, options.signal)
-        const entries = state.worktrees
+        let entries = state.worktrees
+        let sweep: WorktreeSweepResult | undefined
+        if (settings.autoPrune !== false) {
+          // Auto-prune (terminal state): evict parked slots idle past the TTL
+          // before choosing, so eviction also frees cap room. Persist at once —
+          // a later throw (MaxSlots) must not lose the sweep.
+          const swept = await sweepPoolEntries(git, repoRoot, entries, {
+            maxIdleMs: settings.maxIdleMs ?? DEFAULT_MAX_IDLE_MS,
+            now: Date.now(),
+            settings,
+            signal: options.signal,
+          })
+          entries = swept.entries
+          state.worktrees = entries
+          if (swept.mutated) {
+            await writeFileAtomic(stateFilePath(poolRoot), serializeState(state), { mode: 0o600 })
+          }
+          if (!sweepResultIsEmpty(swept.result)) sweep = swept.result
+        }
         const branch = options.branch
 
         // A reusable slot is a PARKED slot: released after the clean+merge
@@ -716,6 +793,7 @@ export async function acquireWorktree(
           leasedAt,
           baseBranch: updated.baseBranch,
           ...branch !== undefined ? { branch } : {},
+          ...(sweep !== undefined ? { sweep } : {}),
         }
       })
     },
@@ -756,7 +834,22 @@ async function cutNewSlot(
   const slotDir = join(poolRoot, String(slot))
   const path = join(slotDir, basename(repoRoot))
   if (branch !== undefined) {
-    await gitChecked(git, ['worktree', 'add', '-b', branch, path, target], repoRoot, signal)
+    // The branch ref may already exist — e.g. a sweep evicted the slot but had to
+    // retain its cut-branch (branch -d re-checks against the primary HEAD, not the
+    // sweep target). Reuse it when merged into the target (mirroring the same-branch
+    // reuse semantics: the slot force-resets the branch to the target); otherwise
+    // fail with the pre-existing-branch error.
+    const exists = await gitMaybe(git, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], repoRoot, signal)
+    if (exists.ok) {
+      const merged = await gitMaybe(git, ['merge-base', '--is-ancestor', `refs/heads/${branch}`, target], repoRoot, signal)
+      if (!merged.ok) {
+        throw new WorktreeError('GitFailed', `branch '${branch}' already exists and is not merged into ${target}`, repoRoot)
+      }
+      await gitChecked(git, ['worktree', 'add', path, branch], repoRoot, signal)
+      await gitChecked(git, ['reset', '--hard', target], path, signal)
+    } else {
+      await gitChecked(git, ['worktree', 'add', '-b', branch, path, target], repoRoot, signal)
+    }
   } else {
     await gitChecked(git, ['worktree', 'add', '--detach', path, target], repoRoot, signal)
   }
@@ -765,6 +858,7 @@ async function cutNewSlot(
     path,
     createdAt: new Date().toISOString(),
     phase: 'parked',
+    parkedAt: new Date().toISOString(),
     baseBranch: '',
     ...branch !== undefined ? { branch } : {},
   }
@@ -888,6 +982,7 @@ export async function listWorktrees(
       ...entry.leasedAt !== undefined ? { leasedAt: entry.leasedAt } : {},
       baseBranch: entry.baseBranch,
       ...entry.branch !== undefined ? { branch: entry.branch } : {},
+      ...entry.parkedAt !== undefined ? { parkedAt: entry.parkedAt } : {},
       dirty: entry.cause === 'dirty',
       merged: entry.phase === 'parked' && present,
       exists: present,
@@ -940,7 +1035,7 @@ export async function verifyWorktrees(
           ? await isMergedInto(git, entry.path, target, options.signal)
           : false
         const next = present && clean && merged
-          ? parkEntry(entry)
+          ? parkEntry(entry, entry.phase === 'parked' ? entry.parkedAt : undefined)
           : damageEntry(entry, !present ? 'missing' : !clean ? 'dirty' : 'unmerged')
         if (next.phase !== entry.phase || next.cause !== entry.cause) mutated = true
         refreshed.push(next)
@@ -1038,6 +1133,180 @@ export async function pruneWorktrees(
     }
   }
   return { candidates, skipped, removed }
+}
+
+/* ── sweep (auto-prune) ────────────────────────────────────────────────── */
+
+/**
+ * The sweep core. The caller MUST hold the pool-state file lock and the repo
+ * lock: this mutates the entry list in memory and runs the slot removals,
+ * but performs no locking and no state writes of its own, so
+ * `acquireWorktree` can fold it into its own transaction while
+ * {@link sweepWorktrees} wraps it in the standard two locks.
+ *
+ * Guards, in order — leased and damaged slots are never touched; a parked
+ * slot without a usable `parkedAt` (legacy or corrupt) is stamped with the
+ * current time (grace restart) and kept this round; a slot idle past the TTL
+ * must then re-probe present + clean + merged (the park invariant) or it is
+ * recorded damaged with the matching cause instead of removed; the removal
+ * itself is the prune destructive path (`worktree remove --force` + rm).
+ * An evicted slot's pool-owned cut-branch is deleted only when it is merged
+ * into the reset target, enforced by `git branch -d` (which refuses unmerged
+ * branches) — unmerged work is always retained.
+ */
+
+function sweepResultIsEmpty(result: WorktreeSweepResult): boolean {
+  return result.evicted.length === 0
+    && result.skipped.length === 0
+    && result.deletedBranches.length === 0
+    && result.retainedBranches.length === 0
+}
+async function sweepPoolEntries(
+  git: GitService,
+  repoRoot: string,
+  entries: WorktreeStateEntry[],
+  options: {
+    maxIdleMs: number
+    now: number
+    settings: WorktreeSettings
+    signal?: AbortSignal | undefined
+  },
+): Promise<{ entries: WorktreeStateEntry[]; result: WorktreeSweepResult; mutated: boolean }> {
+  const evicted: WorktreeSweepResult['evicted'] = []
+  const skipped: WorktreeSweepSkippedItem[] = []
+  const deletedBranches: string[] = []
+  const retainedBranches: WorktreeSweepBranchItem[] = []
+  let mutated = false
+  const remaining: WorktreeStateEntry[] = []
+
+  // Shared fallback target for slots parked without an explicit base; each
+  // entry's own baseBranch wins (same resolution as release). Unresolvable →
+  // no eviction at all (the merge cannot be proven).
+  const sharedTarget = await resolveTarget(git, repoRoot, undefined, options.settings, options.signal).catch(() => '')
+
+  for (const entry of entries) {
+    if (entry.phase !== 'parked') {
+      remaining.push(entry)
+      continue
+    }
+    const parkedAt = entry.parkedAt !== undefined && !Number.isNaN(Date.parse(entry.parkedAt))
+      ? entry.parkedAt
+      : undefined
+    if (parkedAt === undefined) {
+      // Legacy or corrupt entry: start its grace period now; a later sweep
+      // sees a real age. Never evict on first sight.
+      remaining.push({ ...entry, parkedAt: new Date(options.now).toISOString() })
+      mutated = true
+      continue
+    }
+    const idleMs = options.now - Date.parse(parkedAt)
+    if (!(idleMs >= options.maxIdleMs)) {
+      remaining.push(entry)
+      continue
+    }
+    const target = entry.baseBranch.length > 0 ? entry.baseBranch : sharedTarget
+    if (target.length === 0) {
+      skipped.push({ name: entry.name, path: entry.path, reason: 'no-base' })
+      remaining.push(entry)
+      continue
+    }
+    const present = await exists(entry.path)
+    const clean = present ? await isClean(git, entry.path, options.signal) : false
+    const merged = present && clean ? await isMergedInto(git, entry.path, target, options.signal) : false
+    if (!present || !clean || !merged) {
+      // The park invariant broke (external mutation): record damage instead of
+      // removing — the same precedence as the verify/acquire probes.
+      const cause: WorktreeDamageCause = !present ? 'missing' : !clean ? 'dirty' : 'unmerged'
+      skipped.push({ name: entry.name, path: entry.path, reason: cause })
+      remaining.push(damageEntry(entry, cause))
+      mutated = true
+      continue
+    }
+    try {
+      await gitChecked(git, ['worktree', 'remove', '--force', entry.path], repoRoot, options.signal)
+      await rm(dirname(entry.path), { recursive: true, force: true })
+    } catch (error) {
+      skipped.push({
+        name: entry.name,
+        path: entry.path,
+        reason: `remove failed (${error instanceof Error ? error.message : String(error)})`,
+      })
+      remaining.push(entry)
+      continue
+    }
+    mutated = true
+    evicted.push({
+      name: entry.name,
+      path: entry.path,
+      ...entry.branch !== undefined ? { branch: entry.branch } : {},
+    })
+    if (entry.branch !== undefined) {
+      const branchMerged = await gitMaybe(
+        git,
+        ['merge-base', '--is-ancestor', `refs/heads/${entry.branch}`, target],
+        repoRoot,
+        options.signal,
+      )
+      if (branchMerged.ok) {
+        const deleted = await gitMaybe(git, ['branch', '-d', entry.branch], repoRoot, options.signal)
+        if (deleted.ok) {
+          deletedBranches.push(entry.branch)
+        } else {
+          retainedBranches.push({ branch: entry.branch, reason: deleted.stderr.trim() || 'branch delete refused' })
+        }
+      } else {
+        retainedBranches.push({ branch: entry.branch, reason: 'unmerged' })
+      }
+    }
+  }
+  return { entries: remaining, result: { evicted, skipped, deletedBranches, retainedBranches }, mutated }
+}
+
+/**
+ * Sweep the pool owning `cwd`: evict parked slots idle past `maxIdleMs`
+ * (stamped `parkedAt` at park time) after re-probing them clean and merged,
+ * and delete each evicted slot's pool-owned cut-branch when it is merged
+ * into the reset target. Leased and damaged slots are never touched; a
+ * parked slot that fails the re-probe is recorded damaged, not removed; a
+ * legacy entry without `parkedAt` gets stamped (grace restart) and kept.
+ * `acquireWorktree` runs this automatically before choosing a slot (disable
+ * with `settings.autoPrune === false`); this export is the manual path with
+ * the same locks and guards.
+ * @param git - the git service.
+ * @param cwd - any checkout (main or worktree) of the target repository.
+ * @param options - `settings` (root, base branch, `maxIdleMs`, `lockWaitMs`
+ *   are honored; `autoPrune` only gates the acquire-time run), `maxIdleMs`
+ *   override, `signal`.
+ * @returns what the sweep did (evictions, refusals, branch outcomes).
+ */
+export async function sweepWorktrees(
+  git: GitService,
+  cwd: string,
+  options: { settings?: WorktreeSettings; maxIdleMs?: number; signal?: AbortSignal } = {},
+): Promise<WorktreeSweepResult> {
+  abortGuard(options.signal)
+  const settings = options.settings ?? {}
+  const repoRoot = await primaryRepoRoot(git, cwd, options.signal)
+  const poolRoot = resolveWorktreePoolRoot(settings, repoRoot)
+  await mkdir(poolRoot, { recursive: true })
+  const maxIdleMs = options.maxIdleMs ?? settings.maxIdleMs ?? DEFAULT_MAX_IDLE_MS
+  return withFileLock(
+    stateFilePath(poolRoot),
+    async () => withRepoLock(repoRoot, async () => {
+      const { state } = await loadState(git, repoRoot, poolRoot, options.signal)
+      const swept = await sweepPoolEntries(git, repoRoot, state.worktrees, {
+        maxIdleMs,
+        now: Date.now(),
+        settings,
+        signal: options.signal,
+      })
+      if (swept.mutated) {
+        await writeFileAtomic(stateFilePath(poolRoot), serializeState({ ...state, worktrees: swept.entries }), { mode: 0o600 })
+      }
+      return swept.result
+    }),
+    { waitMs: settings.lockWaitMs ?? DEFAULT_LOCK_WAIT_MS },
+  )
 }
 
 /**

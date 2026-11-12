@@ -8,7 +8,7 @@
 
 import { mkdtemp, writeFile, readFile, access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -39,14 +39,18 @@ async function writeRelative(base: string, path: string, content: string): Promi
 
 const agent = { session: { header: { id: 's1', cwd: '' } } } as never
 
-async function call(args: unknown): Promise<{ value: unknown }> {
-  const result = await executeToolFixture(ctx, {
+async function callRaw(args: unknown): Promise<Awaited<ReturnType<typeof executeToolFixture>>> {
+  return executeToolFixture(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId(`call-${++counter}`),
     name: 'worktree',
     arguments: args,
     agent,
   })
+}
+
+async function call(args: unknown): Promise<{ value: unknown }> {
+  const result = await callRaw(args)
   if (result.isError) {
     const text = result.content.filter(b => b.type === 'text').map(b => b.text).join(' ')
     throw new Error(text || 'tool failed')
@@ -106,6 +110,51 @@ describe('worktree acquire + release + list', () => {
     try {
       expect(value.lease.branch).toBe('feat/tool')
       expect(runGitIn(value.lease.path, ['branch', '--show-current']).trim()).toBe('feat/tool')
+    } finally {
+      await call({ action: 'release', path: value.lease.path, leaseId: value.lease.leaseId })
+    }
+  })
+
+  it('surfaces an acquire-time auto-sweep on the lease', async () => {
+    const first = await call({ action: 'acquire', branch: 'feat/swept' })
+    const lease1 = (first.value as { lease: { path: string; leaseId: string } }).lease
+    try {
+      runGitIn(lease1.path, ['commit', '--allow-empty', '-qm', 'work'])
+      runGit(['merge', 'feat/swept'])
+    } finally {
+      await call({ action: 'release', path: lease1.path, leaseId: lease1.leaseId })
+    }
+    // Backdate only this slot's park stamp: 8 idle days past the 7-day TTL.
+    // The pool root nests a <repo>-<hash> dir: the state file sits beside the slot dirs.
+    const statePath = join(dirname(dirname(lease1.path)), 'treehouse-state.json')
+    const state = JSON.parse(await readFile(statePath, 'utf8')) as {
+      worktrees: Array<{ path: string; parkedAt?: string }>
+    }
+    const entry = state.worktrees.find(item => item.path === lease1.path)
+    expect(entry).toBeDefined()
+    entry!.parkedAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`)
+    const result = await callRaw({ action: 'acquire' })
+    const value = result.value as {
+      lease: {
+        leaseId: string
+        path: string
+        sweep?: {
+          evicted: Array<{ path: string; branch?: string }>
+          deletedBranches: string[]
+        }
+      }
+    }
+    try {
+      expect(value.lease.sweep).toBeDefined()
+      expect(value.lease.sweep!.evicted).toEqual([expect.objectContaining({ path: lease1.path, branch: 'feat/swept' })])
+      expect(value.lease.sweep!.deletedBranches).toEqual(['feat/swept'])
+      // The render surfaces the eviction lines.
+      const text = result.content.filter(block => block.type === 'text').map(block => block.text).join('\n')
+      expect(text).toContain('auto-swept (idle past TTL)')
+      expect(text).toContain('branch deleted (merged): feat/swept')
+      // The merged cut-branch is really gone from the repo.
+      expect(() => runGit(['rev-parse', '--verify', 'refs/heads/feat/swept'])).toThrow()
     } finally {
       await call({ action: 'release', path: value.lease.path, leaseId: value.lease.leaseId })
     }

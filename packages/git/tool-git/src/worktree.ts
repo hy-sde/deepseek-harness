@@ -8,6 +8,12 @@
  * `destroy` (dry-run unless `yes`, with explicit `includeLeased` /
  * `includeUnlanded` overrides for the irreversible cases).
  *
+ * `acquire` also auto-sweeps the pool first (unless `worktreeAutoPrune` is
+ * false): parked slots idle past `worktreeMaxIdleMs` (default 7 days) are
+ * evicted after re-probing clean+merged, and their merged pool-owned
+ * cut-branches are deleted (`git branch -d`); a non-empty outcome rides back
+ * on the lease as `sweep` and is rendered under it.
+ *
  * The engine — `@deepseek-ai/dsh-git/worktree` — holds every safety
  * invariant; this module is the thin model-facing surface: argument mapping,
  * render, and typed error surfacing (`[CODE]` prefixes on `WorktreeError`).
@@ -32,6 +38,7 @@ import type {
   WorktreePruneResult,
   WorktreeReleaseResult,
   WorktreeDestroyResult,
+
 } from '@deepseek-ai/dsh-git/worktree'
 import { resolveCwd } from './commit.ts'
 
@@ -47,6 +54,10 @@ export interface WorktreeToolConfig {
   worktreeLockWaitMs?: number
   /** Cap on total pooled slots per repository (default 0 = unlimited; reuse still allowed at the cap). */
   worktreeMaxSlots?: number
+  /** Auto-sweep parked slots during acquire (default true). */
+  worktreeAutoPrune?: boolean
+  /** Max ms a parked slot may sit idle before the acquire-time sweep may evict it (default 604800000 = 7 days). */
+  worktreeMaxIdleMs?: number
 }
 
 type WorktreeAction = 'acquire' | 'release' | 'list' | 'prune' | 'destroy'
@@ -100,6 +111,8 @@ function engineSettings(config: WorktreeToolConfig): {
   fetchBeforeAcquire?: boolean
   lockWaitMs?: number
   maxSlots?: number
+  autoPrune?: boolean
+  maxIdleMs?: number
 } {
   return {
     ...config.worktreeRoot !== undefined ? { root: config.worktreeRoot } : {},
@@ -107,6 +120,8 @@ function engineSettings(config: WorktreeToolConfig): {
     ...config.worktreeFetchBeforeAcquire !== undefined ? { fetchBeforeAcquire: config.worktreeFetchBeforeAcquire } : {},
     ...config.worktreeLockWaitMs !== undefined ? { lockWaitMs: config.worktreeLockWaitMs } : {},
     ...config.worktreeMaxSlots !== undefined ? { maxSlots: config.worktreeMaxSlots } : {},
+    ...config.worktreeAutoPrune !== undefined ? { autoPrune: config.worktreeAutoPrune } : {},
+    ...config.worktreeMaxIdleMs !== undefined ? { maxIdleMs: config.worktreeMaxIdleMs } : {},
   }
 }
 
@@ -124,6 +139,8 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
       + 'or reuses a provably-idle one, returning `path` + `leaseId`; `release` returns the slot (refuses dirty unless `force`) '
       + 'is conditional on the exact lease id; `list` shows live pool status; `prune` removes only idle slots (dry-run '
       + 'without `yes`); `destroy` removes one slot (dry-run without `yes`, refuses leased/dirty unless the explicit flag). '
+      + 'Before choosing a slot, `acquire` auto-sweeps parked slots idle past the TTL (default 7 days) and deletes their '
+      + 'merged cut-branches (disable with `worktreeAutoPrune: false`); a non-empty sweep outcome returns on the lease as `sweep`. '
       + 'Work at `lease.path` — it is a normal git worktree of the same repository; finish with release before shipping. '
       + 'Only ever administer slots you own: prune/destroy are shared-pool administration with live-work risk, so never touch another task\'s slot.',
     parameters: {
@@ -164,6 +181,53 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
               leasedAt: { type: 'string', required: true },
               baseBranch: { type: 'string', required: true },
               branch: { type: 'string' },
+              sweep: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  evicted: {
+                    type: 'array',
+                    required: true,
+                    items: {
+                      type: 'object',
+                      additionalProperties: false,
+                      properties: {
+                        name: { type: 'string', required: true },
+                        path: { type: 'string', required: true },
+                        branch: { type: 'string' },
+                      },
+                    },
+                  },
+                  /* jscpd:ignore-start -- the sweep output schema repeats the name/path/reason item shape used by prune. */
+                  skipped: {
+                    type: 'array',
+                    required: true,
+                    items: {
+                      type: 'object',
+                      additionalProperties: false,
+                      properties: {
+                        name: { type: 'string', required: true },
+                        path: { type: 'string', required: true },
+                        reason: { type: 'string', required: true },
+                      },
+                    },
+                  },
+                  /* jscpd:ignore-end */
+                  deletedBranches: { type: 'array', required: true, items: { type: 'string' } },
+                  retainedBranches: {
+                    type: 'array',
+                    required: true,
+                    items: {
+                      type: 'object',
+                      additionalProperties: false,
+                      properties: {
+                        branch: { type: 'string', required: true },
+                        reason: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
           released: {
@@ -189,6 +253,7 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
                 leasedAt: { type: 'string' },
                 baseBranch: { type: 'string', required: true },
                 branch: { type: 'string' },
+                parkedAt: { type: 'string' },
                 dirty: { type: 'boolean', required: true },
                 merged: { type: 'boolean', required: true },
                 exists: { type: 'boolean', required: true },
@@ -338,6 +403,13 @@ function renderWorktreeValue(value: WorktreeToolValue): string {
         `  base: ${lease.baseBranch}`,
         `  head: ${lease.branch ?? 'detached'}`,
       ]
+      const sweep = lease.sweep
+      if (sweep !== undefined) {
+        for (const item of sweep.evicted) lines.push(`auto-swept (idle past TTL): ${item.path}`)
+        for (const branch of sweep.deletedBranches) lines.push(`branch deleted (merged): ${branch}`)
+        for (const item of sweep.retainedBranches) lines.push(`branch retained (${item.reason ?? 'unmerged'}): ${item.branch}`)
+        for (const item of sweep.skipped) lines.push(`sweep skip (${item.reason}): ${item.path}`)
+      }
       if (value.warnings.length > 0) lines.push(...value.warnings.map(warning => `warning: ${warning}`))
       return lines.join('\n')
     }

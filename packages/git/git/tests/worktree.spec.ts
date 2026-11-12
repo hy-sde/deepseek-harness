@@ -9,7 +9,7 @@
 import { mkdtemp, mkdir, rm, writeFile, readFile } from 'node:fs/promises'
 import { tmpdir, homedir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { realpathSync, rmSync } from 'node:fs'
+import { existsSync, realpathSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -21,6 +21,7 @@ import {
   listWorktrees,
   verifyWorktrees,
   pruneWorktrees,
+  sweepWorktrees,
   destroyWorktree,
   primaryRepoRoot,
   resolveWorktreePoolRoot,
@@ -89,6 +90,17 @@ async function expectCode<T>(promise: Promise<T>, code: WorktreeError['code']): 
     expect(error).toBeInstanceOf(WorktreeError)
     expect((error as WorktreeError).code).toBe(code)
   }
+}
+
+/** Rewrites the pool state so the slot parked `msAgo` milliseconds ago. */
+async function backdateParkedAt(statePath: string, path: string, msAgo: number): Promise<void> {
+  const state = JSON.parse(await readFile(statePath, 'utf8')) as {
+    worktrees: Array<{ path: string; parkedAt?: string }>
+  }
+  const entry = state.worktrees.find(item => item.path === path)
+  expect(entry).toBeDefined()
+  entry!.parkedAt = new Date(Date.now() - msAgo).toISOString()
+  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`)
 }
 
 describe('primaryRepoRoot', () => {
@@ -279,6 +291,219 @@ describe('pruneWorktrees', () => {
     await releaseWorktree(g.git, g.dir, b, { settings: { root: f.pool } })
     const result = await pruneWorktrees(f.git, f.dir, { settings: { root: f.pool }, all: true, yes: true })
     expect(result.removed).toEqual(expect.arrayContaining([a.path, b.path]))
+  })
+})
+
+describe('sweepWorktrees (auto-prune)', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const STALE = 8 * DAY
+
+  it('evicts a stale parked slot and deletes its merged cut-branch', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool }, { branch: 'feat/merged' })
+    f.runIn(a.path, ['commit', '--allow-empty', '-qm', 'work'])
+    f.run(['merge', 'feat/merged'])
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    await backdateParkedAt(statePath, a.path, STALE)
+    const result = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(result.evicted).toEqual([expect.objectContaining({ path: a.path, branch: 'feat/merged' })])
+    expect(result.deletedBranches).toEqual(['feat/merged'])
+    expect(result.skipped).toHaveLength(0)
+    expect(result.retainedBranches).toHaveLength(0)
+    expect(existsSync(a.path)).toBe(false)
+    expect((await listWorktrees(f.git, f.dir, { settings: { root: f.pool } }))).toHaveLength(0)
+    expect(() => f.run(['rev-parse', '--verify', 'refs/heads/feat/merged'])).toThrow()
+  })
+
+  it('retains an unmerged cut-branch while still evicting the slot', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool }, { branch: 'feat/wip' })
+    f.runIn(a.path, ['commit', '--allow-empty', '-qm', 'wip work'])
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    await backdateParkedAt(statePath, a.path, STALE)
+    const result = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(result.evicted).toEqual([expect.objectContaining({ path: a.path, branch: 'feat/wip' })])
+    expect(result.retainedBranches).toEqual([{ branch: 'feat/wip', reason: 'unmerged' }])
+    expect(result.deletedBranches).toHaveLength(0)
+    expect(existsSync(a.path)).toBe(false)
+    // The unmerged branch survives: `git branch -d` refuses, and the sweep never forces.
+    expect(f.run(['rev-parse', '--verify', 'refs/heads/feat/wip']).trim()).toBeTruthy()
+  })
+
+  it('stamps a legacy entry (grace restart) and keeps young slots', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    // Strip the stamp: a pre-auto-sweep state file must never evict on first sight.
+    const legacy = JSON.parse(await readFile(statePath, 'utf8')) as { worktrees: Array<Record<string, unknown>> }
+    delete legacy.worktrees[0]!.parkedAt
+    await writeFile(statePath, `${JSON.stringify(legacy, null, 2)}\n`)
+    const result = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(result.evicted).toHaveLength(0)
+    expect(result.skipped).toHaveLength(0)
+    expect(existsSync(a.path)).toBe(true)
+    const stamped = JSON.parse(await readFile(statePath, 'utf8')) as { worktrees: Array<{ parkedAt?: string }> }
+    expect(typeof stamped.worktrees[0]!.parkedAt).toBe('string')
+    // The fresh stamp starts the grace period: a 60s TTL still keeps the slot.
+    const later = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool }, maxIdleMs: 60_000 })
+    expect(later.evicted).toHaveLength(0)
+    expect(existsSync(a.path)).toBe(true)
+  })
+
+  it('never touches leased or damaged slots even with maxIdleMs 0', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    const b = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, b, { settings: { root: f.pool } })
+    await writeFile(join(b.path, 'wip.txt'), 'wip\n')
+    await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    const result = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool }, maxIdleMs: 0 })
+    expect(result.evicted).toHaveLength(0)
+    expect(result.skipped).toHaveLength(0)
+    const listed = await listWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(listed.find(item => item.path === a.path)).toMatchObject({ status: 'leased' })
+    expect(listed.find(item => item.path === b.path)).toMatchObject({ status: 'damaged' })
+    expect(existsSync(a.path)).toBe(true)
+    expect(existsSync(b.path)).toBe(true)
+  })
+
+  it('records a stale dirty slot as damaged instead of removing it', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    await writeFile(join(a.path, 'wip.txt'), 'wip\n')
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    await backdateParkedAt(statePath, a.path, STALE)
+    const result = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(result.evicted).toHaveLength(0)
+    expect(result.skipped).toEqual([expect.objectContaining({ path: a.path, reason: 'dirty' })])
+    expect(existsSync(a.path)).toBe(true)
+    const state = JSON.parse(await readFile(statePath, 'utf8')) as {
+      worktrees: Array<{ path: string; phase: string; cause?: string }>
+    }
+    expect(state.worktrees[0]).toMatchObject({ path: a.path, phase: 'damaged', cause: 'dirty' })
+  })
+
+  it('acquire runs the sweep and attaches a non-empty outcome to the lease', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool }, { branch: 'feat/old' })
+    f.runIn(a.path, ['commit', '--allow-empty', '-qm', 'work'])
+    f.run(['merge', 'feat/old'])
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    await backdateParkedAt(statePath, a.path, STALE)
+    const lease = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    // The evicted slot's number is recycled by the new cut — the sweep
+    // payload (not path inequality) is the proof of eviction.
+    expect(lease.sweep).toBeDefined()
+    expect(lease.sweep!.evicted).toEqual([expect.objectContaining({ path: a.path, branch: 'feat/old' })])
+    expect(lease.sweep!.deletedBranches).toEqual(['feat/old'])
+    expect(() => f.run(['rev-parse', '--verify', 'refs/heads/feat/old'])).toThrow()
+    const listed = await listWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(listed).toHaveLength(1)
+    expect(listed[0]).toMatchObject({ path: lease.path, status: 'leased' })
+    // Nothing happened on the next acquire → no sweep payload at all.
+    const second = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    expect(second.sweep).toBeUndefined()
+  })
+
+  it('autoPrune false disables the acquire-time sweep; the manual path still works', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool }, { branch: 'feat/old' })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    await backdateParkedAt(statePath, a.path, STALE)
+    const lease = await acquireWorktree(f.git, f.dir, { root: f.pool, autoPrune: false }, { branch: 'feat/other' })
+    expect(lease.path).not.toBe(a.path)
+    expect(lease.sweep).toBeUndefined()
+    expect(existsSync(a.path)).toBe(true)
+    const result = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(result.evicted).toEqual([expect.objectContaining({ path: a.path, branch: 'feat/old' })])
+    expect(existsSync(a.path)).toBe(false)
+  })
+
+  it('maxIdleMs override: 60000 keeps, 0 evicts immediately', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const kept = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool }, maxIdleMs: 60_000 })
+    expect(kept.evicted).toHaveLength(0)
+    expect(existsSync(a.path)).toBe(true)
+    const gone = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool }, maxIdleMs: 0 })
+    expect(gone.evicted).toEqual([expect.objectContaining({ path: a.path })])
+    expect(existsSync(a.path)).toBe(false)
+  })
+  it('verify keeps an unchanged parked slot’s idle clock and re-stamps only on recovery', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool })
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    const ANCIENT = '2020-01-01T00:00:00.000Z'
+    const entryOf = async () => {
+      const state = JSON.parse(await readFile(statePath, 'utf8')) as {
+        worktrees: Array<{ path: string; phase: string; parkedAt?: string }>
+      }
+      return state.worktrees.find(item => item.path === a.path)!
+    }
+    const setParkedAt = async (parkedAt: string) => {
+      const state = JSON.parse(await readFile(statePath, 'utf8')) as {
+        worktrees: Array<{ path: string; parkedAt?: string }>
+      }
+      const entry = state.worktrees.find(item => item.path === a.path)!
+      entry.parkedAt = parkedAt
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`)
+    }
+    await setParkedAt(ANCIENT)
+    await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    // A same-phase re-verify carries the clock instead of restarting it.
+    expect((await entryOf()).parkedAt).toBe(ANCIENT)
+    // Damage → recovery is a real transition into parked: the clock restarts.
+    await writeFile(join(a.path, 'wip.txt'), 'wip\n')
+    await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    expect(await entryOf()).toMatchObject({ phase: 'damaged' })
+    await rm(join(a.path, 'wip.txt'))
+    await verifyWorktrees(f.git, f.dir, { settings: { root: f.pool } })
+    const recovered = await entryOf()
+    expect(recovered).toMatchObject({ phase: 'parked' })
+    expect(recovered.parkedAt).not.toBe(ANCIENT)
+  })
+
+  it('re-acquires a branch whose slot was evicted with the branch retained', async () => {
+    const f = await makeFixture()
+    const a = await acquireWorktree(f.git, f.dir, { root: f.pool }, { branch: 'feat/kept' })
+    f.runIn(a.path, ['commit', '--allow-empty', '-qm', 'work'])
+    f.run(['merge', 'feat/kept'])
+    await releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } })
+    // Detach the primary HEAD behind the merge so `git branch -d` refuses the
+    // delete even though the branch is merged into the sweep target (master —
+    // pinned via baseBranch because inferDefaultBranch would read the detached HEAD).
+    f.run(['checkout', '--detach', 'master~1'])
+    const statePath = join(dirname(dirname(a.path)), 'treehouse-state.json')
+    await backdateParkedAt(statePath, a.path, STALE)
+    const swept = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool, baseBranch: 'master' } })
+    expect(swept.evicted).toEqual([expect.objectContaining({ path: a.path, branch: 'feat/kept' })])
+    expect(swept.retainedBranches).toHaveLength(1)
+    expect(swept.retainedBranches[0].branch).toBe('feat/kept')
+    expect(swept.retainedBranches[0].reason).toBeTruthy()
+    // The same-branch re-acquire reuses the retained branch instead of failing.
+    const lease = await acquireWorktree(f.git, f.dir, { root: f.pool, baseBranch: 'master' }, { branch: 'feat/kept' })
+    expect(lease.branch).toBe('feat/kept')
+    expect(f.runIn(lease.path, ['rev-parse', 'HEAD']).trim()).toBe(f.run(['rev-parse', 'master']).trim())
+    await releaseWorktree(f.git, f.dir, lease, { settings: { root: f.pool } })
+  })
+
+  it('fails a cut for an existing unmerged branch with the explicit error', async () => {
+    const f = await makeFixture()
+    f.run(['checkout', '-b', 'feat/divergent'])
+    f.run(['commit', '--allow-empty', '-qm', 'divergent'])
+    f.run(['checkout', 'master'])
+    await expectCode(
+      acquireWorktree(f.git, f.dir, { root: f.pool }, { branch: 'feat/divergent' }),
+      'GitFailed',
+    )
   })
 })
 
