@@ -447,8 +447,9 @@ describe('corrupt state recovery', () => {
     const verifiedState = JSON.parse(await readFile(statePath, 'utf8')) as {
       worktrees: Array<{ phase: string; cause?: string }>
     }
-    expect(verifiedState.worktrees[0]).toMatchObject({ phase: 'parked' })
-    expect(verifiedState.worktrees[0].cause).toBeUndefined()
+    const parkedEntry = verifiedState.worktrees[0]
+    expect(parkedEntry).toMatchObject({ phase: 'parked' })
+    expect(parkedEntry?.cause).toBeUndefined()
     // The rebuilt entry has no lease id → the original lease cannot release it.
     await expectCode(
       releaseWorktree(f.git, f.dir, a, { settings: { root: f.pool } }),

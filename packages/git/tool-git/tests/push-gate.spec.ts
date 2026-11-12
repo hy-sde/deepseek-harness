@@ -222,7 +222,7 @@ describe('durable gate verdicts (ledger-backed)', () => {
     await recordReviewVerdictDurable(git, repoDir, undefined, record({ root, beforeHead, indexTree, at: Date.now() }))
     const doc = JSON.parse(await readFile(await ledgerPath(git, repoDir, undefined), 'utf8')) as Record<string, GateVerdictRecord>
     const stored = doc['gate:staged']
-    expect(stored).toBeDefined()
+    if (!stored) throw new Error('expected a gate:staged verdict record in the ledger')
     expect(stored.state).toBe('ship')
     expect(stored.verdict).toBe('ship')
     expect(stored.beforeHead).toBe(beforeHead)
