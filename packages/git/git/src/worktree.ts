@@ -958,10 +958,13 @@ export async function verifyWorktrees(
  * Produce (and with `yes`, execute) a prune plan for the pool owning `cwd`.
  * Only parked slots are candidates — leased and damaged slots are reported as
  * skipped, and a parked slot whose directory is gone is reported `missing`.
- * Slots are trusted as persisted (the park invariant: released only after the
- * clean+merge checks passed); run {@link verifyWorktrees} first when the
- * worktrees may have been mutated externally. `all` sweeps every pool under
- * the configured root. Dry-run unless `yes`.
+ * Parked slots are trusted as persisted for the dry-run report (the park
+ * invariant: released only after the clean+merge checks passed); run
+ * {@link verifyWorktrees} first when the worktrees may have been mutated
+ * externally. The destructive `yes` path live-probes every parked slot for
+ * dirtiness before removal, so an unprobed dirty slot is skipped in every
+ * pool. `all` sweeps every pool under the configured root. Dry-run unless
+ * `yes`.
  */
 export async function pruneWorktrees(
   git: GitService,
@@ -1011,6 +1014,12 @@ export async function pruneWorktrees(
       }
       if (!(await exists(entry.path))) {
         skipped.push({ name: entry.name, path: entry.path, reason: 'missing' })
+        continue
+      }
+      if (options.yes === true && !(await isClean(git, entry.path, options.signal))) {
+        // Last-resort probe on the destructive path: a parked slot that was
+        // dirtied externally (never re-verified) must not be force-removed.
+        skipped.push({ name: entry.name, path: entry.path, reason: 'dirty (unprobed park)' })
         continue
       }
       candidates.push({ name: entry.name, path: entry.path, reason: 'removable' })
