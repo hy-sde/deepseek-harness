@@ -14,9 +14,10 @@ import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-j
 import { generationLogPath } from '../../../session/session-persistence-jsonl/src/format.ts'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import type { SubagentCatalogEntry } from '@deepseek-ai/dsh-subagent'
+import type { SubagentCatalogEntry, SubagentPromptRequestId } from '@deepseek-ai/dsh-subagent'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
+import { type GenerateOptions, LlmAdapter, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import { startTestActivation } from './local-activation.ts'
 import { seedStoredSession } from './persistence-helpers.ts'
@@ -36,7 +37,7 @@ afterEach(async () => {
 /** Boot the continuable stack with real JSONL session persistence. */
 async function setup(
   script: Script,
-  options: { compression?: 'none' | 'zstd' } = {},
+  options: { compression?: 'none' | 'zstd'; adapter?: LlmAdapter } = {},
 ) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
@@ -54,7 +55,7 @@ async function setup(
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(SubagentSpawn, { providerName: 'spawn' })
   await ctx.plugin(SubagentFork, { providerName: 'fork' })
-  ctx.llm.registerAdapter(['mock'], new MockAdapter(script))
+  ctx.llm.registerAdapter(['mock'], options.adapter ?? new MockAdapter(script))
   const loop = ctx.get('agentLoop')
   const parent = loop === undefined
     ? (() => {
@@ -66,6 +67,29 @@ async function setup(
 }
 
 const testSignal = new AbortController().signal
+
+/** One scripted response that may wait on a caller-released gate before streaming. */
+interface GatedEntry {
+  chunks: StreamChunk[]
+  gate?: Promise<undefined>
+}
+
+/** Adapter whose single scripted entry can hold a model call open until the test releases it. */
+class GatedAdapter extends LlmAdapter {
+  constructor(private readonly script: GatedEntry[]) {
+    super()
+  }
+
+  async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    const entry = this.script.shift()
+    if (!entry) throw new Error('GatedAdapter: script exhausted')
+    if (entry.gate) await entry.gate
+    for (const chunk of entry.chunks) {
+      if (options.signal?.aborted) throw new Error('aborted')
+      yield chunk
+    }
+  }
+}
 
 /** Start one continuable child through the real service path and await Activation release. */
 async function startChild(
@@ -107,7 +131,7 @@ describe('SubagentRuntime.listChildren', () => {
     })
 
     expect(await ctx.subagents.listChildren(parent)).toEqual([{
-      id: child, createdAt: 2, mode: 'continuable', label: 'historical child',
+      id: child, createdAt: 2, mode: 'continuable', label: 'historical child', phase: 'closed', closingScope: false, draining: false,
     }])
     for (const { path, content } of originals) {
       expect(readFileSync(path, 'utf8')).toBe(content)
@@ -134,8 +158,8 @@ describe('SubagentRuntime.listChildren', () => {
 
     const children = await ctx.subagents.listChildren(parent.id)
     expect(children.map(({ createdAt: _createdAt, ...child }) => child)).toEqual([
-      { id: callerOwned.childId, label: 'spawn', mode: 'continuable' },
-      { id: continuableId, label: 'continuable child', mode: 'continuable' },
+      { id: callerOwned.childId, label: 'spawn', mode: 'continuable', phase: 'closed', closingScope: false, draining: false },
+      { id: continuableId, label: 'continuable child', mode: 'continuable', phase: 'closed', closingScope: false, draining: false },
     ])
     expect(children.every(child => Number.isFinite(child.createdAt))).toBe(true)
     expect(listSessions).not.toHaveBeenCalled()
@@ -159,7 +183,7 @@ describe('SubagentRuntime.listChildren', () => {
       [Symbol.dispose]: dispose,
     })
     expect(await ctx.subagents.listChildren(parent.id)).toEqual([{
-      id: childId, createdAt: 3, label: 'state child', mode: 'one-shot',
+      id: childId, createdAt: 3, label: 'state child', mode: 'one-shot', phase: 'closed', closingScope: false, draining: false,
     }])
     expect(dispose).toHaveBeenCalledOnce()
   })
@@ -214,7 +238,7 @@ describe('SubagentRuntime.listChildren', () => {
     })
 
     expect(await ctx.subagents.listChildren(fork.id)).toEqual([{
-      id: SessionId('own-child'), createdAt: 2, mode: 'continuable', label: 'own',
+      id: SessionId('own-child'), createdAt: 2, mode: 'continuable', label: 'own', phase: 'closed', closingScope: false, draining: false,
     }])
   })
 
@@ -250,8 +274,88 @@ describe('SubagentRuntime.listChildren', () => {
     expect(listSessions).not.toHaveBeenCalled()
     expect(entries).toHaveLength(1_025)
     expect(entries.find(entry => entry.id === 'child-064')).toEqual({
-      id: SessionId('child-064'), createdAt: 64, mode: 'one-shot',
+      id: SessionId('child-064'), createdAt: 64, mode: 'one-shot', phase: 'closed', closingScope: false, draining: false,
     })
+  })
+
+  it('reports a resident child while its turn is parked on the model call', async () => {
+    let releaseTurn: () => void = () => undefined
+    const gate = new Promise<undefined>((resolve) => { releaseTurn = () => resolve(undefined) })
+    const { ctx, parent } = await setup([], { adapter: new GatedAdapter([{ chunks: textResponse('held work'), gate }]) })
+    const started = await ctx.subagents.startActivation({
+      delivery: 'caller',
+      provider: 'spawn',
+      label: 'resident child',
+      request: { prompt: [{ type: 'text', text: 'task: resident' }], parent },
+      signal: testSignal,
+    })
+    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+      { id: started.childId, phase: 'resident', closingScope: false, draining: false },
+    ])
+    releaseTurn()
+    await started.result
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: started.childId, phase: 'closed', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
+  })
+
+  it('reports a materializing child while a cold followup resumes it', async () => {
+    const { ctx, parent } = await setup([textResponse('first work'), textResponse('woken work')])
+    const first = await startChild(ctx, parent, 'woken child')
+    const boundResume = ctx.agents.resume.bind(ctx.agents)
+    const releaseResume = Promise.withResolvers<undefined>()
+    vi.spyOn(ctx.agents, 'resume').mockImplementation(options => releaseResume.promise.then(() => boundResume(options)))
+    const wake = ctx.subagents.prompt({
+      requestId: 'wake-1' as SubagentPromptRequestId,
+      parentSessionId: parent.id,
+      childSessionId: first,
+      mode: 'continuable',
+      delivery: 'queue',
+      content: [{ type: 'text', text: 'wake' }],
+    }, testSignal)
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: first, phase: 'materializing', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
+    releaseResume.resolve(undefined)
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: first, phase: 'closed', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
+    await wake
+  })
+
+  it('reports a settling child with its closing scope during drain', async () => {
+    let releaseTurn: () => void = () => undefined
+    const gate = new Promise<undefined>((resolve) => { releaseTurn = () => resolve(undefined) })
+    const { ctx, parent } = await setup([], { adapter: new GatedAdapter([{ chunks: textResponse('held work'), gate }]) })
+    const started = await ctx.subagents.startActivation({
+      delivery: 'caller',
+      provider: 'spawn',
+      label: 'settling child',
+      request: { prompt: [{ type: 'text', text: 'task: settling' }], parent },
+      signal: testSignal,
+    })
+    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+      { id: started.childId, phase: 'resident', closingScope: false, draining: false },
+    ])
+    const draining = ctx.subagents.drainDescendants([parent])
+    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+      { id: started.childId, phase: 'settling', closingScope: true, draining: false },
+    ])
+    releaseTurn()
+    await draining
+    // The scoped teardown aborted the parked turn, so its result may reject.
+    void started.result.catch(() => undefined)
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: started.childId, phase: 'closed', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
   })
 
   it('fails loud when the query service is unavailable', async () => {
@@ -292,11 +396,11 @@ describe('SubagentRuntime.listDescendants', () => {
 
     expect(await ctx.subagents.listDescendants(parent.id)).toEqual([
       { kind: 'child', id: SessionId('external-child'), mode: 'external', label: 'external-child',
-        activity: 'inactive', hasChildren: false, parentId: parent.id, depth: 1 },
+        activity: 'inactive', hasChildren: false, parentId: parent.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
       { kind: 'child', id: local.id, mode: 'continuable', label: 'local-child',
-        activity: 'running', hasChildren: true, parentId: parent.id, depth: 1 },
+        activity: 'running', hasChildren: true, parentId: parent.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
       { kind: 'child', id: SessionId('nested-external'), mode: 'external', label: 'nested-external',
-        activity: 'inactive', hasChildren: false, parentId: local.id, depth: 2 },
+        activity: 'inactive', hasChildren: false, parentId: local.id, depth: 2, phase: 'closed', closingScope: false, draining: false },
     ])
     expect(observe.mock.calls.map(([id]) => id)).toEqual([parent.id, local.id])
   })
@@ -313,9 +417,9 @@ describe('SubagentRuntime.listDescendants', () => {
     const observeSession = vi.spyOn(ctx.sessionQuery, 'observeSession')
 
     expect(await ctx.subagents.listDescendants(parent.id)).toEqual([
-      { kind: 'child', id: branch.id, mode: 'continuable', label: 'branch', activity: 'running', hasChildren: true, parentId: parent.id, depth: 1 },
-      { kind: 'child', id: leaf.id, mode: 'continuable', label: 'leaf', activity: 'running', hasChildren: false, parentId: branch.id, depth: 2 },
-      { kind: 'child', id: sibling.id, mode: 'one-shot', label: 'sibling', activity: 'running', hasChildren: false, parentId: parent.id, depth: 1 },
+      { kind: 'child', id: branch.id, mode: 'continuable', label: 'branch', activity: 'running', hasChildren: true, parentId: parent.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
+      { kind: 'child', id: leaf.id, mode: 'continuable', label: 'leaf', activity: 'running', hasChildren: false, parentId: branch.id, depth: 2, phase: 'closed', closingScope: false, draining: false },
+      { kind: 'child', id: sibling.id, mode: 'one-shot', label: 'sibling', activity: 'running', hasChildren: false, parentId: parent.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
     ])
     expect(listSessions).not.toHaveBeenCalled()
     expect(observeSession.mock.calls.map(([id]) => id)).toEqual([parent.id, branch.id, leaf.id, sibling.id])
@@ -330,7 +434,7 @@ describe('SubagentRuntime.listDescendants', () => {
     }, [])
     catalog(parent.session, [{ id, createdAt: 1, mode: 'one-shot' }])
     expect(await ctx.subagents.listDescendants(parent.id)).toEqual([
-      { kind: 'child', id, mode: 'one-shot', activity: 'inactive', hasChildren: false, parentId: parent.id, depth: 1 },
+      { kind: 'child', id, mode: 'one-shot', activity: 'inactive', hasChildren: false, parentId: parent.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
     ])
     expect(ctx.agents.get(id)).toBeUndefined()
     expect(ctx.sessions.get(id)).toBeUndefined()
@@ -378,7 +482,7 @@ describe('SubagentRuntime.listDescendants', () => {
     expect(await ctx.subagents.listDescendants(parent.id)).toEqual([])
     expect(await ctx.subagents.listDescendants(fork.id)).toEqual([
       { kind: 'child', id: leaf.id, mode: 'continuable', label: 'fork-child',
-        activity: 'running', hasChildren: false, parentId: fork.id, depth: 1 },
+        activity: 'running', hasChildren: false, parentId: fork.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
     ])
   })
 
@@ -418,7 +522,7 @@ describe('SubagentRuntime.listDescendants', () => {
     expect(await ctx.subagents.listDescendants(parent.id)).toEqual([
       { kind: 'diagnostic', id: branch.id, parentId: parent.id, depth: 1, reason: 'corrupt' },
       { kind: 'child', id: sibling.id, mode: 'continuable', label: 'sibling',
-        activity: 'running', hasChildren: false, parentId: parent.id, depth: 1 },
+        activity: 'running', hasChildren: false, parentId: parent.id, depth: 1, phase: 'closed', closingScope: false, draining: false },
     ])
   })
 

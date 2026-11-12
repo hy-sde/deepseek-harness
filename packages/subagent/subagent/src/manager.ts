@@ -40,7 +40,7 @@ import type {
 } from './types.ts'
 import { attachStructuredRuntime } from './structured.ts'
 import type { StructuredAttachment } from './structured.ts'
-import type { SubagentDelivery } from './control-types.ts'
+import type { SubagentDelivery, SubagentChildPhaseState } from './control-types.ts'
 import { SubagentActivationSetupRegistry } from './activation-setup-registry.ts'
 import type { ContinuableSetupContribution } from './activation-setup-registry.ts'
 import { ActivationPool, ChildLock, activationAgent, captureLocalResult, observeLocalFailure, requireLocalActivation } from './activation.ts'
@@ -111,6 +111,8 @@ type MaterializeInputs = MaterializeBase & (
  * keep waiting even if an intermediate Agent leaves the registry meanwhile.
  */
 interface Materialization {
+  /** The child session id this materialization will publish under. */
+  readonly childId: SessionId
   readonly lineage: readonly Agent[]
   readonly settled: Promise<void>
   readonly controller: AbortController
@@ -816,6 +818,7 @@ export class SubagentManager {
     const settled = Promise.withResolvers<void>()
     const controller = new AbortController()
     const materialization: Materialization = {
+      childId: inputs.childId,
       lineage,
       settled: settled.promise,
       controller,
@@ -906,6 +909,39 @@ export class SubagentManager {
       if (members.has(agent) || lineage.includes(root)) return root
     }
     return undefined
+  }
+
+  /**
+   * Derive the observational lifecycle phase of one child from the live books.
+   * @param childId - child session id to observe.
+   * @returns the phase plus closing-scope and draining overlays at this instant.
+   */
+  childPhase(childId: SessionId): SubagentChildPhaseState {
+    const activation = this.resident.get(childId)
+    if (activation !== undefined) {
+      return {
+        phase: activation.closing === undefined ? 'resident' : 'settling',
+        closingScope: this.withinClosingScope([activationAgent(activation) ?? activation.parent]),
+        draining: this.draining,
+      }
+    }
+    for (const item of this.materializations) {
+      if (item.childId !== childId) continue
+      return {
+        phase: 'materializing',
+        closingScope: this.withinClosingScope(item.lineage),
+        draining: this.draining,
+      }
+    }
+    return { phase: 'closed', closingScope: false, draining: this.draining }
+  }
+
+  /** Whether any observed agent sits inside a closing scope root or its live lineage. */
+  private withinClosingScope(agents: readonly Agent[]): boolean {
+    return agents.some((agent) => {
+      const lineage = this.liveLineage(agent)
+      return [...this.closingScopes].some(([root, members]) => members.has(agent) || lineage.includes(root))
+    })
   }
 
   /** Resolve a root's pool once; descendants inherit their resident parent's pool directly. */

@@ -46,6 +46,7 @@ import {
 } from './control.ts'
 import type {
   SubagentDelivery,
+  SubagentChildPhaseState,
   SubagentInterruptReceipt,
   SubagentPromptReceipt,
   SubagentPromptRequest,
@@ -71,9 +72,8 @@ import { createActivationObserver, createLifecycleEmitter } from './lifecycle.ts
 import type { ActivationObserver, LifecycleEmitter } from './lifecycle.ts'
 import SubagentManager from './manager.ts'
 import { listChildren as listSubagentChildren, listDescendants as listSubagentDescendants } from './list-children.ts'
-import type { SubagentDescendantListEntry } from './list-children.ts'
+import type { SubagentLiveCatalogEntry, SubagentLiveDescendantListEntry } from './list-children.ts'
 import { installSubagentArchiveAdmission } from './archive-admission.ts'
-import type { SubagentCatalogEntry } from './projection-types.ts'
 import { subagentIdentityProjectionDefinition, subagentTimingProjectionDefinition } from './projection.ts'
 import { subagentCatalogProjectionDefinition } from './catalog.ts'
 import { deliverSubagentPrompt } from './internal.ts'
@@ -128,7 +128,7 @@ export {
 export type { ChildComposition, DelegatedPolicyOverrides } from './child-agent.ts'
 export type { AgentMessageSource, SubagentSettledMessageSource } from './continuation-messages.ts'
 export type * from './control-types.ts'
-export type { SubagentDescendantListEntry } from './list-children.ts'
+export type { SubagentDescendantListEntry, SubagentLiveCatalogEntry, SubagentLiveDescendantListEntry } from './list-children.ts'
 export type { SubagentRunEndInfo, SubagentRunInfo } from './types.ts'
 export type { SubagentCatalogEntry, SubagentIdentityProjection, SubagentTimingProjection } from './projection-types.ts'
 
@@ -428,15 +428,19 @@ export class SubagentRuntime extends TypertRemoteService {
 
   /**
    * Read the parent's durable direct-child catalog without loading or resuming an Agent.
-   * The service owns and releases the live-preferred Session observation.
+   * The service owns and releases the live-preferred Session observation. Each row is
+   * enriched with the child's observational phase and teardown overlays; rows report
+   * the closed phase when the manager is not running.
    * @param parentSessionId - parent whose direct children are requested.
    * @param signal - cancellation forwarded to the Session query.
    * @returns catalog children in parent event order.
    * @throws {@link SubagentError} when query or catalog projection is unavailable.
    * @throws SessionQueryError when the parent cannot be read or the query is cancelled.
    */
-  listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentCatalogEntry[]> {
-    return listSubagentChildren(this.ctx, parentSessionId, signal)
+  listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentLiveCatalogEntry[]> {
+    return listSubagentChildren(this.ctx, parentSessionId, signal).then(entries =>
+      entries.map(entry => ({ ...entry, ...this.childPhaseState(entry.id) })),
+    )
   }
 
   /**
@@ -449,14 +453,27 @@ export class SubagentRuntime extends TypertRemoteService {
    * missing services or projections, and cancellation reject the whole listing.
    * Each catalog is observed once and released before the next read. No Agent
    * is loaded or resumed; Sessions absent from reachable catalogs are omitted.
+   * Child rows are enriched with the child's observational phase and teardown
+   * overlays; they report the closed phase when the manager is not running.
    * @param rootSessionId - session whose catalog starts descendant discovery.
    * @param signal - cancellation forwarded to and checked around each catalog read.
    * @returns children and branch diagnostics in parent-catalog pre-order.
    * @throws {@link SubagentError} when listing dependencies are unavailable or the caller cancels.
    * @throws SessionQueryError when the root catalog cannot be read.
    */
-  listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentDescendantListEntry[]> {
-    return listSubagentDescendants(this.ctx, rootSessionId, signal)
+  listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentLiveDescendantListEntry[]> {
+    return listSubagentDescendants(this.ctx, rootSessionId, signal).then(entries =>
+      entries.map(entry =>
+        entry.kind === 'diagnostic' ? entry : { ...entry, ...this.childPhaseState(entry.id) },
+      ),
+    )
+  }
+
+  /** Read the manager's observational phase for one child; no manager reports the closed phase. */
+  private childPhaseState(id: SessionId): SubagentChildPhaseState {
+    const manager = this.manager
+    if (manager === undefined) return { phase: 'closed', closingScope: false, draining: false }
+    return manager.childPhase(id)
   }
 
   /**

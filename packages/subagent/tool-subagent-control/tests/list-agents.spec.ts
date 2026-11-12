@@ -11,7 +11,7 @@ import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-test
 import { SessionId } from '@deepseek-ai/dsh-session'
 import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import type { SubagentCatalogEntry } from '@deepseek-ai/dsh-subagent'
+import type { SubagentLiveCatalogEntry } from '@deepseek-ai/dsh-subagent'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { LlmAdapter } from '@deepseek-ai/dsh-llm'
@@ -123,8 +123,8 @@ describe('list_agents', () => {
       const result = await callTool(ctx, 'list_agents', { scope }, parent)
       expect(result.isError).toBe(false)
       expect(text(result)).toBe(scope === 'children'
-        ? `${started.childId} [inactive] — workflow child`
-        : `${started.childId} [inactive] parent=${parent.id} depth=1 — workflow child`)
+        ? `${started.childId} [inactive] — workflow child (closed)`
+        : `${started.childId} [inactive] parent=${parent.id} depth=1 — workflow child (closed)`)
     }
   })
 
@@ -176,30 +176,42 @@ describe('list_agents', () => {
     // Pin the render deterministically past the service: the tool is a thin
     // adapter, so its fixed text forms are what this test pins. Status comes
     // from the live Agent registry, stubbed per candidate id.
-    const entries: SubagentCatalogEntry[] = [
+    const entries: SubagentLiveCatalogEntry[] = [
       {
         id: SessionId('one-shot-child'),
         createdAt: 1,
         label: 'finished once',
         mode: 'one-shot',
+        phase: 'closed',
+        closingScope: false,
+        draining: false,
       },
       {
         id: started.childId,
         createdAt: 2,
         label: 'real child',
         mode: 'continuable',
+        phase: 'closed',
+        closingScope: false,
+        draining: false,
       },
       {
         id: SessionId('running-child'),
         createdAt: 3,
         label: 'still working',
         mode: 'continuable',
+        phase: 'resident',
+        closingScope: false,
+        draining: false,
       },
       {
         id: SessionId('waiting-child'),
         createdAt: 4,
         label: 'waiting on descendants',
         mode: 'continuable',
+        phase: 'resident',
+        closingScope: false,
+        draining: false,
       },
     ]
     ctx.subagents.listChildren = () => Promise.resolve(entries)
@@ -213,9 +225,9 @@ describe('list_agents', () => {
     const result = await callTool(ctx, 'list_agents', {}, parent)
     expect(result.isError).toBe(false)
     expect(text(result)).toBe(
-      `${started.childId} [inactive] — real child\n`
-      + 'running-child [running] — still working\n'
-      + 'waiting-child [inactive] — waiting on descendants',
+      `${started.childId} [inactive] — real child (closed)\n`
+      + 'running-child [running] — still working (resident)\n'
+      + 'waiting-child [inactive] — waiting on descendants (resident)',
     )
   })
 
@@ -245,7 +257,7 @@ describe('list_agents', () => {
     await waitNoActivation(ctx, started.childId)
     const result = await callTool(ctx, 'list_agents', {}, parent)
     expect(result.isError).toBe(false)
-    expect(text(result)).toBe(`${started.childId} [inactive] — summarize the doc`)
+    expect(text(result)).toBe(`${started.childId} [inactive] — summarize the doc (closed)`)
   })
 
   it('describes inactive as turn availability and pins the status vocabulary', async () => {
@@ -260,6 +272,8 @@ describe('list_agents', () => {
     const variants = ctx.tools.get('list_agents')?.output.schema.items?.oneOf ?? []
     const child = variants.find(variant => variant.properties?.kind?.enum?.includes('child'))
     expect(child?.properties?.status?.enum).toEqual(['running', 'inactive'])
+    expect(child?.properties?.phase?.enum).toEqual(['materializing', 'resident', 'settling', 'closed'])
+    expect(child?.required).toEqual(['kind', 'id', 'label', 'status', 'phase', 'closingScope', 'draining'])
   })
 
   it('fails loud when invoked without a calling agent', async () => {
@@ -322,8 +336,8 @@ describe('list_agents', () => {
     const result = await callTool(ctx, 'list_agents', { scope: 'descendants' }, parent)
     expect(result.isError).toBe(false)
     expect(text(result)).toBe(
-      `${started.childId} [inactive] parent=${parent.id} depth=1 — waiting branch\n`
-      + `${grandchild.childId} [running] parent=${started.childId} depth=2 — nested leaf`,
+      `${started.childId} [inactive] parent=${parent.id} depth=1 — waiting branch (resident)\n`
+      + `${grandchild.childId} [running] parent=${started.childId} depth=2 — nested leaf (resident)`,
     )
 
     releaseGrandchild.resolve(undefined)
@@ -345,6 +359,9 @@ describe('list_agents', () => {
         hasChildren: true,
         parentId: parent.id,
         depth: 1,
+        phase: 'closed',
+        closingScope: false,
+        draining: false,
       },
       {
         kind: 'child',
@@ -355,6 +372,9 @@ describe('list_agents', () => {
         hasChildren: false,
         parentId: SessionId('one-shot-mid'),
         depth: 2,
+        phase: 'closed',
+        closingScope: false,
+        draining: false,
       },
       {
         kind: 'diagnostic',
@@ -367,7 +387,7 @@ describe('list_agents', () => {
     const result = await callTool(ctx, 'list_agents', { scope: 'descendants' }, parent)
     expect(result.isError).toBe(false)
     expect(text(result)).toBe(
-      'deep-leaf [inactive] parent=one-shot-mid depth=2 — deep leaf\n'
+      'deep-leaf [inactive] parent=one-shot-mid depth=2 — deep leaf (closed)\n'
       + `broken-node [diagnostic: unavailable] parent=${parent.id} depth=1`,
     )
   })

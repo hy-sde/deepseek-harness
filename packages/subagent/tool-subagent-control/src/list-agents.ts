@@ -10,7 +10,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type {
-  SubagentCatalogEntry, SubagentDescendantListEntry, SubagentListEntry,
+  SubagentChildPhase, SubagentDescendantListEntry, SubagentLiveCatalogEntry, SubagentLiveDescendantListEntry,
 } from '@deepseek-ai/dsh-subagent'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 
@@ -30,6 +30,9 @@ type ListAgentsEntry =
     readonly id: SessionId
     readonly label: string
     readonly status: 'running' | 'inactive'
+    readonly phase: SubagentChildPhase
+    readonly closingScope: boolean
+    readonly draining: boolean
     readonly parent?: SessionId
     readonly depth?: number
   }
@@ -54,7 +57,7 @@ function statusOf(agents: { get(id: SessionId): Agent | undefined }, id: Session
 /** Project one service row into the model-facing entry, or omit a one-shot child. */
 function project(
   agents: { get(id: SessionId): Agent | undefined },
-  entry: SubagentCatalogEntry | SubagentListEntry,
+  entry: SubagentLiveCatalogEntry | SubagentLiveDescendantListEntry,
   position?: Pick<SubagentDescendantListEntry, 'parentId' | 'depth'>,
 ): ListAgentsEntry | undefined {
   const at = position === undefined ? {} : { parent: position.parentId, depth: position.depth }
@@ -69,6 +72,9 @@ function project(
     id: entry.id,
     label: entry.label,
     status: statusOf(agents, entry.id),
+    phase: entry.phase,
+    closingScope: entry.closingScope,
+    draining: entry.draining,
     ...at,
   }
 }
@@ -83,6 +89,8 @@ export function registerListAgents(ctx: Context): void {
     description:
       'List subagents you started, with their ids, labels, and status. '
       + 'running means it is working; inactive means it is not currently working. '
+      + 'phase reports lifecycle detail beyond status: materializing while the child is starting or resuming, resident while it is loaded, settling while it is closing, and closed when no live activation remains. '
+      + 'closingScope marks children already inside a scoped teardown, and draining marks a host teardown in progress. '
       + 'You will be notified when a subagent finishes; there is no need to keep checking its status. '
       + 'Use send_message to continue the conversation.',
     parameters: {
@@ -106,6 +114,9 @@ export function registerListAgents(ctx: Context): void {
                 id: { type: 'string', required: true },
                 label: { type: 'string', required: true },
                 status: { type: 'string', required: true, enum: ['running', 'inactive'] },
+                phase: { type: 'string', required: true, enum: ['materializing', 'resident', 'settling', 'closed'] },
+                closingScope: { type: 'boolean', required: true },
+                draining: { type: 'boolean', required: true },
                 parent: { type: 'string' },
                 depth: { type: 'number' },
               },
@@ -138,7 +149,7 @@ export function registerListAgents(ctx: Context): void {
                 ? ` parent=${String(entry.parent)} depth=${String(entry.depth)}`
                 : ''
               return entry.kind === 'child'
-                ? `${entry.id} [${entry.status}]${at} — ${entry.label}`
+                ? `${entry.id} [${entry.status}]${at} — ${entry.label} (${entry.phase})`
                 : `${entry.id} [diagnostic: ${entry.reason}]${at}`
             }).join('\n'),
         }]

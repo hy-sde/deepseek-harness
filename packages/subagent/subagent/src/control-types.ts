@@ -53,6 +53,31 @@ export type SubagentCatalogRow =
   )
 
 /**
+ * Process-local lifecycle phase of one child, derived from the live
+ * activation books at listing time. It is observational only and never
+ * durable: phases can be skipped between two observations.
+ */
+export type SubagentChildPhase =
+  /** The child session is being created or resumed; no Activation is published yet. */
+  | 'materializing'
+  /** A live Activation is published and not closing. */
+  | 'resident'
+  /** The live Activation has begun closing; teardown has not removed it yet. */
+  | 'settling'
+  /** No live Activation or materialization currently carries this id. */
+  | 'closed'
+
+/** Phase plus teardown overlays observed for one child at listing time. */
+export interface SubagentChildPhaseState {
+  /** Lifecycle phase derived from the manager's activation books. */
+  readonly phase: SubagentChildPhase
+  /** The child sits inside a scoped-teardown root's closing scope. */
+  readonly closingScope: boolean
+  /** The manager is draining every activation (host teardown). */
+  readonly draining: boolean
+}
+
+/**
  * One recursive catalog row. Traversal may also return diagnostics for
  * unknown catalog modes or unreadable child catalogs.
  */
