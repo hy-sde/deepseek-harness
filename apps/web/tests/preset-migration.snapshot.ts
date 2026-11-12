@@ -77,8 +77,23 @@ describe.skipIf(webSnapshotMode() === 'record')('historical preset restoration t
         .filter(event => event.type === 'agent-preset/selected')
         .map(event => event.data.agentPreset)).toEqual(withSelections ? ['ptc', 'standard', 'ptc'] : [])
       expect(await scaffold.ctx.subagents.listChildren(id)).toEqual([
-        { id: brokenId, createdAt: childFixture[0]?.['createdAt'], mode: 'unknown' },
-        { id: childId, createdAt: childFixture[0]?.['createdAt'], mode: 'one-shot', label: 'historical child' },
+        {
+          id: brokenId,
+          createdAt: childFixture[0]?.['createdAt'],
+          mode: 'unknown',
+          phase: 'closed',
+          closingScope: false,
+          draining: false,
+        },
+        {
+          id: childId,
+          createdAt: childFixture[0]?.['createdAt'],
+          mode: 'one-shot',
+          label: 'historical child',
+          phase: 'closed',
+          closingScope: false,
+          draining: false,
+        },
       ])
 
       const childSuccessor = generationLogPath(scaffold.persistenceRoot, scaffold.workspaceCwd, childId, SESSION_FORMAT_VERSION, 'zstd')
