@@ -28,7 +28,7 @@ import type {} from '@deepseek-ai/dsh-spill'
 import { resolveCwd } from './commit.ts'
 import { diffHashOf, ledgerBranchKey, readLedger, resolveRev, toLedgerFindings, writeLedger, type LedgerFinding, type LedgerRecord } from './ledger.ts'
 import { openReads, type ReadSurface } from './reads.ts'
-import { headOf, indexTreeOf, recordReviewVerdict, type ReviewTarget } from './push-gate.ts'
+import { headOf, indexTreeOf, recordReviewVerdictDurable, type ReviewTarget, type ReviewVerdictRecord } from './push-gate.ts'
 import type { GitService } from '@deepseek-ai/dsh-git'
 
 /** Configuration consumed by the review tool. */
@@ -225,14 +225,22 @@ async function recordStagedVerdict(
   value: ReviewValue,
 ): Promise<void> {
   if (value.target !== 'staged') return
-  recordReviewVerdict({
+  const record: ReviewVerdictRecord = {
     root: await git.root(cwd, signal),
     target: value.target,
     verdict: value.verdict,
     beforeHead: await headOf(git, cwd, signal),
     indexTree: await indexTreeOf(git, cwd, signal),
     at: Date.now(),
-  })
+  }
+  try {
+    // Memo first (hot path), ledger second (restart durability). A failed
+    // ledger write degrades loudly: this process still gates on the memo, and
+    // a restart then reads no verdict — fail-closed, never an unblocked push.
+    await recordReviewVerdictDurable(git, cwd, signal, record)
+  } catch (error: unknown) {
+    value.warnings.push(`gate verdict persistence failed: ${reasonOf(error)}`)
+  }
 }
 
 /** Prompt-builder seam: full-mode builders ignore the prior-findings argument. */
