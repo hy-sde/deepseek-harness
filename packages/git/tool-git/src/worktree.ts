@@ -211,7 +211,7 @@ export function applyWorktreeTool(ctx: Context, config: WorktreeToolConfig = {})
                   },
                 },
               },
-              /* jscpd:ignore-start -- the prune candidates and prune skipped entries of the worktree output schema keep independent copies of the name/path/reason item shape. */
+              /* jscpd:ignore-start -- the prune output schema repeats the name/path/reason item shape for candidates and skipped. */
               skipped: {
                 type: 'array',
                 required: true,
@@ -343,14 +343,18 @@ function renderWorktreeValue(value: WorktreeToolValue): string {
       if (items.length === 0) return 'No worktrees in the pool for this repository.'
       const lines = [`Worktree pool (${items.length}):`]
       for (const item of items) {
+        // Leased slots are not probed (the owner mutates them), so their
+        // dirty/merged booleans carry no live meaning — only parked/damaged
+        // slots reflect recorded state.
+        const probed = item.status !== 'leased'
         const detail = [
           `#${item.name}`,
           item.status,
           item.path,
           item.leaseHolder !== undefined ? `holder=${item.leaseHolder}` : undefined,
           item.branch !== undefined ? `branch=${item.branch}` : 'detached',
-          item.dirty ? 'DIRTY' : undefined,
-          item.merged ? 'merged' : 'unmerged',
+          probed && item.dirty ? 'DIRTY' : undefined,
+          probed ? (item.merged ? 'merged' : 'unmerged') : undefined,
         ].filter(part => part !== undefined).join(' ')
         lines.push(`  ${detail}`)
       }
