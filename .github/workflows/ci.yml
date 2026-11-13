@@ -37,7 +37,6 @@ jobs:
   # .agents/notes/implemented/process/2026-09-09-blacksmith-failover-leg.md). The
   # in-house pool's readiness is re-proven on every master push by the
   # serial-linux-selfhosted standby lane in ci-master.yml. Native Windows jobs
-  # and their separate DSH_CI_FAILOVER_WINDOWS switch live in ci-windows.yml.
   node-24:
     if: github.event_name == 'pull_request'
     runs-on: >-
@@ -549,10 +548,7 @@ jobs:
   # Single stable required check for branch protection: require "all checks
   # passed" instead of enumerating matrix legs whose names change as lanes and
   # node versions evolve. Every blocking job in THIS workflow must be listed in
-  # `needs`. `needs` cannot cross workflow files: native Windows jobs report
-  # the separate "windows checks passed" verdict from ci-windows.yml, Python
-  # jobs report "python checks passed" from ci-python.yml, and Wine plus the
-  # master-only runtime targets live in ci-master.yml.
+  # `needs`; Wine plus the master-only runtime targets live in ci-master.yml.
   # An explicit status function runs the verdict after failed/skipped needs
   # without keeping a cancelled workflow alive for an obsolete verdict.
   all-checks-passed:

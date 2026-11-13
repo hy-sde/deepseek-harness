@@ -477,11 +477,10 @@ function isReleaseMemberDirectory(dir: string): boolean {
 /**
  * Require a dsh-family manifest to carry the workspace version.
  *
- * The dsh release sequence publishes packages/ and apps/ members and every
- * private dsh package on one shared version, written by `release:dsh` and
- * shared with the workspace root. This name test is that boundary: it covers
- * the family wherever the manifest lives, so apps/ members cannot drift with
- * only the release lane noticing.
+  * Every dsh-family package shares the workspace root's version so the
+ * family releases as one unit. This name test is that boundary: it covers
+ * the family wherever the manifest lives, so apps/ members cannot drift
+ * from the workspace version.
  * @param manifest - the workspace package manifest.
  * @param expected - the version every dsh-family manifest must carry (the root's).
  * @returns one violation naming the manifest and the expected version, or
@@ -645,8 +644,8 @@ function checkHierarchyShape(): string[] {
 }
 
 function checkRepositoryVersion(): string[] {
-  // The root carries the dsh release family's version, so a prerelease such as
-  // 0.0.1-rc.1 is a valid state between `release:dsh` and its publication.
+   // The root carries the dsh release family's version, so a prerelease such as
+  // 0.0.1-rc.1 is a valid state between release bumps and publication.
   if (repositoryVersion && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(repositoryVersion)) return []
   return ['package.json: version must be X.Y.Z with an optional prerelease segment']
 }

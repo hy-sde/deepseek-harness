@@ -13,7 +13,6 @@ on:
         options:
           - larger-runner-benchmark
           - consolidated-runner-benchmark
-          - ssh-helper
           - wine
 
 # New master pushes and manual runs replace obsolete checks in this workflow/ref.
@@ -32,23 +31,6 @@ env:
   DSH_TELEMETRY_DISABLED: '1'
 
 jobs:
-  ssh-helper:
-    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'ssh-helper'
-    name: ssh helper / native artifacts
-    uses: ./.github/workflows/build-exe-for-ssh-helper.yml
-    with:
-      targets: node24-linux-x64,node24-linux-arm64,node24-macos-arm64,node24-macos-x64
-
-  # These native runtime carriers are post-merge checks; release keeps all targets.
-  python-runtime:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    name: python runtime / macOS and Linux ARM64
-    uses: ./.github/workflows/build-exe-for-python-sdk.yml
-    with:
-      targets: node24-linux-arm64,node24-macos-arm64,node24-macos-x64
-      ci: true
-    secrets:
-      DEEPSEEK_API_KEY_EXTERNAL: ${{ secrets.DEEPSEEK_API_KEY_EXTERNAL }}
 
   # Wine runs on master pushes or an explicit suite=wine dispatch, independently of native standbys.
   windows:
