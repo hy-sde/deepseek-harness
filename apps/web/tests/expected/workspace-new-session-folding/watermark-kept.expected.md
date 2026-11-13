@@ -12,5 +12,5 @@
   - treeitem "Untitled 1min"
   - treeitem "Untitled 1min"
   - treeitem "Untitled 1min"
-  - treeitem "Untitled 1min"
+  - treeitem "Use the read tool twice 1min"
   - button "Show 7 more sessions"

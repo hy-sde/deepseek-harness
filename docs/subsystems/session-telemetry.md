@@ -2,7 +2,7 @@
 
 English | [中文](session-telemetry.zh.md)
 
-The [capture service](../../packages/session/session-telemetry/README.md) owns canonical-event capture, redaction, and handoff cursors. The [feedback backend](../../packages/session/session-telemetry-otel/README.md) authorizes Session prefixes and owns their independent queue, per-request scheduling, and 4,000,000-byte ceiling. No reporting data reaches model requests.
+The [capture service](../../packages/session/session-telemetry/README.md) owns canonical-event capture, redaction, and handoff cursors. Reporting backends authorize their own capture and own their delivery queues, scheduling, and size ceilings. No reporting data reaches model requests.
 
 Source: [`packages/session/session-telemetry/src/index.ts`](../../packages/session/session-telemetry/src/index.ts)
 
@@ -61,13 +61,13 @@ Every canonical [session event](session.md), including each `assistant/message` 
 
 ## The sharing disclosure
 
-Every backend exposes its deployment-selected mode through the required abstract `sharing` member on `ctx.sessionTelemetry` ([Service Definition README](../../packages/session/session-telemetry/README.md#the-sharing-disclosure)). This is neither a per-Session admission decision nor a delivery receipt. The `/feedback` acknowledgement does not consult it.
+Every backend exposes its deployment-selected mode through the required abstract `sharing` member on `ctx.sessionTelemetry` ([Service Definition README](../../packages/session/session-telemetry/README.md#the-sharing-disclosure)). This is neither a per-Session admission decision nor a delivery receipt.
 
 ```ts type-equiv
 /**
  * Deployment-selected session-sharing mode, not confirmation of SDK delivery.
  */
-type SessionTelemetrySharingStatus = 'full' | 'feedback-only' | 'disabled'
+type SessionTelemetrySharingStatus = 'full' | 'disabled'
 ```
 
 ## Capture policy
@@ -87,7 +87,7 @@ interface SessionTelemetryCaptureOptions {
 }
 ```
 
-`includeHistory` permits stored and inherited records but does not itself authorize capture. The [OTel backend](../../packages/session/session-telemetry-otel/README.md) uses on-demand capture and requires new own explicit feedback; it releases only the complete prefix through that feedback, for every provider.
+`includeHistory` permits stored and inherited records but does not itself authorize capture. Each backend owns its capture-authorization policy and the release shape it hands to its delivery pipeline.
 
 ## The backend contract
 
@@ -102,7 +102,7 @@ interface SessionTelemetrySink {
    * Hand one record to the backend's pipeline. MUST be a non-blocking
    * enqueue — the coordinator calls this synchronously from the
    * `session/event` hot path or an explicit canonical-log capture, so anything
-   * slower than a queue push would tax the agent loop or feedback handling.
+   * slower than a queue push would tax the agent loop.
    * Errors thrown here are contained by the coordinator and logged; they
    * never reach the loop.
    * @param record - the logical record to report; owned by the backend after the call.

@@ -7,6 +7,7 @@ import type {
   LlmCallConfig,
   LlmCallConfigAdapterDefaults,
   LlmFailure,
+  MessageId,
   SystemMessage,
   SystemPromptUpdate,
   TokenUsage,
@@ -433,10 +434,91 @@ export interface SessionEventMap {
    * so tolerating concurrent writers needs a signal beyond the log.
    */
   'session/end-seed': { inherited?: true }
+  /**
+   * One recorded human remark about this session. Log-only and independent
+   * of its trigger; it never enters model context or derived history.
+   */
+  'feedback/record': FeedbackRecord
+  /** Log-only human feedback; never enters model history. */
+  'feedback/message-put': MessageFeedbackPut
+  /** Log-only deletion; earlier ratings and notes remain in the log. */
+  'feedback/message-delete': MessageFeedbackDelete
 }
 
 /** The appendable event-type keys of {@link SessionEventMap}, plugin-merged extensions included. */
 export type SessionEventType = keyof SessionEventMap
+
+/**
+ * Feedback event vocabulary, retained for historical Session-log
+ * compatibility. The feedback services that produced these events were
+ * removed; the event types remain part of the durable wire vocabulary so
+ * logs that contain them stay readable (the persistence read path refuses
+ * event types outside {@link SessionEventMap} unless an event is marked
+ * ignorable). Treat the members below as frozen: do not add new feedback
+ * event types, and do not reshape these payloads.
+ */
+
+/** One of the fixed feedback categories; the ids are durable log vocabulary. */
+export type FeedbackCategory =
+  | 'task-result'
+  | 'instruction-following'
+  | 'product-interaction'
+  | 'service-stability'
+  | 'resource-cost'
+  | 'security-privacy-permission'
+  | 'other'
+
+/**
+ * One recorded human remark about a Session. Both members are optional: a
+ * submission with neither still records that the human asked for the
+ * Session to be reviewed, which is what authorizes log delivery.
+ */
+export interface FeedbackRecord {
+  /** Free-text remark with surrounding whitespace removed; never empty when present. */
+  readonly text?: string
+  /** Category the human filed the remark under. */
+  readonly category?: FeedbackCategory
+}
+
+/** Opaque compare-and-set token for one exact feedback item revision. */
+export type MessageFeedbackVersion = Branded<'MessageFeedbackVersion'>
+
+/** The human's overall judgment of one assistant message. */
+export type MessageFeedbackRating = 'positive' | 'negative'
+
+/** One current feedback value and its opaque mutation token. */
+export interface MessageFeedbackItem {
+  /** Stable identity of the assistant message inside the owning Session. */
+  readonly messageId: MessageId
+  /** Overall positive or negative judgment. */
+  readonly rating: MessageFeedbackRating
+  /** Optional explanation, preserved verbatim after validation. */
+  readonly note?: string
+  /** Category the human filed the judgment under. */
+  readonly category?: FeedbackCategory
+  /** Equality-only token replaced by every material create or update. */
+  readonly version: MessageFeedbackVersion
+  /** Host-assigned creation time in Unix epoch milliseconds. */
+  readonly createdAt: number
+  /** Host-assigned time of the most recent material update. */
+  readonly updatedAt: number
+}
+
+/** A material creation or edit, retaining its complete current value. */
+export interface MessageFeedbackPut {
+  /** Owning Session; inherited feedback in a fork belongs to its parent. */
+  readonly sessionId: SessionId
+  /** Value after this mutation, including the original creation time. */
+  readonly item: MessageFeedbackItem
+}
+
+/** A material deletion of one current feedback item. */
+export interface MessageFeedbackDelete {
+  /** Session that owns the deleted feedback. */
+  readonly sessionId: SessionId
+  /** Message whose feedback was removed. */
+  readonly messageId: MessageId
+}
 
 /**
  * The subset of {@link SessionEventType} values whose events produce LLM

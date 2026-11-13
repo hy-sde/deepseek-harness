@@ -1,6 +1,7 @@
 # Agent Note: Canonical feedback log and request delivery
 
 Status: implemented
+Archived: 2026-11-12
 
 English | [中文](2026-09-05-canonical-feedback-log.zh.md)
 

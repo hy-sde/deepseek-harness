@@ -29,7 +29,7 @@ kind: "package-library"
 
 ### 选择并挂载后端
 
-只加载一个后端插件；它把捕获协调器与投递流水线注册为 `ctx.sessionTelemetry`。重复加载会抛出异常。必需的 [`sharing` 成员](#the-sharing-disclosure) 报告部署模式，不代表会话准入或投递。只有在未挂载任何遥测服务时，消费方才可报告「未配置」。`/feedback` 命令确认记录，不读取此策略。
+只加载一个后端插件；它把捕获协调器与投递流水线注册为 `ctx.sessionTelemetry`。重复加载会抛出异常。必需的 [`sharing` 成员](#the-sharing-disclosure) 报告部署模式，不代表会话准入或投递。只有在未挂载任何遥测服务时，消费方才可报告「未配置」。
 
 ### 后端约定
 
@@ -45,7 +45,7 @@ ledger 记录携带 `sourceEvent`，其中包含所属 Session id 和不含 `dat
 
 <a id="the-sharing-disclosure"></a>
 
-每个后端通过 `sharing` 披露部署模式：`full`、`feedback-only` 或 `disabled`。后端还可限制符合条件的会话。该属性不是投递回执；交接是非阻塞入队，批处理、重试与丢失策略属于后端 SDK。
+每个后端通过 `sharing` 披露部署模式：`full` 或 `disabled`。后端还可限制符合条件的会话。该属性不是投递回执；交接是非阻塞入队，批处理、重试与丢失策略属于后端 SDK。
 
 ### 脱敏记录
 
@@ -80,7 +80,7 @@ ledger 记录携带 `sourceEvent`，其中包含所属 Session id 和不含 `dat
 
 ### handoff 游标
 
-模块级 `WeakMap<Session, seq>` 记录已经移交的最高序号，而不是已送达的最高序号。再次接管同一对象时从该游标之后继续。采集从 `firstLifecycleSeq` 开始：新 fork 包含子会话自有的标记与 fork 结束事件；恢复的 Session 排除已存储前缀，包括先前的子会话轮次。显式 `includeHistory: true` 会让尚未移交的对象从 seq 0 开始，包括恢复或 fork 历史。Backend 负责采集授权；已有存储历史本身不构成授权，OTel backend 等待新的显式反馈。接收方通过 `(session.id, session.format_version, event.seq)` 对重复记录去重。
+模块级 `WeakMap<Session, seq>` 记录已经移交的最高序号，而不是已送达的最高序号。再次接管同一对象时从该游标之后继续。采集从 `firstLifecycleSeq` 开始：新 fork 包含子会话自有的标记与 fork 结束事件；恢复的 Session 排除已存储前缀，包括先前的子会话轮次。显式 `includeHistory: true` 会让尚未移交的对象从 seq 0 开始，包括恢复或 fork 历史。Backend 负责采集授权；已有存储历史本身不构成授权，捕获授权策略由各 backend 自行决定。接收方通过 `(session.id, session.format_version, event.seq)` 对重复记录去重。
 
 </details>
 
@@ -91,7 +91,6 @@ ledger 记录携带 `sourceEvent`，其中包含所属 Session id 和不含 `dat
 
 当 seam 约定不够用时阅读以下页面。它们从随附后端逐步进入子系统参考与决策证据。
 
-- [OpenTelemetry 遥测后端](../session-telemetry-otel/README.zh.md)——部署方加载的随附后端，含模式与导出器配置。
 - [会话遥测子系统](../../../docs/subsystems/session-telemetry.zh.md)——能力拆分与类型声明。
 - [历史会话遥测复活决策](../../../.agents/notes/archived/feature/2026-07-23-session-telemetry-otel-revival.md)——理由、权衡与被否决的替代方案。
 - [会话包映射](../README.zh.md)——相邻的持久化、投影、标题与遥测包。

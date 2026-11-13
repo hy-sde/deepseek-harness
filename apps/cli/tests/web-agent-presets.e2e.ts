@@ -136,7 +136,6 @@ async function bootWeb(
     // and the URL prompt line — surface glue, not anything that decides an
     // agent's capabilities, which is all this file asserts.
     { id: 'web-runtime', disabled: true },
-    { id: 'session-telemetry-otel', disabled: true },
     { id: 'desktop-product-telemetry', disabled: true },
     { id: 'product-analytics', disabled: true },
     // A deployment-level skill on the host registry's GLOBAL layer — the same

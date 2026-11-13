@@ -1,6 +1,7 @@
 # Agent Note: 仅在显式反馈后通过 OpenTelemetry 上传
 
 Status: implemented
+Archived: 2026-11-12
 
 [English](2026-09-05-nonofficial-feedback-otel.md) | 中文
 

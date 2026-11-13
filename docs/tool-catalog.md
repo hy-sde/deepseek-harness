@@ -3013,7 +3013,7 @@ Source: [`packages/subagent/tool-subagent-control/src/index.ts`](../packages/sub
 
 ### `list_agents`
 
-List subagents you started, with their ids, labels, and status. running means it is working; inactive means it is not currently working. You will be notified when a subagent finishes; there is no need to keep checking its status. Use send_message to continue the conversation.
+List subagents you started, with their ids, labels, and status. running means it is working; inactive means it is not currently working. phase reports lifecycle detail beyond status: materializing while the child is starting or resuming, resident while it is loaded, settling while it is closing, and closed when no live activation remains. closingScope marks children already inside a scoped teardown, and draining marks a host teardown in progress. You will be notified when a subagent finishes; there is no need to keep checking its status. Use send_message to continue the conversation.
 
 ```json
 {

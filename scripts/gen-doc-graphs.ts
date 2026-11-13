@@ -416,7 +416,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session',
     title: 'In-memory session store',
     mode: 'core',
-    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'subagent', 'message-feedback'],
+    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'subagent'],
     note: 'Owns append-only Session instances and emits the durable session event feed.',
   },
   {
@@ -532,7 +532,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Durable session persistence seam',
     mode: 'seam',
     implementations: ['session-persistence-jsonl'],
-    consumers: ['agent-loop', 'tool-bash', 'hooks-claude-code', 'hooks-codex', 'session-query', 'session-query-sqlite', 'message-feedback'],
+    consumers: ['agent-loop', 'tool-bash', 'hooks-claude-code', 'hooks-codex', 'session-query', 'session-query-sqlite'],
     note: 'The JSONL backend persists the SessionEvent vocabulary as one artifact per Session.',
   },
   {
@@ -589,8 +589,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'otel',
     title: 'Shared OTel reporting channels',
     mode: 'service',
-    consumers: ['host-product-telemetry-otel', 'session-telemetry-otel'],
-    note: 'Product analytics and Session feedback adapters create independent reporting channels through one injected service.',
+    consumers: ['host-product-telemetry-otel'],
+    note: 'Product analytics and other reporting adapters create independent reporting channels through one injected service.',
   },
   {
     key: 'productTelemetry',
@@ -604,7 +604,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session-telemetry',
     title: 'Session telemetry seam',
     mode: 'seam',
-    implementations: ['session-telemetry-otel'],
+    implementations: [],
     consumers: [],
     note: 'The seam captures, redacts, and hands session records to one backend; nothing else consumes the service — its output leaves the process.',
   },
@@ -624,20 +624,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'core',
     consumers: ['workspace'],
     note: 'Waits for every configured backend, then publishes the domain form as one lifecycle-bound service for typed durable state.',
-  },
-  {
-    key: 'messageFeedback',
-    pkg: 'message-feedback',
-    title: 'Lifecycle-bound message feedback',
-    mode: 'core',
-    note: 'Owns per-assistant-message feedback in the canonical Session log, target validation, per-item compare-and-set, and the Host unary Remote contract. Feedback stays outside model history; log export follows the consumer policy.',
-  },
-  {
-    key: 'sessionFeedback',
-    pkg: 'command-feedback',
-    title: 'Session-level feedback recorder',
-    mode: 'core',
-    note: 'Records one Session-level remark with its category as a log-only feedback/record event on a live Session through the Host unary Remote contract; the /feedback command shares the same producer.',
   },
   {
     key: 'workspaceRegistry',

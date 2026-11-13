@@ -361,7 +361,6 @@ describe('candidates', () => {
     const SHIPPED: CommandDescriptor[] = [
       { definitionId: CommandDefinitionId('@deepseek-ai/dsh-command-compact'), name: 'compact', description: 'Compact older conversation history' },
       { definitionId: CommandDefinitionId('@deepseek-ai/dsh-session-log-export'), name: 'export', description: 'Download this Session log as a ZIP archive' },
-      { definitionId: CommandDefinitionId('@deepseek-ai/dsh-command-feedback'), name: 'feedback', description: 'Record feedback about this session', input: { hint: '<text>' } },
       { definitionId: CommandDefinitionId('@deepseek-ai/dsh-command-goal'), name: 'goal', description: 'Set or view the goal for a long-running task', input: { hint: '<objective>', attachments: true } },
       { definitionId: CommandDefinitionId('@deepseek-ai/dsh-permission-presets'), name: 'permission', description: 'Switch the permission preset (sandbox mode + approval policy)', input: { hint: '<preset>' } },
       { definitionId: CommandDefinitionId('@deepseek-ai/dsh-plan-mode'), name: 'plan', description: 'Enter or leave plan mode', input: { hint: '[off|message]', attachments: true } },
@@ -390,10 +389,10 @@ describe('candidates', () => {
       command.register(fileContribution())
       const rows = await source.candidates(proj('s1'), req(''))
       expect(rows.map(row => row.name)).toEqual([
-        'file', 'goal', 'plan', 'feedback', 'compact', 'permission', 'model', 'export', 'deploy',
+        'file', 'goal', 'plan', 'compact', 'permission', 'model', 'export', 'deploy',
       ])
       expect(rows.map(row => row.section)).toEqual([
-        ...Array<string>(4).fill('command:section.add'),
+        ...Array<string>(3).fill('command:section.add'),
         ...Array<string>(5).fill('command:section.commands'),
       ])
       expect(rows[1]).toEqual({
@@ -405,9 +404,9 @@ describe('candidates', () => {
         section: 'command:section.add',
       })
       expect(rows[0]).toEqual({ name: 'file', label: 'command:label.file', icon: Glyph, section: 'command:section.add' })
-      expect(rows[6]).toMatchObject({ name: 'model', label: '模型', description: '选择本会话使用的模型', icon: Glyph })
+      expect(rows[5]).toMatchObject({ name: 'model', label: '模型', description: '选择本会话使用的模型', icon: Glyph })
       // A third-party command keeps its catalog text and gets no glyph.
-      expect(rows[8]).toEqual({ name: 'deploy', description: 'third-party command', section: 'command:section.commands' })
+      expect(rows[7]).toEqual({ name: 'deploy', description: 'third-party command', section: 'command:section.commands' })
     })
 
     it('a same-name override keeps its own presentation even when it copies the first-party description', async () => {
@@ -429,7 +428,7 @@ describe('candidates', () => {
       onTestFinished(() => fiber.dispose())
       await warm(proj('s1'))
       const rows = await source.candidates(proj('s1'), req(''))
-      for (const name of ['goal', 'plan', 'feedback'] as const) {
+      for (const name of ['goal', 'plan'] as const) {
         expect(rows.find(row => row.name === name)?.label).toBe(dictionary[`label.${name}`])
         const picked = menuPick(source, name, proj('s1'))
         expect(picked).toHaveProperty('claim.token', `/${dictionary[`token.${name}`]} `)

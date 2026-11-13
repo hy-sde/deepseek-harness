@@ -2788,23 +2788,6 @@ export interface RuntimeConfig {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-memory-extraction -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-message-feedback -->
-<a id="deepseek-aidsh-message-feedback"></a>
-
-## `@deepseek-ai/dsh-message-feedback`
-
-- `inject`: `sessionPersistence` · `sessions`
-- `source`: [`packages/feedback/message-feedback/src/index.ts:40`](../packages/feedback/message-feedback/src/index.ts)
-
-```ts config-catalog
-/** Required deployment policy for optional notes. */
-export interface Config {
-  /** Maximum UTF-8 byte length accepted for one note. */
-  readonly maxNoteBytes: number
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-message-feedback -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-office-to-pdf -->
 <a id="deepseek-aidsh-office-to-pdf"></a>
 
@@ -3609,53 +3592,6 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-session-reference -->
-
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-telemetry-otel -->
-<a id="deepseek-aidsh-session-telemetry-otel"></a>
-
-## `@deepseek-ai/dsh-session-telemetry-otel`
-
-- `inject`: `sessions` · `otel`
-- `refs`: [`LogExporterOptions`](../packages/telemetry/otel/src/index.ts) · [`SessionLogProcessorOptions`](../packages/telemetry/otel/src/index.ts)
-- `source`: [`packages/session/session-telemetry-otel/src/index.ts:85`](../packages/session/session-telemetry-otel/src/index.ts)
-
-```ts config-catalog
-/**
- * Plugin configuration: sharing policy, SDK transport options, byte/count queue
- * settings, and an overall shutdown bound. Uploading modes validate their endpoint
- * and shutdown deadline at plugin load; `DISABLED` reads neither.
- */
-export interface Config {
-  /** Defaults to `FEEDBACK_ONLY`: capture session history only when feedback is explicitly submitted. */
-  mode?: SessionTelemetryMode
-  /**
-   * Explicit SDK HTTP transport settings, including optional routing headers.
-   * Ambient credentials are not inherited. URL is required while uploading.
-   * Exporter self-observability metering is not supported.
-   */
-  exporter?: Omit<LogExporterOptions, 'url'> & {
-    /** Full logs endpoint (e.g. `https://collector.example.com/v1/logs`). Required outside `DISABLED`; validated at load. */
-    url?: string
-  }
-  /**
-   * Count, queue, cadence, and per-request watchdog settings for the byte-bounded
-   * processor. A watchdog warning never releases an unsettled transport slot.
-   * SDK processor self-observability metering is not supported.
-   */
-  processor?: SessionLogProcessorOptions
-  /** Maximum time spent awaiting the SDK provider's complete shutdown path. */
-  shutdownTimeoutMillis?: number
-  /** Uncompressed OTLP request byte limit, at most 4,000,000. */
-  maxRequestBytes?: number
-}
-
-/** Session-sharing policy selected by {@link Config.mode}. */
-export enum SessionTelemetryMode {
-  FEEDBACK_ONLY = 'FEEDBACK_ONLY',
-  DISABLED = 'DISABLED',
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-session-telemetry-otel -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-title -->
 <a id="deepseek-aidsh-session-title"></a>
@@ -5844,7 +5780,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-workflow-run` | — | [`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-workspace` | — | [`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts) |
 | `@deepseek-ai/dsh-command-compact` | `commands` · `compaction` | [`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts) |
-| `@deepseek-ai/dsh-command-feedback` | `commands` | [`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts) |
 | `@deepseek-ai/dsh-command-goal` | `commands` · `goals` | [`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts) |
 | `@deepseek-ai/dsh-commands` | — | [`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts) |
 | `@deepseek-ai/dsh-compaction-image-offload` | `agents` · `sessions` | [`packages/compaction/compaction-image-offload/src/index.ts`](../packages/compaction/compaction-image-offload/src/index.ts) |

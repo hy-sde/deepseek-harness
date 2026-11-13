@@ -173,6 +173,15 @@ interface SessionEventMap {
    * so tolerating concurrent writers needs a signal beyond the log.
    */
   'session/end-seed': { inherited?: true }
+  /**
+   * One recorded human remark about this session. Log-only and independent
+   * of its trigger; it never enters model context or derived history.
+   */
+  'feedback/record': FeedbackRecord
+  /** Log-only human feedback; never enters model history. */
+  'feedback/message-put': MessageFeedbackPut
+  /** Log-only deletion; earlier ratings and notes remain in the log. */
+  'feedback/message-delete': MessageFeedbackDelete
 }
 ```
 

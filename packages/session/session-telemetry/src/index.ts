@@ -100,7 +100,7 @@ export interface SessionTelemetrySink {
    * Hand one record to the backend's pipeline. MUST be a non-blocking
    * enqueue — the coordinator calls this synchronously from the
    * `session/event` hot path or an explicit canonical-log capture, so anything
-   * slower than a queue push would tax the agent loop or feedback handling.
+   * slower than a queue push would tax the agent loop.
    * Errors thrown here are contained by the coordinator and logged; they
    * never reach the loop.
    * @param record - the logical record to report; owned by the backend after the call.
@@ -137,7 +137,7 @@ export interface SessionTelemetrySink {
 /**
  * Deployment-selected session-sharing mode, not confirmation of SDK delivery.
  */
-export type SessionTelemetrySharingStatus = 'full' | 'feedback-only' | 'disabled'
+export type SessionTelemetrySharingStatus = 'full' | 'disabled'
 
 /**
  * Loadable form of the backend contract: one implementation per context —

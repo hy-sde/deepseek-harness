@@ -585,12 +585,6 @@
       "@deepseek-ai/dsh-command-compact": [
         "./packages/compaction/command-compact/src"
       ],
-      "@deepseek-ai/dsh-command-feedback": [
-        "./packages/feedback/command-feedback/src"
-      ],
-      "@deepseek-ai/dsh-command-feedback/types": [
-        "./packages/feedback/command-feedback/src/types.ts"
-      ],
       "@deepseek-ai/dsh-command-goal": [
         "./packages/goal/command-goal/src"
       ],
@@ -1134,9 +1128,6 @@
       "@deepseek-ai/dsh-memory-extraction": [
         "./packages/memory/memory-extraction/src"
       ],
-      "@deepseek-ai/dsh-message-feedback": [
-        "./packages/feedback/message-feedback/src"
-      ],
       "@deepseek-ai/dsh-message-quotes": [
         "./packages/session/message-quotes/src"
       ],
@@ -1373,9 +1364,6 @@
       ],
       "@deepseek-ai/dsh-session-telemetry": [
         "./packages/session/session-telemetry/src"
-      ],
-      "@deepseek-ai/dsh-session-telemetry-otel": [
-        "./packages/session/session-telemetry-otel/src"
       ],
       "@deepseek-ai/dsh-session-title": [
         "./packages/session/session-title/src"

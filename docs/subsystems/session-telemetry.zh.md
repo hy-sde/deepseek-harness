@@ -2,7 +2,7 @@
 
 [English](session-telemetry.md) | 中文
 
-[捕获服务](../../packages/session/session-telemetry/README.zh.md) 负责规范事件捕获、脱敏和交接游标。[反馈后端](../../packages/session/session-telemetry-otel/README.zh.md) 授权 Session 前缀，并负责独立队列、逐请求调度及 4,000,000 字节上限。上报数据不会进入模型请求。
+[捕获服务](../../packages/session/session-telemetry/README.zh.md) 负责规范事件捕获、脱敏和交接游标。上报后端自行决定捕获授权，并拥有各自的投递队列、调度与大小上限。上报数据不会进入模型请求。
 
 源码：[`packages/session/session-telemetry/src/index.ts`](../../packages/session/session-telemetry/src/index.ts)
 
@@ -61,13 +61,13 @@ interface SessionTelemetryRecord {
 
 ## 共享披露
 
-每个后端都通过 `ctx.sessionTelemetry` 上必需的抽象 `sharing` 成员暴露其部署级模式（[Service Definition README](../../packages/session/session-telemetry/README.zh.md#the-sharing-disclosure)）。它既不是逐 Session 的接纳决定，也不是投递回执。`/feedback` 确认文本不查询它。
+每个后端都通过 `ctx.sessionTelemetry` 上必需的抽象 `sharing` 成员暴露其部署级模式（[Service Definition README](../../packages/session/session-telemetry/README.zh.md#the-sharing-disclosure)）。它既不是逐 Session 的接纳决定，也不是投递回执。
 
 ```ts type-equiv
 /**
  * Deployment-selected session-sharing mode, not confirmation of SDK delivery.
  */
-type SessionTelemetrySharingStatus = 'full' | 'feedback-only' | 'disabled'
+type SessionTelemetrySharingStatus = 'full' | 'disabled'
 ```
 
 ## 捕获策略
@@ -87,7 +87,7 @@ interface SessionTelemetryCaptureOptions {
 }
 ```
 
-`includeHistory` 允许捕获存储与继承的记录，但本身不授权捕获。[OTel 后端](../../packages/session/session-telemetry-otel/README.zh.md)使用按需捕获，并要求新的自身显式反馈；它只释放截至该反馈的完整前缀，适用于所有提供方。
+`includeHistory` 允许捕获存储与继承的记录，但本身不授权捕获。授权策略由各后端自行决定，释放形态由其投递流水线处理。
 
 ## 后端约定
 
@@ -102,7 +102,7 @@ interface SessionTelemetrySink {
    * Hand one record to the backend's pipeline. MUST be a non-blocking
    * enqueue — the coordinator calls this synchronously from the
    * `session/event` hot path or an explicit canonical-log capture, so anything
-   * slower than a queue push would tax the agent loop or feedback handling.
+   * slower than a queue push would tax the agent loop.
    * Errors thrown here are contained by the coordinator and logged; they
    * never reach the loop.
    * @param record - the logical record to report; owned by the backend after the call.

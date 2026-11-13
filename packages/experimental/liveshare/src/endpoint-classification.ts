@@ -183,10 +183,6 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'dynamicCordisRunner/stopFromPanel': 'owner-only', // owner dynamic plugin runner
   'dynamicCordisRunner/syncInspectManifest': 'owner-only', // owner dynamic plugin runner
   'dynamicCordisRunner/undefineFromPanel': 'owner-only', // owner dynamic plugin runner
-  'sessionFeedback/record': 'owner-only', // owner command feedback
-  'messageFeedback/delete': 'owner-only', // owner message feedback
-  'messageFeedback/list': 'owner-only', // owner message feedback
-  'messageFeedback/put': 'owner-only', // owner message feedback
   'goals/clear': 'owner-only', // owner clears the goal
   'goals/complete': 'owner-only', // owner completes the goal
   'goals/create': 'owner-only', // owner creates a goal

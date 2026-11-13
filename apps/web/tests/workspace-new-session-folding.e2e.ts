@@ -20,7 +20,7 @@ import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const EXPECTED_DIR = fileURLToPath(new URL('./expected/workspace-new-session-folding', import.meta.url))
 const SIDEBAR_EXPECTED = join(EXPECTED_DIR, 'sidebar.expected.md')
-const SEED = fileURLToPath(new URL('../../../snapshots/web/message-feedback-protocol/session.v3.jsonl', import.meta.url))
+const SEED = fileURLToPath(new URL('../../../snapshots/web/seeded-history/session.v3.jsonl', import.meta.url))
 const MODE = webSnapshotMode()
 const EXISTING_SESSION_COUNT = 16
 
@@ -121,16 +121,16 @@ describe('web e2e: blank New Session folding quota', () => {
     await sidebar.getByText('Untitled', { exact: true }).nth(8).click()
     await sidebar.getByRole('button', { name: 'Show 6 more sessions' }).click()
     await sidebar.getByRole('button', { name: 'Show 1 more sessions' }).click()
-    await expect.poll(sessions).toBe(16)
+    await expect.poll(sessions).toBe(15)
     await sidebar.getByRole('button', { name: 'Show less' }).click()
-    await expect.poll(sessions).toBe(9)
+    await expect.poll(sessions).toBe(8)
     await sidebar.getByRole('button', { name: 'Show 7 more sessions' }).waitFor()
 
     const workspaceRow = sidebar.getByRole('treeitem').first()
     await workspaceRow.hover()
     await page.getByRole('button', { name: `New session in ${workspaceTitle}` }).click()
     await sidebar.getByText('New Session', { exact: true }).waitFor()
-    expect(await sessions()).toBe(9)
+    expect(await sessions()).toBe(8)
     await workspaceRow.hover()
     await compareOrRefreshGolden(
       join(EXPECTED_DIR, 'watermark-kept.expected.md'),

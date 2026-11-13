@@ -1,6 +1,7 @@
 # Agent Note: 权威反馈日志与请求投递
 
 Status: implemented
+Archived: 2026-11-12
 
 [English](2026-09-05-canonical-feedback-log.md) | 中文
 

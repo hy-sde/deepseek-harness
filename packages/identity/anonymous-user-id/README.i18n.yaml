@@ -3,35 +3,35 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/identity/anonymous-user-id/README.md
 /:
-  en: c515895831e237da
-  zh: 34da7fc7898352e2
+  en: 45018fc662bc00a7
+  zh: 6c150ba8d2afc94a
 /deepseek-ai-dsh-anonymous-user-id:
   en: 247d162b0bf2d0cb
   zh: cd2deb79e97d92a7
 /deepseek-ai-dsh-anonymous-user-id/summary:
-  en: 5bc241dbf080664f
-  zh: b4bead686a76981b
+  en: b398ef27ab1ac11c
+  zh: bddd253b172ff59c
 /deepseek-ai-dsh-anonymous-user-id/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
 /deepseek-ai-dsh-anonymous-user-id/use-this-package:
-  en: 4437fa00c42fcfb1
-  zh: 040a6688deda82d5
+  en: a8fab5a69be4a832
+  zh: 35f27d354d78ee00
 /deepseek-ai-dsh-anonymous-user-id/use-this-package/what-the-id-does-for-you:
-  en: 0b9b81be195a834e
-  zh: 67338c5efaadae4d
+  en: 06cac4e1df62c2e8
+  zh: d0175493a9bf6312
 /deepseek-ai-dsh-anonymous-user-id/use-this-package/observing-and-resetting-the-id:
   en: 44ede1e507c5ee38
   zh: f2a21b86eb6dfe72
 /deepseek-ai-dsh-anonymous-user-id/use-this-package/using-it-in-your-own-package:
-  en: 4318cb0c4a2b41ed
-  zh: 6dfae5dc73bcb232
+  en: b1622c44bca5d09a
+  zh: 293fcc769846888c
 /deepseek-ai-dsh-anonymous-user-id/understand-the-implementation:
   en: 16370ef642feec6a
   zh: a546774827234300
 /deepseek-ai-dsh-anonymous-user-id/understand-the-implementation/design-philosophy:
-  en: d7c0a68199976734
-  zh: f78f4ef1d11bde94
+  en: e0b8c3488222c891
+  zh: 243ffa353395addf
 /deepseek-ai-dsh-anonymous-user-id/understand-the-implementation/source-map:
   en: b816e46019ff3b61
   zh: a3c7be6ca0683c03
@@ -42,8 +42,8 @@
   en: 7a5ab3467012c0c2
   zh: 4b297e0fba2fe78b
 /deepseek-ai-dsh-anonymous-user-id/further-exploration:
-  en: 70ecfacbc9d7751b
-  zh: 705cf7bec5fc479b
+  en: 58b138f149e59780
+  zh: 813fb442f0c088f9
 /deepseek-ai-dsh-anonymous-user-id/model-experience:
   en: 6d953a2296ccc992
   zh: dea7f2642a39d9b5

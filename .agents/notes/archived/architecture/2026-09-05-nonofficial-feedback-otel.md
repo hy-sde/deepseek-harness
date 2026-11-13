@@ -1,6 +1,7 @@
 # Agent Note: Explicit-feedback-only upload through OpenTelemetry
 
 Status: implemented
+Archived: 2026-11-12
 
 English | [中文](2026-09-05-nonofficial-feedback-otel.zh.md)
 

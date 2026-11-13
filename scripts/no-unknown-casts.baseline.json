@@ -1258,18 +1258,6 @@
   "packages/extensions/ui-cordis/tests/inventory.client.spec.ts": {
     "205cd2f0d90ee000d0bd5f8c9e7e03d7d602f22e12220ebdf8043d68fd9b796a": 1
   },
-  "packages/feedback/command-feedback/tests/loader-composition.spec.ts": {
-    "59c63f734e8bba862325f776e3fcbebd78a84cfb4161f8df41c216950d9bf351": 1
-  },
-  "packages/feedback/message-feedback/tests/helpers.ts": {
-    "b40f3bbda2adba664b54271ea4b552ffb2c78a239d39d8b1e882cca164d21c4f": 1
-  },
-  "packages/feedback/message-feedback/tests/loader-composition.spec.ts": {
-    "59c63f734e8bba862325f776e3fcbebd78a84cfb4161f8df41c216950d9bf351": 1
-  },
-  "packages/feedback/message-feedback/tests/message-feedback.spec.ts": {
-    "e87443b2dcbfcd641eba56e2afb1b9daaa697f89df846c40cdea6bfb9b8a7ef3": 1
-  },
   "packages/fs/fs-archive/src/ar/rar.ts": {
     "1050d9d2ed6706c54592c8348c99cbbbb5dea9188a4ef03ec315c8aeb0cf6420": 1
   },
@@ -1686,9 +1674,6 @@
   "packages/session/session-format-v3-to-v4/tests/validation.spec.ts": {
     "e45cff8ca88d996ff7e8eefdf86db1a9976b85de0811c136d662a3b313832fdf": 1
   },
-  "packages/session/session-log-deepseek/tests/feedback-composition.spec.ts": {
-    "59c63f734e8bba862325f776e3fcbebd78a84cfb4161f8df41c216950d9bf351": 1
-  },
   "packages/session/session-log-deepseek/tests/upload.spec.ts": {
     "0c25d15bf9489ae7483b0a31a64a047c12174602071e0aa29714e0f9196889c6": 1,
     "119461c1a63f392b4db54f75a86f852f49b72b7f0342c04d1bc1c8d1677f37c1": 3,
@@ -1766,10 +1751,6 @@
   },
   "packages/session/session-stats/tests/projection.spec.ts": {
     "3b32ebf30406556d63564044fac22d757947dc603a753559840117a2fefc84e8": 1
-  },
-  "packages/session/session-telemetry-otel/tests/otel.spec.ts": {
-    "1fd47c3bb8978851a7cf8a4cca96075b175f412914ec4338edd14f7a575a1e8b": 1,
-    "69d8df14a925caff56167c34923afee145db24fe9e208c129f2b5e45649f7367": 1
   },
   "packages/session/session-title-first-prompt-llm/tests/loader-composition.spec.ts": {
     "59c63f734e8bba862325f776e3fcbebd78a84cfb4161f8df41c216950d9bf351": 1

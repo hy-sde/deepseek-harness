@@ -29,7 +29,7 @@ As a deployment, choose a backend, mount it, and add redaction rules when record
 
 ### Choosing and mounting a backend
 
-Load exactly one backend plugin; it registers `ctx.sessionTelemetry` with the capture coordinator and its delivery pipeline. A duplicate load throws. The required [`sharing` member](#the-sharing-disclosure) reports the deployment mode, not per-session admission or delivery. A consumer may report "not configured" only when no telemetry service is mounted. The `/feedback` command confirms recording without reading this policy.
+Load exactly one backend plugin; it registers `ctx.sessionTelemetry` with the capture coordinator and its delivery pipeline. A duplicate load throws. The required [`sharing` member](#the-sharing-disclosure) reports the deployment mode, not per-session admission or delivery. A consumer may report "not configured" only when no telemetry service is mounted.
 
 ### The backend contract
 
@@ -45,7 +45,7 @@ Ledger records carry `sourceEvent` with the owning Session id and a copied event
 
 <a id="the-sharing-disclosure"></a>
 
-Every backend discloses its deployment mode through `sharing`: `full`, `feedback-only`, or `disabled`. A backend may additionally restrict eligible Sessions. This property is not a delivery receipt; handoff is a non-blocking enqueue, and batching, retry, and loss policy belong to the backend SDK.
+Every backend discloses its deployment mode through `sharing`: `full` or `disabled`. A backend may additionally restrict eligible Sessions. This property is not a delivery receipt; handoff is a non-blocking enqueue, and batching, retry, and loss policy belong to the backend SDK.
 
 ### Redacting records
 
@@ -80,7 +80,7 @@ Live capture registers Session events, flush hints, shutdown markers, and agent/
 
 ### The handoff cursor
 
-A module-scope `WeakMap<Session, seq>` records the highest sequence handed off, not delivered. Re-adopting the same object resumes after that cursor. Capture starts at `firstLifecycleSeq`: a new fork includes its child-owned marker and closers, while a restored Session excludes its stored prefix, including prior child turns; explicit `includeHistory: true` starts an unhanded object at seq 0, including restored or fork history. The backend owns capture authorization. Stored history does not itself authorize capture; the OTel backend waits for new explicit feedback. Receivers deduplicate repeated records by `(session.id, session.format_version, event.seq)`.
+A module-scope `WeakMap<Session, seq>` records the highest sequence handed off, not delivered. Re-adopting the same object resumes after that cursor. Capture starts at `firstLifecycleSeq`: a new fork includes its child-owned marker and closers, while a restored Session excludes its stored prefix, including prior child turns; explicit `includeHistory: true` starts an unhanded object at seq 0, including restored or fork history. The backend owns capture authorization. Stored history does not itself authorize capture; each backend owns its capture-authorization policy. Receivers deduplicate repeated records by `(session.id, session.format_version, event.seq)`.
 
 </details>
 
@@ -91,7 +91,6 @@ A module-scope `WeakMap<Session, seq>` records the highest sequence handed off, 
 
 Read these pages when the seam contract is not enough. They move from the shipped backend to the subsystem reference and the decision evidence.
 
-- [OpenTelemetry telemetry backend](../session-telemetry-otel/README.md) — the shipped backend deployments load, with mode and exporter configuration.
 - [Session telemetry subsystem](../../../docs/subsystems/session-telemetry.md) — the capability split and type declarations.
 - [historical Session telemetry revival decision](../../../.agents/notes/archived/feature/2026-07-23-session-telemetry-otel-revival.md) — rationale, trade-offs, and rejected alternatives.
 - [Session package map](../README.md) — adjacent persistence, projection, title, and telemetry packages.
