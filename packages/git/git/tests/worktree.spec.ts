@@ -486,8 +486,8 @@ describe('sweepWorktrees (auto-prune)', () => {
     const swept = await sweepWorktrees(f.git, f.dir, { settings: { root: f.pool, baseBranch: 'master' } })
     expect(swept.evicted).toEqual([expect.objectContaining({ path: a.path, branch: 'feat/kept' })])
     expect(swept.retainedBranches).toHaveLength(1)
-    expect(swept.retainedBranches[0].branch).toBe('feat/kept')
-    expect(swept.retainedBranches[0].reason).toBeTruthy()
+    expect(swept.retainedBranches[0]!.branch).toBe('feat/kept')
+    expect(swept.retainedBranches[0]!.reason).toBeTruthy()
     // The same-branch re-acquire reuses the retained branch instead of failing.
     const lease = await acquireWorktree(f.git, f.dir, { root: f.pool, baseBranch: 'master' }, { branch: 'feat/kept' })
     expect(lease.branch).toBe('feat/kept')
