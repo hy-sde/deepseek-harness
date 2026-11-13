@@ -23,7 +23,6 @@ export type Mode =
   | 'ci-lint-contracts-ready'
   | 'ci-coverage'
   | 'ci-unit'
-  | 'ci-bench'
   | 'ci-artifacts'
   | 'ci-consumers'
   | 'ci-windows-blocking'
@@ -158,7 +157,6 @@ function parseMode(raw: string | undefined): Mode {
     case 'ci-lint-contracts-ready':
     case 'ci-coverage':
     case 'ci-unit':
-    case 'ci-bench':
     case 'ci-artifacts':
     case 'ci-consumers':
     case 'ci-windows-blocking':
@@ -173,7 +171,7 @@ function parseMode(raw: string | undefined): Mode {
       return raw
     default:
       throw new Error(
-        `run-gates: expected mode ci-primary | ci-linux-primary | ci-static | ci-lint-contracts-ready | ci-coverage | ci-unit | ci-bench | ci-artifacts | ci-consumers | ci-windows-blocking | ci-windows-complete | ci-windows-observational-ready | node-compat | check-all | hygiene | doc-sync | doc-quick | i18n, got ${JSON.stringify(raw)}.`,
+        `run-gates: expected mode ci-primary | ci-linux-primary | ci-static | ci-lint-contracts-ready | ci-coverage | ci-unit | ci-artifacts | ci-consumers | ci-windows-blocking | ci-windows-complete | ci-windows-observational-ready | node-compat | check-all | hygiene | doc-sync | doc-quick | i18n, got ${JSON.stringify(raw)}.`,
       )
   }
 }
@@ -320,8 +318,6 @@ export function gatesForMode(selected: Mode): Gate[] {
       return coverageGates()
     case 'ci-unit':
       return ciUnitGates()
-    case 'ci-bench':
-      return [pnpmExec('bench', ['tsx', 'scripts/run-ci-bench.ts'], { label: 'performance benchmarks' })]
     case 'ci-artifacts':
       return ciArtifactGates()
     case 'ci-consumers':

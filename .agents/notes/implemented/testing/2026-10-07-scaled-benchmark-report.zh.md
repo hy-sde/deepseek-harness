@@ -10,11 +10,11 @@ Status: implemented
 
 ## 决定
 
-每次 `test:bench` 运行都会写出 `benchmarks/.dsh-report/report.html`，这是一个不依赖网络资源的独立页面。基准文件在断言预算之前，把每个有预算的墙钟中位数传给 [scaling-report.ts](../../../../benchmarks/support/scaling-report.ts) 的 `recordTimings`，把整进程峰值 RSS 传给 `recordPeakMemory`。每次调用都带有用例描述，说明该用例测量什么、影响哪个用户场景；读者悬停该用例时页面会显示它。Vitest global setup 在运行前清空结果，在运行后渲染页面，用例失败时也会渲染。预算和断言不变。
+每次 `test:bench` 运行都会写出 `benchmarks/.dsh-report/report.html`，这是一个不依赖网络资源的独立页面。基准文件在断言预算之前，把每个有预算的墙钟中位数传给 scaling-report.ts 的 `recordTimings`，把整进程峰值 RSS 传给 `recordPeakMemory`。每次调用都带有用例描述，说明该用例测量什么、影响哪个用户场景；读者悬停该用例时页面会显示它。Vitest global setup 在运行前清空结果，在运行后渲染页面，用例失败时也会渲染。预算和断言不变。
 
 ### 机器缩放
 
-[machine-profiles.ts](../../../../benchmarks/support/machine-profiles.ts) 列出 2015、2019、2023、2026 年使用 SSD 的笔记本，带默认系统盘的主流云服务器，托管 runner，以及 M4 Pro 校准参考机。每个配置包含 2026-10-07 获取的 PassMark 单线程评分、逻辑 CPU 数，以及其存储的典型 4 KiB 队列深度 1 延迟。缩放后的端点为 `ms × ((1 − io) × cpuScore(measured) / cpuScore(target) × coreFactor + io × ioLatency(target) / ioLatency(measured))`。
+machine-profiles.ts 列出 2015、2019、2023、2026 年使用 SSD 的笔记本，带默认系统盘的主流云服务器，托管 runner，以及 M4 Pro 校准参考机。每个配置包含 2026-10-07 获取的 PassMark 单线程评分、逻辑 CPU 数，以及其存储的典型 4 KiB 队列深度 1 延迟。缩放后的端点为 `ms × ((1 − io) × cpuScore(measured) / cpuScore(target) × coreFactor + io × ioLatency(target) / ioLatency(measured))`。
 
 当 worker 报告端点区间内的进程 CPU 时间时，`io` 是实测的非 CPU 墙钟时间占比 `max(0, 1 − cpuMs / ms)`，繁忙并行度为 `max(1, cpuMs / ms)`。Session 语料、投影列表、Session 首次历史与 Agent 恢复，以及 Agent 续聊用例会报告 CPU 时间。其他端点在基准旁声明并注释 `io`：内存中的 Client 与终端工作声明为 0，浏览器、Session-open 分阶段和 SDK profile 端点声明估计值。`coreFactor` 为 `max(1, parallelism / cores(target)) / max(1, parallelism / cores(measured))`，因此繁忙 CPU 数超过目标机器 CPU 数的端点会在该机器上变慢。页面显示每个默认值及其来源，读者可以按端点覆盖和重置 `io`。测量机器按 CPU 型号匹配，使用实际可用 CPU 数，也可以在页面中修改。
 

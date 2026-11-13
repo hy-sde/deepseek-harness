@@ -99,9 +99,6 @@
   "apps/web/tests/startup-auto-selection.e2e.ts": {
     "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 4
   },
-  "benchmarks/conversation-fold/conversation-fold.worker.client.ts": {
-    "1bce926682b8c613226bdbcf2bc75b369dcb9b9e94172f1e1a5a48f72736095a": 1
-  },
   "packages/acp/acp/src/index.ts": {
     "04bc8a44533574365dfedf563e2356458bcf95f990a00906938c977c1d683356": 1
   },

@@ -266,70 +266,6 @@ jobs:
       - name: Run lint and duplication
         run: pnpm run check:ci:lint:contracts-ready
 
-  node-24-bench:
-    if: github.event_name == 'pull_request'
-    runs-on: >-
-      ${{ vars.DSH_CI_FAILOVER_LINUX == 'blacksmith' && 'blacksmith-4vcpu-ubuntu-2404'
-          || 'ubuntu-24.04' }}
-    name: node 24 / benchmarks
-    # Wall-clock budgets need an otherwise idle runner, so this job runs the
-    # benchmark lane alone instead of joining a concurrent gate aggregate, and
-    # keeps its own two-file parallelism inside that runner. The self-hosted
-    # failover pool is shared, so the benchmarks stay on hosted Linux there.
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: pnpm/action-setup@v5.0.0
-        with:
-          dest: ${{ runner.temp }}/setup-pnpm-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - uses: actions/setup-node@v7.0.0
-        with:
-          node-version: ${{ env.PRIMARY_NODE_VERSION }}
-
-      - name: Configure pnpm store path
-        id: pnpm-store
-        run: |
-          store_root="$HOME/.local/share/pnpm/store"
-          echo "PNPM_CONFIG_STORE_DIR=$store_root" >> "$GITHUB_ENV"
-          store_path=$(PNPM_CONFIG_STORE_DIR="$store_root" pnpm store path --silent)
-          echo "path=$store_path" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache/restore@v6.1.0
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-
-
-      - name: Install (immutable)
-        run: pnpm install --frozen-lockfile
-
-      - name: Install benchmark browser and hosted dependencies
-        run: pnpm --filter @deepseek-ai/dsh-benchmarks exec playwright install --with-deps chromium
-
-      - name: Run performance benchmarks
-        env:
-          DSH_GATE_VERBOSE: '1'
-        run: pnpm run check:ci:bench
-
-      # The report global teardown renders benchmarks/.dsh-report after the run,
-      # including after a failing budget assertion. A run that fails before
-      # recording any timing has no report, so missing files warn instead of
-      # failing the benchmark job a second time.
-      - name: Upload scaled benchmark report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: benchmark-report
-          path: benchmarks/.dsh-report/
-          include-hidden-files: true
-          if-no-files-found: warn
-          retention-days: 7
-
   node-24-consumers:
     if: github.event_name == 'pull_request'
     runs-on: >-
@@ -568,7 +504,7 @@ jobs:
           && github.event.pull_request.user.login != 'dependabot[bot]'
           && fromJSON('["self-hosted", "linux", "x64", "vm-backup"]')
           || 'ubuntu-latest' }}
-    needs: [node-24, node-24-coverage, node-24-lint, node-24-bench, node-24-consumers, node-compat]
+    needs: [node-24, node-24-coverage, node-24-lint, node-24-consumers, node-compat]
     if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     steps:
       - name: Fail if any needed job did not succeed

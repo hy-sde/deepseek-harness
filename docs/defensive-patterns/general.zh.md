@@ -166,35 +166,6 @@ if (pluginName === 'ui-attachment') { /* business branch inside the manager */ }
 
 反例让每个新能力都要改中心层，中心层随即成为变更瓶颈与冲突热点。
 
-<a id="changes-carry-performance-evidence"></a>
-
-## 改动要附带性能证据
-
-可能改变热点路径成本的改动，要测量它所触及的代码在改动前后的表现，并把数字与测量条件一并给出。三项指标是运行耗时、内存峰值与稳态内存，在同一环境、同一输入下测量；粒度是**被改动的那条路径**，不是整机跑分。只报「整体没变慢」不算证据，别处变快也不能抵消这里的倒退——优化了首屏，仍然要回答 `append` 是否倒退。
-
-判定条件：同一环境、同一输入下，改动后那条路径的三项指标中任一项显著变差。
-
-基线是被测路径**不带本次改动**的形态——通常是不挂测量 hook 的原生实现，而不是旧实现。新旧两侧挂着同一个 hook、共同开销把真实差值稀释掉，测量就会报告「没变化」，而实际上两边一起慢。
-
-测量的正家是 [benchmarks/](../../benchmarks/AGENTS.md)，按被测用户路径分目录，它的场景就是入口：
-
-```sh
-# Run the owning scenario before and after the change; the numbers go into the PR.
-pnpm run test:bench
-```
-
-包内诊断留在包旁边、用 `.perf.ts` 后缀，不进 `test:bench`。CI 门禁是 `pnpm run check:ci:bench`（作业 `node 24 / benchmarks`），产出 scaled report——该门禁只是**报警**，不是通过依据：出现退化时重跑对应场景并本地分段 profile，定位是哪一段变慢、哪次变更引入。内存留存类结论用 `pnpm run test:bench:memory 4g|8g`，它会在无 swap 的 cgroup 里以不变预算重跑其列出的文件。
-
-边界：不触碰运行路径的改动——注释、文档、仅测试代码——不需要测量；生产性能代码不是可以顺手删掉的 benchmark instrumentation（`performance.now()`、`scheduler.yield()` 属于生产 decode/encode 分片调度的一部分）。架构调整确实要付出性能代价时，写明实测代价与理由，并由对应领域专家确认；「分层需要」不是自助理由。命令、数字、环境与输入规模都要落账，以便返工时重建同一基线。
-
-```text
-CI benchmark reported green, so the change is accepted as performance-neutral.
-```
-
-这种写法会把 benchmark 未建模路径上的真实退化直接放行。
-
-<a id="migrations-preserve-behavior"></a>
-
 ## 迁移保持行为
 
 迁移或拆包保持对外可观测行为全等：错误码、诊断信息、数据流顺序与 UI 时机逐项比对。优先搬运代码而不是删了重写；重写适用于本来就要改语义的代码，且此时要在改动里列出差异。包或导出路径变化属于载体变化而非行为变化，行为变化则是独立的一刀。

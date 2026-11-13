@@ -16,7 +16,7 @@ Status: implemented
 
 ## 测量与校准
 
-[生产入口基准](../../../../benchmarks/session-corpus/projection-list.bench.ts)测量真实 Session Controller、查询引擎、持久化、投影注册表与缓存，以及 storage domain。持久化夹具使用持久化拥有方的 `generationLogPath`、`toHeaderLine` 和 `compressZstdFrame`。全部内容都是确定性生成数据。准备和显式 GC 不计入耗时；内存采样时完整结果与 JSON 仍可达。
+生产入口基准测量真实 Session Controller、查询引擎、持久化、投影注册表与缓存，以及 storage domain。持久化夹具使用持久化拥有方的 `generationLogPath`、`toHeaderLine` 和 `compressZstdFrame`。全部内容都是确定性生成数据。准备和显式 GC 不计入耗时；内存采样时完整结果与 JSON 仍可达。
 
 | 负载 | Session 数 | 状态观测数 | 请求记录数 | 状态 JSON |
 |---|---:|---:|---:|---:|

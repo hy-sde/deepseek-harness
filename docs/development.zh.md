@@ -100,13 +100,13 @@ pnpm run build:web
 | 场景 | 命令 |
 |---|---|
 | 迭代包源码并需要可运行的产物 | `pnpm run build:artifacts`；`dev:web` 与 `dev:desktop` 启动前会先执行它 |
-| 检查测试、脚本、benchmarks 或 website 代码的类型 | 在最近一次 `build:artifacts` 之后运行 `pnpm run build:check`；包源码有改动时先重新运行 `build:artifacts` |
+| 检查测试、脚本或 website 代码的类型 | 在最近一次 `build:artifacts` 之后运行 `pnpm run build:check`；包源码有改动时先重新运行 `build:artifacts` |
 | 声明 TypeScript 工作完成之前 | 在最近一次 `build:artifacts` 之后运行 `pnpm run build:check`，或运行 `pnpm run build` |
 | 完整验证（与 CI 必需的构建 lane 相同） | `pnpm run build` |
 | 只做类型检查、不需要 Web 与 Desktop 产物 | `pnpm run typecheck` |
 | lint 或文档代码块检查 | `pnpm run lint` 或 `pnpm run doc-typecheck`；它们各自先准备 `host-contracts` |
 
-PR 产物 builder 运行 `build:artifacts`；必需的 Linux 与 Windows 普通构建以及公开 `typecheck` 还检查仓库级测试和脚本 program。CI benchmark 准备阶段还对其临时 library 输出使用 `--noCheck`，由这些必需构建负责诊断；其他产物 builder 保留包检查（[理由](../.agents/notes/implemented/process/2026-10-05-pr-artifact-typechecks.zh.md)）。
+PR 产物 builder 运行 `build:artifacts`；必需的 Linux 与 Windows 普通构建以及公开 `typecheck` 还检查仓库级测试和脚本 program。CI 产物准备阶段还对其临时 library 输出使用 `--noCheck`，由这些必需构建负责诊断；其他产物 builder 保留包检查（[理由](../.agents/notes/implemented/process/2026-10-05-pr-artifact-typechecks.zh.md)）。
 
 两次 tsdown 都匹配 `vendor/*`、`packages/*/*` 与 `apps/cli`，Host 阶段另外匹配 `apps/desktop-host`；两者都不扫描构建产物来发现 Client 包，也不维护 Host/Client 包过滤表。包内 tsdown 配置根据 `DSH_BUILD_FACE` 决定当前阶段的入口：普通 Client 插件在 Client 阶段同时生成 Node loader 与 browser bundle；`api-remotes` 通过 `hostPhase: true` 提前生成 Host 入口，再在 Client 阶段只生成 browser bundle。tsdown 只消费 `lib/types` 中由前置 tsc 发射的 JavaScript。tsdown 并发构建匹配到的 workspace 成员；`apps/desktop` 的主进程 bundle 需要从工作区 devDependencies 的 `lib/` 产物内联这些包，因此在 Host 阶段之后单独一步打 bundle（[Desktop README](../apps/desktop/README.zh.md#bundled-workspace-dependencies)）。
 
@@ -164,7 +164,7 @@ pi-ai 检查会在内存中重新生成预期元数据。数据过期时，检�
 
 ### CI 门禁
 
-keyless [CI 工作流](../.github/workflows/ci.yml) 将独立门禁分组到若干宽粒度 lane，并在受支持的 Node 版本上运行一组较小的兼容性检查。产物消费方在各自 lane 内等待一次 build。覆盖率分区复用按平台和运行器池隔离的文件耗时，在配置的 worker 上限内均衡工作量。必需 benchmark 在标准 GitHub 托管 Linux 上独立运行；[benchmark 运行器说明](../benchmarks/AGENTS.md)拥有路由及 job 超时。单独的真实 API 工作流按其配置的 worker 上限运行 `pnpm run test:e2e`。当前门禁和 job 清单以 [scripts/run-gates.ts](../scripts/run-gates.ts) 和工作流文件为准。
+keyless [CI 工作流](../.github/workflows/ci.yml) 将独立门禁分组到若干宽粒度 lane，并在受支持的 Node 版本上运行一组较小的兼容性检查。产物消费方在各自 lane 内等待一次 build。覆盖率分区复用按平台和运行器池隔离的文件耗时，在配置的 worker 上限内均衡工作量。单独的真实 API 工作流按其配置的 worker 上限运行 `pnpm run test:e2e`。当前门禁和 job 清单以 [scripts/run-gates.ts](../scripts/run-gates.ts) 和工作流文件为准。
 
 不带凭据的 dsh 依赖布局检查与 dsh/vendor 打包演练仅在 `DSH_CI_FAILOVER_LINUX=selfhosted`，且事件为受信任的 master 推送或同仓库、非 fork、非 Dependabot 拉取请求时使用现有 Linux 自托管池。其余情况（包括手动触发）均使用 `ubuntu-24.94`；手动发布仍使用托管运行器。持久化存储隔离与回退限制见[发布演练运行器说明](../.agents/notes/implemented/process/2026-07-26-ci-failover-runbook.zh.md)。
 

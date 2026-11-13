@@ -10,11 +10,11 @@ Status: implemented
 
 ## 决定
 
-[run-memory-pressure-bench.ts](../../../../scripts/run-memory-pressure-bench.ts) 先在无约束环境中构建基准产物，再在 `memory.max` 为 4 或 8 GiB、`memory.swap.max` 为零的 cgroup v2 中，重跑一份固定的现有基准文件列表。这些文件保留各自的负载和预算；某个用例未达到其常规预算或 cgroup 杀死进程时，该场景失败。
+run-memory-pressure-bench.ts 先在无约束环境中构建基准产物，再在 `memory.max` 为 4 或 8 GiB、`memory.swap.max` 为零的 cgroup v2 中，重跑一份固定的现有基准文件列表。这些文件保留各自的负载和预算；某个用例未达到其常规预算或 cgroup 杀死进程时，该场景失败。
 
 ### 用例
 
-列表包含常驻内存实测最大的文件和长历史 UI 路径：[session-corpus](../../../../benchmarks/session-corpus/README.zh.md)（3,000 个 Session 的列表、1,000 个 Session 的内容搜索、fork）、其 projection-list 文件、[session-open](2026-09-04-session-open-performance-gate.zh.md)（127,400 个事件的 Session）和 [long-session-browser](../../../../benchmarks/long-session-browser/README.zh.md)（Chromium 及其 Host）。终端、fold、重连和续写文件测量的是较小的进程内负载，不在列表中。
+列表包含常驻内存实测最大的文件和长历史 UI 路径：session-corpus（3,000 个 Session 的列表、1,000 个 Session 的内容搜索、fork）、其 projection-list 文件、[session-open](2026-09-04-session-open-performance-gate.zh.md)（127,400 个事件的 Session）和 long-session-browser（Chromium 及其 Host）。终端、fold、重连和续写文件测量的是较小的进程内负载，不在列表中。
 
 ### 上限与端点
 

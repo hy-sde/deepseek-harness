@@ -16,7 +16,7 @@ Every row remains synchronous. Live rows precede queued cold rows before the sta
 
 ## Measurement and calibration
 
-The [production-entry benchmark](../../../../benchmarks/session-corpus/projection-list.bench.ts) measures the real Session Controller, query engine, persistence, projection registry/cache and storage domain. Persisted fixtures use `generationLogPath`, `toHeaderLine` and `compressZstdFrame` from the persistence owner. All content is deterministic generated data. Setup and explicit GC are outside timing; complete results and JSON remain reachable during memory sampling.
+The production-entry benchmark measures the real Session Controller, query engine, persistence, projection registry/cache and storage domain. Persisted fixtures use `generationLogPath`, `toHeaderLine` and `compressZstdFrame` from the persistence owner. All content is deterministic generated data. Setup and explicit GC are outside timing; complete results and JSON remain reachable during memory sampling.
 
 | Workload | Sessions | State observations | Request records | State JSON |
 |---|---:|---:|---:|---:|

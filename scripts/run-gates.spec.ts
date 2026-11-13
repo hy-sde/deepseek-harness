@@ -246,7 +246,6 @@ describe('gate graph validation', () => {
     'ci-lint-contracts-ready',
     'ci-coverage',
     'ci-unit',
-    'ci-bench',
     'ci-artifacts',
     'ci-consumers',
     'ci-windows-blocking',
@@ -262,27 +261,6 @@ describe('gate graph validation', () => {
     const execute = vi.fn(async (item: Gate) => resultFor(item))
 
     await expect(runGates(subject, subject.length, execute)).resolves.toHaveLength(subject.length)
-  })
-
-  it('uses the internal CI benchmark runner without changing the public benchmark scripts', () => {
-    const subject = withPnpmEntrypoint(() => gatesForMode('ci-bench'))
-    const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
-      scripts: Record<string, string>
-    }
-
-    expect(scripts['check:ci:bench']).toBe('tsx scripts/run-gates.ts ci-bench')
-    expect(subject).toHaveLength(1)
-    expect(subject[0]).toMatchObject({
-      id: 'bench',
-      displayCommand: 'pnpm exec tsx scripts/run-ci-bench.ts',
-      args: ['/private/pnpm.cjs', 'exec', 'tsx', 'scripts/run-ci-bench.ts'],
-    })
-    expect(scripts['test:bench']).toBe('npm run build:bench && npm run build:web && npm run test:bench:built')
-    expect(scripts['build:bench']).toBe(
-      'npm run build:native-system && npm run build:lib && tsdown --config-loader native --config benchmarks/tsdown.config.ts',
-    )
-    expect(scripts['build:native-system']).toBe('tsx native/system/scripts/build.ts --host-addon-only')
-    expect(scripts['test:bench:built']).toBe('tsx scripts/run-bench-suite.ts')
   })
 
   it('checks all maintained repository references locally and in CI', () => {

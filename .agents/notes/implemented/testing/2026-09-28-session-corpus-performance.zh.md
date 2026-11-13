@@ -10,11 +10,11 @@ Status: implemented
 
 ## 决定
 
-[session-corpus 基准](../../../../benchmarks/session-corpus/session-corpus.bench.ts)在合成的当前代 Zstandard 语料上测量三个 Web Host 端点。产品实现不做任何改动。
+session-corpus 基准在合成的当前代 Zstandard 语料上测量三个 Web Host 端点。产品实现不做任何改动。
 
 ### 工作负载
 
-2026-09-28，一名开发者的本地 DSH home 在 88 个项目目录中保存了 1,650 个 Session。统计只从每个 Session 的最新代中提取聚合计数；内容、身份和路径都没有离开那台机器。[corpus-shape.ts](../../../../benchmarks/session-corpus/corpus-shape.ts) 为三个维度记录 22 个上分位锚点：逻辑事件数（展开紧凑 delta 行）、解压字节数和轮次数。
+2026-09-28，一名开发者的本地 DSH home 在 88 个项目目录中保存了 1,650 个 Session。统计只从每个 Session 的最新代中提取聚合计数；内容、身份和路径都没有离开那台机器。corpus-shape.ts 为三个维度记录 22 个上分位锚点：逻辑事件数（展开紧凑 delta 行）、解压字节数和轮次数。
 
 | 分位 | 事件数 | 逻辑字节数 | 轮次数 |
 |---|---:|---:|---:|

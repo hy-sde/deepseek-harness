@@ -72,7 +72,7 @@ Assembler 为同一输入和生命周期角色共享一个不可变 Match 及其
 - 负控恢复读取时确认变化、重复分配 Match 和短文本字素遍历；四项聚焦测试在对应断言失败，恢复后通过。各 Definition 保留独立 State，Turn 与 Step 记录仍归各 Session 所有。
 - 另有负控提前解析未读容器、接受同长度的冲突文本，或为纯参数 delta 重建 Assistant State。每项都在所属断言失败，恢复边界索引实现后通过。
 
-必跑的 [conversation-fold benchmark](../../../../benchmarks/conversation-fold/conversation-fold.bench.client.ts) 使用真实 Tool Definition、Assembler、Chat 分组及发布后的 write 行读取，以 16 字符分片输入，每 64 片 flush。三个独立的已编译 Node worker 报告全部样本及中位数；准备工作和显式 GC 不计时，保留 Assembler 与参数视图后测量驻留堆。行读取校验解码进度与文件路径；worker 还报告进程峰值 RSS。
+必跑的 conversation-fold benchmark 使用真实 Tool Definition、Assembler、Chat 分组及发布后的 write 行读取，以 16 字符分片输入，每 64 片 flush。三个独立的已编译 Node worker 报告全部样本及中位数；准备工作和显式 GC 不计时，保留 Assembler 与参数视图后测量驻留堆。行读取校验解码进度与文件路径；worker 还报告进程峰值 RSS。
 
 2026-09-29 的本地 Chat 专项测量，以 512 KiB write 内容和 32,769 个正文 delta 对比功能改造前基线与优化实现。在 Linux x64、AMD EPYC 7763、Node 24.18.0 上，无探针处理耗时中位数为 212.16 → 176.12 ms，包含已回收对象的累计分配为 132.06 → 76.65 MiB，驻留堆为 24.89 → 21.84 MiB。测量不含模型、网络、浏览器渲染和非 Chat 目标，不代表整页或 CI runner 延迟。
 

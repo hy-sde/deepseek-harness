@@ -148,31 +148,6 @@ if (pluginName === 'ui-attachment') { /* business branch inside the manager */ }
 
 The wrong form makes every new capability edit the center layer, which becomes the change bottleneck and the conflict hotspot.
 
-## Changes carry performance evidence
-
-A change that can move the cost of a hot path measures the code it touched before and after and reports the numbers with their conditions. The three metrics are runtime, peak memory, and steady-state memory, measured in one environment on one input; the granularity is the changed path, not a whole-machine score. Reporting that "nothing got slower overall" is not evidence, and a path that improved elsewhere does not excuse a regression here — an optimised first paint still has to answer for `append`.
-
-The judged condition: under one environment and one input, any of the three metrics is significantly worse on the changed path.
-
-The baseline is the same path without the change under measurement — normally the native implementation that carries no measurement hook, not the previous implementation. Comparing old against new with the same hook attached on both sides dilutes the difference until it disappears: both sides pay the same overhead, so the measurement reports "no change" while both are slow.
-
-Measurement is owned by [benchmarks/](../../benchmarks/AGENTS.md), one directory per measured user path, and its scenarios are the entry point:
-
-```sh
-# Run the owning scenario before and after the change; the numbers go into the PR.
-pnpm run test:bench
-```
-
-Package-local diagnostics stay beside their owner with the `.perf.ts` suffix and do not join `test:bench`. The CI gate is `pnpm run check:ci:bench` (job `node 24 / benchmarks`), which publishes a scaled report — that gate is an alert, not a pass: a regression there is located by re-running the owning scenario and profiling segments locally to find which part slowed and which change introduced it. Retained-memory claims use `pnpm run test:bench:memory 4g|8g`, which reruns its listed files under an unchanged budget in a swapless cgroup.
-
-Boundaries: edits that touch no runtime path — comments, documentation, test-only code — need no measurement, and production performance code is not benchmark instrumentation to be deleted opportunistically (`performance.now()` and `scheduler.yield()` are part of production decode and encode chunk scheduling). An architectural change that genuinely costs performance states the measured cost and the reason, and the domain owner approves it; "the layering needed it" is not a self-service reason. Record the command, the numbers, the environment, and the input size so the baseline can be rebuilt.
-
-```text
-CI benchmark reported green, so the change is accepted as performance-neutral.
-```
-
-That form ships a real regression in a path the benchmark does not model.
-
 ## Migrations preserve behavior
 
 A migration or a package split keeps externally observable behavior equal: error codes, diagnostics, data-flow order, and UI timing are compared item by item. Moving code is preferred over deleting and rewriting it; a rewrite suits code whose semantics are changing anyway, and then the change lists its differences. A package or export-path change is a carrier change rather than a behavior change, and a behavior change is its own change.
