@@ -112,7 +112,7 @@ export class RepositoryCleaner {
     for (const entry of await readdir(this.root, { withFileTypes: true })) {
       if (entry.isFile() && entry.name.endsWith('.tsbuildinfo')) targets.add(join(this.root, entry.name))
     }
-    for (const nativeProject of ['system', 'landlock-run']) {
+    for (const nativeProject of ['system']) {
       await this.addIfPresent(
         targets,
         join(this.root, `native/${nativeProject}/tsconfig.tsbuildinfo`),
@@ -177,7 +177,6 @@ export class RepositoryCleaner {
     const visited = new Set<string>()
     const nativeEntryOutputs = new Set([
       join(this.root, 'native/system/packages/entry/lib'),
-      join(this.root, 'native/landlock-run/packages/entry/lib'),
     ])
 
     while (pending.length > 0) {

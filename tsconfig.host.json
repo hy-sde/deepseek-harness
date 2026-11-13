@@ -581,7 +581,6 @@
     { "path": "./apps/cli" },
     { "path": "./apps/desktop-host" },
     { "path": "./apps/desktop/tsconfig.host.json" },
-    { "path": "./native/landlock-run/packages/entry" },
     { "path": "./packages/agentsview/tool-agentsview" },
     { "path": "./packages/api/wiki-controller" },
     { "path": "./packages/ast/tool-ast" },

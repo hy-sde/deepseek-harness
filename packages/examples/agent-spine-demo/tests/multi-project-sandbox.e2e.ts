@@ -16,14 +16,12 @@ import SandboxPolicyService from '@deepseek-ai/dsh-sandbox-policy'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import type { ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import { launcherPath } from '@deepseek-ai/node-addon-landlock-run'
 import * as agentSpine from '../src/index.ts'
 
 const bwrapUsable = spawnSync('bwrap', [...bwrapProfileArgs({ mode: 'read-only', workspaceRoot: '/' }), '--', 'true'], { timeout: 5_000, stdio: 'ignore' }).status === 0
-const landlockUsable = spawnSync(launcherPath(), ['--probe'], { timeout: 5_000, stdio: 'ignore' }).status === 0
 const seatbeltUsable = process.platform === 'darwin'
   && spawnSync('sandbox-exec', [...seatbeltProfileArgs({ mode: 'workspace-write', workspaceRoot: homedir() }), '--', 'true'], { timeout: 5_000, stdio: 'ignore' }).status === 0
-const processSandboxUsable = bwrapUsable || landlockUsable || seatbeltUsable
+const processSandboxUsable = bwrapUsable || seatbeltUsable
 
 let ctx: Context | undefined
 let projectA: string

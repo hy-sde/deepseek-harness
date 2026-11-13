@@ -1318,34 +1318,6 @@ importers:
         specifier: 8.22.0
         version: 8.22.0
 
-  native/landlock-run:
-    devDependencies:
-      '@deepseek-ai/node-addon-landlock-run':
-        specifier: workspace:*
-        version: link:packages/entry
-      '@types/node':
-        specifier: ^26.0.1
-        version: 26.4.1
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
-
-  native/landlock-run/packages/entry:
-    optionalDependencies:
-      '@deepseek-ai/node-addon-landlock-run-linux-arm64':
-        specifier: workspace:*
-        version: link:../linux-arm64
-      '@deepseek-ai/node-addon-landlock-run-linux-x64':
-        specifier: workspace:*
-        version: link:../linux-x64
-
-  native/landlock-run/packages/linux-arm64: {}
-
-  native/landlock-run/packages/linux-x64: {}
-
   native/system:
     devDependencies:
       '@deepseek-ai/node-addon-system':
@@ -8779,9 +8751,6 @@ importers:
       '@deepseek-ai/dsh-working-directory':
         specifier: workspace:*
         version: link:../../session/working-directory
-      '@deepseek-ai/node-addon-landlock-run':
-        specifier: workspace:*
-        version: link:../../../native/landlock-run/packages/entry
 
   packages/experimental/action-cards:
     dependencies:

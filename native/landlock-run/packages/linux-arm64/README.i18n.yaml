@@ -1,7 +1,0 @@
-# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
-# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
-# After editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write native/landlock-run/packages/linux-arm64/README.md
-/deepseek-ai-node-addon-landlock-run-linux-arm64:
-  en: 11f4c64b43b3b018
-  zh: 2506c17cab7e1148

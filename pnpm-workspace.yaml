@@ -1,10 +1,6 @@
 packages:
   - vendor/*
   - packages/*/*
-  # The Landlock launcher is developed with its harness consumers but keeps
-  # its native build and publication scripts under its own directory.
-  - native/landlock-run
-  - native/landlock-run/packages/*
   - native/system
   - native/system/packages/*
   # Product assemblies over the package tier; apps/cli owns the `dsh` bin.
