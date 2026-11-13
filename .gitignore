@@ -59,3 +59,6 @@ openwiki/.page-manifest.json
 # Test/build transient artifacts
 apps/web/test-results/
 website/.vitepress/config.ts.timestamp-*.mjs
+
+# Workspace package build output (only root /dist/ was ignored before)
+packages/**/dist/
