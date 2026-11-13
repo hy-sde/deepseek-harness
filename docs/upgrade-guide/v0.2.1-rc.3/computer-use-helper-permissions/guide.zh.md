@@ -18,4 +18,4 @@ macOS Computer Use 通过 LaunchServices 以 `DSH Computer Use.app` 运行。终
 3. 恢复原生应用任务前，确认权限页显示 `DSH Computer Use.app`，且两项权限均已允许。具体目标应用仍需另行许可。
 4. 若终端或 Desktop 启动器的这两项权限只用于 Computer Use，可在系统设置中撤销这些旧授权。给 helper 授权不会撤销其他应用已有的权限；模型运行的程序仍遵循启动器的系统权限和 DSH 沙箱策略。
 
-源码构建使用临时签名，代码变化后可能需要重新授权。正式发布需要保持稳定的 Developer ID 签名身份，并完成分发公证。参见[原生构建说明](../../../../packages/experimental/cua-macos/native/README.zh.md#build-and-service)。
+源码构建使用临时签名，代码变化后可能需要重新授权。正式发布需要保持稳定的 Developer ID 签名身份，并完成分发公证。原生构建说明曾描述源码构建的临时签名。

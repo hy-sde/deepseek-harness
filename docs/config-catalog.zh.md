@@ -1278,24 +1278,6 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-cua-macos -->
-<a id="deepseek-aidsh-experimental-cua-macos"></a>
-
-## `@deepseek-ai/dsh-experimental-cua-macos`
-
-- `inject`: `computerUse` · `tools` · `systemPrompt` · `subprocess` · `agents`
-- `refs`: [`CuaConfig`](../packages/experimental/cua/src/index.ts)
-- `source`: [`packages/experimental/cua-macos/src/index.ts:18`](../packages/experimental/cua-macos/src/index.ts)
-
-```ts config-catalog
-/** Native preparation, operation bounds, and profile-local application grants. */
-export interface Config extends CuaConfig {
-  /** Interval in milliseconds between permission and position checks while the native guide is open. */
-  permissionPollIntervalMs: number
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-cua-macos -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-forge -->
 <a id="deepseek-aidsh-experimental-forge"></a>
 

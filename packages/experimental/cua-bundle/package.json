@@ -56,6 +56,5 @@
     "@deepseek-ai/cordis-plugin-loader": "workspace:~"
   },
   "optionalDependencies": {
-    "@deepseek-ai/dsh-experimental-cua-macos": "workspace:*"
   }
 }

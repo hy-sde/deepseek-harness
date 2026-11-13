@@ -73,7 +73,7 @@ describe('RepositoryCleaner', () => {
     expect(existsSync(join(root, 'products/shell/lib'))).toBe(true)
   })
 
-  it.each(['system', 'landlock-run'])('removes the native %s entry output and solution build info', async (project) => {
+  it.each(['system'])('removes the native %s entry output and solution build info', async (project) => {
     const root = fixture()
     const entry = `native/${project}/packages/entry`
     addProject(root, entry, 'lib')

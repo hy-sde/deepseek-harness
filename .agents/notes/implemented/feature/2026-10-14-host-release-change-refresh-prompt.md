@@ -13,7 +13,7 @@ Technical causes:
 - After a reconnect, [client-hmr](../../../../packages/client/hmr/src/client/index.ts) receives the new Host's complete graph, and [ClientEntries](../../../../packages/client/modules/src/client/entries.ts) hot-replaces plugins by each row's `rev` (the bundle's mtime, ctime, and size). The Vite shell, static libraries, and the bootstrap are never replaced during the page's lifetime.
 - The API connection validates its ready frame against an exact key set ([remote-events.ts](../../../../packages/api/gateway/src/client/remote-events.ts)), so an old page cannot recover from a protocol change by itself.
 - The page has no way to learn that the Host now runs another release.
-- Desktop is unaffected: after its Host is replaced, the main process navigates the window again ([main.ts](../../../../apps/desktop/src/main.ts)).
+- Desktop is unaffected: after its Host is replaced, the main process navigates the window again (main.ts).
 
 The [client plugin loading model](../architecture/2026-07-23-client-plugin-loading-model.md) owns the loading chain and hot replacement. It states that static libraries and the shell require a reloaded page; this note owns how the page learns that the Host's release changed and what it does about it.
 

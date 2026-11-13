@@ -133,7 +133,7 @@ describe('catalog and local closure', () => {
     // A vendor package keeps its own version line, so a run must not assume one shared version.
     expect(packages.get('@deepseek-ai/cordis')?.manifest.version)
       .not.toBe(packages.get('@deepseek-ai/dsh-brand')?.manifest.version)
-    expect(selection.foreignTargets).toEqual(process.platform === 'darwin' ? [] : ['@deepseek-ai/dsh-experimental-cua-macos'])
+    expect(selection.foreignTargets).toEqual([])
   })
 
   it('follows install, optional, and required peer edges but not optional peers', () => {

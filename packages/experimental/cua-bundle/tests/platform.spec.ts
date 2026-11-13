@@ -5,15 +5,12 @@ import Loader, { interpolate, type EntryOptions } from '@deepseek-ai/cordis-plug
 import { load } from '@deepseek-ai/dsh-yaml'
 import { expect, it, vi } from 'vitest'
 
-it.each(['darwin', 'win32', 'linux'])('loads the exported patch directly on %s and imports the native provider only on Darwin', async (platform) => {
+it.each(['darwin', 'win32', 'linux'])('loads the exported patch directly on %s', async (platform) => {
   const patch = load(await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8'), { entryList: true }) as { insert: EntryOptions[] }[]
   const ctx = new Context()
   await ctx.plugin(Loader)
   if (!ctx.loader.internal) throw new Error('Loader module importer is unavailable')
   const imported = vi.spyOn(ctx.loader.internal, 'import').mockImplementation(async (name: string) => {
-    if (platform !== 'darwin' && name === '@deepseek-ai/dsh-experimental-cua-macos') {
-      throw new Error('native provider is absent from this installation')
-    }
     return { name, apply: () => {} }
   })
   try {
@@ -24,7 +21,6 @@ it.each(['darwin', 'win32', 'linux'])('loads the exported patch directly on %s a
     const imports = imported.mock.calls.map(call => call[0])
     expect(imports).toContain('@deepseek-ai/dsh-cua')
     expect(imports).toContain('@deepseek-ai/dsh-computer-use')
-    expect(imports.includes('@deepseek-ai/dsh-experimental-cua-macos')).toBe(platform === 'darwin')
   } finally {
     await ctx.fiber.dispose()
     imported.mockRestore()

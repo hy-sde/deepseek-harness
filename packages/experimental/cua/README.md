@@ -27,7 +27,7 @@ Application consent supplies English, Chinese, and Japanese display text from `s
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount the [macOS provider](../cua-macos/README.md) to enable native operations. External PTC hosts import `connectCua` from `@deepseek-ai/dsh-cua/bridge` and supply the current `tools.cua` binding. Source compositions and native preparation belong to the provider.
+Mount the macOS provider to enable native operations. External PTC hosts import `connectCua` from `@deepseek-ai/dsh-cua/bridge` and supply the current `tools.cua` binding. Source compositions and native preparation belong to the provider.
 
 Use App methods for a single-window task. `getApp` reads initial accessibility state; `getWindows` and `getWindow` select an explicit window when needed. Re-reading one app/window scope replaces its element indices without invalidating another window's snapshot. Keyboard input follows the application's focus. Invalid request arguments reject before dispatch with a readable method, parameter and requirement.
 
@@ -45,7 +45,7 @@ Actions return `dispatched:true, verified:false`; read fresh state to verify the
 
 On the Computer Use detail page, permission cards, component rows, and source facts use l3 borders, with 32px gaps between sections. Application badges retain their l1 borders.
 
-The [Computer Use bundle](../cua-bundle/README.md) mounts this page with its native provider. **Authorize computer use** groups the new-session default, PTC execution mode, Accessibility, and Screen Recording inside one border. Each permission row shows the responsible application’s name and icon. **Request permission** delegates to the provider with the selected permission and current Client language; the [macOS provider](../cua-macos/README.md) owns the native drag guide. An outlined **Allowed** button opens settings for revocation; unknown status uses **Unknown**. Application grants remain in a separate group.
+The [Computer Use bundle](../cua-bundle/README.md) mounts this page with its native provider. **Authorize computer use** groups the new-session default, PTC execution mode, Accessibility, and Screen Recording inside one border. Each permission row shows the responsible application’s name and icon. **Request permission** delegates to the provider with the selected permission and current Client language; the macOS provider owns the native drag guide. An outlined **Allowed** button opens settings for revocation; unknown status uses **Unknown**. Application grants remain in a separate group.
 
 The page refreshes on entry, window focus, and completed actions. Query failures retain the last observation as unknown and offer **Retry**. Opening settings or requesting permission does not establish consent. The provider owns native guidance, its configuration, and localized recovery instructions.
 
@@ -92,7 +92,7 @@ The detail page reads the effective default (`selectedDefault ?? default`) from 
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [macOS provider](../cua-macos/README.md)
+- macOS provider
 - [Object interfaces](src/types.ts)
 - [Consent storage migration](../../../docs/upgrade-guide/v0.2.1-rc.2/cua-consent-storage/guide.md)
 
@@ -105,7 +105,7 @@ The detail page reads the effective default (`selectedDefault ?? default`) from 
 
 #### What the model sees
 
-Platform providers mount the shared `cua` tool and supply operating instructions. Calls and observations use the same app/window interface and enter normal Session history. Platform guidance is documented by the [macOS provider](../cua-macos/README.md#model-experience).
+Platform providers mount the shared `cua` tool and supply operating instructions. Calls and observations use the same app/window interface and enter normal Session history. Platform guidance is documented by the macOS provider.
 
 #### Token effect
 

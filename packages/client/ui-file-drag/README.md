@@ -36,7 +36,7 @@ Managed browser transfers carry an application-local token and `DownloadURL` poi
 <details>
 <summary>Implementation internals</summary>
 
-The Cordis plugin owns file preparation, transport choice, retained browser bytes, and transient feedback. [DraggableImage](../ui-primitives/README.md) handles image gestures; [Desktop](../../../apps/desktop/README.md) authorizes borrowed resources and owns temporary native exports. Images are the first consumer; the same callbacks accept PDF and other file content without an image MIME gate.
+The Cordis plugin owns file preparation, transport choice, retained browser bytes, and transient feedback. [DraggableImage](../ui-primitives/README.md) handles image gestures; Desktop authorizes borrowed resources and owns temporary native exports. Images are the first consumer; the same callbacks accept PDF and other file content without an image MIME gate.
 
 </details>
 

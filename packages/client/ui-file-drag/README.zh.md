@@ -36,7 +36,7 @@ Web profile 将该插件与 locale、插槽渲染器及声明 `shell.overlay` �
 <details>
 <summary>实现内部细节</summary>
 
-Cordis 插件负责文件准备、传输选择、浏览器保留字节与临时反馈。[DraggableImage](../ui-primitives/README.zh.md) 处理图片手势，[Desktop](../../../apps/desktop/README.zh.md) 授权借用资源并持有原生临时导出。图片是首个调用方，同一组回调可接收 PDF 等文件内容，不设图片 MIME 门禁。
+Cordis 插件负责文件准备、传输选择、浏览器保留字节与临时反馈。[DraggableImage](../ui-primitives/README.zh.md) 处理图片手势，Desktop 授权借用资源并持有原生临时导出。图片是首个调用方，同一组回调可接收 PDF 等文件内容，不设图片 MIME 门禁。
 
 </details>
 

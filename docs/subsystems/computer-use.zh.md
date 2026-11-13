@@ -6,7 +6,7 @@
 
 [Computer Use](../../packages/experimental/cua-bundle/README.zh.md) 提供 macOS CUA 及权限设置 的可选实验性开关。
 
-[macOS CUA 提供方](../../packages/experimental/cua-macos/README.zh.md)使用[共享 CUA 对象与执行器](../../packages/experimental/cua/README.zh.md)，通过 User Questions 和配置档设置执行应用授权。
+macOS CUA 提供方使用[共享 CUA 对象与执行器](../../packages/experimental/cua/README.zh.md)，通过 User Questions 和配置档设置执行应用授权。
 
 CUA provider 通过 `ctx.cuaAccess` 提供系统权限状态、用户主动申请和应用授权撤销。[权限页面](../../packages/experimental/cua/README.zh.md)投影这些控件；app/window 操作在分派前执行 provider 的授权检查。
 

@@ -50,10 +50,6 @@ allowBuilds:
   # The Python runtime deploy includes the reviewed workspace postinstall that
   # restores the executable bit on node-pty's macOS spawn helper.
   '@deepseek-ai/dsh-subprocess-local@file:packages/subprocess/subprocess-local': true
-  # electron-builder pulls in the optional Squirrel.Windows helper, whose
-  # install script only selects its bundled 7-Zip executable. Desktop ships
-  # Windows through NSIS, so that mutation is not part of our build.
-  electron-winstaller: false
   # @botiverse/oar (patched, workspace-only) pulls @google/genai and protobufjs;
   # neither needs its postinstall for our runtime use.
   '@google/genai': false
@@ -117,15 +113,11 @@ minimumReleaseAgeExclude:
   # The package manager is a workspace devDependency, so its own exact pin
   # must be exempt from the release-age window that guards other packages.
   - pnpm@12.8.1
-  # Desktop packaging requires this Electron fingerprint with node-addon-require-builtin 0.1.9.
-  - electron@44.7.0
 patchedDependencies:
   '@botiverse/oar@0.67.0': patches/@botiverse__oar@0.67.0.patch
-  '@electron/osx-sign@1.3.3': patches/@electron__osx-sign@1.3.3.patch
   '@fortune-sheet/core@1.0.4': patches/@fortune-sheet__core@1.0.4.patch
   '@fortune-sheet/react@1.0.4': patches/@fortune-sheet__react@1.0.4.patch
   '@yao-pkg/pkg@6.21.0': patches/@yao-pkg__pkg@6.21.0.patch
-  app-builder-lib@26.17.0: patches/app-builder-lib@26.17.0.patch
   exceljs@4.4.0: patches/exceljs@4.4.0.patch
   lexical@0.49.0: patches/lexical@0.49.0.patch
   mdast-util-gfm-autolink-literal@2.0.1: patches/mdast-util-gfm-autolink-literal@2.0.1.patch

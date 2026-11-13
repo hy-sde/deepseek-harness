@@ -107,8 +107,6 @@ const windowsRunnerCoverageExclusions = process.platform === 'win32'
       // win32.spec's injected bindings and exercised natively by every
       // Windows suite through the real backend.
       'packages/session/session-persistence-jsonl/src/lease.ts',
-      // The macOS provider transport uses Unix sockets; POSIX lanes cover its real socket lifecycle.
-      'packages/experimental/cua-macos/src/shared-native.ts',
       // The GitHub CLI runner's suite stands in for `gh` with POSIX shell
       // scripts and skips on Windows: the Linux and macOS lanes hold its
       // per-file 100%, while the provider suite pins its callers everywhere.
@@ -374,8 +372,8 @@ export default defineConfig({
         // Built Web replays cover the generated Remote wiring of the card entries; their mount modules are source-covered.
         'packages/experimental/client-ui-action-cards/src/client/index.ts',
         'packages/experimental/client-ui-plugin-recommendations/src/client/index.ts',
-        // The permission entry binds generated Remote code; cua-permissions.e2e.ts covers
-        // its built entry, while source tests exercise mountCuaPermissions and its UI.
+        // Source tests exercise mountCuaPermissions and its UI; the Web snapshot
+        // replays the built entry.
         'packages/experimental/cua/src/client/index.ts',
         // The mods band entry imports the bridge's generated Remote contribution, which exists only in lib;
         // the Web snapshot exercises the built entry, while source tests cover mountModsBand.

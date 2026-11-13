@@ -27,7 +27,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-挂载 [macOS 提供方](../cua-macos/README.zh.md)以启用原生操作。外部 PTC 宿主从 `@deepseek-ai/dsh-cua/bridge` 导入 `connectCua`，并提供当前 `tools.cua` 绑定。源码组合与原生组件准备由提供方负责。
+挂载 macOS 提供方以启用原生操作。外部 PTC 宿主从 `@deepseek-ai/dsh-cua/bridge` 导入 `connectCua`，并提供当前 `tools.cua` 绑定。源码组合与原生组件准备由提供方负责。
 
 单窗口任务直接使用 App 方法。`getApp` 读取初始辅助功能状态；需要指定窗口时使用 `getWindows` 和 `getWindow`。重新读取一个应用或窗口范围会替换其中的元素编号，不使其他窗口的快照失效。键盘输入跟随应用焦点。请求参数校验失败时，在分派前返回包含方法、参数和要求的可读消息。
 
@@ -45,7 +45,7 @@ kind: "package-reference"
 
 Computer Use 详情页的权限卡片、组件列表和来源信息使用 l3 边框，区块间距为 32px。应用名称徽标保留 l1 边框。
 
-[Computer Use 组合](../cua-bundle/README.zh.md)将本页与原生 provider 一起挂载。“给 Computer Use 授权”把新会话默认模式、PTC 执行方式、辅助功能和屏幕录制放在同一个边框内。每条权限要求显示责任应用的名称和图标。“申请权限”将所选权限和当前界面语言交给 provider；原生拖动引导由 [macOS provider](../cua-macos/README.zh.md)负责。“已允许”描边按钮打开设置以撤销权限；未知状态使用“未确认”。应用访问授权保持独立分组。
+[Computer Use 组合](../cua-bundle/README.zh.md)将本页与原生 provider 一起挂载。“给 Computer Use 授权”把新会话默认模式、PTC 执行方式、辅助功能和屏幕录制放在同一个边框内。每条权限要求显示责任应用的名称和图标。“申请权限”将所选权限和当前界面语言交给 provider；原生拖动引导由 macOS provider负责。“已允许”描边按钮打开设置以撤销权限；未知状态使用“未确认”。应用访问授权保持独立分组。
 
 进入页面、返回窗口和操作结束后会刷新状态。查询失败保留上次观测但标为未确认，并提供“重试”。打开设置或申请权限不代表授权完成。原生引导、配置和本地化恢复提示由 provider 负责。
 
@@ -92,7 +92,7 @@ Computer Use 详情页的权限卡片、组件列表和来源信息使用 l3 边
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [macOS 提供方](../cua-macos/README.zh.md)
+- macOS 提供方
 - [对象接口](src/types.ts)
 - [授权存储迁移](../../../docs/upgrade-guide/v0.2.1-rc.2/cua-consent-storage/guide.zh.md)
 
@@ -105,7 +105,7 @@ Computer Use 详情页的权限卡片、组件列表和来源信息使用 l3 边
 
 #### 模型可见内容
 
-平台提供方挂载共享的 `cua` 工具并提供操作指引。调用和观察使用同一套应用与窗口接口，进入正常 Session 历史。平台指引见 [macOS 提供方](../cua-macos/README.zh.md#model-experience)。
+平台提供方挂载共享的 `cua` 工具并提供操作指引。调用和观察使用同一套应用与窗口接口，进入正常 Session 历史。平台指引见 macOS 提供方。
 
 #### Token 影响
 

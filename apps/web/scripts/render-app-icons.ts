@@ -7,10 +7,10 @@
  * which reads `apple-touch-icon` instead. The whale favicon is the bare mark
  * drawn edge to edge: handed to a launcher directly it loses its fins to the
  * mask, and it carries neither the tile nor a background of its own. This
- * script rasterizes the official application tile (`apps/desktop/resources/icon.svg`,
- * the artwork the desktop application ships) into the committed PNGs under
- * `public/`. Every variant crops the tile's drop shadow, which belongs to a
- * desktop window rather than a launcher; the maskable variant additionally
+ * script rasterizes the official application tile (`resources/icon.svg`,
+ * the artwork the web application ships) into the committed PNGs under
+ * `public/`. Every variant crops the tile's drop shadow, which the original
+ * desktop window artwork carried; the maskable variant additionally
  * scales the whale inside the safe zone a platform mask may crop, leaving the
  * tile's own gradient to fill the icon so no mask meets a seam.
  *
@@ -25,8 +25,8 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 
-/** Vector source owned by the desktop application; 1104 units square with the tile inset. */
-export const TILE_SOURCE = fileURLToPath(new URL('../../desktop/resources/icon.svg', import.meta.url))
+/** Vector source owned by the web application; 1104 units square with the tile inset. */
+export const TILE_SOURCE = fileURLToPath(new URL('../resources/icon.svg', import.meta.url))
 
 /** Directory the generated PNGs are committed to. */
 export const ICON_OUTPUT_DIRECTORY = fileURLToPath(new URL('../public/', import.meta.url))

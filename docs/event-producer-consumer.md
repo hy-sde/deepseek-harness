@@ -5,8 +5,6 @@
 
 This matrix shows which packages dispatch each harness-owned event and which packages listen to it. Events are many-to-many, so the dense relation data is presented as a table rather than one large graph. Receiver and event-name types also cover contained dispatch sites that deliberately bypass `ctx.emit`, such as subagent lifecycle containment.
 
-Application listeners are outside this package matrix. Desktop Host subscribes to `plugin-manager/operation` through [`installOperationDiagnostics`](../apps/desktop-host/src/operation-diagnostics.ts) and forwards bounded records to the shell.
-
 <!-- BEGIN GENERATED event-producer-consumer:events -->
 | Event | Mode | Declared in | Dispatchers | Listeners |
 | --- | --- | --- | --- | --- |
@@ -103,16 +101,13 @@ Application listeners are outside this package matrix. Desktop Host subscribes t
 | Event string | Dispatchers | Listeners |
 | --- | --- | --- |
 | `agent/request` | [`agent-loop`](../packages/core/agent-loop) (`waterfall`) | [`compaction-basic`](../packages/compaction/compaction-basic) |
-| `connection/reset` | `gateway` (`emit`) | `terminal-controller`, `ui-settings` |
 | `internal/config` | - | [`llm-pi-ai`](../packages/llm/llm-pi-ai) |
 | `internal/dispatch` | - | [`terminal-bash`](../packages/terminal/terminal-bash) |
 | `internal/plugin` | - | `computer-use-cua-driver-native`, `inspector`, `loader`, [`lsp-stdio`](../packages/lsp/lsp-stdio), [`mcp-client`](../packages/mcp/mcp-client), `modules` |
 | `internal/service` | - | `client-ui-forge`, `gateway` |
 | `internal/status` | - | [`agent`](../packages/core/agent), `claude-code-mods`, `inspector`, `translator`, [`web`](../packages/web/web) |
 | `loader/volatile-update` | - | [`llm-deepseek`](../packages/llm/llm-deepseek), [`llm-deepseek-api-key`](../packages/llm/llm-deepseek-api-key), [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`plugin-market`](../packages/boot/plugin-market), `product-analytics`, `speech-to-text` |
-| `locale/change` | `locale` (`emit`) | `locale` |
 | `slots/changed` | `ui-renderer` (`emit`) | - |
-| `theme/change` | `ui-theme` (`emit`) | `ui-layout`, `ui-theme` |
 <!-- END GENERATED event-producer-consumer:undeclared -->
 
 Maintenance mode: generated: Cordis event declarations and producer/listener edges are resolved from the repository TypeScript Program.

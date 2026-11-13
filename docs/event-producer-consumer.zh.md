@@ -7,7 +7,6 @@
 
 本矩阵展示哪些包会派发各个 harness 自有事件，以及哪些包会监听这些事件。事件之间存在多对多关系，因此密集的关系数据以表格而非一张大型关系图呈现。接收方和事件名称类型还涵盖有意绕过 `ctx.emit` 的内含派发位置，例如 subagent 生命周期封装。
 
-应用级监听者不在本包矩阵范围内。Desktop Host 通过 [`installOperationDiagnostics`](../apps/desktop-host/src/operation-diagnostics.ts) 订阅 `plugin-manager/operation`，并向壳转发有界记录。
 
 <!-- BEGIN GENERATED event-producer-consumer:events -->
 | Event | Mode | Declared in | Dispatchers | Listeners |
@@ -105,16 +104,13 @@
 | Event string | Dispatchers | Listeners |
 | --- | --- | --- |
 | `agent/request` | [`agent-loop`](../packages/core/agent-loop) (`waterfall`) | [`compaction-basic`](../packages/compaction/compaction-basic) |
-| `connection/reset` | `gateway` (`emit`) | `terminal-controller`, `ui-settings` |
 | `internal/config` | - | [`llm-pi-ai`](../packages/llm/llm-pi-ai) |
 | `internal/dispatch` | - | [`terminal-bash`](../packages/terminal/terminal-bash) |
 | `internal/plugin` | - | `computer-use-cua-driver-native`, `inspector`, `loader`, [`lsp-stdio`](../packages/lsp/lsp-stdio), [`mcp-client`](../packages/mcp/mcp-client), `modules` |
 | `internal/service` | - | `client-ui-forge`, `gateway` |
 | `internal/status` | - | [`agent`](../packages/core/agent), `claude-code-mods`, `inspector`, `translator`, [`web`](../packages/web/web) |
 | `loader/volatile-update` | - | [`llm-deepseek`](../packages/llm/llm-deepseek), [`llm-deepseek-api-key`](../packages/llm/llm-deepseek-api-key), [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`plugin-market`](../packages/boot/plugin-market), `product-analytics`, `speech-to-text` |
-| `locale/change` | `locale` (`emit`) | `locale` |
 | `slots/changed` | `ui-renderer` (`emit`) | - |
-| `theme/change` | `ui-theme` (`emit`) | `ui-layout`, `ui-theme` |
 <!-- END GENERATED event-producer-consumer:undeclared -->
 
 Maintenance mode: generated: Cordis event declarations and producer/listener edges are resolved from the repository TypeScript Program.

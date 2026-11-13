@@ -18,4 +18,4 @@ macOS Computer Use runs as `DSH Computer Use.app`, launched through LaunchServic
 3. Confirm that the permission page identifies `DSH Computer Use.app` and both permissions are allowed before resuming native application tasks. Target-application consent remains required.
 4. If a terminal or Desktop launcher was granted these permissions only for Computer Use, revoke those obsolete grants in System Settings. Authorizing the helper does not revoke other applications’ existing permissions; programs the model runs still follow their launcher’s system permissions and the DSH sandbox policy.
 
-Source builds use ad-hoc signing and may need authorization again after code changes. Release packagers must preserve a stable Developer ID signing identity and notarize their distribution. See the [native build instructions](../../../../packages/experimental/cua-macos/native/README.md#build-and-service).
+Source builds use ad-hoc signing and may need authorization again after code changes. Release packagers must preserve a stable Developer ID signing identity and notarize their distribution. Native build instructions described ad-hoc signing for source builds.

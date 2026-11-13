@@ -55,7 +55,7 @@ kind: "package-reference"
 - [计算机操作](../../../docs/subsystems/computer-use.zh.md) — 提供方选择和共享桌面限制。
 - [Computer Use 组合包](../../experimental/cua-bundle/README.zh.md)：启用 DSH 原生 CUA 和权限管理功能。
 - [共享 CUA 库](../../experimental/cua/README.zh.md)：应用与窗口对象、工具执行和应用授权。
-- [macOS CUA 提供方](../../experimental/cua-macos/README.zh.md)：DSH 的 Swift 实现和原生辅助进程生命周期。
+- macOS CUA 提供方：DSH 的 Swift 实现和原生辅助进程生命周期。
 - [Cua Driver MCP 提供方](../../experimental/computer-use-cua-driver-mcp/README.zh.md) — 使用已安装的驱动。
 - [Cua Driver 原生提供方](../../experimental/computer-use-cua-driver-native/README.zh.md) — 使用 npm 运行时。
 
