@@ -189,8 +189,6 @@
     "@deepseek-ai/dsh-tool-testkit": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@deepseek-ai/dsh-user-approval": "workspace:*",
-    "@deepseek-ai/dsh-webhook": "workspace:*",
-    "@deepseek-ai/dsh-webhook-github": "workspace:*",
     "@deepseek-ai/dsh-zstd-frame": "workspace:*",
     "@types/js-yaml": "^4.0.9",
     "@types/ws": "8.18.1",

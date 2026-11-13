@@ -4740,6 +4740,10 @@ export interface WorktreeToolConfig {
   worktreeLockWaitMs?: number
   /** Cap on total pooled slots per repository (default 0 = unlimited; reuse still allowed at the cap). */
   worktreeMaxSlots?: number
+  /** Auto-sweep parked slots during acquire (default true). */
+  worktreeAutoPrune?: boolean
+  /** Max ms a parked slot may sit idle before the acquire-time sweep may evict it (default 604800000 = 7 days). */
+  worktreeMaxIdleMs?: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-tool-git -->
@@ -5615,29 +5619,6 @@ export type PublicEngineId = (typeof PUBLIC_ENGINE_IDS)[number]
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-web-search-public -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-webhook-github -->
-<a id="deepseek-aidsh-webhook-github"></a>
-
-## `@deepseek-ai/dsh-webhook-github`
-
-- `inject`: `webServer` · `webhookRuntime` · `credentials`
-- `source`: [`packages/experimental/webhook-github/src/index.ts:17`](../packages/experimental/webhook-github/src/index.ts)
-
-```ts config-catalog
-/** Required GitHub ingress configuration. */
-export interface Config {
-  /** Adapter instance name carried to rules. */
-  readonly source: string
-  /** Exact absolute route path. */
-  readonly path: string
-  /** Credential reference containing the shared webhook secret. */
-  readonly secretEnv: string
-  /** Positive raw body ceiling in bytes. */
-  readonly maxBodyBytes: number
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-webhook-github -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-workflow-ptc -->
 <a id="deepseek-aidsh-workflow-ptc"></a>
 
@@ -5811,7 +5792,6 @@ export interface Config {
 | `@deepseek-ai/dsh-host-plugin-inventory` | `loader` | [`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts) |
 | `@deepseek-ai/dsh-internal-urls` | `fs` | [`packages/fs/internal-urls/src/index.ts`](../packages/fs/internal-urls/src/index.ts) |
 | `@deepseek-ai/dsh-llm` | — | [`packages/llm/llm/src/index.ts`](../packages/llm/llm/src/index.ts) |
-| `@deepseek-ai/dsh-logseq-example` | `tools` | [`packages/examples/logseq-example/src/index.ts`](../packages/examples/logseq-example/src/index.ts) |
 | `@deepseek-ai/dsh-lsp` | — | [`packages/lsp/lsp/src/index.ts`](../packages/lsp/lsp/src/index.ts) |
 | `@deepseek-ai/dsh-mcp-resources` | `tools` | [`packages/mcp/mcp-resources/src/index.ts`](../packages/mcp/mcp-resources/src/index.ts) |
 | `@deepseek-ai/dsh-message-quotes` | — | [`packages/session/message-quotes/src/index.ts`](../packages/session/message-quotes/src/index.ts) |
@@ -5839,7 +5819,6 @@ export interface Config {
 | `@deepseek-ai/dsh-tool-working-directory` | `tools` · `workingDirectory` | [`packages/session/tool-working-directory/src/index.ts`](../packages/session/tool-working-directory/src/index.ts) |
 | `@deepseek-ai/dsh-tools` | `systemPrompt` | [`packages/core/tools/src/index.ts`](../packages/core/tools/src/index.ts) |
 | `@deepseek-ai/dsh-user-questions` | — | [`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts) |
-| `@deepseek-ai/dsh-webhook` | `agents` · `agentDefaultModel` · `agentPresets` · `permissionPresets` · `sessionTitle` · `workspaceRegistry` | [`packages/experimental/webhook/src/index.ts`](../packages/experimental/webhook/src/index.ts) |
 | `@deepseek-ai/dsh-workspace` | `storageDomain` · `sessionPersistence` | [`packages/workspace/workspace/src/index.ts`](../packages/workspace/workspace/src/index.ts) |
 <!-- END GENERATED config-catalog:no-config -->
 

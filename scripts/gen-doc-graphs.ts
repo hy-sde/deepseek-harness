@@ -89,7 +89,6 @@ const GROUP_ORDER = [
   'tasks',
   'workflow',
   'web',
-  'webhook',
   'spill',
   'todo',
   'plan',
@@ -988,14 +987,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['workflow-ptc'],
     consumers: ['tool-workflow', 'tool-ralph'],
     note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents.',
-  },
-  {
-    key: 'webhookRuntime',
-    pkg: 'webhook',
-    title: 'Webhook rule runtime',
-    mode: 'core',
-    consumers: ['webhook-github'],
-    note: 'Provider adapters dispatch authenticated deliveries; trusted plugins register independent process-local rules, and the runtime turns non-null results into ordinary Workspace-backed Sessions without delivery or completion state.',
   },
   {
     key: 'lsp',

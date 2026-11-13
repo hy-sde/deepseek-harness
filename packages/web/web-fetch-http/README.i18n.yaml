@@ -24,11 +24,14 @@
   en: e4534189d5230861
   zh: 5905731d7b5d9c60
 /deepseek-ai-dsh-web-fetch-http/use-this-package/what-a-fetch-returns:
-  en: 2d18cdcc9b53dd0f
-  zh: 3bc6ca7c5933ee5d
+  en: 27a62dedd2cdef76
+  zh: c4e4fdf283249794
 /deepseek-ai-dsh-web-fetch-http/use-this-package/transport-behavior:
   en: 4c5618124337446e
   zh: 45c7378c8b0bba45
+/deepseek-ai-dsh-web-fetch-http/use-this-package/bot-protection-escalation:
+  en: 81bc3b4896cce09b
+  zh: 1ac36730fbe11e75
 /deepseek-ai-dsh-web-fetch-http/use-this-package/failures-and-recovery:
   en: 34095d9d4231d73a
   zh: be0ed903adbb124f

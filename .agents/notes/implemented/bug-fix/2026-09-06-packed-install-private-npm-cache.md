@@ -6,7 +6,7 @@ English | [中文](2026-09-06-packed-install-private-npm-cache.zh.md)
 
 ## Problem
 
-The [packed-install verifier](../../../../scripts/release/verify-packed-install.ts) removes its temporary consumer but an npm install using the ambient cache leaves tarball content and logs outside that cleanup. Repeated release rehearsals can therefore grow the shared runner user cache even when every consumer is removed. A full root filesystem can fail unrelated CI jobs.
+The packed-install verifier removes its temporary consumer but an npm install using the ambient cache leaves tarball content and logs outside that cleanup. Repeated release rehearsals can therefore grow the shared runner user cache even when every consumer is removed. A full root filesystem can fail unrelated CI jobs.
 
 ## Decision
 
@@ -26,4 +26,4 @@ This prevents this verifier from adding content to the ambient npm cache; it nei
 
 ## Verification
 
-[The focused regression](../../../../scripts/release/verify-packed-install.spec.ts) runs the real verifier and npm offline against a tiny local tarball. A lifecycle script records actual private `_cacache` files before cleanup. The tests verify consumer removal after success, npm install failure, and installed-entry failure, while inherited environment and user-config cache canaries remain unchanged. Removing the cache argument makes the private-cache assertion fail. The executable test follows the POSIX release runner path; it does not exercise Windows command-shim resolution.
+The focused regression runs the real verifier and npm offline against a tiny local tarball. A lifecycle script records actual private `_cacache` files before cleanup. The tests verify consumer removal after success, npm install failure, and installed-entry failure, while inherited environment and user-config cache canaries remain unchanged. Removing the cache argument makes the private-cache assertion fail. The executable test follows the POSIX release runner path; it does not exercise Windows command-shim resolution.

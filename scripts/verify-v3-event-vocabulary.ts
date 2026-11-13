@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import ts from 'typescript'
 import { RELEASED_V3_EVENT_TYPES } from '@deepseek-ai/dsh-session-format-v3-to-v4'
-import { isEntry } from './release/process.ts'
+import { isEntry } from './process.ts'
 
 const WRITER_PATH = 'packages/core/session/src/types.ts'
 const EVENTS_PATH = 'packages/core/session/src/known-event-types.ts'

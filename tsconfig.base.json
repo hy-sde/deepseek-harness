@@ -1104,9 +1104,6 @@
       "@deepseek-ai/dsh-loader-smoke": [
         "./packages/test-support/loader-smoke/src"
       ],
-      "@deepseek-ai/dsh-logseq-example": [
-        "./packages/examples/logseq-example/src"
-      ],
       "@deepseek-ai/dsh-logseq-graph": [
         "./packages/logseq/logseq-graph/src"
       ],
@@ -1790,12 +1787,6 @@
       ],
       "@deepseek-ai/dsh-web-search-public": [
         "./packages/web/web-search-public/src"
-      ],
-      "@deepseek-ai/dsh-webhook": [
-        "./packages/experimental/webhook/src"
-      ],
-      "@deepseek-ai/dsh-webhook-github": [
-        "./packages/experimental/webhook-github/src"
       ],
       "@deepseek-ai/dsh-win32-process": [
         "./packages/subprocess/win32-process/src"

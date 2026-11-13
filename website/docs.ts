@@ -155,14 +155,6 @@ const homeAndGuide = pairedPages([
     order: 1,
   },
   {
-    source: 'docs/user/guide/github-review.md',
-    route: 'guide/github-review.md',
-    label: { root: 'GitHub 评审会话', en: 'GitHub review sessions' },
-    sidebar: { root: 'zh-guide', en: 'en-guide' },
-    section: { root: '自动化', en: 'Automation' },
-    order: 1,
-  },
-  {
     source: 'docs/user/guide/schedule.md',
     route: 'guide/schedule.md',
     label: { root: '会话内提醒', en: 'Session reminders' },

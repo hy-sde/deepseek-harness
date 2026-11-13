@@ -21,7 +21,7 @@ import { execa } from 'execa'
 import * as yaml from '@deepseek-ai/dsh-yaml'
 import semver from 'semver'
 import { pnpmInvocation } from './pnpm-invocation.ts'
-import { capture, pnpmCommand } from './release/process.ts'
+import { capture, pnpmCommand } from './process.ts'
 import { releaseFamily, tarballName, type ReleaseFamily, type ReleaseMember } from './release/families.ts'
 import { packedManifest, tarballFiles } from './release/tarball.ts'
 

@@ -59,7 +59,6 @@ export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolic
   'packages/debug/tool-debug': { category: 'optional', reason: 'Model tools over the DAP debug seam, mounted by explicitly configured deployments.' },
   'packages/edit/tool-edit': { category: 'optional', reason: 'Multi-mode single-file editor mounted by explicitly configured deployments.' },
   'packages/examples/agent-spine-demo': { category: 'optional', reason: 'Demo spine assembled by explicitly configured example deployments.' },
-  'packages/examples/logseq-example': { category: 'optional', reason: 'Demo Logseq bundle assembled by explicitly configured example deployments.' },
   'packages/git/tool-git': { category: 'optional', reason: 'Agentic git tools mounted by explicitly configured deployments.' },
   'packages/graph/graph-control': { category: 'optional', reason: 'Supervision graph control service mounted by explicitly configured deployments.' },
   'packages/graph/graph-executor': { category: 'optional', reason: 'Graph operator executor mounted by explicitly configured deployments.' },

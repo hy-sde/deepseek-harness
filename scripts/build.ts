@@ -22,7 +22,7 @@ import {
 } from './client-build-environment.ts'
 import { aggregateBuildArgs, aggregateCheckArgs, contractSteps, libraryBuildSteps } from './compile-referenced-projects.ts'
 import type { LibraryStep } from './compile-referenced-projects.ts'
-import { pnpmCommand } from './release/process.ts'
+import { pnpmCommand } from './process.ts'
 import { defaultParallelism, describeDefaultParallelism } from './parallelism.ts'
 import { runAggregate } from './run-gates.ts'
 import type { Gate } from './run-gates.ts'

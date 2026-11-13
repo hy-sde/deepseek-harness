@@ -8,7 +8,7 @@ import { relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import ts from 'typescript'
-import { pnpmCommand } from './release/process.ts'
+import { pnpmCommand } from './process.ts'
 
 type CompilationMode = 'checked' | 'benchmark-emit'
 

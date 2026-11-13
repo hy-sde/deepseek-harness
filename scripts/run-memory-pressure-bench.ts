@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { getHeapStatistics } from 'node:v8'
-import { pnpmCommand } from './release/process.ts'
+import { pnpmCommand } from './process.ts'
 import { buildCiBenchArtifacts } from './run-ci-bench.ts'
 
 /** Modeled machines: memory available to the whole benchmark process tree, without swap. */
