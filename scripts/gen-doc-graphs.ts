@@ -130,21 +130,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Supplies parsed task and run options to the headless runner and its sandbox-policy configuration.',
   },
   {
-    key: 'cotTranslation',
-    pkg: 'experimental-client-ui-cot-translation',
-    title: 'Reasoning translation Remote',
-    mode: 'service',
-    note: 'Serves reasoning translations, reuses saved results, and joins ordinary Session activation for uncached inactive Sessions.',
-  },
-  {
-    key: 'translator',
-    pkg: 'experimental-translator',
-    title: 'Anonymous text translation',
-    mode: 'service',
-    consumers: ['experimental-client-ui-cot-translation'],
-    note: 'Resolves Google or Bing requests and retains shared experimental records through the active Session writer.',
-  },
-  {
     key: 'av',
     pkg: 'av',
     title: 'Automic Vault credential scanning seam',

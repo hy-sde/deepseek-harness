@@ -2,7 +2,7 @@
 
 [English](voice-input.md) | 中文
 
-实验性语音识别包含三个角色：[服务定义](../../packages/experimental/speech-to-text/README.zh.md)路由具名 Provider，[SenseVoice Provider](../../packages/experimental/speech-to-text-sensevoice/README.zh.md)拥有本地推理，[Remote 消费者](../../packages/experimental/api-speech-to-text/README.zh.md)服务浏览器。可选 Bundle将它们与麦克风 UI 组合。
+实验性语音识别包含三个角色：[服务定义](../../packages/experimental/speech-to-text/README.zh.md)路由具名 Provider，[SenseVoice Provider](../../packages/experimental/speech-to-text-sensevoice/README.zh.md)拥有本地推理，[Remote 消费者](../../packages/experimental/api-speech-to-text/README.zh.md)服务浏览器。
 
 ## Provider 选择
 
@@ -14,17 +14,16 @@
 
 浏览器拥有麦克风轨道与未发送的草稿。`TranscriptionRequest` 通过带认证的 Remote 发送规范 base64 PCM16 WAV。`SpeechCatalog` 公布可用 Provider、默认选择及录音字节和时长限制。API 在识别前校验这些进程输入。
 
-输入门面在录音前捕获带版本的选区。`InputActions.insertText()` 仅在选区版本仍有效且提交状态允许编辑时，插入一次可撤销的纯文本编辑。插入被拒绝时，转写文字保留以供显式插入。切换 Session 或释放插件使迟到结果失效。识别本身不写入 Session 事件；普通用户提交拥有最终的模型可见文字。
+识别本身不写入 Session 事件；普通用户提交拥有最终的模型可见文字。
 
 ## 准备与设置
 
-`SpeechProviderInfo.downloadSources` 公布准备阶段的源。`SpeechPreparationOptions.downloadSource` 为单次任务选择一个源；省略时保留提供方策略。SenseVoice 校验公布的选项，固定使用手动指定的源而不回退，并拒绝在准备期间改源。UI 为当前卡片中的重试保留选择，但不会将其保存为识别偏好。
+`SpeechProviderInfo.downloadSources` 公布准备阶段的源。`SpeechPreparationOptions.downloadSource` 为单次任务选择一个源；省略时保留提供方策略。SenseVoice 校验公布的选项，固定使用手动指定的源而不回退，并拒绝在准备期间改源。
 
-Host Provider 在页面和 Session 变化期间拥有同一个准备任务。Client 在输入框、安装引导弹窗、Bundle 详情之间共享一份 `follow()` 订阅。可选 `SpeechSetupEstimate` 元数据提供各 Provider 的资源预期，与实测进度分开。`SpeechPreparationStepKind` 标识有序资源操作；`SpeechPreparationStep` 记录各步骤状态与开始时间。完整 `SpeechPreparationState` 在取消或失败后保留这些步骤。折叠 UI 显示当前操作，展开后列出所有步骤，仅进行中步骤显示字节进度或等待时间。关闭观察者不会取消准备。已校验文件在重试及空闲进程回收后继续复用。
+Host Provider 在页面和 Session 变化期间拥有同一个准备任务。可选 `SpeechSetupEstimate` 元数据提供各 Provider 的资源预期，与实测进度分开。`SpeechPreparationStepKind` 标识有序资源操作；`SpeechPreparationStep` 记录各步骤状态与开始时间。完整 `SpeechPreparationState` 在取消或失败后保留这些步骤。关闭观察者不会取消准备。已校验文件在重试及空闲进程回收后继续复用。
 
-准备失败时可包含 `SpeechDownloadFailure`，提供文件、下载源、原因分类以及可选错误码或 HTTP 状态。Client 将恢复建议本地化；原始下载错误留在 Host。
+准备失败时可包含 `SpeechDownloadFailure`，提供文件、下载源、原因分类以及可选错误码或 HTTP 状态。原始下载错误留在 Host。
 
-麦克风占用模型选择器与发送按钮之间的 `conversation.input.activity`。点击开始录音并展开工具栏；停止后转写并插入草稿。活动栏保留编辑器与提交按钮，拥有局部反馈，并在卸载时释放展开状态。取消、Escape 或隐藏页面会丢弃录音。波形历史展示实测麦克风音量。Bundle 详情包含识别偏好、准备状态和进度。显式启用时通过 `plugins.bundle.activation` 引导缺少模型的用户前往安装；列表只显示 Bundle 描述和开关。
 
 ## 设计依据
 

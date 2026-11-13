@@ -299,8 +299,8 @@ describe('package payload constraints', () => {
     ])
   })
 
-  it('accepts the Agent Team icon payload and rejects its omission', () => {
-    const dir = 'packages/experimental/agent-team-profile'
+  it('accepts the CUA bundle icon payload and rejects its omission', () => {
+    const dir = 'packages/experimental/cua-bundle'
     const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
     expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
     expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: manifest.files!.filter(file => file !== 'icon.svg') } }))
@@ -379,7 +379,7 @@ describe('package payload constraints', () => {
   })
 
   it('rejects a bundle whose locale detail document is missing from its publication files', () => {
-    const dir = 'packages/experimental/badge-skill-bundle'
+    const dir = 'packages/experimental/cua-bundle'
     const manifest = JSON.parse(readFileSync(join(import.meta.dirname, '..', dir, 'package.json'), 'utf8')) as WorkspaceManifest['manifest']
     expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
     const files = (manifest.files ?? []).filter(file => file !== 'docs')
@@ -398,9 +398,8 @@ describe('package payload constraints', () => {
     })).toEqual(['lib/index.js', 'lib/types/**/*.d.ts'])
   })
 
-  it.each(['agent-team', 'agent-team-profile', 'auto-review', 'client-ui-agent-team', 'tool-agent-team'])(
-    'accepts the published locale files for %s and rejects their omission', (name) => {
-      const dir = `packages/experimental/${name}`
+  it.each(['packages/acp/acp', 'packages/api/gateway', 'packages/api/session-controller', 'packages/api/settings-controller', 'packages/api/terminal-controller'])(
+    'accepts the published locale files for %s and rejects their omission', (dir) => {
       const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
       expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
       expect(checkWorkspaceManifest({ dir, manifest: {
@@ -410,7 +409,7 @@ describe('package payload constraints', () => {
   )
 
   it('rejects locale publication entries without their resource exports', () => {
-    const dir = 'packages/experimental/auto-review'
+    const dir = 'packages/acp/acp'
     const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
     const exports = { ...manifest.exports }
     delete exports['./locale/*.json']
