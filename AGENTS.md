@@ -75,7 +75,6 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   examples/             demo assemblies
   test-support/         test infrastructure
   util/                 zero-dependency utilities
-python/      Python SDK/runtime (python/README.md)
 native/      @deepseek-ai/node-addon-system source (native/README.md)
 .agents/     Agent workflows/notes
 docs/        Documentation (docs/AGENTS.md)

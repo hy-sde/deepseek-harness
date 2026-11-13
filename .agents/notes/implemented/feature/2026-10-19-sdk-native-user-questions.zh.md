@@ -26,4 +26,4 @@ Web Session controller 不能充当 SDK 的交互提供方。提醒恢复使用 
 
 ## 验证
 
-服务器测试覆盖所有权、原生回退、答案校验、取消和传输失败。客户端测试覆盖并发双向传输和取消，包括显式启动和直接调用 `initialize()` 两条路径的回调声明与答案投递。初始化在构造握手能力之前启动运行时，使两条入口均声明已安装的回调。Python 测试还覆盖回调内再次请求，以及进程替换后的晚到回调。真实发行 profile 测试在标准模式和 PTC 模式调用内建问答，并在宿主回答期间关闭运行时。[服务器测试](../../../../packages/sdk/server/tests/user-questions.spec.ts)、[客户端测试](../../../../packages/sdk/client/tests/user-questions.spec.ts)、[Python 测试](../../../../python/sdk/tests/test_user_questions.py)和 [profile 测试](../../../../apps/cli/tests/profiles/sdk/user-questions.e2e.ts)保留这些依据。
+服务器测试覆盖所有权、原生回退、答案校验、取消和传输失败。客户端测试覆盖并发双向传输和取消，包括显式启动和直接调用 `initialize()` 两条路径的回调声明与答案投递。初始化在构造握手能力之前启动运行时，使两条入口均声明已安装的回调。Python 测试还覆盖回调内再次请求，以及进程替换后的晚到回调。真实发行 profile 测试在标准模式和 PTC 模式调用内建问答，并在宿主回答期间关闭运行时。[服务器测试](../../../../packages/sdk/server/tests/user-questions.spec.ts)、[客户端测试](../../../../packages/sdk/client/tests/user-questions.spec.ts)、Python 测试和 [profile 测试](../../../../apps/cli/tests/profiles/sdk/user-questions.e2e.ts)保留这些依据。

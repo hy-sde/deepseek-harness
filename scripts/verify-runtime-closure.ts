@@ -6,8 +6,7 @@
  */
 import { globSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
-import { parseArgs } from 'node:util'
+import { dirname, resolve } from 'node:path'
 import { isCordisGroupEntry, loadCordisYaml, presetDefinitions } from './cordis-yaml.ts'
 
 interface PackageManifest {
@@ -47,14 +46,14 @@ export interface RuntimeClosureResult {
  */
 export async function verifyRuntimeClosure(
   root: string,
-  manifestPath = 'python/sdk-runtime/package.json',
+  manifestPath: string,
   includePresets = true,
 ): Promise<RuntimeClosureResult> {
   const runtimeManifest = await loadManifest(resolve(root, manifestPath))
   const runtimeName = runtimeManifest.name ?? manifestPath
   const workspace = await loadWorkspacePackages(root)
   const runtimeDependencies = runtimeManifest.dependencies ?? {}
-  const platforms = includePresets ? await loadJson<RuntimePlatformManifest>(resolve(root, 'python/sdk-runtime/platforms.json')) : {}
+  const platforms = includePresets ? await loadJson<RuntimePlatformManifest>(resolve(root, dirname(manifestPath), 'platforms.json')) : {}
   const presetPaths = includePresets ? globSync(AGENT_PRESET_GLOB, { cwd: root }).sort() : []
   const targets = Object.keys(platforms).sort()
   const parents = new Map<string, string | undefined>()
@@ -68,7 +67,7 @@ export async function verifyRuntimeClosure(
 
   const failures: string[] = []
   if (includePresets && presetPaths.length === 0) failures.push(`no agent presets matched ${AGENT_PRESET_GLOB}`)
-  if (includePresets && targets.length === 0) failures.push('python/sdk-runtime/platforms.json defines no runtime targets')
+  if (includePresets && targets.length === 0) failures.push('platforms.json defines no runtime targets')
   failures.push(...await missingPresetPlugins(root, runtimeDependencies, presetPaths, targets))
   for (let index = 0; index < queue.length; index += 1) {
     const packageName = queue[index]
@@ -97,24 +96,6 @@ export async function verifyRuntimeClosure(
     failures,
     presetCount: (await Promise.all(presetPaths.map(async path => presetDefinitions(loadCordisYaml(await readFile(resolve(root, path), 'utf8'))).length))).reduce((a, b) => a + b, 0),
     workspacePackageCount: queue.length,
-  }
-}
-
-if (import.meta.main) {
-  const root = resolve(import.meta.dirname, '..')
-  const { values } = parseArgs({
-    args: process.argv.slice(2),
-    options: { manifest: { type: 'string' } },
-  })
-  const result = await verifyRuntimeClosure(root, values.manifest)
-  if (result.failures.length > 0) {
-    console.error('verify-runtime-closure: preset plugins or required workspace peers are missing from python/sdk-runtime dependencies:')
-    for (const failure of result.failures) console.error(`  ${failure}`)
-    process.exitCode = 1
-  } else {
-    console.log(
-      `verify-runtime-closure: ${result.presetCount} agent presets and ${result.workspacePackageCount} workspace packages form a closed runtime dependency graph.`,
-    )
   }
 }
 

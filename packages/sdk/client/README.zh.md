@@ -29,7 +29,7 @@ kind: "package-library"
 
 若由客户端处理审批，先调用 `harness.client.start()`，安装 `harness.client.onRequest(handler)`，再调用 `harness.start()`，并在 Harness 选项中设置 `approvalRequests: true`。处理器接收 `approval/request` 参数，返回 `{ outcome: "allowed-once" | "rejected" | "cancelled" }`；处理器拒绝时返回 JSON-RPC 错误，运行时拒绝放行该审批。替换客户端时需要为新实例安装处理器；已关闭的客户端不能重启。原生问答仍由 `onUserQuestion` 回调处理。启用审批但未安装附加请求处理器时，服务端请求收到未知请求错误，审批以 `unavailable` 拒绝放行。未启用时保留现有审批应答链。请求字段与取消规则见[协议](../protocol/README.zh.md)。
 
-下面的终端接入示例会逐项询问一次性授权，不改变会话的权限模式。Node 部署的包操作需要可用的 pnpm；[Python 运行时](../../../python/sdk-runtime/README.zh.md) 可以提供显式下载的 Node/pnpm。
+下面的终端接入示例会逐项询问一次性授权，不改变会话的权限模式。Node 部署的包操作需要可用的 pnpm；Python 运行时 可以提供显式下载的 Node/pnpm。
 
 ```ts
 import { createInterface } from 'node:readline/promises'
@@ -159,7 +159,7 @@ console.log(result.finalResponse)
 
 - [SDK 协议格式](../protocol/README.zh.md)——本客户端使用的 JSON-RPC 方法与载荷结构。
 - [JSON-RPC 服务插件](../server/README.zh.md)——服务本客户端的运行时插件。
-- [Python SDK](../../../python/README.zh.md) — 共享同一运行时对端与协议的设计孪生。
+- Python SDK — 共享同一运行时对端与协议的设计孪生。
 - [SDK subagent 后端](../../subagent/subagent-dsh-sdk/README.zh.md) — harness 内部消费本客户端的例子。
 - [SDK 应用组合包](../../bundle/sdk-app/README.zh.md) — 本客户端启动的 `dsh --profile sdk` 运行时应用。
 

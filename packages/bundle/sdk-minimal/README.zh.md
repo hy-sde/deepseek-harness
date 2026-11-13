@@ -67,7 +67,7 @@ dsh --profile sdk-minimal
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [Python SDK 示例](../../../python/sdk/examples/README.zh.md)——从 Python 启动本 profile，并使用明确指定的 Harness home。
+- Python SDK 示例——从 Python 启动本 profile，并使用明确指定的 Harness home。
 - [SDK 应用 bundle](../sdk-app/README.zh.md)——完整与极简 SDK profile 复用的 JSON-RPC 应用层。
 - [Base bundle](../base/README.zh.md)——本 profile 刻意省略的完整产品基础。
 

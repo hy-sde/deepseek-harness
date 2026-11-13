@@ -142,6 +142,7 @@ describe('internal artifact build order', () => {
     expect(() => { buildLibraryArtifacts(root, false) }).toThrow('exited with 7')
     expect(commands()).toHaveLength(1)
   })
+})
 
 describe('bundle-free Host contracts', { timeout: 60_000 }, () => {
   function typertWorkspace(source?: string): { pkg: string; run: () => Promise<void>; outputs: () => string[] } {

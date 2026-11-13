@@ -229,7 +229,7 @@ describe('experimental workspace constraints', () => {
     ])
   })
 
-  it('allows development and experimental consumers but rejects the Python release runtime', () => {
+  it('allows development and experimental consumers without runtime leakage', () => {
     const manifests: WorkspaceManifest[] = [experimental, {
       dir: 'packages/core/test-only',
       manifest: {
@@ -242,17 +242,9 @@ describe('experimental workspace constraints', () => {
         name: '@deepseek-ai/dsh-experimental-consumer',
         dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
       },
-    }, {
-      dir: 'python/sdk-runtime',
-      manifest: {
-        name: '@deepseek-ai/dsh-python-runtime',
-        dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
-      },
     }]
 
-    expect(checkExperimentalDependencyIsolation(manifests)).toEqual([
-      '@deepseek-ai/dsh-python-runtime: dependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
-    ])
+    expect(checkExperimentalDependencyIsolation(manifests)).toEqual([])
   })
 })
 

@@ -14,7 +14,7 @@ The Python builder uses pnpm's default deployment, which derives a dedicated pro
 
 Deployment retains the source lockfile's peer settings, including `autoInstallPeers: true`. Frozen installation preserves already resolved versions and peer relationships instead of resolving new registry peers. Forcing `autoInstallPeers: false` conflicts with the derived lockfile settings and fails frozen installation. The resulting tree need not equal the legacy tree resolved with peers disabled; selected dependencies must come from the locked graph. `verify-runtime-closure.ts` independently requires explicit workspace peers and preset plugins before deployment, and `verifyStagedDependencies` rejects missing direct dependency directories after materialization and deduplication.
 
-[`scripts/python-runtime-deploy.pnpmfile.mjs`](../../../../scripts/python-runtime-deploy.pnpmfile.mjs) translates reviewed local `file:` approvals to the exact absolute file URLs used in the derived lockfile. Approval, denial, pending decisions, and strict build validation remain unchanged. Default deployment executes approved installation scripts; their generated files can enter the staged payload. Workspace policy and the source lockfile remain unchanged.
+`scripts/python-runtime-deploy.pnpmfile.mjs` translates reviewed local `file:` approvals to the exact absolute file URLs used in the derived lockfile. Approval, denial, pending decisions, and strict build validation remain unchanged. Default deployment executes approved installation scripts; their generated files can enter the staged payload. Workspace policy and the source lockfile remain unchanged.
 
 ## Alternatives considered
 

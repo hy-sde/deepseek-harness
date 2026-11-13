@@ -14,7 +14,7 @@ Python 构建器使用 pnpm 的默认部署，从工作区锁文件派生独立�
 
 部署保留源锁文件的对等依赖设置，包括 `autoInstallPeers: true`。冻结安装保留已解析的版本和对等依赖关系，不会重新解析新的注册表对等依赖。强制指定 `autoInstallPeers: false` 与派生锁文件的设置冲突，会使冻结安装失败。生成的依赖树不必与关闭对等依赖解析的 legacy 依赖树相同，但所选依赖必须来自锁定的依赖图。`verify-runtime-closure.ts` 独立要求在部署前显式声明工作区对等依赖及 preset 插件；`verifyStagedDependencies` 在链接实体化与去重后拒绝缺失的直接依赖目录。
 
-[`scripts/python-runtime-deploy.pnpmfile.mjs`](../../../../scripts/python-runtime-deploy.pnpmfile.mjs) 将已审阅的本地 `file:` 审批转换为派生锁文件使用的精确绝对文件 URL。批准、拒绝、未决定状态和严格构建校验均保持不变。默认部署执行已批准的安装脚本，其生成的文件可能进入暂存载荷。工作区策略和源锁文件保持不变。
+`scripts/python-runtime-deploy.pnpmfile.mjs` 将已审阅的本地 `file:` 审批转换为派生锁文件使用的精确绝对文件 URL。批准、拒绝、未决定状态和严格构建校验均保持不变。默认部署执行已批准的安装脚本，其生成的文件可能进入暂存载荷。工作区策略和源锁文件保持不变。
 
 ## 考虑过的替代方案
 

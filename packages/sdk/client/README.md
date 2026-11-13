@@ -29,7 +29,7 @@ Use this client when TypeScript code must drive a complete Harness runtime from 
 
 For client-owned approvals, call `harness.client.start()`, install `harness.client.onRequest(handler)`, then call `harness.start()` with `approvalRequests: true` in the Harness options. The handler receives `approval/request` parameters and returns `{ outcome: "allowed-once" | "rejected" | "cancelled" }`; a rejected handler returns a JSON-RPC error and the runtime fails that approval closed. A replacement client needs its own handler; a closed client cannot restart. Native user questions keep their `onUserQuestion` callback. Enabling approvals without the additional-request handler returns an unknown-request error and fails approvals closed as `unavailable`. Without the opt-in, existing approval answerers remain in control. See the [wire protocol](../protocol/README.md) for request fields and cancellation.
 
-For example, this terminal embedding asks for each one-operation grant. It does not change the Session's permission mode. Node deployments need an available pnpm for package operations; the [Python runtime](../../../python/sdk-runtime/README.md) can supply its explicitly downloaded Node/pnpm instead.
+For example, this terminal embedding asks for each one-operation grant. It does not change the Session's permission mode. Node deployments need an available pnpm for package operations; the Python runtime can supply its explicitly downloaded Node/pnpm instead.
 
 ```ts
 import { createInterface } from 'node:readline/promises'
@@ -159,7 +159,7 @@ Read these pages when the client contract is not enough. They move from the wire
 
 - [SDK wire protocol](../protocol/README.md) — the JSON-RPC methods and payload shapes this client speaks.
 - [JSON-RPC serving plugin](../server/README.md) — the runtime plugin that serves this client.
-- [Python SDK](../../../python/README.md) — the design twin that shares the same runtime peer and protocol.
+- Python SDK — the design twin that shares the same runtime peer and protocol.
 - [SDK subagent backend](../../subagent/subagent-dsh-sdk/README.md) — a harness-internal consumer of this client.
 - [SDK application bundle](../../bundle/sdk-app/README.md) — the `dsh --profile sdk` runtime application this client launches.
 

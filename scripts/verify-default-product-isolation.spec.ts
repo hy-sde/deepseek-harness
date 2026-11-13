@@ -30,7 +30,6 @@ function fixture(): string {
   write(root, 'apps/web/package.json', { name: '@deepseek-ai/dsh-web-frontend' })
   write(root, 'apps/web/index.html', '<script type="module" src="/src/main.ts"></script>')
   write(root, 'apps/web/src/main.ts', 'export {}\n')
-  write(root, 'python/sdk-runtime/package.json', { name: '@deepseek-ai/dsh-python-runtime' })
   write(root, 'packages/core/core/package.json', { name: core })
   write(root, 'packages/core/core/src/index.ts', 'export {}\n')
   write(root, 'packages/bundle/base/package.json', { name: base, dsh: { bundle: { patch: './cordis.patch.yml' } } })
@@ -102,13 +101,13 @@ describe('default product isolation', () => {
     write(root, 'apps/web/src/preview.ts', `import '${experimental}'\n`)
     write(root, 'packages/experimental/prototype/cordis.patch.yml', [{ name: experimental }])
 
-    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 6, configCount: 2 })
+    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 5, configCount: 2 })
   })
 
   it('ignores dependency trees and directories whose names end in a source extension', () => {
     const root = fixture()
-    mkdirSync(join(root, 'python/sdk-runtime/src/vendor.js'), { recursive: true })
-    write(root, 'python/sdk-runtime/src/node_modules/vendor/index.js', `import '${experimental}'\n`)
+    mkdirSync(join(root, 'apps/cli/src/vendor.js'), { recursive: true })
+    write(root, 'apps/cli/src/node_modules/vendor/index.js', `import '${experimental}'\n`)
 
     expect(verifyDefaultProductIsolation(root).failures).toEqual([])
   })
@@ -126,7 +125,7 @@ describe('default product isolation', () => {
     write(root, profile, `export const PROFILE_TEMPLATES = { web: { bundles: ['${base}'] } }\n`
       + `export const DEFAULT_PROFILE_BUNDLES = ['${base}']\n`
       + `export const OPTIONAL_BUNDLES = ['${layer}']\n`)
-    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 6 })
+    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 5 })
 
     // The exception covers the dependency edge alone: a runtime import or a default template still names the product.
     write(root, 'apps/cli/src/bin.ts', `import '${layer}'\n`)
@@ -206,7 +205,7 @@ describe('default product isolation', () => {
     const root = fixture()
     manifest(root, 'apps/cli/package.json', { dependencies: { '@deepseek-ai/dsh-experimental-missing': '*' } })
     manifest(root, 'packages/experimental/prototype/package.json', { name: '@fixture/innocent' })
-    manifest(root, 'python/sdk-runtime/package.json', { dependencies: { '@fixture/innocent': '*' } })
+    manifest(root, 'apps/web/package.json', { dependencies: { '@fixture/innocent': '*' } })
 
     const failures = verifyDefaultProductIsolation(root).failures.join('\n')
     expect(failures).toContain('@deepseek-ai/dsh-experimental-missing')
@@ -472,7 +471,7 @@ describe('default product isolation', () => {
     expect(verifyDefaultProductIsolation(root).failures.join('\n')).toContain(experimental)
   })
 
-  it.each(['apps/cli/package.json', 'apps/web/index.html', 'python/sdk-runtime/package.json', preset])(
+  it.each(['apps/cli/package.json', 'apps/web/index.html', preset])(
     'fails closed when required input %s is missing',
     (path) => {
       const root = fixture()

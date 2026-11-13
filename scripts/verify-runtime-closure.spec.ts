@@ -72,7 +72,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.presetCount).toBe(1)
     expect(result.failures).toEqual([
@@ -93,7 +93,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.failures).toEqual([
       'standard preset -> @scope/conditional (linux-arm64, linux-x64, macos-arm64, macos-x64, win-x64)',
@@ -112,7 +112,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.failures).toEqual([])
   })
@@ -127,7 +127,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.failures).toEqual([
       'standard preset -> @scope/plugin [runtime dependency is "1.2.3"; expected workspace:] (linux-arm64, linux-x64, macos-arm64, macos-x64, win-x64)',
@@ -140,7 +140,7 @@ describe('verifyRuntimeClosure', () => {
       'python/sdk-runtime/platforms.json': platforms,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.presetCount).toBe(0)
     expect(result.failures).toEqual([
@@ -155,10 +155,10 @@ describe('verifyRuntimeClosure', () => {
       'preset:standard': '[]\n',
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.failures).toEqual([
-      'python/sdk-runtime/platforms.json defines no runtime targets',
+      'platforms.json defines no runtime targets',
     ])
   })
 
@@ -175,7 +175,7 @@ describe('verifyRuntimeClosure', () => {
     workspace(root, '@scope/required', {})
     workspace(root, '@scope/optional', {})
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json')
 
     expect(result.workspacePackageCount).toBe(1)
     expect(result.failures).toEqual(['runtime -> @scope/root -> @scope/required'])
