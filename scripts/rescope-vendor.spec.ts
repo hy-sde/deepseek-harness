@@ -109,8 +109,6 @@ describe('product identifiers', () => {
     'packages/client/ui-entry-customization/tests/menu.client.spec.tsx',
     'packages/client/ui-workspace/tests/workspaces-service.client.spec.ts',
     'packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts',
-    'snapshots/session/cordis-inspect-liveness/client-fixture.mjs',
-    'snapshots/session/cordis-inspect-timeout/client-fixture.mjs',
   ])('preserves the product values in %s', (file) => {
     const text = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
     // The fork renames the agent-preset id to '@deepseek-ai/cordis' in some of
@@ -168,8 +166,6 @@ describe('product identifiers', () => {
     ['packages/client/ui-entry-customization/tests/menu.client.spec.tsx', 1, 'replace-all'],
     ['packages/client/ui-workspace/tests/workspaces-service.client.spec.ts', 1, 'replace-all'],
     ['packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts', 2, 'replace-all'],
-    ['snapshots/session/cordis-inspect-liveness/client-fixture.mjs', 1, 'replace-all'],
-    ['snapshots/session/cordis-inspect-timeout/client-fixture.mjs', 2, 'replace-all'],
   ] as const)('reverses real package references in %s and restores them', (file, lines, mode) => {
     const scoped = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
     // The fork renames this file's agent-preset id to '@deepseek-ai/cordis';

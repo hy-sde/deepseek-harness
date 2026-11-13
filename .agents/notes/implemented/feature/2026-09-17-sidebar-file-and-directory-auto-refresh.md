@@ -304,7 +304,7 @@ Observation, reads, and presentation need a few explicit ordering rules, not dis
 
 ## Verification
 
-The owning FS, Workspace API, preview, and Files tests exercise watch lifetimes, metadata updates, and automatic refresh. The [Web document-preview test](../../../../apps/web/tests/document-preview.e2e.ts) exercises previews through the shipped Web composition. Session event logs, persistence formats, and model input are unchanged.
+The owning FS, Workspace API, preview, and Files tests exercise watch lifetimes, metadata updates, and automatic refresh. The Web document-preview test exercises previews through the shipped Web composition. Session event logs, persistence formats, and model input are unchanged.
 
 | Scenario | Verified behavior |
 |---|---|

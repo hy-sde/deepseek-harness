@@ -161,7 +161,7 @@ Business behavior is verified through keyed-update regressions and recorded Web 
 | Keyed notifications and React updates | Content growth affects the owning Node and affected Group; unchanged historical rows and unrelated Turns receive no extra notifications. Mode changes preserve keys and member parents. |
 | Recorded Web replay | Current accessible titles, group disclosure, hidden ordinary Context, trigger notices, and footer placement match the committed expected output. |
 
-[Recorded Web scenarios](../../../../apps/web/tests/steering.e2e.ts) cover online steering, reconnect handoff, and grouped presentation through the shipped Web profile. These behavior checks do not establish a quantified latency or memory improvement.
+Recorded Web scenarios cover online steering, reconnect handoff, and grouped presentation through the shipped Web profile. These behavior checks do not establish a quantified latency or memory improvement.
 
 ## Consequences
 

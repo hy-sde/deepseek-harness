@@ -25,7 +25,7 @@ import {
   type ReleaseEntry,
   type WorkspacePackage,
 } from './local-bundle-registry.ts'
-import { releaseFamily, type ReleaseMember } from './release/families.ts'
+import { releaseFamily, type ReleaseMember } from './local-bundle-registry.ts'
 import { capture } from './process.ts'
 
 const root = fileURLToPath(new URL('..', import.meta.url))

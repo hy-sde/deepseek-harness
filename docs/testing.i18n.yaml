@@ -6,8 +6,8 @@
   en: 0d7399a58529b9eb
   zh: 7f445b06430f21a4
 /testing-policy/tiers:
-  en: c024da7e8d9cb056
-  zh: c4cc1a66d2903656
+  en: 1adf1a79cc6f7363
+  zh: 0a2757dee2f70df1
 /testing-policy/how-specs-execute:
   en: 022c534e72e23142
   zh: c07a20994224f37c
@@ -29,6 +29,3 @@
 /testing-policy/test-subprocess-launch-modes:
   en: 5ea1c7ff7a9a5728
   zh: bbae70e0cd2d5cbf
-/testing-policy/when-a-snapshot-test-is-required:
-  en: 055966993c5392c0
-  zh: eb35536ad2c4320b

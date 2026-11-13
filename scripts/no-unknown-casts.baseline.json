@@ -6,9 +6,6 @@
     "7be0452c3cd69ae8194f389a14dd81fa348e2979512b39ac639f5233ebd7cf9a": 1,
     "98c93f0cdf30df7cfc87f8c157e90ab9a459945b5955eeb9bf383cee69a7b8e9": 1
   },
-  "apps/cli/tests/profiles/acp/tests/acp.e2e.ts": {
-    "e3b3858336ae260253abe549d2b763f5087ab4e8650f4eb5b323339eff0a6ce4": 1
-  },
   "apps/cli/tests/profiles/acp/tests/cleanup.ts": {
     "04bc8a44533574365dfedf563e2356458bcf95f990a00906938c977c1d683356": 1
   },
@@ -93,12 +90,6 @@
   "apps/web/tests/scaffold.ts": {
     "3d845108a2e6928c911c093813f3d6a1cdd510ef148f3515cb852a254a7aa14d": 1
   },
-  "apps/web/tests/seeded-history.e2e.ts": {
-    "2d8f91f0911c1e1d0eea3f4989732ff7ef21c62a6635269a8e45e7275daa6673": 1,
-    "4611e600a6d670bb7bcaa2a3a35df64dc75d92a200118a8d14224fcff2204bf3": 1,
-    "5a8270cf9b1e554ae0cff6eaf7086e44c22f61a08e5f91dc7e1397eccaa726a5": 1,
-    "d0d869812e25f9b60a88de7207566804dc7d1f38c74e0c1d67a7b25fee5af3e9": 1
-  },
   "apps/web/tests/shipped-composition.e2e.ts": {
     "c0a4d4dd9b52881eb8190c56fb8ea5a25a70590b78b1e4a0996defab767699f0": 1
   },
@@ -107,9 +98,6 @@
   },
   "apps/web/tests/startup-auto-selection.e2e.ts": {
     "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 4
-  },
-  "apps/web/tests/workspace-management.e2e.ts": {
-    "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 2
   },
   "benchmarks/conversation-fold/conversation-fold.worker.client.ts": {
     "1bce926682b8c613226bdbcf2bc75b369dcb9b9e94172f1e1a5a48f72736095a": 1
@@ -342,6 +330,9 @@
   },
   "packages/browser/browser/src/stealth.ts": {
     "04d18dcc82219c287d156303443c8fce1198c92e0d3d5088f65e283bb114afe4": 2
+  },
+  "packages/browser/browser/tests/bridge-detach-report.spec.ts": {
+    "50dc63c96c5554ee3258d082fc06d2a85f08be0c24aeffdabb8810823b8dc5f0": 1
   },
   "packages/bundle/headless/src/index.ts": {
     "971ec45a1146ab52f2fb13f75b782d5d35c0fb2ddba1fb9ccab14cc54f7291d5": 1
@@ -1040,9 +1031,6 @@
   },
   "packages/experimental/browser-use-runtime/tests/mcp.spec.ts": {
     "7cd8349e569767fe1ff3636e09ac0c69496cb0cd4efa9a2552d2a724f04fb316": 1
-  },
-  "packages/experimental/browser-use-stagehand-native/tests/loader-composition.spec.ts": {
-    "2bacab667d9b30188705724df1ae681fd51fb4ebc2668d8e062bfd37d6eb54f1": 1
   },
   "packages/experimental/browser-use-stagehand-native/tests/worker.spec.ts": {
     "019c354b579e6d5cfa63e106e3b3047817fe5a37eee532abd7ab4aa80d28676a": 1,
@@ -1810,9 +1798,6 @@
   "packages/storage/storage-domain/src/index.ts": {
     "0fae329186de631f08edbf22f01cbfbf15d7c1ea8dce64e4cefa8ad0a8d43dea": 1
   },
-  "packages/subagent/subagent-acp/tests/subagent-acp.e2e.ts": {
-    "daa15206e19d6a8fbae646d678889b2e6933ece824e48dd06c95d2096861d5c1": 1
-  },
   "packages/subagent/subagent-acp/tests/subagent-acp.spec.ts": {
     "daa15206e19d6a8fbae646d678889b2e6933ece824e48dd06c95d2096861d5c1": 2,
     "f77e5cbd2d2d911087f7faecc4b0b5bffdfb44ca5d0bcf7823ba9777feca7799": 2
@@ -2121,19 +2106,8 @@
   "scripts/python-snapshot-workflow-order.spec.ts": {
     "ed64553b01c059bcdc3699cfa887b1d6ae51acfa7801e0fea7083f2d31d5441d": 1
   },
-  "scripts/session-fixture-layout.ts": {
-    "487a58a6269113d4cbfd31915a9abdbf016e672be9a2af2c6d5d57b087d0b011": 1,
-    "7fc74abda9f548fbdf10c19d557664c012affcd6673fc084fadaa935a4643bce": 1
-  },
   "scripts/smoke-plugin-boot.ts": {
     "9a2b873e04debd62b7132199bacfec5d1dbca1d6f24d201aeb321d7322224106": 1
-  },
-  "scripts/snapshot-http-fixtures.spec.ts": {
-    "63a77f914e85aa8d63dd649be95c82f64756e06e8faa0a9aa3b53d14daebd2e5": 1,
-    "9cf0e19dc31ae2d244530fb4853d2877c0490271a5f930ad330e210051b41cd8": 1
-  },
-  "snapshots/sdk/sdk.snapshot.ts": {
-    "782d52268c631008e0fec08f76f87751765690287d5acdfae45021a754900290": 1
   },
   "website/tests/page-markdown-actions.spec.ts": {
     "ea14e4cf19829fb573c9f3378cdf4333aedbedb0675596d8c873d284036ba9a5": 1

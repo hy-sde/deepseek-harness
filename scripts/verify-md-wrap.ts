@@ -23,11 +23,9 @@ const PATTERNS = [
   'packages/*/*.md',
   'packages/*/*/*.md',
   'packages/*/*/docs/*.md',
-  'snapshots/**/system-prompt.expected.md',
   'packages/**/system-prompt.expected.md',
   'AGENTS.md',
   'packages/AGENTS.md',
-  'snapshots/AGENTS.md',
 ]
 
 /** A located hard-wrap: a prose paragraph spanning more than one source line. */

@@ -24,7 +24,6 @@ export type Mode =
   | 'ci-coverage'
   | 'ci-unit'
   | 'ci-bench'
-  | 'ci-snapshot'
   | 'ci-artifacts'
   | 'ci-consumers'
   | 'ci-windows-blocking'
@@ -160,7 +159,6 @@ function parseMode(raw: string | undefined): Mode {
     case 'ci-coverage':
     case 'ci-unit':
     case 'ci-bench':
-    case 'ci-snapshot':
     case 'ci-artifacts':
     case 'ci-consumers':
     case 'ci-windows-blocking':
@@ -175,7 +173,7 @@ function parseMode(raw: string | undefined): Mode {
       return raw
     default:
       throw new Error(
-        `run-gates: expected mode ci-primary | ci-linux-primary | ci-static | ci-lint-contracts-ready | ci-coverage | ci-unit | ci-bench | ci-snapshot | ci-artifacts | ci-consumers | ci-windows-blocking | ci-windows-complete | ci-windows-observational-ready | node-compat | check-all | hygiene | doc-sync | doc-quick | i18n, got ${JSON.stringify(raw)}.`,
+        `run-gates: expected mode ci-primary | ci-linux-primary | ci-static | ci-lint-contracts-ready | ci-coverage | ci-unit | ci-bench | ci-artifacts | ci-consumers | ci-windows-blocking | ci-windows-complete | ci-windows-observational-ready | node-compat | check-all | hygiene | doc-sync | doc-quick | i18n, got ${JSON.stringify(raw)}.`,
       )
   }
 }
@@ -324,8 +322,6 @@ export function gatesForMode(selected: Mode): Gate[] {
       return ciUnitGates()
     case 'ci-bench':
       return [pnpmExec('bench', ['tsx', 'scripts/run-ci-bench.ts'], { label: 'performance benchmarks' })]
-    case 'ci-snapshot':
-      return [ciBuildGate(), snapshotGate()]
     case 'ci-artifacts':
       return ciArtifactGates()
     case 'ci-consumers':
@@ -354,7 +350,6 @@ export function gatesForMode(selected: Mode): Gate[] {
         pnpmScript('approval-policy', 'test:approval-policy', { label: 'Weighted approval policy' }),
         pnpmScript('issue-management', 'test:issue-management', { label: 'Issue management policy' }),
         pnpmScript('duplication', 'duplication'),
-        snapshotGate(),
         expectedOutputGate(),
         pnpmScript('build', 'build'),
         pnpmScript('build:web', 'build:web'),
@@ -433,7 +428,6 @@ function ciPrimaryGates(): Gate[] {
     pnpmScript('duplication', 'duplication'),
     ...coverageGates(),
     ...nodeCompatSmokeGates(),
-    snapshotGate(),
     ...docSyncLeafGates({
       docTypecheckNeeds: ['typert-contracts'],
       docTypecheckScript: 'doc-typecheck:contracts-ready',
@@ -541,7 +535,6 @@ function ciConsumerGates(): Gate[] {
   // writer starts; `after` preserves the web diagnostic even if a reader fails.
   const buildArtifactReaders = [
     'publint',
-    'snapshot',
     'expected-output',
     'doc-typecheck',
     'node-next-types',
@@ -554,7 +547,6 @@ function ciConsumerGates(): Gate[] {
       env: { [CLIENT_BUILD_PROFILE_SELECTOR]: 'official' },
     }),
     pnpmScript('publint', 'publint', { needs: builtTree }),
-    snapshotGate(builtTree),
     expectedOutputGate(builtTree),
     webSnapshotGate(builtTree, buildArtifactReaders),
     pnpmScript('doc-typecheck', 'doc-typecheck:contracts-ready', {
@@ -758,15 +750,6 @@ function ciUnitGates(): Gate[] {
       streamOutput: true,
     }),
   ]
-}
-
-// Recorded-session adapters boot process scenarios in `lib` mode. Callers wait
-// either on `build` or on a validation gate that transitively owns that build.
-function snapshotGate(needs: string[] = ['build']): Gate {
-  return pnpmScript('snapshot', 'test:snapshot', {
-    env: { DSH_EXAMPLE_MODE: 'lib' },
-    needs,
-  })
 }
 
 // Owner-local process expectations consume built package exports without entering

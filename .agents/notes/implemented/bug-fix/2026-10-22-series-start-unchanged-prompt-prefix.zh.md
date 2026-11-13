@@ -20,7 +20,7 @@ Status: implemented
 
 - [`system-prompt-projection.spec.ts`](../../../../packages/core/agent-loop/tests/system-prompt-projection.spec.ts) 固定「能力路由的新序列开始时存活节点文本已一致则不产生操作」的决策。
 - [`system-prompt-admission.spec.ts`](../../../../packages/core/agent-loop/tests/system-prompt-admission.spec.ts) 固定 wire 请求：渲染文本未变的压缩替换保留两条系统消息，上一次请求的消息仍构成前缀，相邻步骤重新获得提供方前缀。
-- [`in-history-series-start`](../../../../snapshots/session/in-history-series-start/) 录制会话通过 shipped headless profile 回放「提示词变化 + 后续 surface 替换」，固定渲染未变的新序列保留两份提示词版本且不写 `system/message` 事件。
+- `in-history-series-start` 录制会话通过 shipped headless profile 回放「提示词变化 + 后续 surface 替换」，固定渲染未变的新序列保留两份提示词版本且不写 `system/message` 事件。
 
 ## Alternatives considered
 

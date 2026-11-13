@@ -72,7 +72,7 @@ function assertSupportedSegment(segment: string): void {
  * The repository's own walker exists because node's internal glob, from some
  * 24.x releases, lstat-probes `<matched>/<next segment>` for symlinked files
  * while expanding `**` and throws ENOTDIR instead of skipping (observed on
- * node 24.13.0 scanning `snapshots/acp/image-compaction`'s symlinked
+ * node 24.13.0 scanning a symlinked
  * `system-prompt.expected.md`). The walker decides directoryhood from dirent
  * types and stat results, never by probing a path under a file, so the same
  * tree enumerates identically on every node version.

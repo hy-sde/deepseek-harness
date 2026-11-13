@@ -166,7 +166,7 @@ const laneTestBudget = coverageTestTimeoutOptions(process.env[COVERAGE_TEST_TIME
 // Outside CI, forks follow the local worker budget; CI keeps Vitest's own default for its runner.
 // DSH_TEST_MAX_WORKERS pins the local pool explicitly: low-RAM shared workstations bound the
 // test gate's memory (each fork holds a full module graph) below what min(cpus, cap) forks cost.
-// Mirrors vitest.snapshot.config.ts's positiveIntFromEnv: unset/empty falls through, anything
+// positiveIntFromEnv: unset/empty falls through, anything
 // non-integral or < 1 is a misconfiguration, not a silent no-op.
 function positiveIntFromEnv(name: string, fallback: number): number {
   const raw = process.env[name]

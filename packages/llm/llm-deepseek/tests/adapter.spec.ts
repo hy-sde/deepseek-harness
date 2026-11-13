@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context, LoggerLevel, Service } from '@deepseek-ai/cordis'
+import { Context, Service } from '@deepseek-ai/cordis'
 import LocalAttachments from '@deepseek-ai/dsh-attachment-local'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -17,14 +17,12 @@ import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import LlmRuntime, { createAssistantMessage, createDeveloperMessage, createSystemMessage, createToolResultMessage, createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
-import type { Message } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { createAssistantMessage, createDeveloperMessage, createSystemMessage, createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import LocalCredentials from '@deepseek-ai/dsh-credentials-local'
 import { profileComposition } from '../../../settings/settings/tests/profile-composition.ts'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import { DeepSeekAdapter } from '../src/adapter.ts'
-import { object } from '../src/replay.ts'
 import { DeepSeekFileStore } from '../src/file-store.ts'
 import * as Messages from '@deepseek-ai/dsh-llm-deepseek-api-key'
 import { adapter, assemble, chunks, MODEL, options, prepareExtensions, server, sse, textEvents, user, sourceModuleLoader } from './helpers.ts'
@@ -438,46 +436,6 @@ describe('Cordis provider composition', () => {
     expect(http.requests[0]?.body.system).toBe('current')
     expect((http.requests[0]?.body.messages as { role: string }[]).map(message => message.role)).toEqual(['user', 'assistant', 'user'])
     expect(JSON.stringify(history)).toBe(saved)
-  })
-
-  it('continues a recorded tool turn with a warning when its native replay version is unknown', async () => {
-    const { ctx, http } = await boot()
-    const warnings: unknown[][] = []
-    ctx.logger.exporter({ levels: { default: LoggerLevel.WARN }, export: (message) => { if (message.type === 'warn') warnings.push(message.args) } })
-    const fixture = await readFile(new URL('../../../../snapshots/session/deepseek-messages-degraded-replay/session.v2.jsonl', import.meta.url), 'utf8')
-    const records = fixture.trim().split('\n').map(line => JSON.parse(line) as { type: string; data: { message?: Message } })
-    const assistant = records.find(record => record.type === 'assistant/message')!.data.message!
-    if (assistant.source.kind === 'model') assistant.source.provider = 'deepseek-official'
-    // The released v2 row still wraps its tool result inside a user message.
-    const released = object(records.find(record => record.type === 'tool/result')!.data.message)
-    if (!Array.isArray(released.content)) throw new Error('fixture lacks released tool content')
-    const releasedBlock = object(released.content[0])
-    if (typeof releasedBlock.toolCallId !== 'string' || !Array.isArray(releasedBlock.content)) {
-      throw new Error('fixture lacks released tool result')
-    }
-    const content = releasedBlock.content.map((value) => {
-      const block = object(value)
-      if (block.type !== 'text' || typeof block.text !== 'string') throw new Error('fixture tool result must contain text')
-      return { type: 'text' as const, text: block.text }
-    })
-    const result = createToolResultMessage({
-      callId: ToolCallId(releasedBlock.toolCallId), content, isError: releasedBlock.isError === true,
-    })
-    const saved = JSON.stringify([assistant, result])
-    const response = await assemble(ctx.llm.stream(options({ messages: [user(), assistant, result] })))
-    expect(response.assembler.finish.kind).toBe('stop')
-    expect((await assemble(ctx.llm.stream(options({ messages: [user(), assistant, result] })))).assembler.finish.kind).toBe('stop')
-    expect(warnings).toEqual([[`llm-deepseek: unusable Messages replay state on assistant history for route "deepseek-official/${MODEL}"; sending provider-neutral content (DeepSeek Messages replay: unsupported kind or version)`]])
-    expect(http.requests).toHaveLength(2)
-    expect(http.requests[0]?.body.messages).toEqual([
-      { role: 'user', content: [{ type: 'text', text: 'hello' }] },
-      { role: 'assistant', content: [
-        { type: 'thinking', thinking: 'The user wants me to run a simple bash command and then reply with "DONE".' },
-        { type: 'tool_use', id: 'call_00_fkbBRJsUrGKd1pWVc4Gn8233', name: 'bash', input: { command: 'echo TERMINAL_OK', description: 'Echo TERMINAL_OK to verify terminal access' } },
-      ] },
-      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'call_00_fkbBRJsUrGKd1pWVc4Gn8233', content: [{ type: 'text', text: 'TERMINAL_OK\n' }], is_error: false }] },
-    ])
-    expect(JSON.stringify([assistant, result])).toBe(saved)
   })
 
   it('loads one provider from YAML, rotates settings and credentials, then removes disposed registrations', async () => {

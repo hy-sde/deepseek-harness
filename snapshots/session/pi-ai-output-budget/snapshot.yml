@@ -1,8 +1,0 @@
-version: 1
-scenario: pi-ai-output-budget
-profile: headless
-composition: pi-ai-output-budget
-recording: authored
-header:
-  class: pi-ai-output-budget
-  pin: true

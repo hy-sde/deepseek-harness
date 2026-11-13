@@ -29,5 +29,5 @@ UTF-8 recovery is an explicit heuristic, not proof of the original encoding. The
 - Malformed declarations containing UTF-8 can return readable text; a failed UTF-8 recovery never falls back to another encoding or inserts replacement characters.
 - Malformed declarations without a UTF-8 label remain unsupported, including repeated legacy aliases. Valid single-label legacy decoding is unchanged.
 - [`fetch-http.spec.ts`](../../../../packages/web/web-fetch-http/tests/fetch-http.spec.ts) covers recovery, conflicting labels, invalid bytes, EOF, truncation, and response-stream cancellation.
-- The recorded [`web-fetch`](../../../../snapshots/session/web-fetch/snapshot.yml) scenario serves literal UTF-8 characters with `charset=gbk,utf-8` through the real HTTP provider and verifies the same model-visible text.
+- The recorded `web-fetch` scenario serves literal UTF-8 characters with `charset=gbk,utf-8` through the real HTTP provider and verifies the same model-visible text.
 - HTML `<meta charset>` remains ignored. The package README documents the remaining ambiguity.

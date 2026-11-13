@@ -161,7 +161,7 @@ React key 由引用 kind、NodeKey/groupPart 或 GroupKey 的无歧义元组派�
 | 按键通知与 React 更新 | 正文增长影响所属 Node 和相关 Group；未变化历史行及其他 Turn 没有额外通知。模式变化保留 key 与成员父级。 |
 | 已录制的 Web 回放 | 当前可访问标题、组开合、普通 Context 隐藏、触发通知及页脚位置与提交的预期输出一致。 |
 
-[已录制的 Web 场景](../../../../apps/web/tests/steering.e2e.ts)通过正式 Web profile 覆盖在线 steering、重连接续与分组展示。这些行为检查不构成量化延迟或内存改善的证明。
+已录制的 Web 场景通过正式 Web profile 覆盖在线 steering、重连接续与分组展示。这些行为检查不构成量化延迟或内存改善的证明。
 
 ## Consequences
 

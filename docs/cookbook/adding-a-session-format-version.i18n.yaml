@@ -9,8 +9,8 @@
   en: 3dc6121d1fcef4f8
   zh: 178bcf02b63c4fbf
 /cookbook-adding-a-session-log-format-version/table-of-contents:
-  en: 6977fff29f49e4a4
-  zh: 7ffb6f5490831dce
+  en: 684b9af0b7467c60
+  zh: 3a5827c0e9ab2ea3
 /cookbook-adding-a-session-log-format-version/1-choose-the-version-and-release-base:
   en: 3e763cfbe8cd11d5
   zh: 2d4998217cbe8030
@@ -21,18 +21,15 @@
   en: c8d879d5c9fb14ed
   zh: ea19e54c808fea0b
 /cookbook-adding-a-session-log-format-version/4-update-current-version-consumers:
-  en: a285126945d02c12
-  zh: e039c77cf7866ad2
-/cookbook-adding-a-session-log-format-version/5-create-snapshot-successors:
-  en: 7f865673d550a949
-  zh: 8bde6a9ef29f382a
-/cookbook-adding-a-session-log-format-version/6-validate-the-integrated-result:
-  en: fb1c6d23599659c5
-  zh: b51e4ee8c0d1daeb
-/cookbook-adding-a-session-log-format-version/6-validate-the-integrated-result/developer-v4-corpus-trial:
+  en: 15a74f08c7d50e4a
+  zh: b1b6438df9c3211d
+/cookbook-adding-a-session-log-format-version/5-validate-the-integrated-result:
+  en: 9bb72b8736c1cd54
+  zh: b9e3c01b6bfb63f8
+/cookbook-adding-a-session-log-format-version/5-validate-the-integrated-result/developer-v4-corpus-trial:
   en: f22ab2d7b089a6d2
   zh: 0a47f543899f0161
-/cookbook-adding-a-session-log-format-version/6-validate-the-integrated-result/final-v3-event-vocabulary-before-v4-publication:
+/cookbook-adding-a-session-log-format-version/5-validate-the-integrated-result/final-v3-event-vocabulary-before-v4-publication:
   en: a6ed1788dc64efbe
   zh: 9ca3382f92df986b
 /cookbook-adding-a-session-log-format-version/dev-note:

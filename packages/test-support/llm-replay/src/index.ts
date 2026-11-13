@@ -810,7 +810,7 @@ function resolveReplayScript(
 /** Derive a script from an already migrated fixture, failing loud when it is absent. */
 function deriveScriptFromFixture(file: string, fixture: ParsedSessionFixture | undefined): ReplayEntry[] {
   if (fixture === undefined) {
-    throw new Error(`llm-replay: fixture not found: ${file} — run \`pnpm run test:snapshot:record\` first`)
+    throw new Error(`llm-replay: fixture not found: ${file} — re-record the fixture first`)
   }
   return deriveReplayScript(fixture.events)
 }

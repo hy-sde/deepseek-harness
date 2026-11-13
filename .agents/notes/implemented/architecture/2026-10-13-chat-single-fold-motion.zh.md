@@ -21,7 +21,7 @@ Status: implemented
 | 右侧栏子会话输入框发送 | 无（composer 跳过 `beginSubmission`） | 整屏空白 | 整屏空白 |
 | 子会话里父消息唤醒多轮后人类发送 | 无 | 整屏空白（补白约 6000 px） | — |
 
-通知唤醒的 Turn 已不再触发折叠（[分组树位置与交互段](2026-10-11-chat-group-tree-exchanges.zh.md)）；上表是仍经由通用路径折叠的人类输入。数据来自 [fold-blank-matrix.e2e.ts](../../../../apps/web/tests/fold-blank-matrix.e2e.ts)。
+通知唤醒的 Turn 已不再触发折叠（[分组树位置与交互段](2026-10-11-chat-group-tree-exchanges.zh.md)）；上表是仍经由通用路径折叠的人类输入。数据来自 fold-blank-matrix.e2e.ts。
 
 子会话不显示本地回显，是因为引入回显时 `subagents.prompt` 不携带 request id，回显无法与子会话写回的消息对应。此后子 agent 控制迁到 Remote，`SubagentPromptRequest.requestId` 已被 Host 写入子会话用户消息的 `source.rpcId`；客户端 `Session.prompt` 却仍另行生成 id。
 
@@ -73,7 +73,7 @@ Status: implemented
 
 ## Testing
 
-[fold-blank-matrix.e2e.ts](../../../../apps/web/tests/fold-blank-matrix.e2e.ts) 覆盖主会话 19 例与右侧栏子会话 8 例，维度包括读者位置（底部、正文中段、正文开头、步骤中间、上一轮）、输入来源（输入框、回合在写入消息前失败、另一个标签页、排队投递、steer、父消息、一次折叠多轮）、正文长短，以及 Standard 与「完成时收起」对照。布局空洞指视口顶部到输入框之间没有任何可见行的盒子覆盖的最大连续高度：落定后不超过 120 px，动画中至多 1 帧超过。它按盒子计算，已经淡出但尚未收完的收起行仍算作覆盖。「到底部」的用例断言落到底部；「内容不动」的用例断言读者锚定行的屏幕位置变化不超过 2 px。正文很短的用例只断言回复到达后不再留空。
+fold-blank-matrix.e2e.ts 覆盖主会话 19 例与右侧栏子会话 8 例，维度包括读者位置（底部、正文中段、正文开头、步骤中间、上一轮）、输入来源（输入框、回合在写入消息前失败、另一个标签页、排队投递、steer、父消息、一次折叠多轮）、正文长短，以及 Standard 与「完成时收起」对照。布局空洞指视口顶部到输入框之间没有任何可见行的盒子覆盖的最大连续高度：落定后不超过 120 px，动画中至多 1 帧超过。它按盒子计算，已经淡出但尚未收完的收起行仍算作覆盖。「到底部」的用例断言落到底部；「内容不动」的用例断言读者锚定行的屏幕位置变化不超过 2 px。正文很短的用例只断言回复到达后不再留空。
 
 ## Alternatives considered
 

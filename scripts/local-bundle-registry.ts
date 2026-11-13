@@ -16,14 +16,13 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream, existsSync, globSync, readFileSync, statSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createServer, type Server, type ServerResponse } from 'node:http'
-import { join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { execa } from 'execa'
 import * as yaml from '@deepseek-ai/dsh-yaml'
 import semver from 'semver'
 import { pnpmInvocation } from './pnpm-invocation.ts'
 import { capture, pnpmCommand } from './process.ts'
-import { releaseFamily, tarballName, type ReleaseFamily, type ReleaseMember } from './release/families.ts'
-import { packedManifest, tarballFiles } from './release/tarball.ts'
+import { validateTarballPayload } from './publication-payload.ts'
 
 /** Run directories a registry invocation owns, relative to the repository root. */
 export const REGISTRY_OUTPUT_ROOT = 'dist/test-bundles'
@@ -192,6 +191,203 @@ export function readWorkspacePackages(root: string): Map<string, WorkspacePackag
   return packages
 }
 
+/** One workspace member a release family can pack and serve. */
+export interface ReleaseMember {
+  /** Absolute package directory. */
+  readonly directory: string
+  /** Package name exactly as it is declared. */
+  readonly name: string
+  /** Package version exactly as it is declared. */
+  readonly version: string
+  /** Parsed `package.json`. */
+  readonly manifest: Record<string, unknown>
+}
+
+/** A family of packable members with one version baseline and payload policy. */
+export interface ReleaseFamily {
+  /** Registry-facing family identifier. */
+  readonly id: 'dsh' | 'vendor'
+  /** Repository-relative glob patterns selecting this family's manifests. */
+  readonly patterns: readonly string[]
+  /** Discover this family's members, sorted by manifest path. */
+  members(root: string): ReleaseMember[]
+  /** Assert this family's version baseline across its members. */
+  verifyVersions(members: readonly ReleaseMember[]): void
+  /** Reject a tarball whose payload this family's policy forbids. */
+  validatePayload(member: ReleaseMember, files: readonly string[]): void
+  /** Check the identity in the packed manifest before serving its bytes. */
+  validatePackedManifest(member: ReleaseMember, manifest: Readonly<Record<string, unknown>>): void
+  /** The npm dist-tag a member's version publishes under. */
+  distTagForVersion(version: string): string | undefined
+}
+
+/** Workspace root package name, which no family member may carry. */
+const WORKSPACE_ROOT_PACKAGE = '@deepseek-ai/dsh-root'
+
+/**
+ * Read and parse a manifest file.
+ * @param path - absolute manifest path.
+ * @returns The parsed `package.json` object.
+ */
+function readManifest(path: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'))
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error(`${path} must hold a JSON object`)
+  return parsed as Record<string, unknown>
+}
+
+/**
+ * Require a non-empty string field from a manifest.
+ * @param manifest - the parsed manifest.
+ * @param field - the required field name.
+ * @param source - manifest path for the error message.
+ * @returns The field's string value.
+ */
+function requireString(manifest: Readonly<Record<string, unknown>>, field: string, source: string): string {
+  const value = manifest[field]
+  if (typeof value !== 'string' || value === '') throw new Error(`${source} must declare a string ${field}`)
+  return value
+}
+
+/**
+ * Shared member discovery: glob the family's manifests, validate identity, keep the publishable ones.
+ * @param family - the family whose patterns select manifests.
+ * @param root - repository root.
+ * @returns The family's members in manifest-path order.
+ */
+function familyMembers(family: Pick<ReleaseFamily, 'id' | 'patterns'>, root: string): ReleaseMember[] {
+  const manifestPaths = globSync([...family.patterns], { cwd: root }).sort()
+  if (manifestPaths.length === 0) throw new Error(`release family ${family.id} matched no manifests`)
+  const members: ReleaseMember[] = []
+  const seen = new Set<string>()
+  for (const manifestPath of manifestPaths) {
+    const normalized = manifestPath.replaceAll('\\', '/')
+    const manifest = readManifest(resolve(root, normalized))
+    if (manifest.private === true) continue
+    const name = requireString(manifest, 'name', normalized)
+    const version = requireString(manifest, 'version', normalized)
+    if (name === WORKSPACE_ROOT_PACKAGE) throw new Error(`${normalized} selected the workspace root`)
+    // Fork: vendor members may publish under either scope — @deepseek-ai/* for the
+    // deepseek-published vendors and @hy-sde-org/* for forks published from the
+    // hy-sde npm org (e.g. vendor/effect's @hy-sde-org/effect).
+    if (!name.startsWith('@deepseek-ai/') && !name.startsWith('@hy-sde-org/')) {
+      throw new Error(`${normalized} must name an @deepseek-ai or @hy-sde-org package`)
+    }
+    if (seen.has(name)) throw new Error(`${name} appears twice in release family ${family.id}`)
+    seen.add(name)
+    members.push({ directory: resolve(root, normalized, '..'), name, version, manifest })
+  }
+  return members
+}
+
+/** The `@deepseek-ai/dsh` runtime family: one shared version, strict payload policy. */
+const DSH_FAMILY: ReleaseFamily = {
+  id: 'dsh',
+  patterns: ['packages/*/*/package.json', 'apps/*/package.json'],
+  members(root) {
+    return familyMembers(this, root)
+  },
+  verifyVersions(members) {
+    const versions = new Set(members.map(member => member.version))
+    if (versions.size !== 1) {
+      const detail = members.map(member => `${member.directory}: ${member.version}`).join('\n')
+      throw new Error(`dsh release members must share one version:\n${detail}`)
+    }
+  },
+  validatePayload(member, files) {
+    validateTarballPayload(files, member.name)
+  },
+  distTagForVersion(version) {
+    const separator = version.indexOf('-')
+    if (separator === -1) return undefined
+    const [channel] = version.slice(separator + 1).split('.')
+    if (channel === 'alpha' || channel === 'canary') return channel
+    return 'next'
+  },
+  validatePackedManifest(member, manifest) {
+    if (manifest.name !== member.name || manifest.version !== member.version) {
+      throw new Error(`${member.name}: packed identity must match ${member.name}@${member.version}`)
+    }
+    // Require the packed DSH runtime graph to stay on the shared exact version.
+    for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies'] as const) {
+      const dependencies = manifest[section]
+      if (dependencies === null || typeof dependencies !== 'object' || Array.isArray(dependencies)) continue
+      for (const [name, range] of Object.entries(dependencies)) {
+        if (name !== '@deepseek-ai/dsh' && !name.startsWith('@deepseek-ai/dsh-')) continue
+        if (range !== member.version) {
+          throw new Error(`${member.name}: packed ${section}.${name} must equal ${member.version}, got ${String(range)}`)
+        }
+      }
+    }
+  },
+}
+
+/** The `vendor/*` family: independent versions, upstream source-and-map payload policy. */
+const VENDOR_FAMILY: ReleaseFamily = {
+  id: 'vendor',
+  patterns: ['vendor/*/package.json'],
+  members(root) {
+    return familyMembers(this, root)
+  },
+  verifyVersions(members) {
+    for (const member of members) {
+      if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(member.version)) {
+        throw new Error(`${member.directory} has an unpublishable version: ${member.version}`)
+      }
+    }
+  },
+  validatePayload(member, files) {
+    if (files.length === 0) throw new Error(`${member.name} packed an empty tarball`)
+  },
+  validatePackedManifest(member, manifest) {
+    if (manifest.name !== member.name || manifest.version !== member.version) {
+      throw new Error(`${member.name}: packed identity must match ${member.name}@${member.version}`)
+    }
+  },
+  distTagForVersion(version) {
+    return version.includes('-') ? 'next' : undefined
+  },
+}
+
+/**
+ * The release family a registry lane packs under.
+ * @param id - family identifier.
+ * @returns The family owning that lane's payload and version rules.
+ */
+export function releaseFamily(id: 'dsh' | 'vendor'): ReleaseFamily {
+  return id === 'dsh' ? DSH_FAMILY : VENDOR_FAMILY
+}
+
+/**
+ * The tarball filename `pnpm pack` writes for a member.
+ * @param member - the packed member.
+ * @returns The tarball filename.
+ */
+export function tarballName(member: ReleaseMember): string {
+  const unscoped = member.name.startsWith('@') ? member.name.slice(1).replace('/', '-') : member.name
+  return `${unscoped}-${member.version}.tgz`
+}
+
+/**
+ * List a tarball's members.
+ * @param tarball - absolute tarball path.
+ * @returns Every path inside the archive.
+ */
+function tarballFiles(tarball: string): string[] {
+  // GNU tar reads the colon in a Windows drive path as a remote-host separator, so tar runs beside the tarball.
+  return capture('tar', ['-tzf', basename(tarball)], { cwd: dirname(tarball) }).split(/\r?\n/u).filter(line => line !== '')
+}
+
+/**
+ * Read the manifest contained in a packed tarball, without consulting the checkout.
+ * @param tarball - absolute tarball path.
+ * @returns The packed `package.json` object.
+ */
+function packedManifest(tarball: string): Record<string, unknown> {
+  const manifest: unknown = JSON.parse(capture('tar', ['-xOzf', basename(tarball), 'package/package.json'], { cwd: dirname(tarball) }))
+  if (manifest === null || typeof manifest !== 'object' || Array.isArray(manifest)) throw new Error(`${tarball} has no manifest`)
+  return manifest as Record<string, unknown>
+}
+
 /**
  * Index the release families' public members by package name.
  * @param root - repository root containing the release families.
@@ -199,7 +395,7 @@ export function readWorkspacePackages(root: string): Map<string, WorkspacePackag
  */
 export function readReleaseMembers(root: string): Map<string, ReleaseEntry> {
   const members = new Map<string, ReleaseEntry>()
-  for (const id of ['dsh', 'vendor']) {
+  for (const id of ['dsh', 'vendor'] as const) {
     const family = releaseFamily(id)
     for (const member of family.members(root)) members.set(member.name, { family, member })
   }
@@ -211,7 +407,7 @@ export function readReleaseMembers(root: string): Map<string, ReleaseEntry> {
  * @param root - repository root containing the release families.
  */
 export function verifyReleaseVersions(root: string): void {
-  for (const id of ['dsh', 'vendor']) {
+  for (const id of ['dsh', 'vendor'] as const) {
     const family = releaseFamily(id)
     family.verifyVersions(family.members(root))
   }

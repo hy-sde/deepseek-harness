@@ -12,8 +12,7 @@ Use this tutorial to introduce the next Session log format version without rewri
 - [2. Add an identity edge](#add-an-identity-edge)
 - [3. Implement per-artifact stages and validation](#stages-and-validation)
 - [4. Update current-version consumers](#current-version-consumers)
-- [5. Create snapshot successors](#snapshot-successors)
-- [6. Validate the integrated result](#validate)
+- [5. Validate the integrated result](#validate)
 - [Developer V4 corpus trial](#v4-corpus-trial)
 - [Dev Note](#dev-note)
 
@@ -73,37 +72,20 @@ Prove strict restoration through `sessionFormatCatalog.createRestore(header, { r
 <a id="current-version-consumers"></a>
 ## 4. Update current-version consumers
 
-Trace each current-version consumer, including Session creation/restoration, JSONL filename selection and publication, the catalog's current encoder/restorer, projection-cache generation identity, replay and snapshot normalization, [physical fixture-layout validation](../../scripts/session-fixture-layout.ts), and TypeScript/Python SDK recordings. Use the writer constant where a value means current; keep literal historical versions in released codecs and historical fixtures. Update current documentation and generated references through their owners.
+Trace each current-version consumer, including Session creation/restoration, JSONL filename selection and publication, the catalog's current encoder/restorer, projection-cache generation identity, replay and snapshot normalization, physical fixture-layout validation, and TypeScript/Python SDK recordings. Use the writer constant where a value means current; keep literal historical versions in released codecs and historical fixtures. Update current documentation and generated references through their owners.
 
 Do not bump unrelated versions automatically. A request wrapper's `sessionFormatVersion` identifies its embedded Session generation; its outer schema version has its own meaning. Projection-unit state versions likewise do not replace the cache's Session-generation identity.
 
 Verify both read and write paths. Header-only listing must not read bodies or publish. Historical read open may return the migrated in-memory artifact without writing; write open must verify and publish only the final current successor before append. The source path, bytes, and inode stay unchanged. A newer or invalid selected generation must not cause fallback to a predecessor. The [preparation decision](../../.agents/notes/implemented/architecture/2026-09-05-read-only-session-migration-preparation.md) owns publication timing.
 
-<a id="snapshot-successors"></a>
-## 5. Create snapshot successors
-
-Read [snapshot ownership](../../snapshots/AGENTS.md) and the [snapshot library](../../packages/test-support/session-snapshot/README.md). The [corpus policy](../../scripts/session-snapshot-corpus-policy.ts) keeps its declared baseline as replay input so upgrades exercise the adjacent chain; a writer bump does not require refreshing that corpus. Select the owning scenario when a current-generation successor is needed, keep each historical file, and use the target version’s canonical parent and child filenames. Never rename a predecessor to the target filename or change only its header.
-
-For unchanged replay input, use keyless refresh on the owner, then replay without write-back. These SDK commands use `text-turn` and the checkout's writer version. Implement and wire N+1 before using them to generate that version, and select the actual affected owner for a feature:
-
-```sh
-pnpm run test:snapshot:refresh snapshots/sdk/sdk.snapshot.ts -t text-turn
-pnpm run test:snapshot snapshots/sdk/sdk.snapshot.ts -t text-turn
-```
-
-Review the new generation, request sidecars, and protocol output together. Verify every predecessor remains byte-identical and that parent/child roles remain contiguous. Selection uses the numerically highest generation, so update shared references to the owner's selected parent. Do not use the packed-layout migrator as a version upgrader. If the model transcript must change, the scenario owner uses live recording under the [testing policy](../testing.md), with its required provider key.
-
-Keep cases older than the retained baseline explicit through `snapshot.yml`'s `sessionFormat.version` and supported `coverage` names; record and refresh leave pinned Session fixtures untouched. Update the [corpus policy](../../scripts/session-snapshot-corpus-policy.ts) for the current generation while retaining focused direct-edge, multi-hop, packed-row, retry/failure, and shipped-profile coverage. Check the corpus and both SDK projections; do not mass-refresh unrelated scenarios merely to silence a validation failure.
-
 <a id="validate"></a>
-## 6. Validate the integrated result
+## 5. Validate the integrated result
 
 Run from the repository root. These commands check catalog declarations, Stage composition, the released V2→V3 edge, and generation selection. They are a baseline; add focused coverage for the new edge:
 
 ```sh
 pnpm run verify-session-format-catalog
 pnpm exec vitest run scripts/gen-session-format-catalog.spec.ts packages/session/session-format/tests packages/session/session-format-v2-to-v3/tests packages/session/session-format-catalog/tests
-pnpm run test:snapshot scripts/session-snapshot-corpus.corpus.ts
 ```
 
 After implementing the new edge, add its actual test path to the focused Vitest run. Add the changed JSONL, replay, projection, and SDK tests selected by the actual diff, plus the built publication-Worker smoke when that path changes. Require successful strict migration, identity preservation for the skeleton, malformed and unknown-required-event refusal, deterministic repeated restores, independent concurrent stage state, seeded multi-hop cuts, unchanged predecessors, and no fallback. Report exact commands and failures, not an inferred full-suite result.

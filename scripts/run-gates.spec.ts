@@ -247,7 +247,6 @@ describe('gate graph validation', () => {
     'ci-coverage',
     'ci-unit',
     'ci-bench',
-    'ci-snapshot',
     'ci-artifacts',
     'ci-consumers',
     'ci-windows-blocking',
@@ -967,7 +966,6 @@ describe('Node 24 lane ownership', () => {
       'build',
       'node-compat',
       'publint',
-      'snapshot',
       'expected-output',
       'web-snapshot',
       'doc-typecheck',
@@ -985,7 +983,6 @@ describe('Node 24 lane ownership', () => {
       DSH_BUILD_CLIENT_PROFILE: 'official',
     })
     for (const id of [
-      'snapshot',
       'expected-output',
       'web-snapshot',
       'doc-typecheck',
@@ -994,7 +991,6 @@ describe('Node 24 lane ownership', () => {
     ]) {
       expect(subject.find(item => item.id === id)?.needs).toEqual(['build'])
     }
-    expect(subject.find(item => item.id === 'snapshot')?.env).toEqual({ DSH_EXAMPLE_MODE: 'lib' })
     expect(subject.find(item => item.id === 'expected-output')?.env).toEqual({ DSH_EXAMPLE_MODE: 'lib' })
     expect(subject.find(item => item.id === 'built-bin-smoke')?.env).toEqual({ DSH_EXAMPLE_MODE: 'lib' })
     expect(subject.find(item => item.id === 'doc-typecheck')?.env).toEqual({
@@ -1015,7 +1011,6 @@ describe('Node 24 lane ownership', () => {
       env: { DSH_SNAPSHOT: 'replay' },
       after: [
         'publint',
-        'snapshot',
         'expected-output',
         'doc-typecheck',
         'node-next-types',

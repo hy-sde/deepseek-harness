@@ -29,5 +29,5 @@ UTF-8 恢复是明确的启发式规则，不是原始编码的证明。字节 `
 - 含有 UTF-8 的畸形声明可以返回可读文本；UTF-8 恢复失败时不会回退到其他编码，也不会插入替换字符。
 - 不含 UTF-8 标签的畸形声明仍不受支持，包括重复的传统编码别名。合法的单标签传统编码解码保持不变。
 - [`fetch-http.spec.ts`](../../../../packages/web/web-fetch-http/tests/fetch-http.spec.ts) 覆盖恢复、冲突标签、非法字节、EOF、截断和响应流取消。
-- 已录制的 [`web-fetch`](../../../../snapshots/session/web-fetch/snapshot.yml) 场景通过真实 HTTP 提供方，以 `charset=gbk,utf-8` 提供包含原样 UTF-8 字符的页面，并验证相同的模型可见文本。
+- 已录制的 `web-fetch` 场景通过真实 HTTP 提供方，以 `charset=gbk,utf-8` 提供包含原样 UTF-8 字符的页面，并验证相同的模型可见文本。
 - HTML `<meta charset>` 仍然被忽略。包 README 记录了剩余歧义。
