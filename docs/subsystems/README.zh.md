@@ -39,7 +39,6 @@
 | [browser.md](browser.zh.md) | 无头浏览器自动化 seam：启动、隐身、导航、ARIA 树快照与 PNG 截图 |
 | [shell.md](shell.zh.md) | bash 执行器 seam：`ShellExecRequest`/`Spec`、`ShellRunResult`、后台 `ShellProcess` 句柄 |
 | [subprocess.md](subprocess.zh.md) | 子进程 seam：完全显式的 `SubprocessSpawnSpec`、基于偏移的输出读取器、不含分类的 `SubprocessOutcome`，以及受管 `DSH_*` 环境词汇 |
-| [ssh.md](ssh.zh.md) | POSIX SSH 连接与远程文件系统、子进程和沙箱提供方 |
 | [terminal.md](terminal.zh.md) | 持久化终端 ID、后端/会话约定、发送就绪状态、有界读取与 owner 可见快照 |
 | [sandbox.md](sandbox.zh.md) | 每会话策略解析与进程约束 seam：文件效果模式、执行/提供方策略、`ConfinedArgv`、强制执行与故障关闭错误 |
 | [ptc-runtime.md](ptc-runtime.zh.md) | PTC 执行 seam：`PtcRunRequest`/`Result`、绑定命名空间、捕获日志、`PtcRunFailure` 分类体系 |
@@ -56,7 +55,6 @@
 | [voice-input.md](voice-input.zh.md) | 实验性具名语音识别、临时音频和受版本保护的草稿插入 |
 | [translation.md](translation.zh.md) | 实验性免登录文本翻译与显式 Provider 请求 |
 | [agent-team.md](agent-team.zh.md) | Agent Teams：隐式 Lead 身份、具名 continuable teammate、直接 peer inbox 投递 与共享任务 DAG |
-| [liveshare.md](liveshare.zh.md) | 可选的 LiveShare bundle：嵌套分享模式、fork 的上限与持久性、上限安装，以及共享会话外部驱动轮次所受的约束 |
 | [claude-code-mods.md](claude-code-mods.zh.md) | 经实验性桥接运行的 Claude Code 模组：与 Claude Code 不同的每个事件、`$` 成员、链规则、绘制特性与示例模组 |
 | [web.md](web.zh.md) | Web 访问 seam：`WebSearchRequest`/`Result`、`WebFetchRequest`/`Result`、`WebFetchBody`、提供方可用性、`WebError` |
 | [spill.md](spill.zh.md) | spill 存储 seam：`SaveTextSpill`、`SpillOwner`/`SpillSource`、`SpillRef`、品牌类型 `SpillLocator` |
@@ -77,7 +75,6 @@
 | [memory-extraction.md](memory-extraction.zh.md) | 尽力而为的记忆抽取管线：会话事件消费、带模型体验接线的 LLM 抽取与建议性来源轨迹输出 |
 | [conversation.md](conversation.zh.md) | 目标无关的会话事件组装：上下文标识、位置数据、回放路径、视图构建器与目标自有的渲染节点 |
 | [session-projection.md](session-projection.zh.md) | 投影 seam：`SessionProjectionMap`、纯函数 `ProjectionDefinition` 单元、`ProjectionSnapshot` 的一致切面、变更馈送 |
-| [session-telemetry.md](session-telemetry.zh.md) | 对外会话上报能力 seam：`SessionTelemetryRecord`/`SessionTelemetrySeverity`、`SessionTelemetrySink` 约定和 `session-telemetry/record` 脱敏 waterfall（瀑布式事件） |
 | [otel.md](otel.zh.md) | 共享普通事件与 Session 日志 OTLP 通道 |
 | [product-telemetry.md](product-telemetry.zh.md) | 显式产品分析事件提交与 OTLP/HTTP 传输 |
 

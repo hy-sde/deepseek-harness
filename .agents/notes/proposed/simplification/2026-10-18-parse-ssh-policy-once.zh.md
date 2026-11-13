@@ -6,7 +6,7 @@ Status: proposed
 
 ## Problem
 
-[`sandbox` 和 `fs.write`/`fs.edit` 处理函数](../../../../packages/ssh/ssh/src/helper.ts) 是私有策略解析器仅有的调用方。它们使用 `policySchema` 校验请求；解析器重复该解析，包括复制策略对象和额外根目录数组。
+`sandbox` 和 `fs.write`/`fs.edit` 处理函数 是私有策略解析器仅有的调用方。它们使用 `policySchema` 校验请求；解析器重复该解析，包括复制策略对象和额外根目录数组。
 
 ## Proposal
 

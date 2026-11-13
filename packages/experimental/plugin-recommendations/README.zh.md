@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用此包
 
-打开插件 → 更多 → 实验性插件，启用[个性化推荐](../personalized-recommendations/README.zh.md)，其中的「插件推荐」行就是本包。内置 profile 默认不启用这个实验 bundle。启用后它会固定显示在插件主列表；关闭后只回到二级页。个性化推荐 bundle 同时启用共享的[操作卡片服务](../action-cards/README.zh.md)及其浏览器端；该服务的 `queuedMessageLimit` 决定排队等待后续轮次的消息达到多少条时本轮不再出卡。本插件没有自己的配置项。
+打开插件 → 更多 → 实验性插件，启用个性化推荐，其中的「插件推荐」行就是本包。内置 profile 默认不启用这个实验 bundle。启用后它会固定显示在插件主列表；关闭后只回到二级页。个性化推荐 bundle 同时启用共享的[操作卡片服务](../action-cards/README.zh.md)及其浏览器端；该服务的 `queuedMessageLimit` 决定排队等待后续轮次的消息达到多少条时本轮不再出卡。本插件没有自己的配置项。
 
 同一 bundle 的「个性化页面」行关闭后，本实验仍可使用，两个包互不依赖。两种卡片合计每轮最多一张：本轮第一个被接受的 `propose_action` 调用成为卡片。多个独立需求时，指引优先遵循用户明确的优先级，否则现成插件优先于新建页面；其余需求在回答正文中说明。
 

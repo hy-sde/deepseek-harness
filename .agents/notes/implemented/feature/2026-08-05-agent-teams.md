@@ -22,7 +22,7 @@ The Lead must wait for required work before its final answer. Process teardown r
 
 ## Profile delegation
 
-The [Team profile](../../../../packages/experimental/agent-team-profile/README.md) disables `subagent` and `subagent_fork` together with the overlapping global controls. Direct model delegation uses `spawn_teammate` with fresh or fork context, keeping those children in the durable roster. Workflow remains available through the base profile’s fresh `spawn` provider for scripted orchestration; it cannot inherit a teammate’s conversation identity through the model tool. The Subagent services and providers remain shared infrastructure. Ordinary Session forks retain their history; [current identity handling](../architecture/2026-10-13-team-identity-runtime-context.md) supplies the fork’s own role.
+The Team profile disables `subagent` and `subagent_fork` together with the overlapping global controls. Direct model delegation uses `spawn_teammate` with fresh or fork context, keeping those children in the durable roster. Workflow remains available through the base profile’s fresh `spawn` provider for scripted orchestration; it cannot inherit a teammate’s conversation identity through the model tool. The Subagent services and providers remain shared infrastructure. Ordinary Session forks retain their history; [current identity handling](../architecture/2026-10-13-team-identity-runtime-context.md) supplies the fork’s own role.
 
 ## Team identity
 

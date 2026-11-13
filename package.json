@@ -201,7 +201,6 @@
     "@deepseek-ai/dsh-experimental-forge-session": "workspace:*",
     "@deepseek-ai/dsh-experimental-subagent-oar": "workspace:*",
     "@deepseek-ai/dsh-experimental-tool-subagent-oar": "workspace:*",
-    "@deepseek-ai/dsh-experimental-tool-worktree": "workspace:*",
     "@deepseek-ai/dsh-experimental-worktree": "workspace:*",
     "@deepseek-ai/dsh-hooks-claude-code": "workspace:*",
     "@deepseek-ai/dsh-hooks-codex": "workspace:*",

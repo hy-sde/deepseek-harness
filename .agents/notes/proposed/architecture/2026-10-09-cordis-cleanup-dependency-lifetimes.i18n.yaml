@@ -24,8 +24,8 @@
   en: d7a84e4db67de7bf
   zh: 763b8a7ccae3b0e2
 /agent-note-keep-cleanup-dependencies-usable-until-consumers-finish/p0-findings/ssh-disables-cleanup-requests-before-dependent-process-cleanup-finishes:
-  en: 85fb2b564bc40230
-  zh: 97c3e794124f8044
+  en: f4afa7ab1fb18c15
+  zh: 9c604d989f1fee50
 /agent-note-keep-cleanup-dependencies-usable-until-consumers-finish/p0-findings/windows-sandbox-releases-temporary-process-resources-during-consumer-cleanup:
   en: faa50d48dca589c5
   zh: a9e651ccff96ae31

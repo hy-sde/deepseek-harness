@@ -124,7 +124,7 @@ Read these pages when the package-level contract is not enough. They move from t
 
 - [Subagent subsystem](../../../docs/subsystems/subagent.md) — the service contract, provider contract, and terminal result semantics.
 - [dsh-subagent seam](../subagent/README.md) — the registry and start API this provider registers on.
-- [ACP subagent backend](../subagent-acp/README.md) — the sibling out-of-process provider over the Agent Client Protocol.
+- ACP subagent backend — the sibling out-of-process provider over the Agent Client Protocol.
 - [TypeScript SDK client](../../sdk/client/README.md) — the stdio JSON-RPC client this backend drives the child through.
 - [Generated configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-subagent-dsh-sdk) — every accepted config field and its source declaration.
 

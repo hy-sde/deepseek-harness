@@ -24,7 +24,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-The optional [custom plugin indexes bundle](../../experimental/plugin-market-bundle/README.md) mounts the service as the `plugin-market` row; shipped profiles leave the bundle off. Like `plugin-manager`, the row is disabled without a profile, and it waits for `pluginManager`. No index source is configured by default, so the Host sends no index request until a user adds one.
+The optional custom plugin indexes bundle mounts the service as the `plugin-market` row; shipped profiles leave the bundle off. Like `plugin-manager`, the row is disabled without a profile, and it waits for `pluginManager`. No index source is configured by default, so the Host sends no index request until a user adds one.
 
 | Config | Default | Meaning |
 |---|---|---|

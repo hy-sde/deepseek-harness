@@ -25,7 +25,7 @@ For an explicit interface request, a clear implied viewing or editing need, or a
 <a id="use-this-package"></a>
 ## Use this package
 
-Open Plugins → More → Experimental plugins and enable [Personalized recommendations](../personalized-recommendations/README.md); its Personalized pages row is this package. Shipped profiles leave it disabled. Enabling pins it to the main Plugins list; disabling returns it to the secondary page only. The Personalized recommendations bundle also enables the shared [action card service](../action-cards/README.md) and its browser half; that service's `queuedMessageLimit` sets how many queued next-turn messages make the card tool refuse the current turn's card. An explicit user location takes precedence; otherwise the Agent recommends a location by scope and interaction:
+Open Plugins → More → Experimental plugins and enable Personalized recommendations; its Personalized pages row is this package. Shipped profiles leave it disabled. Enabling pins it to the main Plugins list; disabling returns it to the secondary page only. The Personalized recommendations bundle also enables the shared [action card service](../action-cards/README.md) and its browser half; that service's `queuedMessageLimit` sets how many queued next-turn messages make the card tool refuse the current turn's card. An explicit user location takes precedence; otherwise the Agent recommends a location by scope and interaction:
 
 | Location | Use |
 |:--|:--|

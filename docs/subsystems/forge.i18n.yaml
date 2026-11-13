@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/forge.md
 /forges:
-  en: 3ee521b77b4601e2
-  zh: 4170c33e49248f8f
+  en: 83591caa3bddd03f
+  zh: fff366d4fd7f1125
 /forges/providers-and-change-requests:
   en: 4ec7d1892b4067db
   zh: 6bb70d21ae3d7a89

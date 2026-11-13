@@ -28,7 +28,7 @@ identity 组为每个 harness home 提供一个匿名 id，该安装的 DeepSeek
 ## 相关文档
 
 - [dsh-llm-deepseek](../llm/llm-deepseek/README.zh.md)——在请求中携带该 id 的 DeepSeek 提供方。
- - [会话遥测子系统](../../docs/subsystems/session-telemetry.zh.md)——匿名 id 随之流转的遥测 seam。
+ - 会话遥测子系统——匿名 id 随之流转的遥测 seam。
 
 <a id="dev-note"></a>
 ## 开发备注

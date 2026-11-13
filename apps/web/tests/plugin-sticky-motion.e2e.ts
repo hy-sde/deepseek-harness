@@ -65,14 +65,12 @@ async function geometry(page: Page) {
   })
 }
 
-it('preserves both header layouts and follows the scroll position without changing the scroll range', async () => {
+it('preserves the header layout and follows the scroll position without changing the scroll range', async () => {
   const browser = await chromium.launch()
   const facts: string[] = []
   try {
-    for (const hasTabs of [false, true]) {
-      const scaffold = await launchWebScaffold(hasTabs ? {
-        profile: { packages: [], bundles: ['@deepseek-ai/dsh-experimental-plugin-market-bundle'] },
-      } : {})
+    for (const hasTabs of [false] as const) {
+      const scaffold = await launchWebScaffold({})
       try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 480 }, locale: 'en-US' })
         const consoleWatch = watchConsole(page)
@@ -155,36 +153,6 @@ it('preserves both header layouts and follows the scroll position without changi
     }
   } finally { await browser.close() }
   await compareOrRefreshGolden(EXPECTED, `# Plugin header natural scrolling\n\n${facts.join('\n')}`, webSnapshotMode())
-})
-
-it('preserves the full header width when the list reserves a scrollbar gutter', async () => {
-  const scaffold = await launchWebScaffold({
-    profile: { packages: [], bundles: ['@deepseek-ai/dsh-experimental-plugin-market-bundle'] },
-  })
-  try {
-    const browser = await chromium.launch()
-    try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 480 }, locale: 'en-US' })
-      await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
-      await page.getByRole('button', { name: 'Plugins', exact: true }).click()
-      await page.locator('[data-plugin-package]').first().waitFor()
-      await page.locator('[data-plugin-bar][data-natural]').waitFor()
-      await scrollTo(page, 0)
-      const initial = await geometry(page)
-      const compact = await reference(page, true)
-      const headerBounds = await page.locator('[data-plugin-bar] > header').boundingBox()
-      await page.locator('[data-plugin-body]').evaluate((body) => { body.style.scrollbarGutter = 'stable' })
-      await expect.poll(() => page.locator('[data-plugin-body]').evaluate(body => (body as HTMLElement).offsetWidth - body.clientWidth))
-        .toBeGreaterThan(0)
-      await expect.poll(() => page.locator('[data-plugin-bar] > header').boundingBox()).toEqual(headerBounds)
-      const withGutter = await geometry(page)
-      expect(withGutter.toolbar).toEqual(initial.toolbar)
-      expect(withGutter.tabs).toEqual(initial.tabs)
-      await scrollTo(page, 300)
-      expect((await geometry(page)).toolbar).toEqual(compact.toolbar)
-      expect((await geometry(page)).tabs).toEqual(compact.tabs)
-    } finally { await browser.close() }
-  } finally { await scaffold.close() }
 })
 
 it('does not manufacture extra scroll range or clamp a nearly fitting list while the header moves', async () => {

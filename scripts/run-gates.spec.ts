@@ -358,7 +358,7 @@ describe('gate graph validation', () => {
       'dsh-package-licenses', 'node-next-types',
       'optional-dependency-imports', 'client-packages', 'locale-metadata', 'client-ui-i18n', 'client-route-resolution', 'no-bare-dispatcher',
       'plugin-record-callers', 'no-unknown-casts', 'no-top-level-await',
-      'cordis-config', 'runtime-closure',
+      'cordis-config',
     ])
   })
 

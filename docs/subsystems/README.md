@@ -39,7 +39,6 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [browser.md](browser.md) | headless browser automation seam: launch, stealth, navigation, ARIA tree snapshots, and PNG screenshots |
 | [shell.md](shell.md) | the bash executor seam: `ShellExecRequest`/`Spec`, `ShellRunResult`, background `ShellProcess` handles |
 | [subprocess.md](subprocess.md) | the subprocess seam: fully-explicit `SubprocessSpawnSpec`, offset-based output readers, unclassified `SubprocessOutcome`, and the managed `DSH_*` environment vocabulary |
-| [ssh.md](ssh.md) | the POSIX SSH connection and remote filesystem, subprocess and sandbox providers |
 | [terminal.md](terminal.md) | persistent terminal ids, backend/session contracts, send readiness, bounded reads, and owner-visible snapshots |
 | [sandbox.md](sandbox.md) | per-session policy resolution and the process-confinement seam: file-effect modes, execution/provider policies, `ConfinedArgv`, enforcement and fail-closed errors |
 | [ptc-runtime.md](ptc-runtime.md) | the PTC execution seam: `PtcRunRequest`/`Result`, binding namespaces, captured logs, the `PtcRunFailure` taxonomy |
@@ -56,7 +55,6 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [voice-input.md](voice-input.md) | experimental named recognizers, transient audio and revision-guarded draft insertion |
 | [translation.md](translation.md) | experimental anonymous text translation and explicit provider requests |
 | [agent-team.md](agent-team.md) | Agent Teams: implicit Lead identity, named continuable teammates, direct peer inbox delivery, and shared task DAG |
-| [liveshare.md](liveshare.md) | the opt-in LiveShare bundle: nested share modes, a fork's ceiling and durability, enforcement installation, and the constraint a shared Session's externally driven turns run under |
 | [claude-code-mods.md](claude-code-mods.md) | Claude Code mods through the experimental bridge: every event, `$` member, chain rule, drawing feature, and example mod that differs from Claude Code |
 | [web.md](web.md) | the web access seam: `WebSearchRequest`/`Result`, `WebFetchRequest`/`Result`, `WebFetchBody`, provider availability, `WebError` |
 | [spill.md](spill.md) | the spill storage seam: `SaveTextSpill`, `SpillOwner`/`SpillSource`, `SpillRef`, the branded `SpillLocator` |
@@ -77,7 +75,6 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [memory-extraction.md](memory-extraction.md) | the best-effort memory-extraction pipeline: session-event consumption, LLM extraction with model-experience wiring, and advisory source-trace outputs |
 | [conversation.md](conversation.md) | target-neutral Session-event assembly: Context identity, Location data, replay paths, view builders, and target-owned render nodes |
 | [session-projection.md](session-projection.md) | the projection seam: `SessionProjectionMap`, the pure `ProjectionDefinition` unit, `ProjectionSnapshot`'s consistent cut, the change feed |
-| [session-telemetry.md](session-telemetry.md) | the outbound session-reporting capability seam: `SessionTelemetryRecord`/`SessionTelemetrySeverity`, the `SessionTelemetrySink` contract, and the `session-telemetry/record` redact waterfall |
 | [otel.md](otel.md) | Shared ordinary-event and Session-log OTLP channels |
 | [product-telemetry.md](product-telemetry.md) | Explicit product analytics submission and OTLP/HTTP transport |
 

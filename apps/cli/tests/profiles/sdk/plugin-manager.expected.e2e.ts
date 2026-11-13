@@ -117,7 +117,7 @@ it.for(['unavailable', 'approved', 'missing-pnpm'] as const)('reports the %s plu
       try { requests.push(JSON.parse(body) as Record<string, unknown>) }
       catch (error) { fixtureError = error }
       const args = scenario === 'missing-pnpm'
-        ? { action: 'install_bundle', target: '@deepseek-ai/dsh-subagent-codex' }
+        ? { action: 'install_bundle', target: '@deepseek-ai/dsh-cua-bundle' }
         : { action: 'list_plugins', limit: 1 }
       const call = { type: 'tool_use', id: 'prerequisite', name: 'plugin_manager', input: args }
       response.writeHead(200, { 'content-type': 'text/event-stream' })

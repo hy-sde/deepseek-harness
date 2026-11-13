@@ -29,7 +29,7 @@ Save the pair as `docs/preview.svg` and `docs/preview.zh.svg` in the bundle pack
 ![Example feature preview](preview.svg)
 ```
 
-The Chinese document references `preview.zh.svg` with Chinese alternative text. Use the [badge skill](../../packages/experimental/badge-skill-bundle/docs/DETAIL.md) and [voice input](../../packages/experimental/voice-input-bundle/docs/DETAIL.md) documents as examples. The voice transcript is explanatory sample content, not a recording result. Describe what the bundle does and how to use it, at the level of behavior, in `meta.description`, which the page shows above the image.
+The Chinese document references `preview.zh.svg` with Chinese alternative text. Use the badge skill and voice input documents as examples. The voice transcript is explanatory sample content, not a recording result. Describe what the bundle does and how to use it, at the level of behavior, in `meta.description`, which the page shows above the image.
 
 ## 4. Page behavior
 

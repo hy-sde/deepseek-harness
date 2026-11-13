@@ -29,7 +29,7 @@ SVG 必须自包含：不使用字体、远程资源、脚本、事件处理器�
 ![Example feature preview](preview.svg)
 ```
 
-中文文档引用 `preview.zh.svg`，并使用中文替代文字。可参考[徽章技能](../../packages/experimental/badge-skill-bundle/docs/DETAIL.md)和[语音输入](../../packages/experimental/voice-input-bundle/docs/DETAIL.md)文档。语音图中的转写文字是说明性示例，不是录音结果。组合包做什么、怎么用，按行为层面写在 `meta.description` 中，页面将其显示在配图上方。
+中文文档引用 `preview.zh.svg`，并使用中文替代文字。可参考徽章技能和语音输入文档。语音图中的转写文字是说明性示例，不是录音结果。组合包做什么、怎么用，按行为层面写在 `meta.description` 中，页面将其显示在配图上方。
 
 ## 4. 页面行为
 

@@ -11,7 +11,7 @@ import {
 const names = Object.values(EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS)
 
 describe('experimental package identities', () => {
-  it.each([...names, '@deepseek-ai/dsh-experimental-terminal-bundle'])('recognizes %s independently of installation layout', (name) => {
+  it.each([...names])('recognizes %s independently of installation layout', (name) => {
     expect(isExperimentalPackageName(name)).toBe(true)
     for (const reference of [name, `${name}/client`, `${name}@1.2.3`, `npm:${name}@1.2.3`, `workspace:${name}@*`,
       `\0virtual:${name}/client?raw`, `/node_modules/${name}/lib/index.js`, `C:\\node_modules\\${name}\\lib\\index.js`, `C:\\node_modules\\${name.replaceAll('/', '\\')}\\lib\\index.js`]) {

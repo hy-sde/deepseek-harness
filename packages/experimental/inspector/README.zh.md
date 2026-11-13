@@ -11,7 +11,7 @@ kind: "package-reference"
 
 在 Chrome DevTools 中检查一个运行中的 dsh Host 及其浏览器 Client：Host 与 Client Console context、Host Sources 与调试、Host fetch 采集和共享 Cordis 树，全部 CDP 状态都在 Worker 中。
 
-可选的[开发者工具组合包](../inspector-profile/README.zh.md) 同时启用 NodeJS 诊断和会话数据诊断，并开启 Host fetch 采集。Web startup 不需要也不接受 `--inspect`。
+可选的开发者工具组合包 同时启用 NodeJS 诊断和会话数据诊断，并开启 Host fetch 采集。Web startup 不需要也不接受 `--inspect`。
 
 ## 目录
 

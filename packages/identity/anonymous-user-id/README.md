@@ -93,7 +93,7 @@ Read these pages when the package-level contract is not enough. They move from t
 - [identity group map](../README.md) — the sibling packages and group scope.
 - [dsh-home-paths](../../util/home-paths/README.md) — owns `$DSH_HOME` and `~/.dsh` resolution.
 - [dsh-llm-deepseek](../../llm/llm-deepseek/README.md) — sends `x-deepseek-harness-user-id` on provider requests.
-- [Session telemetry subsystem](../../../docs/subsystems/session-telemetry.md) — the telemetry seam and its backend contract.
+- Session telemetry subsystem — the telemetry seam and its backend contract.
 
 -----
 

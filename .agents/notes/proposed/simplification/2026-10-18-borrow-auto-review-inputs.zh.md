@@ -6,7 +6,7 @@ Status: proposed
 
 ## Problem
 
-[`snapshotAutoReview()`](../../../../packages/experimental/auto-review/src/index.ts) 读取已冻结的 Session 历史、请求头和工具参数，但还会复制 `session.surface.nodes` 并冻结私有结果。它唯一的调用方 `classifyRisk()` 会立即序列化该结果，中间没有 await，也不会发布结果。
+`snapshotAutoReview()` 读取已冻结的 Session 历史、请求头和工具参数，但还会复制 `session.surface.nodes` 并冻结私有结果。它唯一的调用方 `classifyRisk()` 会立即序列化该结果，中间没有 await，也不会发布结果。
 
 ## Proposal
 

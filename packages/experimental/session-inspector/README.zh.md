@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-通过可选的[开发者工具组合包](../inspector-profile/README.zh.md)检查原始 Session 日志与 Chat 结构。从 Sidebar 的新建 tab 菜单或引导页打开**会话数据诊断**，再从左上角选择**原始数据**或**对话分组**。可以沿对象引用查看 Node、Turn 和 Step，也可以将选中 Node 定位到 Chat。流式分片显示为子行，Chat 更新时对应行短暂高亮。两种展示均支持更早历史和可调整高度的详情，不显示 composer。
+通过可选的开发者工具组合包检查原始 Session 日志与 Chat 结构。从 Sidebar 的新建 tab 菜单或引导页打开**会话数据诊断**，再从左上角选择**原始数据**或**对话分组**。可以沿对象引用查看 Node、Turn 和 Step，也可以将选中 Node 定位到 Chat。流式分片显示为子行，Chat 更新时对应行短暂高亮。两种展示均支持更早历史和可调整高度的详情，不显示 composer。
 
 ## 目录
 

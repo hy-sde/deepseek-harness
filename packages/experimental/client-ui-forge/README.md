@@ -25,7 +25,7 @@ This optional package shows a Session's created or pushed change requests and th
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable the [forge bundle](../forge-bundle/README.md) on the Plugins page; it composes this package with the forge registry, the GitHub provider, the Session bindings, and its own [worktree service](../worktree/README.md).
+Enable the forge bundle on the Plugins page; it composes this package with the forge registry, the GitHub provider, the Session bindings, and its own [worktree service](../worktree/README.md).
 
 Panel text follows the application language: Chinese, English, Japanese, Spanish, French, German, Russian, or Portuguese.
 

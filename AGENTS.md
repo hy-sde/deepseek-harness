@@ -23,7 +23,6 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   llm/                  model providers
   shell/                command execution
   subprocess/           child-process management
-  ssh/                  SSH execution providers
   terminal/             persistent terminals
   ptc-runtime/          PTC execution
   code-runtime/         code kernels; sandbox/ process confinement

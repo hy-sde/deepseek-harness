@@ -93,7 +93,7 @@ const userId = getOrCreateAnonymousUserId() // stable for the process lifetime
 - [identity 组映射](../README.zh.md)——兄弟包与组范围。
 - [dsh-home-paths](../../util/home-paths/README.zh.md)——负责 `$DSH_HOME` 与 `~/.dsh` 的解析。
 - [dsh-llm-deepseek](../../llm/llm-deepseek/README.zh.md)——在提供方请求中发送 `x-deepseek-harness-user-id`。
-- [会话遥测子系统](../../../docs/subsystems/session-telemetry.zh.md)——遥测 seam 及其后端约定。
+- 会话遥测子系统——遥测 seam 及其后端约定。
 
 -----
 

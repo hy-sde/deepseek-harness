@@ -28,7 +28,7 @@ Six packages play the web roles; the subsystem reference owns the exhaustive voc
 |---|---|---|
 | [`web/`](web/README.md) | Search/fetch service: search and fetch URLs through interchangeable backends, one selection and error policy | `ctx.web` |
 | [`web-search-exa/`](web-search-exa/README.md) | Searches the web through Exa | registers on `ctx.web` |
-| [`web-search-perplexity/`](web-search-perplexity/README.md) | Searches the web through Perplexity | registers on `ctx.web` |
+| `web-search-perplexity/` | Searches the web through Perplexity | registers on `ctx.web` |
 | [`web-search-deepseek/`](web-search-deepseek/README.md) | Searches through DeepSeek Messages | registers on `ctx.web` |
 | [`web-deepseek-api/`](web-deepseek-api/README.md) | Searches and fetches pages through the DeepSeek Search and Fetch APIs | registers on `ctx.web` |
 | [`web-fetch-http/`](web-fetch-http/README.md) | Fetches HTTP(S) pages anonymously | registers on `ctx.web` |

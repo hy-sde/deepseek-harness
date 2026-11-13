@@ -10,7 +10,7 @@ Headless、SDK 和 ACP 以 `source.kind: 'user'` 接纳任务。Auto 必须将�
 
 ## Decision
 
-[实验性 Auto 层](../../../../packages/experimental/auto-review/README.zh.md#headless-supervision)支持显式 headless 选择。默认 profile 保持不变。这扩展了[逐工具 Auto review](2026-08-28-auto-review.zh.md)仅限 Web 的范围；其风险分类、完全访问执行、PTC 排除项和生命周期仍具权威性。
+实验性 Auto 层支持显式 headless 选择。默认 profile 保持不变。这扩展了[逐工具 Auto review](2026-08-28-auto-review.zh.md)仅限 Web 的范围；其风险分类、完全访问执行、PTC 排除项和生命周期仍具权威性。
 
 Reviewer 将 user-source 文本归为 `user-instruction`，包括已有历史和选择 Auto 前接纳的任务。用户可以是人或监督调用者；两者都可定义任务，并明确授权 medium 风险动作、准确目标和范围。当前 child 的创建 prompt 和直接父级消息保留从属角色；继承的创建 prompt 与无法验证的创建 prompt 仍是事实。文件、约束、checkpoint、图片和工具结果不会获得指令权威。输入生产者负责来源归属；任务文本不能选择自己的 source。消息类型和持久字段保持不变。
 

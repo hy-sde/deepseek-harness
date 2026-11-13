@@ -8,7 +8,7 @@ English | [中文](2026-09-19-python-sdk-directional-client.zh.md)
 
 The Python client keeps an incoming-request queue, close-time wake-up, and `next_request`, `respond`, `respond_error`, and `notify` methods. The [SDK server](../../../../packages/sdk/server/src/server.ts) receives requests and emits notifications; it declares no server-originated request or client-notification handler. Searches across Python sources, examples, and runtime profiles found the reverse direction only in client implementation and synthetic client tests. The exported `IncomingRequest` model consequently has no supported runtime producer.
 
-This proposal narrows only the Python client. The [SDK server](../../../../packages/sdk/server/README.md) retains its durable enqueue receipt and streamed Session events; prompt responses do not represent turn completion. The shared TypeScript transport remains bidirectional because the [Codex wire adapter](../../../../packages/subagent/subagent-codex/src/wire.ts) uses requests and notifications in both directions.
+This proposal narrows only the Python client. The [SDK server](../../../../packages/sdk/server/README.md) retains its durable enqueue receipt and streamed Session events; prompt responses do not represent turn completion. The shared TypeScript transport remains bidirectional because the Codex wire adapter uses requests and notifications in both directions.
 
 ## Proposal
 

@@ -25,7 +25,7 @@ This package adds an Agent Teams action to the Web conversation header, where a 
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable this package through [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.md), which supplies the Team service, tools, and Web UI together. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
+Enable this package through `@deepseek-ai/dsh-experimental-agent-team-profile`, which supplies the Team service, tools, and Web UI together. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
 
 ### Inspect and navigate the roster
 
@@ -65,7 +65,7 @@ The panel renders outside the conversation container; `useAnchoredPosition` foll
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [Agent Teams bundle](../agent-team-profile/README.md) — the published opt-in bundle that mounts this Client plugin.
+- Agent Teams bundle — the published opt-in bundle that mounts this Client plugin.
 - [Agent Teams service](../agent-team/README.md) — authoritative roster, task, and projection behavior.
 - [Conversation UI](../../client/ui-conversation/README.md) — the stable header slot and addressed-subagent navigation surface.
 - [Experimental packages](../README.md) — incubation status and publication policy.

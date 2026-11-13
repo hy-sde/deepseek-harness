@@ -93,7 +93,7 @@ A supervisor that interrupts a process must await its exit before resuming its S
 
 ### Experimental Auto review
 
-For model-reviewed full-access execution, explicitly enable [Auto review for headless supervision](../../experimental/auto-review/README.md#headless-supervision), select `--permission-mode auto --approval-policy never`, and use native tools. Auto reviews supported calls before execution and has no file sandbox. Its JSON denials let a supervisor inspect the failure and send scoped revision instructions through `--session-id`. Headless has no live approval-response channel.
+For model-reviewed full-access execution, explicitly enable Auto review for headless supervision, select `--permission-mode auto --approval-policy never`, and use native tools. Auto reviews supported calls before execution and has no file sandbox. Its JSON denials let a supervisor inspect the failure and send scoped revision instructions through `--session-id`. Headless has no live approval-response channel.
 
 ### Machine-readable output
 

@@ -339,7 +339,6 @@ export function gatesForMode(selected: Mode): Gate[] {
       return nodeCompatGates()
     case 'check-all':
       return [
-        pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
         pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
         pnpmScript('client-domain-graph', 'verify-client-domain-graph', { label: 'client domain graph' }),
         pnpmScript('test', 'test'),
@@ -361,7 +360,6 @@ export function gatesForMode(selected: Mode): Gate[] {
       return [
         ...hygieneLeafGates(),
         pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
-        pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
       ]
     case 'doc-sync':
       return docSyncLeafGates()
@@ -374,7 +372,6 @@ export function gatesForMode(selected: Mode): Gate[] {
 
 function ciSharedStaticGates(): Gate[] {
   return [
-    pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
     pnpmScript('default-product-isolation', 'verify-default-product-isolation', { label: 'default product isolation' }),
     pnpmScript('product-use', 'verify-product-use', { label: 'product package classification' }),
     pnpmScript('official-bundle-catalog', 'verify-official-bundle-catalog', { label: 'Official bundle catalog' }),

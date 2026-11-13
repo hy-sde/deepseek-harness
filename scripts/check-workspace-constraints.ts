@@ -190,16 +190,6 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-experimental-subagent-oar': ['LICENSE-OAR'],
   // CUA publishes its client API and attributed native source for local macOS builds.
   '@deepseek-ai/dsh-cua': ['lib/remote-types.js', 'lib/api.js', 'lib/bridge.js', 'lib/native-client.js', 'lib/protocol.js'],
-  // Liveshare publishes its built Relay gateway entry and the shared runtime
-  // chunk that entry imports, plus the declaration-plane entry and its chunk.
-  // Its `./types` export is a type-only module, so the emitted tree contributes
-  // that one runtime file; the declarations still ship as the whole tree.
-  '@deepseek-ai/dsh-experimental-liveshare': [
-    'lib/owner-gateway/cli.js',
-    'lib/retry-backoff-*.js',
-    'lib/viewer-declarations.js',
-    'lib/viewer-declarations-*.js',
-  ],
   // Owned Worker bundles import this public bootstrap before their business entry.
   '@deepseek-ai/dsh-app-boot': ['lib/worker/profile-resolution-bootstrap.js'],
   // Statically linked client libraries keep their stylesheets next to the emitted
@@ -244,12 +234,6 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-skill-badge': ['assets'],
   '@deepseek-ai/dsh-skill-office': ['assets'],
   '@deepseek-ai/dsh-subprocess': ['lib/control.js'],
-  // SSH launches a private helper and shares wire definitions and TLS setup
-  // between that helper and the connection owner.
-  '@deepseek-ai/dsh-ssh': [
-    'lib/helper.js', 'lib/protocol.js', 'lib/schemas.js',
-    'lib/protocol-*.js', 'lib/schemas-*.js', 'lib/stream-security-*.js',
-  ],
   // Ordinary native containment ships a path-loaded runner and its shared
   // runner chunk beside the existing node-pty permission repair.
   '@deepseek-ai/dsh-subprocess-local': [
@@ -461,8 +445,6 @@ export function checkExperimentalNameExceptions(manifests: readonly WorkspaceMan
 }
 
 function isReleaseMemberDirectory(dir: string): boolean {
-  // The SSH carrier is distributed as executable archives, never as an npm application.
-  if (dir === 'packages/ssh/ssh-helper-runtime') return false
   return standardReleaseMemberDirectory.test(dir) || isPublicExperimentalPackageDirectory(dir)
 }
 

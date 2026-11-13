@@ -7,7 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { claudeRuntime } from '@botiverse/oar/runtimes/claude'
 import { expect, it } from 'vitest'
 import { externalTestParent } from '../../../subagent/subagent/tests/external-activation-helpers.ts'
-import { startMessagesFixture } from '../../../subagent/subagent-claude-code/tests/messages-fixture.ts'
+import { startMessagesFixture } from './messages-fixture.ts'
 import { startOarRun } from '../src/run.ts'
 
 const removedEnvironment = Object.fromEntries([

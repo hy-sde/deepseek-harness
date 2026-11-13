@@ -1728,18 +1728,8 @@
   "packages/spill/spill-policy/tests/spill-policy.spec.ts": {
     "454b667cdac6de305d79d51ef853272212a80166952a84385c7c915f595ae0a6": 1
   },
-  "packages/ssh/ssh/src/helper-processes.ts": {
-    "04bc8a44533574365dfedf563e2356458bcf95f990a00906938c977c1d683356": 1
-  },
-  "packages/ssh/subprocess-ssh/src/index.ts": {
-    "04bc8a44533574365dfedf563e2356458bcf95f990a00906938c977c1d683356": 1
-  },
   "packages/storage/storage-domain/src/index.ts": {
     "0fae329186de631f08edbf22f01cbfbf15d7c1ea8dce64e4cefa8ad0a8d43dea": 1
-  },
-  "packages/subagent/subagent-acp/tests/subagent-acp.spec.ts": {
-    "daa15206e19d6a8fbae646d678889b2e6933ece824e48dd06c95d2096861d5c1": 2,
-    "f77e5cbd2d2d911087f7faecc4b0b5bffdfb44ca5d0bcf7823ba9777feca7799": 2
   },
   "packages/subagent/subagent-claude-code/tests/real-product.spec.ts": {
     "03847806b1cfd410cc85f1e90d671aac43e667c5c41e5792c729fd4ff655fb6b": 1,
@@ -2008,11 +1998,6 @@
   "packages/web/web-search-exa/tests/exa.spec.ts": {
     "37c9617ff75d6a383f58dd63f939a88803e4ff5e1676bfe7e1c0cc340fc65014": 7,
     "598014dcfe77101781e3c6a02709097e3b0151a335e909c44719fac08fdea433": 2
-  },
-  "packages/web/web-search-perplexity/tests/perplexity.spec.ts": {
-    "37c9617ff75d6a383f58dd63f939a88803e4ff5e1676bfe7e1c0cc340fc65014": 5,
-    "598014dcfe77101781e3c6a02709097e3b0151a335e909c44719fac08fdea433": 2,
-    "ed2fec09418bc1a78fde5097fd01d5aabf903166ed1bf480a5e38bccdd3948a6": 1
   },
   "packages/workflow/tool-workflow/tests/tool-workflow.spec.ts": {
     "061944ebda38f8da144d88cfa668e6336efc68c33441a9fe3215d8c001124526": 2

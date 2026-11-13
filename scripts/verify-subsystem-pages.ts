@@ -24,6 +24,7 @@ export const GROUPS_WITHOUT_SUBSYSTEM_PAGE: Readonly<Record<string, string>> = {
   'codebase-memory': 'One-shot codebase-intelligence queries against the local codebase-memory daemon; the package README owns the contract.',
   examples: 'Reusable composition example bundles rather than a runtime subsystem; their mounted packages own all runtime contracts.',
   openwiki: 'Repository wiki lifecycle tools running the ported openwiki engine; the package README owns the contract and the wire protocol.',
+  identity: 'Anonymous-identifier seam whose reader-visible behavior is documented by the session packages that carry the id; no standalone subsystem page.',
 }
 
 /** Result of auditing package-group subsystem documentation. */

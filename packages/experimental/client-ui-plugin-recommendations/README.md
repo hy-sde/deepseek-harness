@@ -25,7 +25,7 @@ Users see one plugin recommendation below the completed answer, with the plugin'
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable the [Personalized recommendations bundle](../personalized-recommendations/README.md). This browser contribution has no configuration fields; it fills the shared [action card frame](../client-ui-action-cards/README.md) for `enable_official_plugin` cards.
+Enable the Personalized recommendations bundle. This browser contribution has no configuration fields; it fills the shared [action card frame](../client-ui-action-cards/README.md) for `enable_official_plugin` cards.
 
 -----
 

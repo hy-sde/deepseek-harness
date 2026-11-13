@@ -22,7 +22,7 @@ Lead 必须等待所需工作后才能给出最终答案。进程 teardown 仍�
 
 ## Profile delegation
 
-[Team profile](../../../../packages/experimental/agent-team-profile/README.zh.md) 禁用 `subagent`、`subagent_fork` 以及名称重叠的全局控件。模型直接委派使用支持 fresh 或 fork 上下文的 `spawn_teammate`，使这些子代理进入持久 roster。Workflow 仍通过 base profile 的 fresh `spawn` 提供方执行脚本编排；经模型工具创建的 workflow 子代理不会继承 teammate 的对话身份。Subagent 服务和提供方仍是共享基础设施。普通 Session fork 保留历史；[当前身份处理](../architecture/2026-10-13-team-identity-runtime-context.zh.md)提供 fork 自己的角色。
+Team profile 禁用 `subagent`、`subagent_fork` 以及名称重叠的全局控件。模型直接委派使用支持 fresh 或 fork 上下文的 `spawn_teammate`，使这些子代理进入持久 roster。Workflow 仍通过 base profile 的 fresh `spawn` 提供方执行脚本编排；经模型工具创建的 workflow 子代理不会继承 teammate 的对话身份。Subagent 服务和提供方仍是共享基础设施。普通 Session fork 保留历史；[当前身份处理](../architecture/2026-10-13-team-identity-runtime-context.zh.md)提供 fork 自己的角色。
 
 ## Team identity
 

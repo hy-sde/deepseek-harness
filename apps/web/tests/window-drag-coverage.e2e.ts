@@ -315,11 +315,9 @@ describe('web e2e: macOS window drag coverage', () => {
   })
 
   it.each([
-    ['darwin', false], ['darwin', true], ['win32', false], ['win32', true],
+    ['darwin', false], ['win32', false],
   ] as const)('%s scopes compact spacing with tabs=%s to the collapsed macOS header at every width', async (platform, hasTabs) => {
-    const host = hasTabs ? await launchWebScaffold({
-      profile: { packages: [], bundles: ['@deepseek-ai/dsh-experimental-plugin-market-bundle'] },
-    }) : scaffold
+    const host = scaffold
     try {
       const { page, tripwire } = await desktopPage(platform, host)
       try {

@@ -25,7 +25,7 @@ Users can discover a relevant built-in plugin while discussing a concrete need o
 <a id="use-this-package"></a>
 ## Use this package
 
-Open Plugins → More → Experimental plugins and enable [Personalized recommendations](../personalized-recommendations/README.md); its Plugin recommendations row is this package. Shipped profiles leave this experimental bundle disabled. Enabling pins it to the main Plugins list; disabling returns it to the secondary page only. The Personalized recommendations bundle also enables the shared [action card service](../action-cards/README.md) and its browser half; that service's `queuedMessageLimit` sets how many queued next-turn messages stop the current turn's card. This plugin has no configuration of its own.
+Open Plugins → More → Experimental plugins and enable Personalized recommendations; its Plugin recommendations row is this package. Shipped profiles leave this experimental bundle disabled. Enabling pins it to the main Plugins list; disabling returns it to the secondary page only. The Personalized recommendations bundle also enables the shared [action card service](../action-cards/README.md) and its browser half; that service's `queuedMessageLimit` sets how many queued next-turn messages stop the current turn's card. This plugin has no configuration of its own.
 
 The experiment keeps working when the bundle’s Personalized pages row is switched off, and neither package depends on the other. A Turn shows at most one card across both kinds: the first accepted `propose_action` call of the Turn becomes the card. For several independent needs, guidance follows an explicit user priority and otherwise prefers an existing plugin over a new page; other needs stay in the answer.
 

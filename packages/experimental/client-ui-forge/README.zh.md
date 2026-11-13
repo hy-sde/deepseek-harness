@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-在插件页启用 [forge 套件](../forge-bundle/README.zh.md)；它把本包与 forge 注册表、GitHub 提供方、Session 绑定以及它自己的 [worktree 服务](../worktree/README.zh.md)组合在一起。
+在插件页启用 forge 套件；它把本包与 forge 注册表、GitHub 提供方、Session 绑定以及它自己的 [worktree 服务](../worktree/README.zh.md)组合在一起。
 
 面板文案跟随应用语言，支持中文、英文、日语、西班牙语、法语、德语、俄语和葡萄牙语。
 

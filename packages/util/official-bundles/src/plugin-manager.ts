@@ -28,53 +28,23 @@ export const HIDDEN_BUNDLES: ReadonlySet<string> = new Set([
   '@deepseek-ai/dsh-sdk-app',
   '@deepseek-ai/dsh-acp-app',
   '@deepseek-ai/dsh-sdk-minimal',
-  '@deepseek-ai/dsh-experimental-terminal-bundle',
-  '@deepseek-ai/dsh-experimental-tool-worktree',
 ])
 
 /**
  * The optional bundles the plugin manager's main and More lists rank first, in this order. {@link MORE_BUNDLES}, not
  * this list, decides whether a bundle appears on the main list.
  */
-export const EXTENSION_BUNDLES: readonly string[] = [
-  '@deepseek-ai/dsh-experimental-agent-team-profile',
-  '@deepseek-ai/dsh-experimental-voice-input-bundle',
-  '@deepseek-ai/dsh-experimental-plugin-market-bundle',
-  '@deepseek-ai/dsh-experimental-auto-review',
-]
+export const EXTENSION_BUNDLES: readonly string[] = []
 
 /**
  * The optional bundles the plugin manager's main list leaves out until the profile enables them; its More list,
  * which includes every eligible bundle, ranks them last in this order.
  */
 export const MORE_BUNDLES: readonly string[] = [
-  '@deepseek-ai/dsh-personalized-recommendations',
-  '@deepseek-ai/dsh-experimental-inspector-profile',
   '@deepseek-ai/dsh-cua-bundle',
-  '@deepseek-ai/dsh-experimental-cot-translation-bundle',
-  '@deepseek-ai/dsh-experimental-session-search',
-  '@deepseek-ai/dsh-experimental-session-titles-bundle',
-  '@deepseek-ai/dsh-experimental-badge-skill-bundle',
-  '@deepseek-ai/dsh-experimental-ralph-bundle',
-  '@deepseek-ai/dsh-subagent-codex',
-  '@deepseek-ai/dsh-subagent-claude-code',
 ]
 
 /** Official bundles the plugin manager marks with the Experimental badge. */
 export const EXPERIMENTAL_BUNDLES: ReadonlySet<string> = new Set([
-  '@deepseek-ai/dsh-personalized-recommendations',
   '@deepseek-ai/dsh-cua-bundle',
-  '@deepseek-ai/dsh-experimental-agent-team-profile',
-  '@deepseek-ai/dsh-experimental-voice-input-bundle',
-  '@deepseek-ai/dsh-experimental-auto-review',
-  '@deepseek-ai/dsh-experimental-inspector-profile',
-  '@deepseek-ai/dsh-experimental-forge-bundle',
-  '@deepseek-ai/dsh-experimental-tool-worktree',
-  '@deepseek-ai/dsh-experimental-cot-translation-bundle',
-  '@deepseek-ai/dsh-experimental-session-search',
-  '@deepseek-ai/dsh-experimental-session-titles-bundle',
-  '@deepseek-ai/dsh-experimental-badge-skill-bundle',
-  '@deepseek-ai/dsh-experimental-ralph-bundle',
-  '@deepseek-ai/dsh-experimental-plugin-market-bundle',
-  '@deepseek-ai/dsh-experimental-liveshare',
 ])

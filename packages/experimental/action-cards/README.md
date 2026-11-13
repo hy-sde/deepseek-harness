@@ -25,7 +25,7 @@ An experiment can offer one optional action below an answer, such as creating a 
 <a id="use-this-package"></a>
 ## Use this package
 
-The [Personalized recommendations](../personalized-recommendations/README.md) bundle inserts this service and its [browser half](../client-ui-action-cards/README.md). The service has one configuration field:
+The Personalized recommendations bundle inserts this service and its [browser half](../client-ui-action-cards/README.md). The service has one configuration field:
 
 | Field | Default | Meaning |
 |---|---|---|

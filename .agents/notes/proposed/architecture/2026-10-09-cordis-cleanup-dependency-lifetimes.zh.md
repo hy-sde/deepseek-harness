@@ -44,7 +44,7 @@ Status: proposed
 
 ### SSH 在依赖者的进程清理完成前禁用清理请求
 
-**所有者与证据。** SSH 服务的[释放逻辑 (`SshConnection.disposeOnce`)](../../../../packages/ssh/ssh/src/index.ts)在等待 helper 关闭前设置 `closed` 并中止自身 lifetime。[请求检查 (`SshConnection.assertOpen`)](../../../../packages/ssh/ssh/src/index.ts)拒绝后续使用。注入该服务的 subprocess provider [在清理时终止并等待存活进程与终端 (`SshSubprocessRuntime`)](../../../../packages/ssh/subprocess-ssh/src/index.ts)，这些工作需要 SSH 请求。
+**所有者与证据。** SSH 服务的释放逻辑 (`SshConnection.disposeOnce`)在等待 helper 关闭前设置 `closed` 并中止自身 lifetime。请求检查 (`SshConnection.assertOpen`)拒绝后续使用。注入该服务的 subprocess provider 在清理时终止并等待存活进程与终端 (`SshSubprocessRuntime`)，这些工作需要 SSH 请求。
 
 **失败与修正。** 即使有 `inject = ['ssh']`，SSH provider 释放仍可以在 subprocess 清理需要终止和退出确认时关闭请求准入。依赖者因此报告无法确认 SSH 进程清理。应保留清理请求能力直到依赖者结束，再关闭 helper、socket 和 master。helper 自身的 close 也会尝试远程清理：证据证明清理能力丢失与可能的释放错误，并不证明必然留下远程孤儿进程。聚焦复现使用实际 Cordis、SSH 与 subprocess provider，模拟子进程和文件系统传输。启动进程，并在退出等待 RPC 准入后卸载 SSH，句柄以 `SSH connection is closed` 拒绝；helper 收到 `close`，却未收到 `process.terminate`。这验证了 provider 组合中的缺陷，没有验证实际远程进程是否完全停止。
 

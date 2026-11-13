@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-[个性化推荐](../personalized-recommendations/README.zh.md) Bundle 会插入本服务及其[浏览器端](../client-ui-action-cards/README.zh.md)。本服务只有一个配置字段：
+个性化推荐 Bundle 会插入本服务及其[浏览器端](../client-ui-action-cards/README.zh.md)。本服务只有一个配置字段：
 
 | 字段 | 默认值 | 含义 |
 |---|---|---|

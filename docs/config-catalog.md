@@ -3818,53 +3818,6 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-spill-policy -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-ssh -->
-<a id="deepseek-aidsh-ssh"></a>
-
-## `@deepseek-ai/dsh-ssh`
-
-- `source`: [`packages/ssh/ssh/src/index.ts:33`](../packages/ssh/ssh/src/index.ts)
-
-```ts config-catalog
-/** Deployment-owned SSH identity and installed helper; no model argument selects these values. */
-export interface Config {
-  /** OpenSSH host alias, including its existing user, key and known-host configuration. */
-  host: string
-  /** Explicit script or self-contained executable invocation. */
-  launch: HelperLaunch
-  /** Absolute path to the installed, bundled helper entry. */
-  helper: string
-  /** SHA-256 of that bundled helper; mismatches refuse the connection. */
-  helperHash: string
-  /** Absolute remote default workspace. */
-  workspace: string
-  /** Connection and administrative-request deadline, at most 2,147,483,647 milliseconds. */
-  requestTimeoutMs?: number
-  /** Maximum JSON payload bytes per helper request or response. */
-  maxFrameBytes?: number
-  /** Maximum ordinary requests; heartbeat and bounded resource cleanup have reserved capacity. */
-  maxPending?: number
-  /** Remote helper lease; loss of heartbeats starts remote managed cleanup. */
-  leaseMs?: number
-}
-
-/** Installed helper invocation; script deployments may also install a PTC bootstrap. */
-export type HelperLaunch = {
-  /** Run the installed script with a separately installed Node executable. */
-  kind: 'node-script'
-  /** Absolute remote Node executable. */
-  node: string
-  /** Absolute remote PTC bootstrap; requires bootstrapHash. */
-  bootstrapPath?: string
-  /** Lowercase SHA-256 of bootstrapPath; requires that path. */
-  bootstrapHash?: string
-} | {
-  /** Run the helper executable with its embedded Node and PTC worker. */
-  kind: 'executable'
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-ssh -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-storage-domain -->
 <a id="deepseek-aidsh-storage-domain"></a>
 
@@ -3971,126 +3924,6 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-subagent -->
-
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-subagent-acp -->
-<a id="deepseek-aidsh-subagent-acp"></a>
-
-## `@deepseek-ai/dsh-subagent-acp`
-
-- `inject`: `subagents` · `subprocess`
-- `source`: [`packages/subagent/subagent-acp/src/index.ts:26`](../packages/subagent/subagent-acp/src/index.ts)
-
-```ts config-catalog
-/** Config: how to spawn and drive the child ACP agent process. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `acp`). */
-  providerName: string
-  /** The executable to spawn for each run (the child ACP agent). */
-  command: string
-  /** Arguments passed to {@link command}. */
-  args: string[]
-  /**
-   * How to auto-answer the child's `session/request_permission` prompts:
-   * `reject` (default — decline every prompt) or `allow` (approve via the first
-   * `allow_once` or `allow_always` option). No prompt is surfaced to a human.
-   */
-  permission: PermissionPolicy
-  /**
-   * Extra environment variables for the child process — e.g. the child
-   * harness's own `DEEPSEEK_API_KEY`. Forwarded on top of a credential-scrubbed
-   * copy of the parent env, so an explicit key here reaches the child while
-   * ambient secrets do not leak implicitly.
-   */
-  env: Record<string, string>
-  /**
-   * Grace period (ms) for the child's EOF-driven quiesce on dispose — its
-   * window to flush persistence and tear down its own nested subprocesses
-   * before the parent escalates to a signal. Must not exceed
-   * `MAX_TIMER_DELAY_MS`.
-   */
-  disposeEofGraceMs?: number
-  /**
-   * POSIX SIGTERM window and forced-termination observation grace (ms) on
-   * dispose; must not exceed `MAX_TIMER_DELAY_MS` nor exceed
-   * `disposeEofGraceMs` (enforced at load).
-   */
-  disposeGraceMs?: number
-}
-
-/** Fixed response to child permission requests: reject by default, or select the first allow option. */
-export type PermissionPolicy = 'allow' | 'reject'
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-subagent-acp -->
-
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-subagent-claude-code -->
-<a id="deepseek-aidsh-subagent-claude-code"></a>
-
-## `@deepseek-ai/dsh-subagent-claude-code`
-
-- `inject`: `subagents` · `subprocess`
-- `source`: [`packages/subagent/subagent-claude-code/src/index.ts:38`](../packages/subagent/subagent-claude-code/src/index.ts)
-
-```ts config-catalog
-/** Deployment-owned model, permission, environment, and process-release settings. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `claude-code`). */
-  providerName?: string
-  /** Native Claude model fixed for this instance; omitted to inherit Claude settings. */
-  model?: string
-  /**
-   * Explicit environment entries layered over the subprocess seam's
-   * credential-scrubbed parent environment.
-   */
-  env?: Record<string, string>
-  /**
-   * Native non-interactive mode fixed for this Provider instance. Defaults to
-   * `dontAsk`; `acceptEdits` accepts edits, `auto` uses the native classifier,
-   * `plan` returns a plan without approving execution, and
-   * `bypassPermissions` explicitly skips permission checks.
-   */
-  permissionMode?: ClaudeCodePermissionMode
-  /** Grace in milliseconds between Claude Code managed-range termination tiers. */
-  disposeGraceMs?: number
-}
-
-/** Profile-selectable non-interactive Claude Code permission mode. */
-export type ClaudeCodePermissionMode = typeof CLAUDE_CODE_PERMISSION_MODES[number]
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-subagent-claude-code -->
-
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-subagent-codex -->
-<a id="deepseek-aidsh-subagent-codex"></a>
-
-## `@deepseek-ai/dsh-subagent-codex`
-
-- `inject`: `subagents` · `subprocess`
-- `source`: [`packages/subagent/subagent-codex/src/index.ts:36`](../packages/subagent/subagent-codex/src/index.ts)
-
-```ts config-catalog
-/** Deployment-owned model, permission, environment, and process-release settings. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `codex`). */
-  providerName?: string
-  /** Native Codex model fixed for this instance; omitted to inherit Codex settings. */
-  model?: string
-  /**
-   * Explicit environment entries layered over the subprocess seam's
-   * credential-scrubbed parent environment.
-   */
-  env?: Record<string, string>
-  /** Native non-interactive permission mode fixed for this Provider instance. */
-  permissionMode?: CodexPermissionMode
-  /** Grace in milliseconds between app-server managed-range termination tiers. */
-  disposeGraceMs?: number
-}
-
-/** Profile-selectable non-interactive Codex permission mode. */
-export type CodexPermissionMode =
-  | 'never'
-  | 'approve-for-me'
-  | 'dangerously-bypass-approvals-and-sandbox'
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-subagent-codex -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-subagent-dsh-sdk -->
 <a id="deepseek-aidsh-subagent-dsh-sdk"></a>
@@ -5518,31 +5351,6 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-web-search-exa -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-web-search-perplexity -->
-<a id="deepseek-aidsh-web-search-perplexity"></a>
-
-## `@deepseek-ai/dsh-web-search-perplexity`
-
-- `inject`: `web`
-- `source`: [`packages/web/web-search-perplexity/src/index.ts:30`](../packages/web/web-search-perplexity/src/index.ts)
-
-```ts config-catalog
-/** Plugin config (all optional — `apply` fills env-var and constant defaults). */
-export interface Config {
-  /** Perplexity API key. Falls back to `$PERPLEXITY_API_KEY`. Empty → unavailable. */
-  apiKey?: string
-  /** Endpoint base; `/chat/completions` is appended. Defaults to the public API. */
-  baseURL?: string
-  /** Search model name. Defaults to `sonar`. */
-  model?: string
-  /** Upper bound on generated answer tokens. Defaults to 1024. */
-  maxTokens?: number
-  /** Recency window sent as `search_recency_filter`. Omitted = no filter. */
-  searchRecency?: 'day' | 'week' | 'month' | 'year'
-}
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-web-search-perplexity -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-web-search-public -->
 <a id="deepseek-aidsh-web-search-public"></a>
 
@@ -5754,16 +5562,12 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-dap` | `subprocess` | [`packages/debug/dap/src/index.ts`](../packages/debug/dap/src/index.ts) |
 | `@deepseek-ai/dsh-deepseek-llm-api-extensions` | — | [`packages/llm/deepseek-llm-api-extensions/src/index.ts`](../packages/llm/deepseek-llm-api-extensions/src/index.ts) |
 | `@deepseek-ai/dsh-deliverable-file-references` | `systemPrompt` | [`packages/deliverables/deliverable-file-references/src/index.ts`](../packages/deliverables/deliverable-file-references/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-auto-review` | `approval` · `llm` · `permissionPresets` · `sessions` · `tools` · `workingDirectory` | [`packages/experimental/auto-review/src/index.ts`](../packages/experimental/auto-review/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-agent-team` | — | [`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-client-ui-claude-code-mods` | — | [`packages/experimental/client-ui-claude-code-mods/src/index.ts`](../packages/experimental/client-ui-claude-code-mods/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-stats` | — | [`packages/experimental/client-ui-stats/src/index.ts`](../packages/experimental/client-ui-stats/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-inspector` | — | [`packages/experimental/session-inspector/src/index.ts`](../packages/experimental/session-inspector/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-tool-worktree` | `tools` · `worktrees` | [`packages/experimental/tool-worktree/src/index.ts`](../packages/experimental/tool-worktree/src/index.ts) |
 | `@deepseek-ai/dsh-fs-observation-policy` | — | [`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts) |
-| `@deepseek-ai/dsh-fs-ssh` | `ssh` · `sandboxPolicy` | [`packages/ssh/fs-ssh/src/index.ts`](../packages/ssh/fs-ssh/src/index.ts) |
 | `@deepseek-ai/dsh-goal-round-driver` | `agents` · `goals` · `sessions` | [`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts) |
 | `@deepseek-ai/dsh-graph-projection` | `sessionProjections` | [`packages/graph/graph-projection/src/index.ts`](../packages/graph/graph-projection/src/index.ts) |
 | `@deepseek-ai/dsh-harness-dev-context` | `systemPrompt` · `sessionProjections` · `webApp` | [`packages/context/harness-dev-context/src/index.ts`](../packages/context/harness-dev-context/src/index.ts) |
@@ -5777,7 +5581,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-message-quotes` | — | [`packages/session/message-quotes/src/index.ts`](../packages/session/message-quotes/src/index.ts) |
 | `@deepseek-ai/dsh-otel` | — | [`packages/telemetry/otel/src/index.ts`](../packages/telemetry/otel/src/index.ts) |
 | `@deepseek-ai/dsh-plugin-recommendations` | `pluginManager` · `agents` · `skills` · `actionCards` | [`packages/experimental/plugin-recommendations/src/index.ts`](../packages/experimental/plugin-recommendations/src/index.ts) |
-| `@deepseek-ai/dsh-sandbox-ssh` | `ssh` | [`packages/ssh/sandbox-ssh/src/index.ts`](../packages/ssh/sandbox-ssh/src/index.ts) |
 | `@deepseek-ai/dsh-session` | — | [`packages/core/session/src/index.ts`](../packages/core/session/src/index.ts) |
 | `@deepseek-ai/dsh-session-checkpoint-policy` | `llm` · `sessionPersistence` · `sessions` · `tools` | [`packages/session/session-checkpoint-policy/src/index.ts`](../packages/session/session-checkpoint-policy/src/index.ts) |
 | `@deepseek-ai/dsh-session-projection` | — | [`packages/session/session-projection/src/index.ts`](../packages/session/session-projection/src/index.ts) |
@@ -5788,7 +5591,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-skill-badge` | `skills` | [`packages/experimental/skill-badge/src/index.ts`](../packages/experimental/skill-badge/src/index.ts) |
 | `@deepseek-ai/dsh-storage` | — | [`packages/storage/storage/src/index.ts`](../packages/storage/storage/src/index.ts) |
 | `@deepseek-ai/dsh-subprocess-local` | — | [`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts) |
-| `@deepseek-ai/dsh-subprocess-ssh` | `ssh` | [`packages/ssh/subprocess-ssh/src/index.ts`](../packages/ssh/subprocess-ssh/src/index.ts) |
 | `@deepseek-ai/dsh-terminal` | — | [`packages/terminal/terminal/src/index.ts`](../packages/terminal/terminal/src/index.ts) |
 | `@deepseek-ai/dsh-tool-call-timeout-policy` | `tools` | [`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts) |
 | `@deepseek-ai/dsh-tool-cordis` | `tools` · `cordisInspect` | [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts) |
@@ -5849,20 +5651,8 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-cmdline` | — | [`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts) |
 | `@deepseek-ai/dsh-cua-bundle` | — | [`packages/experimental/cua-bundle/src/index.ts`](../packages/experimental/cua-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-deque` | — | [`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | — | [`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-badge-skill-bundle` | — | [`packages/experimental/badge-skill-bundle/src/index.ts`](../packages/experimental/badge-skill-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-browser-use-runtime` | — | [`packages/experimental/browser-use-runtime/src/index.ts`](../packages/experimental/browser-use-runtime/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-cot-translation-bundle` | — | [`packages/experimental/cot-translation-bundle/src/index.ts`](../packages/experimental/cot-translation-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | — | [`packages/experimental/forge-bundle/src/index.ts`](../packages/experimental/forge-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-liveshare` | — | [`packages/experimental/liveshare/src/index.ts`](../packages/experimental/liveshare/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare-protocol` | — | [`packages/experimental/liveshare-protocol/src/index.ts`](../packages/experimental/liveshare-protocol/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-plugin-market-bundle` | — | [`packages/experimental/plugin-market-bundle/src/index.ts`](../packages/experimental/plugin-market-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-ralph-bundle` | — | [`packages/experimental/ralph-bundle/src/index.ts`](../packages/experimental/ralph-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-session-search` | — | [`packages/experimental/session-search/src/index.ts`](../packages/experimental/session-search/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-session-titles-bundle` | — | [`packages/experimental/session-titles-bundle/src/index.ts`](../packages/experimental/session-titles-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-terminal-bundle` | — | [`packages/experimental/terminal-bundle/src/index.ts`](../packages/experimental/terminal-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-voice-input-bundle` | — | [`packages/experimental/voice-input-bundle/src/index.ts`](../packages/experimental/voice-input-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-webworker-packer` | — | [`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-webworker-runtime` | — | [`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts) |
 | `@deepseek-ai/dsh-fs-archive` | — | [`packages/fs/fs-archive/src/index.ts`](../packages/fs/fs-archive/src/index.ts) |
@@ -5886,7 +5676,6 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-openwiki-core` | — | [`packages/openwiki/openwiki-core/src/index.ts`](../packages/openwiki/openwiki-core/src/index.ts) |
 | `@deepseek-ai/dsh-output-retention` | — | [`packages/util/output-retention/src/index.ts`](../packages/util/output-retention/src/index.ts) |
 | `@deepseek-ai/dsh-package-manifest` | — | [`packages/util/package-manifest/src/index.ts`](../packages/util/package-manifest/src/index.ts) |
-| `@deepseek-ai/dsh-personalized-recommendations` | — | [`packages/experimental/personalized-recommendations/src/index.ts`](../packages/experimental/personalized-recommendations/src/index.ts) |
 | `@deepseek-ai/dsh-plugin-detail` | — | [`packages/util/plugin-detail/src/index.ts`](../packages/util/plugin-detail/src/index.ts) |
 | `@deepseek-ai/dsh-plugin-market-index` | — | [`packages/util/plugin-market-index/src/index.ts`](../packages/util/plugin-market-index/src/index.ts) |
 | `@deepseek-ai/dsh-remote-mock` | — | [`packages/test-support/remote-mock/src/index.ts`](../packages/test-support/remote-mock/src/index.ts) |
@@ -5902,9 +5691,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-session-format-v2-to-v3` | — | [`packages/session/session-format-v2-to-v3/src/index.ts`](../packages/session/session-format-v2-to-v3/src/index.ts) |
 | `@deepseek-ai/dsh-session-format-v3-to-v4` | — | [`packages/session/session-format-v3-to-v4/src/index.ts`](../packages/session/session-format-v3-to-v4/src/index.ts) |
 | `@deepseek-ai/dsh-session-snapshot` | — | [`packages/test-support/session-snapshot/src/index.ts`](../packages/test-support/session-snapshot/src/index.ts) |
-| `@deepseek-ai/dsh-session-telemetry` | — | [`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts) |
 | `@deepseek-ai/dsh-session-title-llm` | — | [`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts) |
-| `@deepseek-ai/dsh-ssh-helper-runtime` | — | [`packages/ssh/ssh-helper-runtime/src/index.ts`](../packages/ssh/ssh-helper-runtime/src/index.ts) |
 | `@deepseek-ai/dsh-timeout` | — | [`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts) |
 | `@deepseek-ai/dsh-tool-testkit` | — | [`packages/test-support/tool-testkit/src/index.ts`](../packages/test-support/tool-testkit/src/index.ts) |
 | `@deepseek-ai/dsh-typert-generator` | — | [`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts) |

@@ -93,7 +93,7 @@ dsh headless --permission-mode workspace-write --add-dir "$git_dir" --json - < t
 
 ### Experimental Auto review
 
-如需由模型审查后以完全访问权限执行，请显式启用[无界面监督流程的 Auto review](../../experimental/auto-review/README.zh.md#headless-supervision)，选择 `--permission-mode auto --approval-policy never` 并使用原生工具。Auto 在支持的调用执行前进行审查，不提供文件沙箱。其 JSON 拒绝结果让监督者检查失败并通过 `--session-id` 发送限定范围的修订指令。Headless 没有实时审批响应通道。
+如需由模型审查后以完全访问权限执行，请显式启用无界面监督流程的 Auto review，选择 `--permission-mode auto --approval-policy never` 并使用原生工具。Auto 在支持的调用执行前进行审查，不提供文件沙箱。其 JSON 拒绝结果让监督者检查失败并通过 `--session-id` 发送限定范围的修订指令。Headless 没有实时审批响应通道。
 
 ### 机器可读输出
 

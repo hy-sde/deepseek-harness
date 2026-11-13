@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-启用[个性化推荐 Bundle](../personalized-recommendations/README.zh.md)。这个浏览器端贡献没有配置项；它为 `enable_official_plugin` 卡片填充共享的[操作卡片框架](../client-ui-action-cards/README.zh.md)。
+启用个性化推荐 Bundle。这个浏览器端贡献没有配置项；它为 `enable_official_plugin` 卡片填充共享的[操作卡片框架](../client-ui-action-cards/README.zh.md)。
 
 -----
 
