@@ -133,6 +133,7 @@ describe('catalog and local closure', () => {
     // A vendor package keeps its own version line, so a run must not assume one shared version.
     expect(packages.get('@deepseek-ai/cordis')?.manifest.version)
       .not.toBe(packages.get('@deepseek-ai/dsh-brand')?.manifest.version)
+    // Nothing in this closure is built for another platform, on any host.
     expect(selection.foreignTargets).toEqual([])
   })
 
@@ -444,13 +445,12 @@ async function pnpmIn(options: {
   readonly consumer: string
   readonly environment: NodeJS.ProcessEnv
   readonly store?: string
-  readonly state?: string
   readonly args: readonly string[]
 }): Promise<{ exitCode?: number | null; stdout: string; stderr: string; timedOut: boolean }> {
   const invocation = pnpmInvocationFor([
     ...options.args,
+    // pnpm 12 (the fork's carrier) dropped the --state-dir flag; state now lives under the store.
     ...options.store === undefined ? [] : ['--store-dir', options.store],
-    ...options.state === undefined ? [] : ['--state-dir', options.state],
     '--config.fetch-retries=0',
   ])
   const child = execa(invocation.command, invocation.args, {
@@ -482,10 +482,9 @@ describe('package cache freshness', () => {
   it('installs a rebuilt archive at the same version through a retained pnpm store', { timeout: 300_000 }, async () => {
     const temporary = temporaryDirectory('dsh-local-registry-cache-')
     const store = join(temporary, 'store')
-    const state = join(temporary, 'state')
     const userConfig = join(temporary, 'empty.npmrc')
     writeFileSync(userConfig, '')
-    // A retained store, metadata state, and npm configuration, so the second installation cannot pass by starting empty.
+    // A retained store and npm configuration, so the second installation cannot pass by starting empty.
     const environment = { ...process.env, npm_config_userconfig: userConfig }
 
     const install = async (run: string, source: string): Promise<{ payload: string; settings: string }> => {
@@ -498,7 +497,7 @@ describe('package cache freshness', () => {
       onTestFinished(() => registry.close())
       const consumer = consumerDirectory(temporary, `consumer-${run}`)
       const result = await pnpmIn({
-        consumer, environment, store, state,
+        consumer, environment, store,
         args: ['add', '@dsh-local/fixture@1.0.0', `--registry=${registry.url}`],
       })
       expect(result.timedOut, `${result.stdout}\n${result.stderr}`).toBe(false)

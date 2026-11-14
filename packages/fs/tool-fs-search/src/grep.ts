@@ -15,7 +15,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { ToolArgsError, defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, SearchResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type { SpillRef } from '@deepseek-ai/dsh-spill'
 import type { } from '@deepseek-ai/dsh-internal-urls'
@@ -117,14 +117,14 @@ export function parseCursorToken(cursor: string): number {
  * group is fine — `*.{ts,tsx}` is one glob with alternation, not a list.
  */
 function validateInclude(include: string): void {
-  if (include.trim().length === 0) throw new Error('include must be a non-empty glob when given')
-  if (include.startsWith('!')) throw new Error('include must be a positive glob filter; negated patterns ("!…") are not supported')
+  if (include.trim().length === 0) throw new ToolArgsError(['include must be a non-empty glob when given'])
+  if (include.startsWith('!')) throw new ToolArgsError(['include must be a positive glob filter; negated patterns ("!…") are not supported'])
   let braceDepth = 0
   for (const char of include) {
     if (char === '{') braceDepth++
     else if (char === '}') braceDepth = Math.max(0, braceDepth - 1)
     else if (char === ',' && braceDepth === 0) {
-      throw new Error('include must be one glob, not a comma-separated list (use {a,b} alternation instead)')
+      throw new ToolArgsError(['include must be one glob, not a comma-separated list (use {a,b} alternation instead)'])
     }
   }
 }
@@ -134,14 +134,14 @@ function validateInclude(include: string): void {
  * `pattern` (whitespace is a legitimate regex), a non-blank `path` when given,
  * and a single positive `include` glob ({@link GrepInput}). An exact empty
  * `include` is treated as omitted; whitespace-only values remain invalid.
- * Throws a plain `Error` (an ordinary tool argument error) otherwise.
+ * Throws `ToolArgsError` (`INVALID_ARGS`) otherwise.
  *
  * @param args - the schema-validated `grep` arguments.
  * @returns the accepted input with an empty `include` omitted.
  */
 export function parseGrepArgs(args: { pattern: string; path?: string; include?: string; cursor?: string }): GrepInput {
-  if (args.pattern.length === 0) throw new Error('pattern must be a non-empty string')
-  if (args.path !== undefined && args.path.trim().length === 0) throw new Error('path must be a non-empty string when given')
+  if (args.pattern.length === 0) throw new ToolArgsError(['pattern must be a non-empty string'])
+  if (args.path !== undefined && args.path.trim().length === 0) throw new ToolArgsError(['path must be a non-empty string when given'])
   const include = args.include === '' ? undefined : args.include
   if (include !== undefined) validateInclude(include)
   if (args.cursor !== undefined) parseCursorToken(args.cursor)
@@ -465,6 +465,8 @@ export function applyGrepTool(ctx: Context, caps: GrepToolCaps): void {
       cursor: { type: 'string', description: 'Opaque continuation token returned by a capped previous result. Pass it back unchanged with the same pattern, path, and include to fetch the next page.' },
     },
     timeoutMs: caps.timeoutMs,
+    // Matches record no file observation; over-cap spilling runs in model-ordered post-execute.
+    isConcurrencySafe: () => true,
     output: {
       schema: {
         type: 'object',

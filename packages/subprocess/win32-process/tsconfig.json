@@ -13,6 +13,9 @@
     },
     {
       "path": "../../util/lazy-require"
+    },
+    {
+      "path": "../../util/error"
     }
   ]
 }

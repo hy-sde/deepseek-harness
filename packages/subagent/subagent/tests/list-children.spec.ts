@@ -1,3 +1,4 @@
+import { listChildren } from '../src/list-children.ts'
 import { subagentCatalogProjectionDefinition } from '../src/catalog.ts'
 import { mountWorkingDirectoryFixture } from './working-directory-fixture.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -100,7 +101,7 @@ async function startChild(
   const started = await ctx.subagents.startActivation({ delivery: 'parent',
     provider: 'spawn',
     label,
-    request: { prompt: [{ type: 'text', text: `task: ${label}` }], parent },
+    prompt: [{ type: 'text', text: `task: ${label}` }], parent,
     signal: testSignal,
   })
   await vi.waitFor(() => {
@@ -109,7 +110,7 @@ async function startChild(
   return started.childId
 }
 
-describe('SubagentRuntime.listChildren', () => {
+describe('direct-child catalog reader', () => {
   it('lists historical children through a migrated parent while preserving V3 files', async () => {
     const { ctx, root } = await setup([], { compression: 'none' })
     const parent = SessionId('historical-parent')
@@ -130,8 +131,8 @@ describe('SubagentRuntime.listChildren', () => {
       return { path, content }
     })
 
-    expect(await ctx.subagents.listChildren(parent)).toEqual([{
-      id: child, createdAt: 2, mode: 'continuable', label: 'historical child', phase: 'closed', closingScope: false, draining: false,
+    expect(await listChildren(ctx, parent)).toEqual([{
+      id: child, createdAt: 2, mode: 'continuable', label: 'historical child',
     }])
     for (const { path, content } of originals) {
       expect(readFileSync(path, 'utf8')).toBe(content)
@@ -147,7 +148,7 @@ describe('SubagentRuntime.listChildren', () => {
       parent,
       signal: testSignal,
     })
-    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+    expect(await listChildren(ctx, parent.id)).toMatchObject([
       { id: callerOwned.childId, label: 'spawn', mode: 'continuable' },
     ])
     await callerOwned.result
@@ -156,10 +157,10 @@ describe('SubagentRuntime.listChildren', () => {
     const listSessions = vi.spyOn(ctx.sessionQuery, 'listSessions')
     const observeSession = vi.spyOn(ctx.sessionQuery, 'observeSession')
 
-    const children = await ctx.subagents.listChildren(parent.id)
+    const children = await listChildren(ctx, parent.id)
     expect(children.map(({ createdAt: _createdAt, ...child }) => child)).toEqual([
-      { id: callerOwned.childId, label: 'spawn', mode: 'continuable', phase: 'closed', closingScope: false, draining: false },
-      { id: continuableId, label: 'continuable child', mode: 'continuable', phase: 'closed', closingScope: false, draining: false },
+      { id: callerOwned.childId, label: 'spawn', mode: 'continuable', name: 'agent-1' },
+      { id: continuableId, label: 'continuable child', mode: 'continuable', name: 'agent-2' },
     ])
     expect(children.every(child => Number.isFinite(child.createdAt))).toBe(true)
     expect(listSessions).not.toHaveBeenCalled()
@@ -182,8 +183,8 @@ describe('SubagentRuntime.listChildren', () => {
       ...observed,
       [Symbol.dispose]: dispose,
     })
-    expect(await ctx.subagents.listChildren(parent.id)).toEqual([{
-      id: childId, createdAt: 3, label: 'state child', mode: 'one-shot', phase: 'closed', closingScope: false, draining: false,
+    expect(await listChildren(ctx, parent.id)).toEqual([{
+      id: childId, createdAt: 3, label: 'state child', mode: 'one-shot',
     }])
     expect(dispose).toHaveBeenCalledOnce()
   })
@@ -193,7 +194,7 @@ describe('SubagentRuntime.listChildren', () => {
     using observed = await ctx.sessionQuery.observeSession(parent.id, { projectionMode: 'none' })
     const dispose = vi.fn()
     vi.spyOn(ctx.sessionQuery, 'observeSession').mockResolvedValue({ ...observed, [Symbol.dispose]: dispose })
-    await expect(ctx.subagents.listChildren(parent.id)).rejects.toMatchObject({
+    await expect(listChildren(ctx, parent.id)).rejects.toMatchObject({
       code: 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE',
     })
     expect(dispose).toHaveBeenCalledOnce()
@@ -203,12 +204,12 @@ describe('SubagentRuntime.listChildren', () => {
     const { ctx, parent } = await setup([])
     const controller = new AbortController()
     controller.abort(new Error('cancel catalog'))
-    await expect(ctx.subagents.listChildren(parent.id, controller.signal)).rejects.toMatchObject({
+    await expect(listChildren(ctx, parent.id, controller.signal)).rejects.toMatchObject({
       code: 'SESSION_QUERY_ABORTED',
     })
     const failure = new Error('parent read failed')
     vi.spyOn(ctx.sessionQuery, 'observeSession').mockRejectedValue(failure)
-    await expect(ctx.subagents.listChildren(parent.id)).rejects.toBe(failure)
+    await expect(listChildren(ctx, parent.id)).rejects.toBe(failure)
   })
 
   it('ignores inherited fork facts and accepts facts in the fork own suffix', async () => {
@@ -237,8 +238,8 @@ describe('SubagentRuntime.listChildren', () => {
       label: 'own',
     })
 
-    expect(await ctx.subagents.listChildren(fork.id)).toEqual([{
-      id: SessionId('own-child'), createdAt: 2, mode: 'continuable', label: 'own', phase: 'closed', closingScope: false, draining: false,
+    expect(await listChildren(ctx, fork.id)).toEqual([{
+      id: SessionId('own-child'), createdAt: 2, mode: 'continuable', label: 'own',
     }])
   })
 
@@ -270,92 +271,12 @@ describe('SubagentRuntime.listChildren', () => {
       chunkLengths.push(chunk.values.length)
     }
     expect(chunkLengths).toEqual([1, ...Array.from({ length: 16 }, () => 64)])
-    const entries = await ctx.subagents.listChildren(parent.id)
+    const entries = await listChildren(ctx, parent.id)
     expect(listSessions).not.toHaveBeenCalled()
     expect(entries).toHaveLength(1_025)
     expect(entries.find(entry => entry.id === 'child-064')).toEqual({
-      id: SessionId('child-064'), createdAt: 64, mode: 'one-shot', phase: 'closed', closingScope: false, draining: false,
+      id: SessionId('child-064'), createdAt: 64, mode: 'one-shot',
     })
-  })
-
-  it('reports a resident child while its turn is parked on the model call', async () => {
-    let releaseTurn: () => void = () => undefined
-    const gate = new Promise<undefined>((resolve) => { releaseTurn = () => resolve(undefined) })
-    const { ctx, parent } = await setup([], { adapter: new GatedAdapter([{ chunks: textResponse('held work'), gate }]) })
-    const started = await ctx.subagents.startActivation({
-      delivery: 'caller',
-      provider: 'spawn',
-      label: 'resident child',
-      request: { prompt: [{ type: 'text', text: 'task: resident' }], parent },
-      signal: testSignal,
-    })
-    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-      { id: started.childId, phase: 'resident', closingScope: false, draining: false },
-    ])
-    releaseTurn()
-    await started.result
-    await vi.waitFor(async () => {
-      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-        { id: started.childId, phase: 'closed', closingScope: false, draining: false },
-      ])
-    }, { timeout: 5_000 })
-  })
-
-  it('reports a materializing child while a cold followup resumes it', async () => {
-    const { ctx, parent } = await setup([textResponse('first work'), textResponse('woken work')])
-    const first = await startChild(ctx, parent, 'woken child')
-    const boundResume = ctx.agents.resume.bind(ctx.agents)
-    const releaseResume = Promise.withResolvers<undefined>()
-    vi.spyOn(ctx.agents, 'resume').mockImplementation(options => releaseResume.promise.then(() => boundResume(options)))
-    const wake = ctx.subagents.prompt({
-      requestId: 'wake-1' as SubagentPromptRequestId,
-      parentSessionId: parent.id,
-      childSessionId: first,
-      mode: 'continuable',
-      delivery: 'queue',
-      content: [{ type: 'text', text: 'wake' }],
-    }, testSignal)
-    await vi.waitFor(async () => {
-      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-        { id: first, phase: 'materializing', closingScope: false, draining: false },
-      ])
-    }, { timeout: 5_000 })
-    releaseResume.resolve(undefined)
-    await vi.waitFor(async () => {
-      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-        { id: first, phase: 'closed', closingScope: false, draining: false },
-      ])
-    }, { timeout: 5_000 })
-    await wake
-  })
-
-  it('reports a settling child with its closing scope during drain', async () => {
-    let releaseTurn: () => void = () => undefined
-    const gate = new Promise<undefined>((resolve) => { releaseTurn = () => resolve(undefined) })
-    const { ctx, parent } = await setup([], { adapter: new GatedAdapter([{ chunks: textResponse('held work'), gate }]) })
-    const started = await ctx.subagents.startActivation({
-      delivery: 'caller',
-      provider: 'spawn',
-      label: 'settling child',
-      request: { prompt: [{ type: 'text', text: 'task: settling' }], parent },
-      signal: testSignal,
-    })
-    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-      { id: started.childId, phase: 'resident', closingScope: false, draining: false },
-    ])
-    const draining = ctx.subagents.drainDescendants([parent])
-    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-      { id: started.childId, phase: 'settling', closingScope: true, draining: false },
-    ])
-    releaseTurn()
-    await draining
-    // The scoped teardown aborted the parked turn, so its result may reject.
-    void started.result.catch(() => undefined)
-    await vi.waitFor(async () => {
-      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
-        { id: started.childId, phase: 'closed', closingScope: false, draining: false },
-      ])
-    }, { timeout: 5_000 })
   })
 
   it('fails loud when the query service is unavailable', async () => {
@@ -365,7 +286,7 @@ describe('SubagentRuntime.listChildren', () => {
     await withoutProjection.plugin(SessionProjectionRegistry)
     await withoutProjection.plugin(SubagentRuntime)
     const parent = withoutProjection.sessions.create(SessionId('parent'))
-    await expect(withoutProjection.subagents.listChildren(parent.id)).rejects.toMatchObject({
+    await expect(listChildren(withoutProjection, parent.id)).rejects.toMatchObject({
       code: 'SUBAGENT_CONTROL_QUERY_UNAVAILABLE',
     })
   })
@@ -585,5 +506,85 @@ describe('SubagentRuntime.listDescendants', () => {
     })
     await expect(ctx.subagents.listDescendants(parent.id, controller.signal)).rejects.toMatchObject({ code: 'CANCELLED' })
     expect(observed.mock.calls.every(([, options]) => options?.signal === controller.signal)).toBe(true)
+  })
+})
+
+describe('SubagentRuntime live phase enrichment', () => {
+  it('reports a resident child while its turn is parked on the model call', async () => {
+    let releaseTurn: () => void = () => undefined
+    const gate = new Promise<undefined>((resolve) => { releaseTurn = () => resolve(undefined) })
+    const { ctx, parent } = await setup([], { adapter: new GatedAdapter([{ chunks: textResponse('held work'), gate }]) })
+    const started = await ctx.subagents.startActivation({
+      delivery: 'caller',
+      provider: 'spawn',
+      label: 'resident child',
+      prompt: [{ type: 'text', text: 'task: resident' }], parent,
+      signal: testSignal,
+    })
+    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+      { id: started.childId, phase: 'resident', closingScope: false, draining: false },
+    ])
+    releaseTurn()
+    await started.result
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: started.childId, phase: 'closed', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
+  })
+
+  it('reports a materializing child while a cold followup resumes it', async () => {
+    const { ctx, parent } = await setup([textResponse('first work'), textResponse('woken work')])
+    const first = await startChild(ctx, parent, 'woken child')
+    const boundResume = ctx.agents.resume.bind(ctx.agents)
+    const releaseResume = Promise.withResolvers<undefined>()
+    vi.spyOn(ctx.agents, 'resume').mockImplementation(options => releaseResume.promise.then(() => boundResume(options)))
+    const wake = ctx.subagents.prompt({
+      requestId: 'wake-1' as SubagentPromptRequestId,
+      childSessionId: first,
+      delivery: 'queue',
+      content: [{ type: 'text', text: 'wake' }],
+    }, testSignal)
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: first, phase: 'materializing', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
+    releaseResume.resolve(undefined)
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: first, phase: 'closed', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
+    await wake
+  })
+
+  it('reports a settling child with its closing scope during drain', async () => {
+    let releaseTurn: () => void = () => undefined
+    const gate = new Promise<undefined>((resolve) => { releaseTurn = () => resolve(undefined) })
+    const { ctx, parent } = await setup([], { adapter: new GatedAdapter([{ chunks: textResponse('held work'), gate }]) })
+    const started = await ctx.subagents.startActivation({
+      delivery: 'caller',
+      provider: 'spawn',
+      label: 'settling child',
+      prompt: [{ type: 'text', text: 'task: settling' }], parent,
+      signal: testSignal,
+    })
+    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+      { id: started.childId, phase: 'resident', closingScope: false, draining: false },
+    ])
+    const draining = ctx.subagents.drainDescendants([parent])
+    expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+      { id: started.childId, phase: 'settling', closingScope: true, draining: false },
+    ])
+    releaseTurn()
+    await draining
+    // The scoped teardown aborted the parked turn, so its result may reject.
+    void started.result.catch(() => undefined)
+    await vi.waitFor(async () => {
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([
+        { id: started.childId, phase: 'closed', closingScope: false, draining: false },
+      ])
+    }, { timeout: 5_000 })
   })
 })

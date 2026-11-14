@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-wiki",
   "description": "Embedded wiki outliner pane over the LLM-wiki graph: a docked sidebar panel that browses, reads, and edits wiki pages, blocks, tags, properties, and tasks headlessly through ctx.wikiGraph — no desktop Logseq needed",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -23,7 +23,8 @@
       "default": "./lib/client.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "dsh": {
     "client": {
@@ -36,9 +37,13 @@
   },
   "license": "MIT",
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/client.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "dependencies": {},
   "peerDependencies": {

@@ -243,7 +243,7 @@ describe('LspInstance query and abort', () => {
       shutdownTimeoutMs: 100,
       killGraceMs: 100,
     }, failingWriter('textDocument/didOpen'))
-    await expect(run(instance, 'goToDefinition')).rejects.toThrow()
+    await expect(run(instance, 'goToDefinition')).rejects.toMatchObject({ name: 'LspError', code: 'LSP_SERVER_EXITED' })
     expect(instance.dead).toBe(true)
   })
 
@@ -257,7 +257,11 @@ describe('LspInstance query and abort', () => {
 
   it('rejects when the server lacks the operation capability', async () => {
     const instance = makeInstance({ LSP_FAKE_CAPS: JSON.stringify({ definitionProvider: false }), LSP_FAKE_DEF: 'null' })
-    await expect(run(instance, 'goToDefinition')).rejects.toThrow(/does not support goToDefinition/)
+    await expect(run(instance, 'goToDefinition')).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_UNSUPPORTED_OPERATION',
+      message: 'server does not support goToDefinition',
+    })
   })
 
   it('propagates a server error response even when a signal is supplied (not an abort)', async () => {
@@ -265,7 +269,11 @@ describe('LspInstance query and abort', () => {
     // without treating it as an abort.
     const instance = makeInstance({ LSP_FAKE_ERROR: '1' })
     const controller = new AbortController()
-    await expect(run(instance, 'goToDefinition', controller.signal)).rejects.toThrow(/server refused/)
+    await expect(run(instance, 'goToDefinition', controller.signal)).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_SERVER_ERROR',
+      message: 'language server rejected textDocument/definition with JSON-RPC error -32000: server refused the request',
+    })
   })
 
   it('keeps a settled result but awaits teardown when didClose cannot be written', async () => {

@@ -43,6 +43,12 @@
     },
     {
       "path": "../../../vendor/mcp-client"
+    },
+    {
+      "path": "../../credentials/credentials"
+    },
+    {
+      "path": "../../util/values"
     }
   ]
 }

@@ -39,7 +39,7 @@ it.each(['normal', 'consumer-unload'] as const)('enables through the real Loader
   onTestFinished(async () => { await owner?.fiber.dispose(); await rm(home, { recursive: true, force: true }) })
   const dir = join(home, 'profiles', 'test')
   const anchor = join(home, 'package.json')
-  const name = '@deepseek-ai/dsh-experimental-session-search'
+  const name = '@deepseek-ai/dsh-deepseek-chat-import'
   await writeFile(anchor, JSON.stringify({ name: 'installation', dependencies: { [name]: '1.0.0' } }))
   initProfile(dir, ['fixture-base'])
   async function bundle(root: string, name: string, patch: string) {

@@ -150,7 +150,11 @@ describe('lsp-stdio end to end over a fake server', () => {
       LSP_FAKE_DEF: 'null',
       LSP_FAKE_EXIT_MARKER: marker,
     })
-    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toThrow(/unsupported position encoding/)
+    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_UNSUPPORTED_ENCODING',
+      message: expect.stringMatching(/unsupported position encoding/) as string,
+    })
     expect(await readFile(marker, 'utf8')).toBe('EXIT\nCLEAN\n')
     await ctx.fiber.dispose()
   })
@@ -167,7 +171,11 @@ describe('lsp-stdio end to end over a fake server', () => {
 
   it('rejects a server without transient-open sync (None)', async () => {
     const ctx = await mount({ LSP_FAKE_SYNC: '0', LSP_FAKE_DEF: 'null' })
-    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toThrow(/transient textDocument\/didOpen/)
+    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_UNSUPPORTED_OPERATION',
+      message: expect.stringMatching(/transient textDocument\/didOpen/) as string,
+    })
     await ctx.fiber.dispose()
   })
 
@@ -179,7 +187,11 @@ describe('lsp-stdio end to end over a fake server', () => {
 
   it('fails a query for an unsupported operation', async () => {
     const ctx = await mount({ LSP_FAKE_CAPS: JSON.stringify({ hoverProvider: false }), LSP_FAKE_DEF: 'null' })
-    await expect(ctx.lsp.query(query('hover'))).rejects.toThrow(/does not support hover/)
+    await expect(ctx.lsp.query(query('hover'))).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_UNSUPPORTED_OPERATION',
+      message: 'server does not support hover',
+    })
     await ctx.fiber.dispose()
   })
 
@@ -187,7 +199,10 @@ describe('lsp-stdio end to end over a fake server', () => {
     const outside = join(root, 'out.ts')
     await writeFile(outside, 'x')
     const ctx = await mount({ LSP_FAKE_DEF: 'null' })
-    await expect(ctx.lsp.query({ ...query('goToDefinition'), filePath: outside })).rejects.toThrow(/outside the workspace/)
+    await expect(ctx.lsp.query({ ...query('goToDefinition'), filePath: outside })).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_FILE_OUTSIDE_WORKSPACE',
+    })
     await ctx.fiber.dispose()
   })
 
@@ -238,6 +253,18 @@ describe('lsp-stdio end to end over a fake server', () => {
     await ctx.fiber.dispose()
   })
 
+  it('names a non-Error abort reason as an AbortError', async () => {
+    const ctx = await mount({ LSP_FAKE_DEF: 'null' })
+    const controller = new AbortController()
+    controller.abort('caller stopped')
+    await expect(ctx.lsp.query(query('goToDefinition'), controller.signal)).rejects.toMatchObject({
+      name: 'AbortError',
+      message: 'LSP query aborted',
+      cause: 'caller stopped',
+    })
+    await ctx.fiber.dispose()
+  })
+
   it('surfaces the server stderr tail in the exit error', async () => {
     // A server that writes to stderr then exits without answering: the query rejection carries the
     // retained stderr tail so the failure is diagnosable.
@@ -245,7 +272,11 @@ describe('lsp-stdio end to end over a fake server', () => {
       command: process.execPath,
       args: ['-e', 'process.stderr.write("FATAL: boom\\n"); setTimeout(()=>process.exit(1), 50)'],
     })
-    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toThrow(/FATAL: boom/)
+    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toMatchObject({
+      name: 'LspError',
+      code: 'LSP_SERVER_EXITED',
+      message: expect.stringMatching(/^language server exited; stderr: FATAL: boom/) as string,
+    })
     await ctx.fiber.dispose()
   })
 
@@ -258,9 +289,9 @@ describe('lsp-stdio end to end over a fake server', () => {
 
   it('fails the active query when the server crashes on open, and replaces it next query', async () => {
     const ctx = await mount({ LSP_FAKE_CRASH_ON_OPEN: '1', LSP_FAKE_DEF: 'null' }, { shutdownTimeoutMs: 100, killGraceMs: 100 })
-    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toThrow()
+    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toMatchObject({ name: 'LspError', code: 'LSP_SERVER_EXITED' })
     // A later query starts a fresh process; still crashes, but proves the slot was replaced (no hang).
-    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toThrow()
+    await expect(ctx.lsp.query(query('goToDefinition'))).rejects.toMatchObject({ name: 'LspError', code: 'LSP_SERVER_EXITED' })
     await ctx.fiber.dispose()
   })
 

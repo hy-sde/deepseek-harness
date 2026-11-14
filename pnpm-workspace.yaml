@@ -10,7 +10,7 @@ packages:
   - website
 
 overrides:
-  zod: 4.4.3
+  zod: 4.6.6
   ws: 8.22.0
   'extract-zip>yauzl': '3.4.0'
   '@deepseek-ai/cosmokit': 'link:vendor/cosmokit'
@@ -60,12 +60,12 @@ minimumReleaseAgeExclude:
   # Native Codex and Claude tests qualify this exact release with its local patches.
   - '@botiverse/oar@0.67.0'
   # Office engines and their API are qualified and released together by the kit repository.
-  - '@deepseek-ai/libreoffice-kit@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-darwin-arm64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-darwin-x64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-win32-x64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-wasm@0.1.5'
+  - '@deepseek-ai/libreoffice-kit@0.2.3'
+  - '@deepseek-ai/libreoffice-kit-darwin-arm64@0.2.3'
+  - '@deepseek-ai/libreoffice-kit-darwin-x64@0.2.3'
+  - '@deepseek-ai/libreoffice-kit-win32-arm64@0.2.3'
+  - '@deepseek-ai/libreoffice-kit-win32-x64@0.2.3'
+  - '@deepseek-ai/libreoffice-kit-wasm@0.2.3'
   # Fresh @earendil-works/pi-telemetry releases (type-only dep of the vendored
   # pi-ai fork) ride the upstream release train; waiting out the release age
   # would defeat that.
@@ -113,6 +113,8 @@ minimumReleaseAgeExclude:
   # The package manager is a workspace devDependency, so its own exact pin
   # must be exempt from the release-age window that guards other packages.
   - pnpm@12.8.1
+  # Stagehand 4.4.0 carries the reviewed zod 4.6.6 pin; install it without the release-age wait.
+  - '@browserbasehq/stagehand@4.4.0'
 patchedDependencies:
   '@botiverse/oar@0.67.0': patches/@botiverse__oar@0.67.0.patch
   '@fortune-sheet/core@1.0.4': patches/@fortune-sheet__core@1.0.4.patch

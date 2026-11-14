@@ -215,7 +215,11 @@ export function verifyProductUse(
     const webBundles = stringList(web.bundles, `${PROFILE_SOURCE} web`)
     for (const bundle of optionals) scanEntries(composeEntries(layers([...webBundles, bundle], optional)), profilePath, optional)
   }
-  for (const path of ['apps/cli/src/bin.ts', 'apps/desktop/src/main.ts']) scanSource(resolve(root, path), defaults)
+  // Fork delta: the fork drops the Electron desktop app, so only scan entries that exist.
+  for (const entry of ['apps/cli/src/bin.ts', 'apps/desktop/src/main.ts']) {
+    const path = resolve(root, entry)
+    if (existsSync(path)) scanSource(path, defaults)
+  }
   const htmlPath = resolve(root, 'apps/web/index.html')
   const dom = new JSDOM(readFileSync(htmlPath, 'utf8'))
   try {

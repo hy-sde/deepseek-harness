@@ -30,16 +30,19 @@ export const remoteDefaultResponses: RemoteTable = {
     'dynamicCordisRunner/syncInspectManifest': ok(null),
     // ui-cordis inventory at apply and on `connection/reset`.
     'dynamicCordisRunner/inventory': ok([]),
-    // ui-settings-plugins web-search card `readCredential()` when the settings mirror first publishes.
+    // ui-settings-web-search page `readCredential()` when the settings mirror first publishes.
     'credentials/describe': ok({}),
+    // ui-settings-web-search page provider options at apply and on `connection/reset`.
+    'web/listProviders': ok({ search: [], fetch: [] }),
     // ui-permission-presets `PermissionCatalogDirectory` on its first read for a connection generation.
     'permissionPresets/catalog': ok({ options: [] }),
     // ui-settings-account refreshes details after a stored-grant snapshot.
     'account/getProfile': ok(null),
     'account/getBalance': ok(null),
     // ui-settings-account bonus notice read and acknowledgement at signing in.
-    'account/getUnnotifiedBonuses': ok(null),
-    'account/ackBonusNotified': ok(true),
+    'account/getNotifications': ok(null),
+    'account/getNotificationContent': ok(null),
+    'account/reportNotificationEvent': ok(true),
   },
   // Stream endpoints the roster opens later than boot; declared so a spec that forgets the script gets a stream miss.
   streams: [
@@ -53,5 +56,7 @@ export const remoteDefaultResponses: RemoteTable = {
     'workspace/follow': openStream([{ type: 'baseline', value: { items: [], archivedSessionIds: [], pinnedSessionIds: [] } }]),
     // api-remote-access client `mountAccess`: the owner's access snapshot, then open.
     'remoteAccess/follow': openStream([{ type: 'baseline', owner: true }]),
+    // ui-sidebar-terminal header entry `agent-terminals`: the displayed Session's terminal roster, then open.
+    'terminal/watch': openStream([[]]),
   },
 }

@@ -16,6 +16,13 @@ import type { SubprocessTerminalEnvironment, SubprocessTerminalHandle, Subproces
 
 export { DSH_ENV_PREFIX } from './types.ts'
 export * from './termination-ladder.ts'
+export {
+  SUBPROCESS_ERROR_CODES,
+  SubprocessError,
+  SubprocessExecutableNotFoundError,
+  subprocessSpawnFailure,
+  type SubprocessErrorCode,
+} from './error.ts'
 export type {
   CollectedOutput,
   DshEnvironment,
@@ -164,15 +171,3 @@ export abstract class SubprocessRuntime extends Service {
 }
 
 export default SubprocessRuntime
-
-/** Executable lookup completed without finding an executable file. */
-export class SubprocessExecutableNotFoundError extends Error {
-  /**
-   * @param message - provider-specific lookup diagnostic.
-   * @param options - original provider failure, when available.
-   */
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-    this.name = 'SubprocessExecutableNotFoundError'
-  }
-}

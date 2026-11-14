@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-graph",
   "description": "Agent Graph supervisor tools: view_agent_graph, update_agent_graph, yield_agent_graph over a host-provided graph controller, with the orchestration:graph prompt section (Maka port, slice P4)",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -27,12 +27,17 @@
       "default": "./lib/types/tools.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/types/**/*.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "peerDependencies": {

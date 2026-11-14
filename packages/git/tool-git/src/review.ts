@@ -781,11 +781,9 @@ export function applyReviewTool(ctx: Context, config: ReviewToolConfig = {}): vo
           run = await subagents.startActivation({
             provider,
             label,
-            request: {
-              prompt: [{ type: 'text', text: prompt }] as ContentBlock[],
-              parent,
-              outputSchema,
-            },
+            prompt: [{ type: 'text', text: prompt }] as ContentBlock[],
+            parent,
+            outputSchema,
             delivery: 'caller',
             signal: controller.signal,
           })

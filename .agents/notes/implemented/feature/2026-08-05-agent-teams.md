@@ -38,9 +38,9 @@ Fresh children have no inherited conversation. Fork children capture the Lead's 
 
 ## Mailbox and task transactions
 
-The historical Lead-log mailbox remains a readable format: queued and delivered records keep their stable identity and sender, and Team payload validation still applies to them. Team no longer delivers or acknowledges them; new sends follow the [direct inbox decision](../simplification/2026-09-26-team-direct-inbox.md).
+The historical Lead-log mailbox remains a readable format: queued and delivered records keep their stable identity and sender, and Team payload validation still applies to them. Team no longer delivers or acknowledges them; new sends follow the [direct inbox decision](../../archived/simplification/2026-09-26-team-direct-inbox.md).
 
-Unknown mailbox content stays as decoded JSON during event projection and checkpoint admission. Validation inspects its type without rebuilding its fields, because generic object parsing can omit a valid own `__proto__` key. Locally declared content variants undergo structural validation; opaque plugin fields do not gain Team semantics. Cache invalidation is necessary because parser correction alone cannot recover keys omitted from cached state. The [Team documentation](../../../../packages/experimental/agent-team/README.md) owns the restore behavior.
+Unknown mailbox content stays as decoded JSON during event projection and checkpoint admission. Validation inspects its type without rebuilding its fields, because generic object parsing can omit a valid own `__proto__` key. Locally declared content variants undergo structural validation; opaque plugin fields do not gain Team semantics. Cache invalidation is necessary because parser correction alone cannot recover keys omitted from cached state. The [Team documentation](../../../../packages/team/agent-team/README.md) owns the restore behavior.
 
 `send_message` uses Steer for running, idle, and cold targets. New sends return inbox acceptance. The [Team Steer messaging decision](../../archived/simplification/2026-08-30-team-send-message-steer.md) records the single-tool scheduling rationale.
 
@@ -82,7 +82,7 @@ Publication requires `apply` to return a new state object per applied Team event
 
 Package tests cover Team authority, provisioning durability, task transitions, direct inbox acceptance, sender attribution, lifecycle cancellation, and historical mailbox readability. The keyless Team profile snapshot pins the policy, tools, and workflow; the CLI composition test checks persisted Team and child logs.
 
-Model-facing member identities and availability follow the [tool projection reference](../../../../packages/experimental/tool-agent-team/README.md); service residency and durable identity remain distinct.
+Model-facing member identities and availability follow the [tool projection reference](../../../../packages/team/tool-agent-team/README.md); service residency and durable identity remain distinct.
 
 ## Consequences
 

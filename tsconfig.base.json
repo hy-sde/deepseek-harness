@@ -84,9 +84,6 @@
       "@deepseek-ai/dsh-agent-preset-registry/display": [
         "./packages/preset/agent-preset-registry/src/display.ts"
       ],
-      "@deepseek-ai/dsh-agent-preset-registry/tools": [
-        "./packages/preset/agent-preset-registry/src/tools.ts"
-      ],
       "@deepseek-ai/dsh-agent-preset-registry/types": [
         "./packages/preset/agent-preset-registry/src/types.ts"
       ],
@@ -95,9 +92,6 @@
       ],
       "@deepseek-ai/dsh-agent-tool-presentation": [
         "./packages/core/agent-tool-presentation/src"
-      ],
-      "@deepseek-ai/dsh-agent/brand": [
-        "./packages/core/agent/src/brand.ts"
       ],
       "@deepseek-ai/dsh-agent/types": [
         "./packages/core/agent/src/types.ts"
@@ -351,9 +345,6 @@
       "@deepseek-ai/dsh-client-ui-creation-recommendations/client": [
         "./packages/experimental/client-ui-creation-recommendations/src/client/index.ts"
       ],
-      "@deepseek-ai/dsh-client-ui-deepseek-model-label-1017": [
-        "./packages/client/ui-deepseek-model-label-1017/src"
-      ],
       "@deepseek-ai/dsh-client-ui-deliverables": [
         "./packages/client/ui-deliverables/src"
       ],
@@ -419,9 +410,6 @@
       ],
       "@deepseek-ai/dsh-client-ui-plugin-manager": [
         "./packages/client/ui-plugin-manager/src"
-      ],
-      "@deepseek-ai/dsh-client-ui-plugin-market": [
-        "./packages/client/ui-plugin-market/src"
       ],
       "@deepseek-ai/dsh-client-ui-plugin-recommendations": [
         "./packages/experimental/client-ui-plugin-recommendations/src/index.ts"
@@ -696,9 +684,6 @@
       "@deepseek-ai/dsh-deque": [
         "./packages/util/deque/src"
       ],
-      "@deepseek-ai/dsh-experimental-agent-team": [
-        "./packages/experimental/agent-team/src"
-      ],
       "@deepseek-ai/dsh-experimental-api-speech-to-text": [
         "./packages/experimental/api-speech-to-text/src/index.ts"
       ],
@@ -729,18 +714,6 @@
       "@deepseek-ai/dsh-experimental-claude-code-mods/types": [
         "./packages/experimental/claude-code-mods/src/types.ts"
       ],
-      "@deepseek-ai/dsh-experimental-client-ui-agent-team": [
-        "./packages/experimental/client-ui-agent-team/src"
-      ],
-      "@deepseek-ai/dsh-experimental-client-ui-agent-team/client": [
-        "./packages/experimental/client-ui-agent-team/src/client/index.ts"
-      ],
-      "@deepseek-ai/dsh-experimental-client-ui-cot-translation/client": [
-        "./packages/experimental/client-ui-cot-translation/src/client/index.ts"
-      ],
-      "@deepseek-ai/dsh-experimental-client-ui-cot-translation/types": [
-        "./packages/experimental/client-ui-cot-translation/src/types.ts"
-      ],
       "@deepseek-ai/dsh-experimental-client-ui-forge": [
         "./packages/experimental/client-ui-forge/src/index.ts"
       ],
@@ -755,9 +728,6 @@
       ],
       "@deepseek-ai/dsh-experimental-client-ui-stats/client": [
         "./packages/experimental/client-ui-stats/src/client/index.ts"
-      ],
-      "@deepseek-ai/dsh-experimental-client-ui-voice-input/client": [
-        "./packages/experimental/client-ui-voice-input/src/client/index.ts"
       ],
       "@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp": [
         "./packages/experimental/computer-use-cua-driver-mcp/src/index.ts"
@@ -783,14 +753,11 @@
       "@deepseek-ai/dsh-experimental-inspector": [
         "./packages/experimental/inspector/src"
       ],
+      "@deepseek-ai/dsh-experimental-inspector-profile": [
+        "./packages/experimental/inspector-profile/src"
+      ],
       "@deepseek-ai/dsh-experimental-inspector/client": [
         "./packages/experimental/inspector/src/client/index.ts"
-      ],
-      "@deepseek-ai/dsh-experimental-liveshare/client": [
-        "./packages/experimental/liveshare/src/client/index.ts"
-      ],
-      "@deepseek-ai/dsh-experimental-liveshare/viewer-declarations": [
-        "./packages/experimental/liveshare/src/viewer-declarations.ts"
       ],
       "@deepseek-ai/dsh-experimental-ptc-runtime-python": [
         "./packages/experimental/ptc-runtime-python/src"
@@ -816,14 +783,8 @@
       "@deepseek-ai/dsh-experimental-subagent-oar": [
         "./packages/experimental/subagent-oar/src/index.ts"
       ],
-      "@deepseek-ai/dsh-experimental-tool-agent-team": [
-        "./packages/experimental/tool-agent-team/src"
-      ],
       "@deepseek-ai/dsh-experimental-tool-subagent-oar": [
         "./packages/experimental/tool-subagent-oar/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-experimental-translator/types": [
-        "./packages/experimental/translator/src/types.ts"
       ],
       "@deepseek-ai/dsh-experimental-webworker-packer": [
         "./packages/experimental/webworker-packer/src"
@@ -1071,12 +1032,6 @@
       "@deepseek-ai/dsh-native-command/types": [
         "./packages/util/native-command/src/types.ts"
       ],
-      "@deepseek-ai/dsh-office-to-pdf": [
-        "./packages/document/office-to-pdf/src"
-      ],
-      "@deepseek-ai/dsh-office-to-pdf/types": [
-        "./packages/document/office-to-pdf/src/types.ts"
-      ],
       "@deepseek-ai/dsh-official-bundles": [
         "./packages/util/official-bundles/src"
       ],
@@ -1317,9 +1272,6 @@
       "@deepseek-ai/dsh-session-url": [
         "./packages/session-query/session-url/src"
       ],
-      "@deepseek-ai/dsh-session/chunk-rows": [
-        "./packages/core/session/src/chunk-rows.ts"
-      ],
       "@deepseek-ai/dsh-session/fork": [
         "./packages/core/session/src/fork.ts"
       ],
@@ -1397,6 +1349,9 @@
       ],
       "@deepseek-ai/dsh-subagent/internal": [
         "./packages/subagent/subagent/src/internal.ts"
+      ],
+      "@deepseek-ai/dsh-subagent/src/*": [
+        "./packages/subagent/subagent/src/*"
       ],
       "@deepseek-ai/dsh-subprocess": [
         "./packages/subprocess/subprocess/src"
@@ -1602,9 +1557,6 @@
       "@deepseek-ai/dsh-tools/presentation": [
         "./packages/core/tools/src/presentation.ts"
       ],
-      "@deepseek-ai/dsh-tools/types": [
-        "./packages/core/tools/src/types.ts"
-      ],
       "@deepseek-ai/dsh-typert-generator": [
         "./packages/typert/generator/src/index.ts"
       ],
@@ -1679,9 +1631,6 @@
       ],
       "@deepseek-ai/dsh-web-search-deepseek": [
         "./packages/web/web-search-deepseek/src"
-      ],
-      "@deepseek-ai/dsh-web-search-exa": [
-        "./packages/web/web-search-exa/src"
       ],
       "@deepseek-ai/dsh-web-search-public": [
         "./packages/web/web-search-public/src"
@@ -1784,10 +1733,32 @@
       ],
       "@hy-sde-org/effect": [
         "./vendor/effect/src"
-      ]
+      ],
+      "@deepseek-ai/dsh-office-kit/types": ["./packages/document/office-kit/src/types.ts"],
+      "@deepseek-ai/dsh-cua/config": ["./packages/experimental/cua/src/config.ts"],
+      "@deepseek-ai/dsh-cua/native-schema": ["./packages/experimental/cua/src/native-schema.ts"],
+      "@deepseek-ai/dsh-cua/native-build": ["./packages/experimental/cua/src/native-build.ts"],
+      "@deepseek-ai/dsh-cua/guidance": ["./packages/experimental/cua/src/guidance.ts"],
+      "@deepseek-ai/dsh-mcp-client/types": ["./packages/mcp/mcp-client/src/types.ts"],
+      "@deepseek-ai/dsh-mcp-manager/types": ["./packages/mcp/mcp-manager/src/types.ts"],
+      "@deepseek-ai/dsh-client-ui-agent-team": ["./packages/client/ui-agent-team/src"],
+      "@deepseek-ai/dsh-client-ui-agent-team/client": ["./packages/client/ui-agent-team/src/client/index.ts"],
+      "@deepseek-ai/dsh-agent-team": ["./packages/team/agent-team/src"],
+      "@deepseek-ai/dsh-agent-team/types": ["./packages/team/agent-team/src/types.ts"],
+      "@deepseek-ai/dsh-tool-agent-team": ["./packages/team/tool-agent-team/src"],
+      "@deepseek-ai/dsh-experimental-worktree/types": ["./packages/experimental/worktree/src/types.ts"],
+      "@deepseek-ai/dsh-util-ripgrep": ["./packages/util/ripgrep/src"],
+      "@deepseek-ai/dsh-deepseek-chat-import/client": ["./packages/experimental/deepseek-chat-import/src/client/index.ts"],
+      "@deepseek-ai/dsh-deepseek-chat-import/types": ["./packages/experimental/deepseek-chat-import/src/types.ts"],
+      "@deepseek-ai/dsh-deepseek-chat-import": ["./packages/experimental/deepseek-chat-import/src"],
+      "@deepseek-ai/dsh-error": ["./packages/util/error/src"],
+      "@deepseek-ai/dsh-mcp-manager": ["./packages/mcp/mcp-manager/src"],
+      "@deepseek-ai/dsh-office-kit": ["./packages/document/office-kit/src"],
+      "@deepseek-ai/dsh-tool-office": ["./packages/document/tool-office/src"]
       // BEGIN generated package aliases — pnpm run gen-tsconfig-paths
 
       // END generated package aliases
+
     }
   }
 }

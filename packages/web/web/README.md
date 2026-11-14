@@ -33,11 +33,13 @@ Choose the service when a plugin or tool must search or fetch without hard-codin
 
 ### Minimal configuration
 
-Load the service and let a single mounted backend auto-select, or pin a provider id with `searchProvider`/`fetchProvider`. The environment variables `$DSH_WEB_SEARCH_PROVIDER` and `$DSH_WEB_FETCH_PROVIDER` feed the same fields and are not a separate priority chain.
+Load the service and let a single mounted backend auto-select, or pin a provider id with `searchProvider`/`fetchProvider`. The environment variables `$DSH_WEB_SEARCH_PROVIDER` and `$DSH_WEB_FETCH_PROVIDER` feed the same fields and are not a separate priority chain. Both backends below register a fetch provider, so the example pins `fetchProvider: http`.
 
 ```yaml
 - name: '@deepseek-ai/dsh-web'
-- name: '@deepseek-ai/dsh-web-search-exa'
+  config:
+    fetchProvider: http
+- name: '@deepseek-ai/dsh-web-deepseek-api'
 - name: '@deepseek-ai/dsh-web-fetch-http'
 ```
 
@@ -50,15 +52,11 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### Searching and fetching
 
-`search()` runs one query and returns an optional provider answer plus a list of citeable sources. Callers may supply `recency` (`day`, `week`, `month`, or `year`) for providers with a native publication-time filter. Providers that cannot honor it ignore it without changing topic scope or ranking mode. The service enforces `request.maxResults` by truncating `sources[]` and setting `truncated`; provider `notices` survive that cap. `fetch()` retrieves one URL and returns its final URL, status code, decoded body, and a truncation flag; a non-2xx response is a result, not an error.
+`search()` runs one query and returns an optional provider answer plus a list of citeable sources; the service enforces `request.maxResults` by truncating `sources[]` and setting `truncated`. `fetch()` retrieves one URL and returns its final URL, status code, decoded body, and a truncation flag; a non-2xx response is a result, not an error.
 
 ```text
-// Search recent material; sources[] is capped to maxResults:
-const result = await ctx.web.search({
-  query: 'deepseek harness',
-  recency: 'month',
-  maxResults: 8,
-})
+// Search the web; sources[] is capped to maxResults:
+const result = await ctx.web.search({ query: 'deepseek harness', maxResults: 8 })
 
 // Fetch one URL; a non-2xx response is a result, not an error:
 const page = await ctx.web.fetch({ url: 'https://example.com' })
@@ -79,7 +77,36 @@ Each call resolves its provider at execution time, and registration or load orde
 | no id, no usable provider | `WEB_PROVIDER_UNAVAILABLE` |
 | no id, multiple usable providers | `WEB_PROVIDER_AMBIGUOUS` |
 
+The shipped `deepseek-official` and `deepseek-search-api` search ids select legacy Messages search and the direct Search API respectively.
+
 A provider's availability is a cheap local check — for example whether its API key is present — and never makes network calls, so selection stays fast and deterministic.
+
+<a id="listing-providers"></a>
+### Listing providers
+
+`listProviders()` returns every registered search and fetch provider as `{ id, title?, description? }` entries, each list in registration order; it lists unavailable providers too, because a picker shows what can be pinned. `title` is the provider's optional display name, and a picker shows `id` when it is absent. `description` is optional `LocalizedText` from `dsh-package-manifest`, a plain string or translations keyed by lowercase language id with a required `en` entry, stating what the provider suits and what it costs or cannot do; a picker shows it under the selected provider and shows nothing when it is absent. Each registration and each disposal emits the payload-free `web/providers-changed` event after the registry changes, and observer failures cannot veto the change. Clients call the same method as the `web` Remote namespace, `ctx.remote.web.listProviders()`, whose Remote result carries the lists in `value` only when `ok` is true, and refresh on the forwarded `web/providers-changed` event; the [Web search and fetch settings page](../../client/ui-settings-web-search/README.md) fills its Search and Fetch menus this way. A plugin (including one written in creator mode) that registers a provider with a `title` appears in the matching menu under that title, shows its `description` while selected, and choosing it pins `searchProvider` or `fetchProvider` to its `id`.
+
+```text
+// Remote: web/listProviders; Host event: web/providers-changed
+const response = await ctx.remote.web.listProviders()
+if (response.ok) {
+  const { search, fetch } = response.value
+} // else: response.error is a structured RemoteError; keep any previous list and report it
+ctx.remote.$on('web/providers-changed', () => { /* re-read the lists */ })
+```
+
+<a id="adding-a-provider"></a>
+#### Add another provider
+
+A search or fetch backend outside the shipped composition is a plugin package that calls `ctx.web.registerSearchProvider()` or `ctx.web.registerFetchProvider()` with a unique `id`, and an optional `title`. To enable one in a profile, install the package with `dsh plugin --profile <name> add <package>` ([install rules](../../../docs/user/develop/basic/publish.md)), add its row to the profile's user patch layer `$DSH_HOME/profiles/<name>/cordis.patch.yml`, and restart DSH. That file is a top-level YAML array of patch entries; append the `insert` entry below, or replace a lone `[]` with it. The example mounts a hypothetical `@example/dsh-web-search-acme`; use the provider's real package name and add the `config` its README documents.
+
+```yaml
+- insert:
+    - id: web-search-acme
+      name: '@example/dsh-web-search-acme'
+```
+
+`dsh --profile <name> --dump-config` prints the row under the patch file's layer. After the restart, the provider appears in the **Web search provider** or **Web fetch provider** menu of the [settings page](../../client/ui-settings-web-search/README.md) under its `title`, or its `id` when it has none; the page needs no change. Choosing it pins `searchProvider` or `fetchProvider` to its `id`. If the row is later removed while the provider is selected, the menu shows the stored id as **(not loaded)** and each call fails with `WEB_PROVIDER_CONFIGURED_MISSING` until another provider is chosen.
 
 <a id="search-readiness"></a>
 ### Search and fetch readiness
@@ -118,12 +145,12 @@ The package is built on one deliberate separation:
 
 | File | Role |
 |---|---|
-| [`src/index.ts`](src/index.ts) | Plugin entry: the `WebRuntime` service, both provider registries, execution-time selection, and per-route readiness |
-| [`src/types.ts`](src/types.ts) | Vocabulary: request/result types, the closed `WebFetchBody` union, and the `WebError` taxonomy |
+| [`src/index.ts`](src/index.ts) | Plugin entry: the `WebRuntime` service, both provider registries, the `web/listProviders` Remote method and `web/providers-changed` event, execution-time selection, and per-route readiness |
+| [`src/types.ts`](src/types.ts) | Vocabulary: request/result types, provider list entries, the `web/providers-changed` event declaration, the closed `WebFetchBody` union, and the `WebError` taxonomy |
 
 ### Data model
 
-The request and result types define the normalized vocabulary callers build on — one `Search` pair and one `Fetch` pair — and the exhaustive fields and JSDoc live in [`src/types.ts`](src/types.ts) and the [web subsystem](../../../docs/subsystems/web.md) reference. Two deliberate choices shape them: `WebFetchBody` is a closed union (`html` | `text` | `blocked`) owned here, so adding a kind breaks compilation until every consumer handles it — `blocked` is not page content but the record that the site's bot protection answered instead of the page, naming the protection; `WebError` extends `HarnessError` with an open-string `code`, so consumers must tolerate provider-specific values. Source fields stay optional because not every provider returns all of them.
+The request and result types define the normalized vocabulary callers build on — one `Search` pair and one `Fetch` pair — and the exhaustive fields and JSDoc live in [`src/types.ts`](src/types.ts) and the [web subsystem](../../../docs/subsystems/web.md) reference. Two deliberate choices shape them: `WebFetchBody` is a closed union (`html` | `text`) owned here, so adding a kind breaks compilation until every consumer handles it; `WebError` extends `HarnessError` with an open-string `code`, so consumers must tolerate provider-specific values. Source fields stay optional because not every provider returns all of them.
 
 ### Selection flow
 
@@ -139,7 +166,7 @@ At call time the service resolves the provider — configured id first, then the
 Read these pages when the package-level contract is not enough. They move from the shared vocabulary to the shipped backends, the model-facing tools, and the design rationale.
 
 - [Web subsystem](../../../docs/subsystems/web.md) — the exhaustive search/fetch requests and results, provider availability, and error codes.
-- [Web package map](../README.md) — the six-package family and each role.
+- [Web package map](../README.md) — the five-package family and each role.
 - [dsh-tool-web](../tool-web/README.md) — the model-facing `web_search` and `web_fetch` tools over this service.
 - [dsh-web-fetch-http](../web-fetch-http/README.md) — the shipped anonymous HTTP(S) fetch backend.
 - [Generated configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-web) — every accepted config field and its source declaration.
@@ -164,8 +191,8 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 
 These limits define when the service is incomplete on its own. They are current package constraints.
 
-- **No observation surface** — there is no provider-change event and no capability-status query; `searchReady()` and `fetchReady()` report only the selected provider's credential readiness and answer true when selection fails. Availability is observable only by running a search or fetch and routing the thrown code, and the no-provider failure is the generic `WEB_PROVIDER_UNAVAILABLE` with no per-provider reason enumeration ([Agent Note](../../../.agents/notes/archived/simplification/2026-07-04-drop-unconsumed-web-observation-surface.md)).
-- **Structured search controls stay deliberately small** — requests carry `query`, optional `recency`, and `maxResults`. Domain, title, URL, filetype, language, and absolute-date directives remain encoded in the query string for providers such as `dsh-web-search-public` to map and enforce; regional hints and a provider-neutral upstream search-depth control remain deferred ([seam Agent Note](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.md)).
+- **No availability observation** — `listProviders()` and `web/providers-changed` report which providers are registered, not whether they are usable; there is no capability-status query, and `searchReady()` and `fetchReady()` report only the selected provider's credential readiness and answer true when selection fails. Availability is observable only by running a search or fetch and routing the thrown code, and the no-provider failure is the generic `WEB_PROVIDER_UNAVAILABLE` with no per-provider reason enumeration ([Agent Note](../../../.agents/notes/archived/simplification/2026-07-04-drop-unconsumed-web-observation-surface.md)).
+- **Search requests carry only `query` and `maxResults`** — provider-neutral controls (recency, domain filters, regional hints, search depth) are deferred until the backends can honor them ([seam Agent Note](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.md)).
 - **`WebFetchBody` has no `pdf` arm** — text-extractable PDF support is named deferred work; the closed union makes adding it a compile-enforced change across the web packages.
 - **Provider-backed page extraction is out of scope of `fetch()`** — a Firecrawl/Tavily-style `web_extract` capability is deferred rather than widening the fetch operation.
 
@@ -179,6 +206,6 @@ This Dev Note is working context for maintainers: open questions and undecided d
 
 #### Future: observing provider state
 
-No provider-change event or capability-status query exists; consumers observe availability only by executing a call and routing the thrown code. Restoring a small observation surface is possible if a consumer needs per-provider reasons, but the archived simplification note records why the earlier one was dropped.
+Registration is observable through `listProviders()` and `web/providers-changed`, but no capability-status query exists; consumers observe availability only by executing a call and routing the thrown code. Restoring a small observation surface is possible if a consumer needs per-provider reasons, but the archived simplification note records why the earlier one was dropped.
 
 </details>

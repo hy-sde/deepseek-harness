@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-debug",
   "description": "Model-facing debug tool over the DeepSeek Harness DAP capability seam (ctx.dap) — one tool with 28 operations: launch/attach, source/function/instruction/data breakpoints, continue/pause/step, threads/stack/scopes/variables/evaluate, disassembly, memory access, modules, output, and termination",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -19,11 +19,16 @@
       "default": "./lib/index.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "peerDependencies": {

@@ -32,9 +32,9 @@ describe('ambient proxy environment', () => {
 
   it('finds the configurations that declare a setup at all', () => {
     // Guards the discovery itself: a glob that stopped matching would make every case below vacuous.
+    // The fork trims the benchmarks (vitest.bench) and snapshot-corpus (vitest.snapshot) lanes.
     expect(declared.map(entry => entry.config)).toEqual([
-      'vitest.bench.config.ts', 'vitest.config.ts', 'vitest.e2e.config.ts', 'vitest.expected.config.ts',
-      'vitest.snapshot.config.ts',
+      'vitest.config.ts', 'vitest.e2e.config.ts', 'vitest.expected.config.ts',
     ])
   })
 

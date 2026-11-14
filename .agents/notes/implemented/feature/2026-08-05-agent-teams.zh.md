@@ -38,9 +38,9 @@ fresh child 不继承对话。fork child 只捕获一次 Lead 已完成 turn 前
 
 ## Mailbox and task transactions
 
-历史 Lead-log mailbox 仍是可读格式：queued 与 delivered 记录保留稳定身份与发送者，Team payload 校验仍适用于它们。Team 不再投递或确认这些记录；新发送遵循[直接 inbox 决策](../simplification/2026-09-26-team-direct-inbox.zh.md)。
+历史 Lead-log mailbox 仍是可读格式：queued 与 delivered 记录保留稳定身份与发送者，Team payload 校验仍适用于它们。Team 不再投递或确认这些记录；新发送遵循[直接 inbox 决策](../../archived/simplification/2026-09-26-team-direct-inbox.md)。
 
-事件投影和 checkpoint 准入期间，未知 mailbox 内容保持为已解码 JSON。校验只检查其 type，不重建字段，因为通用对象解析可能省略有效的自有 `__proto__` 键。本地声明的内容变体接受结构校验；不透明的插件字段不获得 Team 语义。缓存失效是必要的，因为只修正解析器无法恢复缓存状态中省略的键。[Team 文档](../../../../packages/experimental/agent-team/README.zh.md)拥有恢复行为的说明。
+事件投影和 checkpoint 准入期间，未知 mailbox 内容保持为已解码 JSON。校验只检查其 type，不重建字段，因为通用对象解析可能省略有效的自有 `__proto__` 键。本地声明的内容变体接受结构校验；不透明的插件字段不获得 Team 语义。缓存失效是必要的，因为只修正解析器无法恢复缓存状态中省略的键。[Team 文档](../../../../packages/team/agent-team/README.zh.md)拥有恢复行为的说明。
 
 `send_message` 对 running、idle 和 cold target 使用 Steer。新发送返回 inbox 接收结果。[Team Steer 消息决策](../../archived/simplification/2026-08-30-team-send-message-steer.md)记录单一工具调度的理由。
 
@@ -82,7 +82,7 @@ Web panel 读取 Lead Session 的 `agentTeam` 传输投影，因为现有投影�
 
 包测试覆盖 Team 权限、provisioning 持久性、任务转换、直接 inbox 接收、发送者归属、生命周期取消和历史 mailbox 可读性。无密钥 Team profile 快照固定 policy、工具与工作流；CLI 组合测试检查持久 Team 和 child 日志。
 
-模型可见的成员身份与可用状态遵循[工具投影说明](../../../../packages/experimental/tool-agent-team/README.zh.md)；服务驻留状态和持久身份仍保持区分。
+模型可见的成员身份与可用状态遵循[工具投影说明](../../../../packages/team/tool-agent-team/README.zh.md)；服务驻留状态和持久身份仍保持区分。
 
 ## Consequences
 

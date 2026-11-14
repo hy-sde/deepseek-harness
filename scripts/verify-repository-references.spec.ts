@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { describe, expect, it, type TestContext } from 'vitest'
@@ -109,8 +109,27 @@ describe('maintained repository reference policy', () => {
   })
 
   it('accepts byte counts in the real lockfile and still rejects references on added lines', () => {
+    // The fork trims the python SDK tree; the byte-count guard runs against a synthetic
+    // uv.lock-shaped snippet instead of the deleted python/sdk/uv.lock.
     const file = 'python/sdk/uv.lock'
-    const source = readFileSync(join(import.meta.dirname, '..', file), 'utf8').trimEnd()
+    const source = [
+      'version = 1',
+      'requires-python = ">=3.12"',
+      '',
+      '[[package]]',
+      'name = "example"',
+      'version = "1.0.0"',
+      'source = { registry = "https://pypi.org/simple" }',
+      'size = 405',
+      '',
+      '[[package]]',
+      'name = "other"',
+      'version = "2.3.4"',
+      'size = 1234567',
+      '',
+      '[manifest]',
+      'requirements = [{ name = "example", specifier = ">=1.0.0" }]',
+    ].join('\n')
     const sizes = new Set([...source.matchAll(/\bsize\s*=\s*(\d+)/g)].map(match => match[1] ?? ''))
     expect(sizes.size).toBeGreaterThan(0)
     expect(sizes).not.toContain('')

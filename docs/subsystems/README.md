@@ -13,13 +13,13 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [scope.md](scope.md) | scoped registration identity, dispatch carriers, and the owned `Scope` context |
 | [typert.md](typert.md) | Remote invocation descriptors, lookup/Context declarations, Typert registries, and the Host Gateway/Client API boundaries |
 | [git.md](git.md) | local git repository seam: status, diffs, history, staging, and commit over the caller-owned root |
+| [git.md](git.md) | local git repository seam: status, diffs, history, staging, and commit over the caller-owned root |
 | [goal.md](goal.md) | persisted goal identity, lifecycle snapshots, activation, change records, and round attribution |
 | [schedule.md](schedule.md) | Host-owned reminder records, durable transitions, active and ended views, and ordinary-conversation delivery |
 | [todo.md](todo.md) | the todo package's whole-list item type, durable event ownership, and projection |
 | [deliverables.md](deliverables.md) | what a turn hands to the user: `PresentedFile` deliveries from `present` and the Host-served `WorkspaceChangesSummary` of changed files from git snapshots |
 | [commands.md](commands.md) | the human-command registry service: definitions, adapter discovery, direct invocation, results, and parsing views |
 | [session.md](session.md) | the full `SessionEventMap` variant catalog, `TurnEndReason`, `deriveMessages()`, execution enclosure, and standalone events |
-| [voice-input.md](voice-input.md) | experimental named recognizers, transient audio and revision-guarded draft insertion |
 | [working-directory.md](working-directory.md) | Session execution directories, durable changes, recovery, and user context |
 | [worktrees.md](worktrees.md) | Experimental Git branch and checkout creation under existing permissions |
 | [forge.md](forge.md) | Experimental code host change requests: provider contract, shared status polling, and Session bindings |
@@ -34,11 +34,13 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [mcp.md](mcp.md) | external MCP connections, scoped tools and resources, server instructions, protocol results, and configuration ownership |
 | [user-questions.md](user-questions.md) | the UI-backed human question/answer seam: `AskUserQuestionRequest`, answer/options vocabulary, provider API, error taxonomy |
 | [av.md](av.md) | Automic Vault credential scanning seam: exposure scan, doctor/catalogs, and name-only listings over the host `av` CLI service |
+| [av.md](av.md) | Automic Vault credential scanning seam: exposure scan, doctor/catalogs, and name-only listings over the host `av` CLI service |
 | [approval.md](approval.md) | the one-shot user-approval seam: `ApprovalRequest`, `ApprovalOutcome`, per-session policy, audit events, and answerer contracts |
-| [office-to-pdf.md](office-to-pdf.md) | authorized Office-to-PDF conversion, native/WASM engines, and bounded shared reuse |
+| [office-kit.md](office-kit.md) | authorized Office rendering, conversion, and recalculation, native/WASM engines, and bounded shared reuse |
 | [attachment.md](attachment.md) | durable image identity and metadata, validation inputs, verified reads, and the `AttachmentStore` seam |
 | [browser.md](browser.md) | headless browser automation seam: launch, stealth, navigation, ARIA tree snapshots, and PNG screenshots |
-| [shell.md](shell.md) | the bash executor seam: `ShellExecRequest`/`Spec`, `ShellRunResult`, background `ShellProcess` handles |
+| [browser.md](browser.md) | headless browser automation seam: launch, stealth, navigation, ARIA tree snapshots, and PNG screenshots |
+| [shell.md](shell.md) | the shell executor seam: `ShellExecRequest`/`Spec`, `ShellRunResult`, background `ShellProcess` handles |
 | [subprocess.md](subprocess.md) | the subprocess seam: fully-explicit `SubprocessSpawnSpec`, offset-based output readers, unclassified `SubprocessOutcome`, and the managed `DSH_*` environment vocabulary |
 | [terminal.md](terminal.md) | persistent terminal ids, backend/session contracts, send readiness, bounded reads, and owner-visible snapshots |
 | [sandbox.md](sandbox.md) | per-session policy resolution and the process-confinement seam: file-effect modes, execution/provider policies, `ConfinedArgv`, enforcement and fail-closed errors |
@@ -50,10 +52,12 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [lsp.md](lsp.md) | the LSP navigation seam: `LspQueryRequest`/`Result`, `LspProvider`/`Service`, four operations, `LspError` |
 | [memory.md](memory.md) | agent-curated project memory: retention, recall/reflect synthesis, edit operations, and injection-neutralized storage |
 | [dap.md](dap.md) | the DAP debugging seam: `DapSessionSummary`/`DapContinueOutcome`, the session manager, and the 28-operation `debug` tool schema |
+| [memory.md](memory.md) | agent-curated project memory: retention, recall/reflect synthesis, edit operations, and injection-neutralized storage |
 | [skills.md](skills.md) | the skill service: discovery priority, `SkillSummary`/`SkillDefinition`, session-prefix catalog, model-facing `skill` loading |
 | [compaction.md](compaction.md) | the compaction seam: the `compaction/*` session events, `CompactionResult`, the `CompactionEngine` interface |
 | [subagent.md](subagent.md) | the subagent seam: the named-provider registry, `SubagentStartRequest`/`Result`/`Run`, the start-time-vs-runtime capability split |
-| [agent-team.md](agent-team.md) | Agent Teams: implicit Lead identity, named continuable teammates, direct peer inbox delivery, and shared task DAG |
+| [voice-input.md](voice-input.md) | experimental named recognizers, transient audio and revision-guarded draft insertion |
+| [agent-team.md](agent-team.md) | Agent Teams: shared task DAG and task ownership for a subagent tree |
 | [claude-code-mods.md](claude-code-mods.md) | Claude Code mods through the experimental bridge: every event, `$` member, chain rule, drawing feature, and example mod that differs from Claude Code |
 | [web.md](web.md) | the web access seam: `WebSearchRequest`/`Result`, `WebFetchRequest`/`Result`, `WebFetchBody`, provider availability, `WebError` |
 | [spill.md](spill.md) | the spill storage seam: `SaveTextSpill`, `SpillOwner`/`SpillSource`, `SpillRef`, the branded `SpillLocator` |
@@ -62,6 +66,7 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [permission-presets.md](permission-presets.md) | the permission-preset layer: `PresetSpec`/`PresetOption`, the derived `custom` state, the log-only `permission/preset` event |
 | [plan.md](plan.md) | plan mode: the log-only `plan/mode` state, pending-selection flush, `PlanModeConfig`, the `exit_plan_mode` review arc |
 | [web-server.md](web-server.md) | the HTTP carrier: `WebRouteKind`/`WebRoute`, match order, the claimable fallback seat, index taps |
+| [wiki.md](wiki.md) | the embedded LLM-wiki seam: logseq-graph pages/blocks/tags/properties, search and Datalog query, upsert/remove, and server status |
 | [wiki.md](wiki.md) | the embedded LLM-wiki seam: logseq-graph pages/blocks/tags/properties, search and Datalog query, upsert/remove, and server status |
 | [storage.md](storage.md) | the storage subsystem: the backend contract (`StorageBackend`), `StorageForms`, `DomainSpec`/`Domain`, `domain/changed` |
 | [workspace.md](workspace.md) | the workspace registry: `Workspace`/`WorkspaceId`, registration and resolution, the session `cwd` relationship |
@@ -72,6 +77,7 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [sidebar-right.md](sidebar-right.md) | the right Sidebar: resource and navigation addresses, tab-type registration and routing, the `ctx.sidebarRight` navigation service, the pane-tab slots and owner props, the resource model, and the Workspace Files service |
 | [graph.md](graph.md) | the agent-graph service: durable graph rows in graph-control, the stream projection in graph-stream, supervisor wake semantics in graph-wakes, and the `view_agent_graph`/`update_agent_graph` tool surface |
 | [memory-extraction.md](memory-extraction.md) | the best-effort memory-extraction pipeline: session-event consumption, LLM extraction with model-experience wiring, and advisory source-trace outputs |
+| [graph.md](graph.md) | the agent-graph service: durable graph rows in graph-control, the stream projection in graph-stream, supervisor wake semantics in graph-wakes, and the `view_agent_graph`/`update_agent_graph` tool surface |
 | [conversation.md](conversation.md) | target-neutral Session-event assembly: Context identity, Location data, replay paths, view builders, and target-owned render nodes |
 | [session-projection.md](session-projection.md) | the projection seam: `SessionProjectionMap`, the pure `ProjectionDefinition` unit, `ProjectionSnapshot`'s consistent cut, the change feed |
 | [otel.md](otel.md) | Shared ordinary-event and Session-log OTLP channels |

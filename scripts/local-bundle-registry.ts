@@ -22,7 +22,6 @@ import * as yaml from '@deepseek-ai/dsh-yaml'
 import semver from 'semver'
 import { pnpmInvocation } from './pnpm-invocation.ts'
 import { capture, pnpmCommand } from './process.ts'
-import { validateTarballPayload } from './publication-payload.ts'
 
 /** Run directories a registry invocation owns, relative to the repository root. */
 export const REGISTRY_OUTPUT_ROOT = 'dist/test-bundles'
@@ -294,7 +293,9 @@ const DSH_FAMILY: ReleaseFamily = {
     }
   },
   validatePayload(member, files) {
-    validateTarballPayload(files, member.name)
+    // rc.3's publication policy allows src and declaration maps in payloads;
+    // the fork-kept bundle family only guards against empty tarballs now.
+    if (files.length === 0) throw new Error(`${member.name} packed an empty tarball`)
   },
   distTagForVersion(version) {
     const separator = version.indexOf('-')

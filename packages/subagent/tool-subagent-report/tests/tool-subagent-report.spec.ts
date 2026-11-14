@@ -99,10 +99,8 @@ async function startChild(ctx: Context, parent: Agent, prompt = 'child task') {
   const started = await ctx.subagents.startActivation({
     provider: 'spawn',
     label: prompt,
-    request: {
-      prompt: [{ type: 'text', text: prompt }],
-      parent,
-    },
+    prompt: [{ type: 'text', text: prompt }],
+    parent,
     delivery: 'parent',
     signal: testSignal,
   })
@@ -204,11 +202,9 @@ describe('dsh-tool-subagent-report', () => {
     const started = await ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'restricted child',
-      request: {
-        prompt: [{ type: 'text', text: 'restricted child' }],
-        parent,
-        agentPreset: 'restricted',
-      },
+      prompt: [{ type: 'text', text: 'restricted child' }],
+      parent,
+      agentPreset: 'restricted',
       delivery: 'parent',
       signal: testSignal,
     })
@@ -252,7 +248,7 @@ describe('dsh-tool-subagent-report', () => {
     await vi.waitFor(() => {
       expect(reports(parent)).toEqual([{
         id: messageId,
-        text: `Agent ${started.childId} sent a message: \nCHILD_FINDING`,
+        text: `Agent ${started.name} sent a message: \nCHILD_FINDING`,
         sender: started.childId,
       }])
     })
@@ -316,7 +312,7 @@ describe('dsh-tool-subagent-report', () => {
       expect(ctx.agents.get(started.childId) === undefined).toBe(true)
     }, { timeout: 5_000 })
     expect(reports(parent).map(report => report.text)).toEqual([
-      `Agent ${started.childId} sent a message: \nDURABLE_SELECTION`,
+      `Agent ${started.name} sent a message: \nDURABLE_SELECTION`,
     ])
   })
 
@@ -391,12 +387,16 @@ describe('dsh-tool-subagent-report', () => {
     await disposable.dispose()
     expect((await callReport(ctx, child, 'orphaned')).isError).toBe(true)
 
-    adapter.release()
-    const draining = ctx.subagents.drainDescendants([child])
-    await expect(ctx.subagents.reportFrom(child, [{ type: 'text', text: 'draining' }], {
+    // rc.3's drain contract drains whole activation trees from a live root, and the
+    // orphaned child above is no longer resident — so the drain step starts a fresh
+    // child under the root and expects its report to reject with DRAINING.
+    const { child: drainingChild } = await startChild(ctx, parent)
+    const draining = ctx.subagents.drainDescendants([parent])
+    await expect(ctx.subagents.reportFrom(drainingChild, [{ type: 'text', text: 'draining' }], {
       delivery: 'quiet',
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'DRAINING' })
+    adapter.release()
     await draining
   })
 
@@ -527,10 +527,8 @@ describe('dsh-tool-subagent-report', () => {
     await expect(ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'racing child',
-      request: {
-        prompt: [{ type: 'text', text: 'racing child' }],
-        parent,
-      },
+      prompt: [{ type: 'text', text: 'racing child' }],
+      parent,
       delivery: 'parent',
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'ACTIVATION_SETUP_REVOKED' })
@@ -557,10 +555,8 @@ describe('dsh-tool-subagent-report', () => {
     await expect(ctx.subagents.startActivation({
       provider: 'spawn',
       label: 'revoked child',
-      request: {
-        prompt: [{ type: 'text', text: 'revoked child' }],
-        parent,
-      },
+      prompt: [{ type: 'text', text: 'revoked child' }],
+      parent,
       delivery: 'parent',
       signal: testSignal,
     })).rejects.toMatchObject({ code: 'ACTIVATION_SETUP_REVOKED' })

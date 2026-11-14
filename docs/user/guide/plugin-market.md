@@ -83,7 +83,7 @@ DSH rejects the whole index when any rule below is violated and shows the reason
 <a id="index-format"></a>
 ## Index format reference
 
-Text fields marked `LocalizedText` are a string or an object of strings keyed by lowercase language ids, such as `{ "en": "Foo", "zh": "甲" }`; an object must contain `en`. Members DSH does not know are ignored.
+Text fields marked `LocalizedText` are a string or an object of strings keyed by lowercase language ids, such as `{ "en": "Foo", "zh": "甲" }`; an object must contain `en`. DSH ignores unknown object fields at every level. Known fields and `source.type` still require valid values; keys inside declaration, localized-text, and plugin sort-value maps are validated as data.
 
 | Index field | Required | Meaning |
 |---|---|---|
@@ -91,7 +91,7 @@ Text fields marked `LocalizedText` are a string or an object of strings keyed by
 | `title`, `description` | `title` only | Index name and description, `LocalizedText`. |
 | `metadata.categories`, `metadata.labels` | no | Objects mapping an id to `{ "title": LocalizedText }`. |
 | `metadata.sortKeys` | no | Object mapping an id to `{ "title": LocalizedText, "order": "asc" \| "desc" }`; `order` is the initial direction. |
-| `plugins` | yes | Plugins in the index's default order. |
+| `plugins` | yes | Plugins in the publisher's default order; clients must preserve this array order on initial display and when filtering, unless the user chooses another sort or text search ranks by relevance. |
 
 | Plugin field | Required | Meaning |
 |---|---|---|
@@ -103,8 +103,10 @@ Text fields marked `LocalizedText` are a string or an object of strings keyed by
 | `repository` | no | `{ "url": string, "directory"?: string }`: the source repository's web page, and the package directory inside it. The plugin page links it as **Source code**. |
 | `metadata.category` | no | One declared category id. |
 | `metadata.labels` | no | Declared label ids. |
-| `metadata.sortKeys` | no | Object mapping declared sort-key ids to numbers, such as downloads or ratings. |
+| `metadata.sortKeys` | no | Object mapping declared sort-key ids to finite numbers, or `null` when unavailable. |
 | `versions` | yes | At least one version, in any order. |
+
+A plugin may omit `metadata`, any of its fields, or individual sort values, or use `null` for unavailable data. Missing values sort last in both directions; a real zero is a value, not missing data. The recommended definitions standardize `github_stars` as a repository's GitHub star count and `npm_weekly_downloads` as a public npm package's download count over npm's `last-week` window. Both are non-negative integers; weekly downloads are not a monthly count. Publishers using these keys declare them under root `metadata.sortKeys` and populate available values under each plugin's `metadata.sortKeys`. Other declared numeric keys remain supported.
 
 | Version field | Required | Meaning |
 |---|---|---|
@@ -118,7 +120,6 @@ DSH installs an npm version as `name@version`, asking `registry` first when pres
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [Discover tab reference](../../../packages/client/ui-plugin-market/README.md) describes the tab's controls and states.
 - [Plugin index service](../../../packages/boot/plugin-market/README.md) covers fetch limits, caching, and the `plugin_market` tool.
 - [Index validator](../../../packages/util/plugin-market-index/README.md) is the library generators can use to check an index before publishing it.
 

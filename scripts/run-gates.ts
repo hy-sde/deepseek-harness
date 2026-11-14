@@ -53,6 +53,10 @@ export interface Gate {
   quick?: boolean
   /** Keep a failure visible without failing the aggregate. */
   allowFailure?: boolean
+  /** Extra attempts after a failed run, for a gate whose failure can come from one remote fetch. */
+  retries?: number
+  /** Wait before each retry, in milliseconds; default 0. */
+  retryDelayMs?: number
   /** Write child output as it arrives instead of buffering it until completion. */
   streamOutput?: boolean
 }
@@ -131,7 +135,7 @@ export async function runAggregate(name: string, gates: Gate[], concurrencyDefau
   const startedAt = performance.now()
   console.log(`run-gates: ${name} running ${gates.length} gate(s) with ${maxConcurrency} worker(s) from ${concurrencySource}${failFast ? ', fail-fast after first blocking failure' : ''}.`)
 
-  const results = await runGates(gates, maxConcurrency, runGate, printResult, cliGateOptions(failFast))
+  const results = await runGates(gates, maxConcurrency, runGateWithRetry, printResult, cliGateOptions(failFast))
   printSummary(results, performance.now() - startedAt)
   return results.some(result => result.gate.allowFailure !== true && (result.status === 'failed' || result.status === 'skipped'))
     ? 1
@@ -407,6 +411,7 @@ function sharedHygieneGates(): Gate[] {
     pnpmScript('plugin-record-callers', 'verify-plugin-record-callers', { label: 'plugin record callers' }),
     pnpmScript('no-unknown-casts', 'verify-no-unknown-casts', { label: 'no new unknown casts' }),
     pnpmScript('no-top-level-await', 'verify-no-top-level-await', { label: 'no module-scope await' }),
+    pnpmScript('plugin-entry-exports', 'verify-plugin-entry-exports', { label: 'plugin entry exports' }),
   ]
 }
 
@@ -869,14 +874,15 @@ function builtBinSmokeGate(needs: string[] = ['build']): Gate {
     'vitest.e2e.config.ts',
     'apps/cli/tests/profiles/headless/tests/keyless-smoke.e2e.ts',
     'apps/cli/tests/profiles/headless/tests/source-tool.built.e2e.ts',
-    'apps/cli/tests/built-bin.e2e.ts',    'packages/host/directory-picker-native/tests/built-worker.e2e.ts',
+    'apps/cli/tests/built-bin.e2e.ts',
+    'packages/host/directory-picker-native/tests/built-worker.e2e.ts',
     'packages/sdk/server/tests/built-scope-carrier.e2e.ts',
     'packages/deliverables/tool-present/tests/built-errors.e2e.ts',
     'packages/subprocess/subprocess-local/tests/spawn-runner-built.e2e.ts',
     'packages/subagent/subagent-codex/tests/loader-composition.e2e.ts',
     'packages/subagent/subagent-claude-code/tests/loader-composition.e2e.ts',
     'packages/api/remotes/tests/built-lib.e2e.ts',
-    'packages/experimental/agent-team/tests/built-lib.e2e.ts',
+    'packages/team/agent-team/tests/built-lib.e2e.ts',
     // Built execution consumers: the only automated proof that package-name
     // imports reach their lib/ entrypoints under plain Node. The e2e lane runs
     // unbuilt, so these files self-skip there.
@@ -1363,6 +1369,36 @@ export async function runGate(gate: Gate, signal?: AbortSignal): Promise<GateRes
   result.aborted = aborted
   if (spawnError !== undefined) result.error = spawnError
   return result
+}
+
+/**
+ * Execute one gate, repeating a failure while the gate declares `retries`.
+ * The wait between attempts is `retryDelayMs`, so a gate that fetches a remote
+ * artifact gets several connections to that host instead of failing the
+ * aggregate on the first one. A result the fail-fast signal terminated is not
+ * retried: the aggregate already decided to abort, and another attempt would be
+ * terminated again. The returned duration covers every attempt, and the output
+ * and error are the last attempt's, which is the one whose failure ends the gate.
+ * @param gate - command and scheduler environment to execute.
+ * @param signal - abort signal forwarded to every attempt.
+ * @param execute - executor for one attempt; the child-process boundary by default.
+ * @returns the last attempt's outcome with the total duration.
+ */
+export async function runGateWithRetry(
+  gate: Gate,
+  signal?: AbortSignal,
+  execute: GateExecutor = runGate,
+): Promise<GateResult> {
+  const started = performance.now()
+  const attempts = 1 + Math.max(0, gate.retries ?? 0)
+  let result = await execute(gate, signal)
+  for (let attempt = 2; attempt <= attempts && result.status === 'failed' && signal?.aborted !== true; attempt++) {
+    const delayMs = Math.max(0, gate.retryDelayMs ?? 0)
+    console.log(`run-gates: retrying ${gate.label} (attempt ${String(attempt)} of ${String(attempts)}) in ${String(delayMs)} ms`)
+    await new Promise(resolve => setTimeout(resolve, delayMs))
+    result = await execute(gate, signal)
+  }
+  return { ...result, durationMs: performance.now() - started }
 }
 
 /**

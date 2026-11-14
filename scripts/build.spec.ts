@@ -10,8 +10,7 @@ const artifactGraph = {
   'host-typert': [],
   'host-src': ['native', 'host-typert'],
   'host-bundle': ['host-src'],
-  'desktop-bundle': ['host-bundle'],
-  'client-src': ['desktop-bundle'],
+  'client-src': ['host-bundle'],
   'client-bundle': ['client-src'],
   'web': ['client-bundle'],
 }

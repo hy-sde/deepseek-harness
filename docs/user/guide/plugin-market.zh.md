@@ -83,7 +83,7 @@ DSH 不内置任何索引源。选择**发现**，点击**添加索引源**，�
 <a id="index-format"></a>
 ## 索引格式参考
 
-标为 `LocalizedText` 的文本字段是字符串，或以小写语言 id 为键的字符串对象，例如 `{ "en": "Foo", "zh": "甲" }`；对象必须包含 `en`。DSH 不认识的成员会被忽略。
+标为 `LocalizedText` 的文本字段是字符串，或以小写语言 id 为键的字符串对象，例如 `{ "en": "Foo", "zh": "甲" }`；对象必须包含 `en`。DSH 在每一层都忽略未知的对象字段。已知字段和 `source.type` 仍须具有有效值；声明映射、本地化文本映射和插件排序值映射中的键作为数据进行校验。
 
 | 索引字段 | 必填 | 含义 |
 |---|---|---|
@@ -91,7 +91,7 @@ DSH 不内置任何索引源。选择**发现**，点击**添加索引源**，�
 | `title`、`description` | 仅 `title` | 索引名称和描述，类型为 `LocalizedText`。 |
 | `metadata.categories`、`metadata.labels` | 否 | 将 id 映射为 `{ "title": LocalizedText }` 的对象。 |
 | `metadata.sortKeys` | 否 | 将 id 映射为 `{ "title": LocalizedText, "order": "asc" \| "desc" }` 的对象；`order` 是初始方向。 |
-| `plugins` | 是 | 按索引默认顺序排列的插件。 |
+| `plugins` | 是 | 按发布者的默认顺序排列的插件；客户端必须在初次展示和筛选时保留此数组顺序，除非用户选择其他排序方式，或文本搜索按相关性排序。 |
 
 | 插件字段 | 必填 | 含义 |
 |---|---|---|
@@ -103,8 +103,10 @@ DSH 不内置任何索引源。选择**发现**，点击**添加索引源**，�
 | `repository` | 否 | `{ "url": string, "directory"?: string }`：源代码仓库的网页，以及包在其中的目录。插件页面以**源代码**链接到它。 |
 | `metadata.category` | 否 | 一个已声明的分类 id。 |
 | `metadata.labels` | 否 | 已声明的标签 id。 |
-| `metadata.sortKeys` | 否 | 将已声明的排序键 id 映射为数值的对象，例如下载量或评分。 |
+| `metadata.sortKeys` | 否 | 将已声明的排序键 id 映射为有限数值的对象；不可用时值为 `null`。 |
 | `versions` | 是 | 至少一个版本，顺序不限。 |
+
+插件可以省略 `metadata`、其中的任意字段或单个排序值，也可以用 `null` 表示数据不可用。无论升序还是降序，缺失值都排在最后；实际的零是有效值，不是缺失数据。建议采用的统一定义是：`github_stars` 表示仓库的 GitHub star 数，`npm_weekly_downloads` 表示公共 npm 包在 npm `last-week` 时间窗口内的下载量。两者均为非负整数；周下载量不是月下载量。发布者使用这些键时，在根级 `metadata.sortKeys` 中声明，并在各插件的 `metadata.sortKeys` 中填入可用值。其他已声明的数值键仍受支持。
 
 | 版本字段 | 必填 | 含义 |
 |---|---|---|
@@ -118,7 +120,6 @@ DSH 将 npm 版本安装为 `name@version`，存在 `registry` 时先询问它�
 <a id="further-exploration"></a>
 ## 延伸阅读
 
-- [「发现」标签页参考](../../../packages/client/ui-plugin-market/README.zh.md)说明该标签页的控件和状态。
 - [插件索引服务](../../../packages/boot/plugin-market/README.zh.md)说明获取限制、缓存和 `plugin_market` 工具。
 - [索引校验器](../../../packages/util/plugin-market-index/README.zh.md)是生成器可以用来在发布前检查索引的库。
 

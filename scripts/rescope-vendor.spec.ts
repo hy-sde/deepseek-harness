@@ -85,15 +85,18 @@ describe('exactEditState', () => {
 
 describe('product identifiers', () => {
   it.each([
-    'apps/cli/tests/optional-bundle-transitions.e2e.ts',
     'apps/web/tests/agent-preset-selection.e2e.ts',
     'apps/web/tests/developer-tools-settings.e2e.ts',
     'docs/subsystems/extensions.md',
     'docs/subsystems/extensions.zh.md',
+    'docs/tool-catalog.md',
+    'docs/tool-catalog.zh.md',
     'docs/upgrade-guide/v0.2.0-rc.2/schedule-bundle-retired/guide.md',
     'docs/upgrade-guide/v0.2.0-rc.2/schedule-bundle-retired/guide.zh.md',
     'docs/upgrade-guide/v0.2.1-alpha.1/subagent-preset-composition/guide.md',
     'docs/upgrade-guide/v0.2.1-alpha.1/subagent-preset-composition/guide.zh.md',
+    'docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off/guide.md',
+    'docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off/guide.zh.md',
     'docs/user/guide/schedule.md',
     'docs/user/guide/schedule.zh.md',
     'packages/bundle/web-app/cordis.patch.yml',
@@ -109,6 +112,7 @@ describe('product identifiers', () => {
     'packages/client/ui-entry-customization/tests/menu.client.spec.tsx',
     'packages/client/ui-workspace/tests/workspaces-service.client.spec.ts',
     'packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts',
+    'scripts/gen-tool-catalog.ts',
   ])('preserves the product values in %s', (file) => {
     const text = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
     // The fork renames the agent-preset id to '@deepseek-ai/cordis' in some of
@@ -159,21 +163,16 @@ describe('product identifiers', () => {
   })
 
   it.each([
-    ['apps/cli/tests/optional-bundle-transitions.e2e.ts', 1, 'import-only'],
-    ['packages/client/ui-conversation/src/client/input/submission-analytics.ts', 1, 'replace-all'],
-    ['packages/client/ui-conversation/tests/service-orchestration.client.spec.ts', 1, 'replace-all'],
-    ['packages/client/ui-entry-customization/src/client/index.ts', 1, 'replace-all'],
-    ['packages/client/ui-entry-customization/tests/menu.client.spec.tsx', 1, 'replace-all'],
-    ['packages/client/ui-workspace/tests/workspaces-service.client.spec.ts', 1, 'replace-all'],
-    ['packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts', 2, 'replace-all'],
-  ] as const)('reverses real package references in %s and restores them', (file, lines, mode) => {
+    ['packages/client/ui-conversation/src/client/input/submission-analytics.ts', 1],
+    ['packages/client/ui-conversation/tests/service-orchestration.client.spec.ts', 1],
+    ['packages/client/ui-entry-customization/src/client/index.ts', 1],
+    ['packages/client/ui-entry-customization/tests/menu.client.spec.tsx', 1],
+    ['packages/client/ui-workspace/tests/workspaces-service.client.spec.ts', 1],
+    ['packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts', 2],
+    ['scripts/gen-tool-catalog.ts', 1],
+  ] as const)('reverses real package references in %s and restores them', (file, lines) => {
     const scoped = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
-    // The fork renames this file's agent-preset id to '@deepseek-ai/cordis';
-    // those product sites share the package spelling and are exempt from
-    // rescoping, so only the package import participates in the reversal.
-    const text = mode === 'import-only'
-      ? scoped.replace("import type { Context } from '@deepseek-ai/cordis'", "import type { Context } from 'cordis'")
-      : scoped.replaceAll("'@deepseek-ai/cordis'", "'cordis'")
+    const text = scoped.replaceAll("'@deepseek-ai/cordis'", "'cordis'")
     expect(text).not.toBe(scoped)
     expectRoundTrip(file, text, scoped, lines)
     expect(rescopeText(text, file, true)).toEqual({ text, lines: 0 })

@@ -37,6 +37,9 @@
     },
     {
       "path": "../../util/yaml"
+    },
+    {
+      "path": "../../util/native-command"
     }
   ]
 }

@@ -103,7 +103,6 @@ describe('internal artifact build order', () => {
     const expected = [
       ['exec', 'tsdown', '--config-loader', 'native', '--env.DSH_BUILD_FACE', 'host'],
       ...hostOnly ? [] : [
-        ['--filter', '@deepseek-ai/dsh-desktop', 'run', 'bundle'],
         ['exec', 'tsdown', '--config-loader', 'native', '--env.DSH_BUILD_FACE', 'client'],
       ],
     ]

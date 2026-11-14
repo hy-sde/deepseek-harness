@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-browser",
   "description": "Agentic browser plumbing: the host ctx.browser service (launch / CDP-attach / relay backends, tab registry, navigation, ARIA snapshot, screenshot, JS eval) backing the browser tool in @deepseek-ai/dsh-tool-browser",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -35,12 +35,17 @@
       "default": "./lib/types/relay/index.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/types/**/*.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {

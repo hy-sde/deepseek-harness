@@ -209,9 +209,9 @@ describe('ctx.lsp.collectDiagnostics (diagnostics-on-write)', () => {
     const ctx = await mount({})
     const outside = join(root, 'missing')
     await expect(ctx.lsp.format({ filePath: 'a.ts', workspaceRoot: outside, text: 'const x = 1\n' }))
-      .rejects.toThrow(/not a directory/)
+      .rejects.toThrow(/does not exist/)
     await expect(ctx.lsp.collectDiagnostics({ filePath: 'a.ts', workspaceRoot: outside, text: 'const x = 1\n', version: 1 }))
-      .rejects.toThrow(/not a directory/)
+      .rejects.toThrow(/does not exist/)
     await ctx.fiber.dispose()
   })
 

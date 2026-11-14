@@ -5,7 +5,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { ToolArgsError, defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ReadResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type { } from '@deepseek-ai/dsh-fs'
 import type { } from '@deepseek-ai/dsh-internal-urls'
@@ -72,7 +72,7 @@ const MAX_WIDE_NOTICE_LINES = 20
 
 function parsePositiveInteger(value: number, name: string): number {
   if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
-    throw new Error(`${name} must be a positive integer`)
+    throw new ToolArgsError([`${name} must be a positive integer`])
   }
   return value
 }
@@ -90,15 +90,15 @@ export function parseReadArgs(
   maxLimit: number,
   defaultMaxLineLength: number,
 ): ReadInput {
-  if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
+  if (args.file_path.trim().length === 0) throw new ToolArgsError(['file_path must be a non-empty string'])
   const offset = args.offset === undefined ? 1 : parsePositiveInteger(args.offset, 'offset')
   const limit = args.limit === undefined ? maxLimit : parsePositiveInteger(args.limit, 'limit')
-  if (limit > maxLimit) throw new Error(`limit must be less than or equal to ${maxLimit}`)
+  if (limit > maxLimit) throw new ToolArgsError([`limit must be less than or equal to ${maxLimit}`])
   let maxLineLength = defaultMaxLineLength
   if (args.maxLineLength !== undefined && args.maxLineLength !== 0) {
     maxLineLength = parsePositiveInteger(args.maxLineLength, 'maxLineLength')
     if (maxLineLength > READ_MAX_LINE_LENGTH_CAP) {
-      throw new Error(`maxLineLength must be less than or equal to ${READ_MAX_LINE_LENGTH_CAP}`)
+      throw new ToolArgsError([`maxLineLength must be less than or equal to ${READ_MAX_LINE_LENGTH_CAP}`])
     }
   }
   return { filePath: args.file_path, offset, limit, maxLineLength }

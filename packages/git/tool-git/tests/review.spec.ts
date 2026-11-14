@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import { ContentBlock, ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { Context } from '@deepseek-ai/cordis'
@@ -91,7 +91,7 @@ function fakeSubagents(): {
       })
     },
     startActivation: (options) => {
-      reviewerPrompts.push(options.request.prompt.filter(block => block.type === 'text').map(block => block.text).join('\n'))
+      reviewerPrompts.push(options.prompt.filter((block: ContentBlock) => block.type === 'text').map((block: ContentBlock) => (block as { text: string }).text).join('\n'))
       if (hangResult !== undefined) {
         return Promise.resolve({
           childId: undefined,

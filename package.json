@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.3",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
     "build:check": "tsx scripts/build.ts --scope check",
     "build:official": "tsx scripts/build.ts --profile official",
     "build:lib": "pnpm run build:lib:host && pnpm run build:lib:client",
-    "build:lib:host": "tsx scripts/compile-referenced-projects.ts host-libraries && node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc -p tsconfig.host.json",
+    "build:lib:host": "tsx scripts/compile-referenced-projects.ts host-libraries && node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc -p tsconfig.host.json && pnpm --filter @deepseek-ai/dsh-desktop run bundle",
     "build:lib:client": "tsc -b tsconfig.client.json && tsdown --config-loader native --env.DSH_BUILD_FACE client",
     "build:web": "pnpm --filter @deepseek-ai/dsh-web-frontend run build",
     "clean": "tsx scripts/clean.ts",
@@ -114,11 +114,14 @@
     "verify-package-dependencies": "tsx scripts/verify-package-dependencies.ts",
     "verify-npm-install-layout": "tsx scripts/verify-npm-install-layout.ts",
     "verify-client-packages": "tsx scripts/verify-client-packages.ts",
+    "check:i18n": "tsx scripts/run-gates.ts i18n",
+    "verify-locale-metadata": "tsx scripts/verify-locale-metadata.ts",
     "verify-client-ui-i18n": "tsx scripts/verify-client-ui-i18n.ts",
     "verify-client-route-resolution": "tsx scripts/verify-client-route-resolution.ts",
     "verify-no-bare-dispatcher": "tsx scripts/verify-no-bare-dispatcher.ts",
     "verify-no-top-level-await": "tsx scripts/verify-no-top-level-await.ts",
     "verify-plugin-record-callers": "tsx scripts/verify-plugin-record-callers.ts",
+    "verify-plugin-entry-exports": "tsx scripts/verify-plugin-entry-exports.ts",
     "verify-cordis-config": "tsx scripts/verify-cordis-config.ts",
     "rescope-vendor": "tsx scripts/rescope-vendor.ts",
     "rescope-vendor:check": "tsx scripts/rescope-vendor.ts --check",
@@ -175,12 +178,10 @@
     "postinstall": "node scripts/install-lefthook.mjs",
     "gen-official-bundle-catalog": "tsx scripts/gen-official-bundle-catalog.ts",
     "verify-official-bundle-catalog": "tsx scripts/gen-official-bundle-catalog.ts --check",
-    "verify-product-use": "tsx scripts/verify-product-use.ts",
     "resolve-translation-pairing-conflicts": "tsx scripts/merge-translation-pairing.ts --resolve",
     "gen-provider-data": "tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts",
     "verify-provider-data": "tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts --check",
-    "check:i18n": "tsx scripts/run-gates.ts i18n",
-    "verify-locale-metadata": "tsx scripts/verify-locale-metadata.ts"
+    "verify-product-use": "tsx scripts/verify-product-use.ts"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-action-cards": "workspace:*",
@@ -267,7 +268,6 @@
     "vite": "8.2.2",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.11",
-    "zod": "^4.4.3"
-  },
-  "dependencies": {}
+    "zod": "4.6.6"
+  }
 }

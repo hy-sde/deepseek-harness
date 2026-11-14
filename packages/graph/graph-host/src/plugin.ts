@@ -219,7 +219,7 @@ function subagentsFacade(ctx: Context, config: Config): GraphHostSubagents {
       return ctx.subagents.startActivation({
         provider: name,
         label: label ?? name,
-        request: startRequest,
+        ...startRequest,
         delivery: 'caller',
         signal,
       })

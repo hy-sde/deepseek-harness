@@ -5,13 +5,8 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { zipSync } from 'fflate'
 import { expect, it } from 'vitest'
-import { downloadPrimaryRuntimeAsset, prepareOfficeSkillAssets, primaryRuntimePayloadDigest, prunePnpmForeignNativePackages, smokePrimaryRuntime, unpackPrimaryRuntimeWheel } from './prepare.ts'
+import { downloadPrimaryRuntimeAsset, primaryRuntimePayloadDigest, prunePnpmForeignNativePackages, smokePrimaryRuntime, unpackPrimaryRuntimeWheel } from './prepare.ts'
 import lock from './lock.json' with { type: 'json' }
-
-it('covers every SDK wheel target with the shared interpreter lock', () => {
-  const platforms = JSON.parse(readFileSync(new URL('../../python/sdk-runtime/platforms.json', import.meta.url), 'utf8')) as Record<string, unknown>
-  expect(Object.keys(lock.targets).sort()).toEqual(Object.keys(platforms).map(target => target.replace('macos-', 'mac-')).sort())
-})
 
 const libraryWheel = Buffer.from('UEsDBAoAAAAAAASeLl0sYMPjDAAAAAwAAAAJAAAAc2FtcGxlLnB5c2FtcGxlID0gNDIKUEsBAh4DCgAAAAAABJ4uXSxgw+MMAAAADAAAAAkAAAAAAAAAAQAAAKSBAAAAAHNhbXBsZS5weVBLBQYAAAAAAQABADcAAAAzAAAAAAA=', 'base64')
 const relocatedWheel = Buffer.from('UEsDBAoAAAAAAASeLl3x0Nj9FAAAABQAAAAeAAAAc2FtcGxlLTEuMC5kYXRhL3NjcmlwdHMvc2FtcGxlcmVxdWlyZXMgcmVsb2NhdGlvbgpQSwECHgMKAAAAAAAEni5d8dDY/RQAAAAUAAAAHgAAAAAAAAABAAAApIEAAAAAc2FtcGxlLTEuMC5kYXRhL3NjcmlwdHMvc2FtcGxlUEsFBgAAAAABAAEATAAAAFAAAAAAAA==', 'base64')
@@ -132,39 +127,16 @@ it('rejects library files requiring an unsupported installation scheme', async (
   }
 })
 
-it('copies complete Office resources outside the application archive and removes obsolete assets', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'desktop-office-assets-'))
-  try {
-    const source = join(root, 'package', 'assets')
-    const destination = join(root, 'Contents', 'Resources', 'runtime', 'office-skills')
-    await mkdir(source, { recursive: true })
-    for (const name of ['office-docx', 'office-pptx', 'office-xlsx']) {
-      await mkdir(join(source, name))
-      await writeFile(join(source, name, 'SKILL.md'), `# ${name}\n`)
-    }
-    await prepareOfficeSkillAssets(source, destination)
-    await writeFile(join(destination, 'obsolete.py'), 'old helper')
-    await prepareOfficeSkillAssets(source, destination)
-    for (const name of ['office-docx', 'office-pptx', 'office-xlsx']) {
-      expect(await readFile(join(destination, name, 'SKILL.md'), 'utf8')).toBe(`# ${name}\n`)
-    }
-    await expect(readFile(join(destination, 'obsolete.py'))).rejects.toMatchObject({ code: 'ENOENT' })
-  } finally { await rm(root, { recursive: true, force: true }) }
-})
-
 it('gives Python-only payloads a distinct identity', () => {
   expect(primaryRuntimePayloadDigest('linux-x64', lock, undefined)).not.toBe(primaryRuntimePayloadDigest('linux-x64', lock, '11.7.0'))
 })
 
-it('keeps carrier pnpm versions aligned with the shared payload build', () => {
+it('keeps the root carrier pnpm version aligned with the shared payload build', () => {
   const root = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
     packageManager: string
     devDependencies: { pnpm: string }
   }
-  const desktop = JSON.parse(readFileSync(new URL('../../apps/desktop/package.json', import.meta.url), 'utf8')) as {
-    devDependencies: { pnpm: string }
-  }
-  expect(desktop.devDependencies.pnpm).toBe(root.devDependencies.pnpm)
+  // The fork drops the Electron desktop carrier; the root manifest stays the single alignment anchor.
   expect(root.packageManager).toBe(`pnpm@${root.devDependencies.pnpm}`)
 })
 

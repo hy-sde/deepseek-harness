@@ -163,6 +163,7 @@ function throwTeardownFailures(results: readonly PromiseSettledResult<void>[], m
   if (failures.length > 1) throw new AggregateError(failures, message)
 }
 
+
 /**
  * Register the configured stdio LSP providers. Resolves every executable at load (after credential
  * scrubbing) before publishing any provider; each process launches lazily on its first matching

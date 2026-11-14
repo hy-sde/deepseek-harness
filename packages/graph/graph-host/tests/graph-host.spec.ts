@@ -97,6 +97,7 @@ function must<T>(value: T | undefined): T {
 class FakeRun implements SubagentActivation {
   private static seq = 0
   readonly childId = SessionId(`run-${FakeRun.seq++}`)
+  readonly name = this.childId
   disposed = false
   private readonly resolvers = Promise.withResolvers<SubagentResult>()
   readonly result = this.resolvers.promise

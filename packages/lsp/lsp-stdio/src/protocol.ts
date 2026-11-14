@@ -152,8 +152,3 @@ export interface WireServerCapabilities {
   readonly renameProvider?: WireProviderCapability
   readonly documentFormattingProvider?: WireProviderCapability
 }
-
-/** The `initialize` result envelope. */
-export interface WireInitializeResult {
-  readonly capabilities: WireServerCapabilities
-}

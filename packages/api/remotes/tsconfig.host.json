@@ -81,10 +81,16 @@
       "path": "../../boot/plugin-manager"
     },
     {
+      "path": "../../mcp/mcp-manager"
+    },
+    {
       "path": "../../boot/plugin-market"
     },
     {
       "path": "../../host/plugin-inventory"
+    },
+    {
+      "path": "../../web/web"
     }
   ]
 }

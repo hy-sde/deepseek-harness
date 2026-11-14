@@ -22,10 +22,11 @@ import { abortable, abortError } from './abort.ts'
 import { LspConnection } from './connection.ts'
 import type { ConnectionSpawner, ConnectionSpec, ConnectionWriter } from './connection.ts'
 import type { HostSource } from './host.ts'
-import type { WireInitializeResult, WireServerCapabilities, WireTextEdit } from './protocol.ts'
+import type { WireServerCapabilities, WireTextEdit } from './protocol.ts'
 import {
   applyEditsToText,
   mergeCodeActions,
+  initializeCapabilities,
   negotiatePositionEncoding,
   normalizeCodeActions,
   normalizeDiagnostics,
@@ -62,7 +63,6 @@ export interface InstanceSpec extends ConnectionSpec {
  */
 export class LspInstance {
   private readonly connection: LspConnection
-  private capabilities: WireServerCapabilities | undefined
   /** The serialization tail: each query awaits the prior one, so lifecycles never interleave. */
   private queue: Promise<unknown> = Promise.resolve()
   private disposed = false
@@ -70,6 +70,7 @@ export class LspInstance {
   private teardownPromise: Promise<void> | undefined
   /** Set once the process closes, so the pool can synchronously skip a dead instance. */
   private processClosed = false
+  private capabilities: WireServerCapabilities | undefined
   /** Populated once `initialize` succeeds; a failed handshake rejects every query. */
   private readonly ready: Promise<void>
 
@@ -263,8 +264,8 @@ export class LspInstance {
       workspaceFolders: [{ uri: this.spec.workspaceUri, name: 'workspace' }],
       capabilities: CLIENT_CAPABILITIES,
       initializationOptions: this.spec.initializationOptions,
-    }) as WireInitializeResult
-    const capabilities = initializeResult.capabilities
+    })
+    const capabilities = initializeCapabilities(initializeResult)
     // An omitted encoding defaults to utf-16; any other value is a protocol error we reject here.
     negotiatePositionEncoding(capabilities.positionEncoding)
     this.capabilities = capabilities

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-git",
   "description": "Agentic git plumbing: the host ctx.git service (diff capture/parsing, hunk staging, commit/push/log over the subprocess seam) backing the commit and review tools in @deepseek-ai/dsh-tool-git",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -55,12 +55,17 @@
       "default": "./lib/types/conventional/index.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/types/**/*.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {

@@ -1,6 +1,7 @@
 /** Editor-facing ranges, reference projections, and the composer keyboard interface. */
 import type { MutableRefObject } from 'react'
 import type { LexicalEditor } from 'lexical'
+import type { QuoteSummary } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InputState } from './input.ts'
 import type { BusyEnterBehavior, InputSubmitMode } from './composer-submission.ts'
 
@@ -33,6 +34,8 @@ export interface DraftQuote {
   readonly length: number
   /** Selected text before Markdown quote prefixes are added. */
   readonly text: string
+  /** Readable display the inserting owner supplied; the draft text and the sent message still carry `text`. */
+  readonly summary?: QuoteSummary | undefined
 }
 
 /**

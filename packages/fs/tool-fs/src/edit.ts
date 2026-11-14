@@ -6,7 +6,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { ToolArgsError, defineTool } from '@deepseek-ai/dsh-tools'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import type { DiffCallView, DiffResultView, ToolResult } from '@deepseek-ai/dsh-tools'
 import type { } from '@deepseek-ai/dsh-fs'
@@ -48,8 +48,8 @@ interface EditToolArgs {
  * @returns the camelCased input with `replace_all` defaulted to false.
  */
 export function parseEditArgs(args: { file_path: string; old_string: string; new_string: string; replace_all?: boolean }): EditInput {
-  if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
-  if (args.old_string.length === 0) throw new Error('old_string must be a non-empty string')
+  if (args.file_path.trim().length === 0) throw new ToolArgsError(['file_path must be a non-empty string'])
+  if (args.old_string.length === 0) throw new ToolArgsError(['old_string must be a non-empty string'])
   return {
     filePath: args.file_path,
     oldString: args.old_string,

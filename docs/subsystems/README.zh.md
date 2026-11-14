@@ -13,13 +13,13 @@
 | [scope.md](scope.zh.md) | 作用域注册标识、dispatch 载体，以及拥有的 `Scope` 上下文 |
 | [typert.md](typert.zh.md) | 远程调用描述符、lookup/Context 声明、Typert 注册表，以及 Host Gateway/Client API 边界 |
 | [git.md](git.zh.md) | 本地 git 仓库 seam：针对调用者拥有的根目录进行状态、diff、历史、暂存与提交 |
+| [git.md](git.zh.md) | 本地 git 仓库 seam：针对调用者拥有的根目录进行状态、diff、历史、暂存与提交 |
 | [goal.md](goal.zh.md) | 持久 goal 标识、生命周期快照、激活、变更记录与 Round 归属 |
 | [schedule.md](schedule.zh.md) | Host 拥有的提醒记录、持久转换、活动和已结束视图与普通对话交付 |
 | [todo.md](todo.zh.md) | todo 包的整列表条目类型、持久事件所有权和投影 |
 | [deliverables.md](deliverables.zh.md) | 一轮交给用户的东西：`present` 声明的 `PresentedFile` 交付，以及由 git 快照得出、由 Host 提供的 `WorkspaceChangesSummary` 改动摘要 |
 | [commands.md](commands.zh.md) | 人类命令注册表服务：定义、适配器发现、直接调用、结果与解析视图 |
 | [session.md](session.zh.md) | 完整的 `SessionEventMap` 变体目录、`TurnEndReason`、`deriveMessages()`、执行封闭与独立事件 |
-| [voice-input.md](voice-input.zh.md) | 实验性具名语音识别、临时音频和受版本保护的草稿插入 |
 | [working-directory.md](working-directory.zh.md) | Session 执行目录、持久化变更、恢复与用户上下文 |
 | [worktrees.md](worktrees.zh.md) | 现有权限下的实验性 Git 分支与检出目录创建 |
 | [forge.md](forge.zh.md) | 实验性代码托管变更请求：提供方契约、共享状态轮询与 Session 绑定 |
@@ -34,11 +34,13 @@
 | [mcp.md](mcp.zh.md) | 外部 MCP 连接、作用域工具与资源、服务器指令、协议结果与配置归属 |
 | [user-questions.md](user-questions.zh.md) | UI 支持的人工问答 seam：`AskUserQuestionRequest`、answer/options 词汇、提供方 API、错误分类体系 |
 | [av.md](av.zh.md) | Automic Vault 凭据扫描 seam：基于 host `av` CLI 服务的暴露扫描、doctor/目录与仅名称的列出 |
+| [av.md](av.zh.md) | Automic Vault 凭据扫描 seam：基于 host `av` CLI 服务的暴露扫描、doctor/目录与仅名称的列出 |
 | [approval.md](approval.zh.md) | 一次性用户审批 seam：`ApprovalRequest`、`ApprovalOutcome`、逐会话策略、审计事件和 answerer 约定 |
-| [office-to-pdf.md](office-to-pdf.zh.md) | 已授权的 Office 到 PDF 转换、原生/WASM 引擎与有界共享复用 |
+| [office-kit.md](office-kit.zh.md) | 已授权的 Office 渲染、转换与重算、原生/WASM 引擎与有界共享复用 |
 | [attachment.md](attachment.zh.md) | 持久图片标识与元数据、校验输入、经校验读取，以及 `AttachmentStore` seam |
 | [browser.md](browser.zh.md) | 无头浏览器自动化 seam：启动、隐身、导航、ARIA 树快照与 PNG 截图 |
-| [shell.md](shell.zh.md) | bash 执行器 seam：`ShellExecRequest`/`Spec`、`ShellRunResult`、后台 `ShellProcess` 句柄 |
+| [browser.md](browser.zh.md) | 无头浏览器自动化 seam：启动、隐身、导航、ARIA 树快照与 PNG 截图 |
+| [shell.md](shell.zh.md) | shell 执行器 seam：`ShellExecRequest`/`Spec`、`ShellRunResult`、后台 `ShellProcess` 句柄 |
 | [subprocess.md](subprocess.zh.md) | 子进程 seam：完全显式的 `SubprocessSpawnSpec`、基于偏移的输出读取器、不含分类的 `SubprocessOutcome`，以及受管 `DSH_*` 环境词汇 |
 | [terminal.md](terminal.zh.md) | 持久化终端 ID、后端/会话约定、发送就绪状态、有界读取与 owner 可见快照 |
 | [sandbox.md](sandbox.zh.md) | 每会话策略解析与进程约束 seam：文件效果模式、执行/提供方策略、`ConfinedArgv`、强制执行与故障关闭错误 |
@@ -50,10 +52,12 @@
 | [lsp.md](lsp.zh.md) | LSP 导航 seam：`LspQueryRequest`/`Result`、`LspProvider`/`Service`、四种操作、`LspError` |
 | [memory.md](memory.zh.md) | agent 策展的项目记忆：保留、recall/reflect 综合、编辑操作与经注入中和的存储 |
 | [dap.md](dap.zh.md) | DAP 调试 seam：`DapSessionSummary`/`DapContinueOutcome`、会话管理器，以及 28 操作 `debug` 工具 schema |
+| [memory.md](memory.zh.md) | agent 策展的项目记忆：保留、recall/reflect 综合、编辑操作与经注入中和的存储 |
 | [skills.md](skills.zh.md) | skill（技能）服务：发现优先级、`SkillSummary`/`SkillDefinition`、会话前缀目录、面向模型的 `skill` 加载 |
 | [compaction.md](compaction.zh.md) | 压缩（compaction）seam：`compaction/*` 会话事件、`CompactionResult`、`CompactionEngine` 接口 |
 | [subagent.md](subagent.zh.md) | subagent seam：命名提供方注册表、`SubagentStartRequest`/`Result`/`Run`、启动时与运行时能力拆分 |
-| [agent-team.md](agent-team.zh.md) | Agent Teams：隐式 Lead 身份、具名 continuable teammate、直接 peer inbox 投递 与共享任务 DAG |
+| [voice-input.md](voice-input.zh.md) | 实验性具名语音识别、临时音频和受版本保护的草稿插入 |
+| [agent-team.md](agent-team.zh.md) | Agent Teams：子代理树共享的任务 DAG 与任务归属 |
 | [claude-code-mods.md](claude-code-mods.zh.md) | 经实验性桥接运行的 Claude Code 模组：与 Claude Code 不同的每个事件、`$` 成员、链规则、绘制特性与示例模组 |
 | [web.md](web.zh.md) | Web 访问 seam：`WebSearchRequest`/`Result`、`WebFetchRequest`/`Result`、`WebFetchBody`、提供方可用性、`WebError` |
 | [spill.md](spill.zh.md) | spill 存储 seam：`SaveTextSpill`、`SpillOwner`/`SpillSource`、`SpillRef`、品牌类型 `SpillLocator` |
@@ -62,6 +66,7 @@
 | [permission-presets.md](permission-presets.zh.md) | 权限预设层：`PresetSpec`/`PresetOption`、派生的 `custom` 状态、仅记日志的 `permission/preset` 事件 |
 | [plan.md](plan.zh.md) | 计划模式：仅记日志的 `plan/mode` 状态、待定选择的冲刷、`PlanModeConfig`、`exit_plan_mode` 审阅流程 |
 | [web-server.md](web-server.zh.md) | HTTP 载体：`WebRouteKind`/`WebRoute`、匹配顺序、可认领的回退席位、index 渲染挂接点 |
+| [wiki.md](wiki.zh.md) | 内嵌 LLM-wiki seam：logseq-graph 的页面/块/标签/属性、搜索与 Datalog 查询、upsert/remove 与服务器状态 |
 | [wiki.md](wiki.zh.md) | 内嵌 LLM-wiki seam：logseq-graph 的页面/块/标签/属性、搜索与 Datalog 查询、upsert/remove 与服务器状态 |
 | [storage.md](storage.zh.md) | 存储子系统：后端约定（`StorageBackend`）、`StorageForms`、`DomainSpec`/`Domain`、`domain/changed` |
 | [workspace.md](workspace.zh.md) | 工作区注册表：`Workspace`/`WorkspaceId`、注册与解析、与会话 `cwd` 的关系 |
@@ -72,6 +77,7 @@
 | [sidebar-right.md](sidebar-right.zh.md) | 右侧 Sidebar：资源地址与导航地址、tab 类型注册与路由、`ctx.sidebarRight` 导航服务、pane-tab slot 与 owner props、资源模型及 Workspace Files 服务 |
 | [graph.md](graph.zh.md) | 代理图服务：graph-control 中的持久图行、graph-stream 中的流投影、graph-wakes 中的监督唤醒语义，以及 `view_agent_graph`/`update_agent_graph` 工具面 |
 | [memory-extraction.md](memory-extraction.zh.md) | 尽力而为的记忆抽取管线：会话事件消费、带模型体验接线的 LLM 抽取与建议性来源轨迹输出 |
+| [graph.md](graph.zh.md) | 代理图服务：graph-control 中的持久图行、graph-stream 中的流投影、graph-wakes 中的监督唤醒语义，以及 `view_agent_graph`/`update_agent_graph` 工具面 |
 | [conversation.md](conversation.zh.md) | 目标无关的会话事件组装：上下文标识、位置数据、回放路径、视图构建器与目标自有的渲染节点 |
 | [session-projection.md](session-projection.zh.md) | 投影 seam：`SessionProjectionMap`、纯函数 `ProjectionDefinition` 单元、`ProjectionSnapshot` 的一致切面、变更馈送 |
 | [otel.md](otel.zh.md) | 共享普通事件与 Session 日志 OTLP 通道 |
