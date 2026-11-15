@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import ts from 'typescript'
 import { pnpmCommand } from './process.ts'
+import { tscSpawn } from './tsc-compiler.ts'
+import type { TscCompiler } from './tsc-compiler.ts'
 
 type CompilationMode = 'checked' | 'benchmark-emit'
 
@@ -44,18 +46,18 @@ export function runPnpmCommand(root: string, args: readonly string[]): void {
 }
 
 /**
- * Resolve the Node arguments that compile one aggregate's project references with the serial TypeScript builder.
+ * Resolve the compiler that compiles one aggregate's project references with the serial TypeScript builder.
  * @param root - Repository root containing the aggregate tsconfig.
  * @param face - Independent compiler face whose package projects are emitted.
  * @param mode - Check package types by default; benchmark emission defers diagnostics to required full builds.
- * @returns Arguments for `process.execPath`, including an 8 GiB old-space heap limit for the Host face.
+ * @returns Spawn specification of the compiler; the Host face keeps an 8 GiB old-space heap limit under stock.
  * @throws If the aggregate configuration is invalid, has no references, or can emit files.
  */
-export function referencedProjectsCompilerArgs(
+export function referencedProjectsCompiler(
   root: string,
   face: 'host' | 'client',
   mode: CompilationMode = 'checked',
-): string[] {
+): TscCompiler {
   const configPath = resolve(root, `tsconfig.${face}.json`)
   const config = ts.getParsedCommandLineOfConfigFile(configPath, {}, {
     ...ts.sys,
@@ -76,40 +78,37 @@ export function referencedProjectsCompilerArgs(
   if (config.options.noEmit !== true) {
     throw new Error(`compile-referenced-projects: ${configPath} requires noEmit: true to exclude its aggregate program`)
   }
-  return [
-    ...hostHeapArgs(face),
-    fileURLToPath(import.meta.resolve('typescript/bin/tsc')),
-    '-b',
-    ...mode === 'benchmark-emit' ? ['--noCheck'] : [],
-    // Relative arguments keep the complete workspace graph below Windows' command-line limit.
-    ...references.map(reference => relative(root, reference.path)),
-  ]
+  return tscSpawn(
+    [
+      '-b',
+      ...mode === 'benchmark-emit' ? ['--noCheck'] : [],
+      // Relative arguments keep the complete workspace graph below Windows' command-line limit.
+      ...references.map(reference => relative(root, reference.path)),
+    ],
+    face === 'host' ? { heapOldSpaceMb: 8192 } : {},
+  )
 }
 
 /**
- * Resolve the Node arguments that type-check one aggregate's own test and script program in project mode.
+ * Resolve the compiler that type-checks one aggregate's own test and script program in project mode.
  * Project mode reads the declarations that its references already emitted and never compiles a reference,
  * so missing package outputs surface as compiler diagnostics.
  * @param face - Compiler face whose aggregate program is checked.
- * @returns Arguments for `process.execPath`, run from the repository root.
+ * @returns Spawn specification run from the repository root.
  */
-export function aggregateCheckArgs(face: 'host' | 'client'): string[] {
-  return ['--max-old-space-size=8192', fileURLToPath(import.meta.resolve('typescript/bin/tsc')), '-p', `tsconfig.${face}.json`]
+export function aggregateCheckCompiler(face: 'host' | 'client'): TscCompiler {
+  return tscSpawn(['-p', `tsconfig.${face}.json`], { heapOldSpaceMb: 8192 })
 }
 
 /**
- * Resolve the Node arguments that type-check one aggregate's own test and script program in build mode.
+ * Resolve the compiler that type-checks one aggregate's own test and script program in build mode.
  * Build mode skips the program when its tsbuildinfo is current; callers run it only after the
  * aggregate's references are compiled, so it finds every reference up to date and compiles none.
  * @param face - Compiler face whose aggregate program is checked.
- * @returns Arguments for `process.execPath`, run from the repository root.
+ * @returns Spawn specification run from the repository root.
  */
-export function aggregateBuildArgs(face: 'host' | 'client'): string[] {
-  return ['--max-old-space-size=8192', fileURLToPath(import.meta.resolve('typescript/bin/tsc')), '-b', `tsconfig.${face}.json`]
-}
-
-function hostHeapArgs(face: 'host' | 'client'): string[] {
-  return face === 'host' ? ['--max-old-space-size=8192'] : []
+export function aggregateBuildCompiler(face: 'host' | 'client'): TscCompiler {
+  return tscSpawn(['-b', `tsconfig.${face}.json`], { heapOldSpaceMb: 8192 })
 }
 
 /**
@@ -133,12 +132,13 @@ function compilerStep(
   mode: CompilationMode,
   needs: readonly LibraryStepId[],
 ): LibraryStep {
+  const compiler = referencedProjectsCompiler(root, face, mode)
   return {
     id: face === 'host' ? 'host-src' : 'client-src',
     label: `${face} compiler`,
     displayCommand: `tsc -b${mode === 'benchmark-emit' ? ' --noCheck' : ''} <tsconfig.${face}.json references>`,
-    command: process.execPath,
-    args: referencedProjectsCompilerArgs(root, face, mode),
+    command: compiler.command,
+    args: compiler.args,
     needs,
   }
 }

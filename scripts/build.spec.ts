@@ -75,11 +75,16 @@ describe('repository build steps', () => {
   })
 
   it.each(['complete', 'check', 'typecheck'] as const)('gives Host compilers and both aggregate checks an 8 GiB heap in %s scope', (scope) => {
-    const gates = buildGates(root, scope)
-    for (const gate of gates.filter(gate => gate.id === 'host-src' || gate.id === 'host-check' || gate.id === 'client-check')) {
-      expect(gate.args[0]).toBe('--max-old-space-size=8192')
+    for (const gate of buildGates(root, scope).filter(gate => ['host-src', 'host-check', 'client-check'].includes(gate.id))) {
+      if (gate.command === process.execPath) {
+        // The stock selection wraps the JS entry in Node, which needs the explicit old-space budget.
+        expect(gate.args[0]).toBe('--max-old-space-size=8192')
+      } else {
+        // A native compiler binary has no Node heap and must not carry Node flags.
+        expect(gate.args.some(arg => arg.startsWith('--max-old-space-size'))).toBe(false)
+      }
     }
-    for (const gate of gates.filter(gate => gate.id === 'client-src')) {
+    for (const gate of buildGates(root, scope).filter(gate => gate.id === 'client-src')) {
       expect(gate.args.some(arg => arg.startsWith('--max-old-space-size'))).toBe(false)
     }
   })

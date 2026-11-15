@@ -9,6 +9,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { tscSpawn } from './tsc-compiler.ts'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -143,11 +144,12 @@ try {
     .join('\n')
   writeFileSync(resolve(tmp, 'index.ts'), `${imports}\n`)
 
-  // tsc's JS entry via the current node, not the .bin shim: the extensionless
-  // shim isn't spawnable on Windows (CVE-2024-27980) and the .cmd variant needs
-  // shell:true, which space-joins args UNESCAPED (DEP0190) — a hazard for the
-  // temp tsconfig path. The JS entry behaves identically on every platform.
-  execFileSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', resolve(tmp, 'tsconfig.json'), '--pretty', 'false'], {
+  // Spawn the resolved compiler directly, not the .bin shim: the extensionless shim
+  // isn't spawnable on Windows (CVE-2024-27980) and the .cmd variant needs shell:true,
+  // which space-joins args UNESCAPED (DEP0190) — a hazard for the temp tsconfig path.
+  // The stock selection runs the JS entry via the current node, identically on every platform.
+  const compiler = tscSpawn(['-p', resolve(tmp, 'tsconfig.json'), '--pretty', 'false'])
+  execFileSync(compiler.command, [...compiler.args], {
     cwd: root,
     stdio: 'pipe',
   })

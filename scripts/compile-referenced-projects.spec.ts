@@ -3,8 +3,8 @@ import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, sta
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { aggregateCheckArgs, buildHostContracts, buildLibraryArtifacts, compileReferencedProjects } from './compile-referenced-projects.ts'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { aggregateCheckCompiler, buildHostContracts, buildLibraryArtifacts, compileReferencedProjects } from './compile-referenced-projects.ts'
 import { removeFixtureSafely } from './test-fixture-cleanup.ts'
 import { setPublishedFiles, writeTypertWorkspace } from './typert-workspace.fixture.ts'
 
@@ -196,6 +196,12 @@ describe('bundle-free Host contracts', { timeout: 60_000 }, () => {
 })
 
 describe('package project compilation', () => {
+  // Every spawn in this suite is byte-compared against the pinned stock run above: the
+  // compiler resolver must stay on the same selection (a switch re-tags .tsbuildinfo and
+  // forces rebuilds), so the whole describe forces DSH_TSC=stock.
+  beforeEach(() => { vi.stubEnv('DSH_TSC', 'stock') })
+  afterEach(() => { vi.unstubAllEnvs() })
+
   it('records Windows-style glob keys without changing artifact bytes', () => {
     const { leaf } = fixture()
     const output = join(leaf, 'lib')
@@ -301,7 +307,8 @@ describe('package project compilation', () => {
   it('checks only the aggregate program in project mode', () => {
     const { root, leaf } = fixture()
     compileReferencedProjects(root, 'host')
-    const check = () => spawnSync(process.execPath, aggregateCheckArgs('host'), { cwd: root, encoding: 'utf8' })
+    const checkCompiler = aggregateCheckCompiler('host')
+    const check = () => spawnSync(checkCompiler.command, [...checkCompiler.args], { cwd: root, encoding: 'utf8' })
 
     const clean = check()
     expect(clean.status, clean.stdout + clean.stderr).toBe(0)
@@ -319,7 +326,8 @@ describe('package project compilation', () => {
   it('reports missing package declarations without compiling references', () => {
     const { root, leaf } = fixture()
 
-    const result = spawnSync(process.execPath, aggregateCheckArgs('client'), { cwd: root, encoding: 'utf8' })
+    const checkCompiler = aggregateCheckCompiler('client')
+    const result = spawnSync(checkCompiler.command, [...checkCompiler.args], { cwd: root, encoding: 'utf8' })
 
     expect(result.status).not.toBe(0)
     expect(result.stdout).toContain('error TS6305')

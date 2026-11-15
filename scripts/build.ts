@@ -20,7 +20,7 @@ import {
   resolveClientBuildEnvironment,
   writeClientBuildRecord,
 } from './client-build-environment.ts'
-import { aggregateBuildArgs, aggregateCheckArgs, contractSteps, libraryBuildSteps } from './compile-referenced-projects.ts'
+import { aggregateBuildCompiler, aggregateCheckCompiler, contractSteps, libraryBuildSteps } from './compile-referenced-projects.ts'
 import type { LibraryStep } from './compile-referenced-projects.ts'
 import { pnpmCommand } from './process.ts'
 import { defaultParallelism, describeDefaultParallelism } from './parallelism.ts'
@@ -106,12 +106,13 @@ export function buildGates(
   }
   if (scope !== 'artifacts') {
     for (const face of ['host', 'client'] as const) {
+      const compiler = scope === 'typecheck' ? aggregateBuildCompiler(face) : aggregateCheckCompiler(face)
       gates.push({
         id: `${face}-check`,
         label: `${face} aggregate check`,
         displayCommand: `tsc ${scope === 'typecheck' ? '-b' : '-p'} tsconfig.${face}.json`,
-        command: process.execPath,
-        args: scope === 'typecheck' ? aggregateBuildArgs(face) : aggregateCheckArgs(face),
+        command: compiler.command,
+        args: [...compiler.args],
         needs: scope === 'check' ? [] : [`${face}-src`],
         env,
       })

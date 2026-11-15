@@ -14,6 +14,7 @@ import { builtDeclarationPath, isFrozenUpgradeGuidePath } from './doc-typecheck-
 import { markdownFences } from './markdown.ts'
 import { partitionPairedMarkdownDerivatives } from './paired-markdown-derivatives.ts'
 import { isArchivedAgentNotePath } from './repo-files.ts'
+import { tscSpawn } from './tsc-compiler.ts'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -179,8 +180,11 @@ function compileBlocksStandalone(blocks: Block[]): string | undefined {
       writeFileSync(join(tmp, `block-${index}.ts`), block.code.endsWith('\n') ? block.code : `${block.code}\n`)
     }
     try {
-      // Invoke tsc's JS entry through Node instead of a platform-specific shell shim.
-      execFileSync(process.execPath, ['node_modules/typescript/bin/tsc', '-b', join(tmp, 'tsconfig.json')], {
+      // Spawn the resolved compiler directly: the stock selection runs the JS entry
+      // through Node (never a platform-specific shell shim), and a parked tsfork
+      // binary spawns without a Node wrapper.
+      const compiler = tscSpawn(['-b', join(tmp, 'tsconfig.json')])
+      execFileSync(compiler.command, [...compiler.args], {
         cwd: root,
         stdio: 'pipe',
       })
