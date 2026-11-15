@@ -643,16 +643,14 @@ export type Config = LocalConfig
 export interface BrowserConfig {
   /** Resolvable browser executable path; empty lets Playwright find one. */
   browserPath?: string
-  /** Prefer the CloakBrowser backend (`app.patch`) when no path/cdp_url/relay is requested. */
+  /** Prefer the patchright backend (`app.patch`) when no path/cdp_url/relay is requested. */
   usePatch?: boolean
-  /** CloakBrowser launch options (proxy / geoip / humanize passthrough). */
+  /** patchright launch options (proxy / channel passthrough). */
   patchOptions?: {
     /** Proxy URL passed to the Chromium (e.g. a residential proxy). */
     proxy?: string
-    /** Match timezone + locale to the proxy IP (needs `proxy`). */
-    geoip?: boolean
-    /** Human-like mouse, keyboard, scroll behaviour. */
-    humanize?: boolean
+    /** Browser distribution channel, e.g. `chrome` to drive installed Google Chrome instead of patchright's own Chromium build. */
+    channel?: string
   }
   /** Headless mode for launched browsers (default true). */
   headless?: boolean
@@ -5072,7 +5070,7 @@ export interface PresetSelectionConfig {
 ## `@deepseek-ai/dsh-tool-subagent-control`
 
 - `inject`: `tools` · `subagents` · `agents` · `systemPrompt`
-- `source`: [`packages/subagent/tool-subagent-control/src/index.ts:24`](../packages/subagent/tool-subagent-control/src/index.ts)
+- `source`: [`packages/subagent/tool-subagent-control/src/index.ts:25`](../packages/subagent/tool-subagent-control/src/index.ts)
 
 ```ts config-catalog
 /** Optional subagent control tools. */
@@ -5767,6 +5765,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-deque` | — | [`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts) |
 | `@deepseek-ai/dsh-error` | — | [`packages/util/error/src/index.ts`](../packages/util/error/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-browser-use-runtime` | — | [`packages/experimental/browser-use-runtime/src/index.ts`](../packages/experimental/browser-use-runtime/src/index.ts) |
+| `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-webworker-packer` | — | [`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-webworker-runtime` | — | [`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts) |
 | `@deepseek-ai/dsh-fs-archive` | — | [`packages/fs/fs-archive/src/index.ts`](../packages/fs/fs-archive/src/index.ts) |

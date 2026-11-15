@@ -316,14 +316,16 @@
     # Agentic browser plumbing (ctx.browser): launch a stealth-patched browser,
     # attach to an existing CDP endpoint, relay into the user's own tabs via
     # an in-process relay server + companion Chrome extension, or use the
-    # CloakBrowser source-patched Chromium (app.patch — strongest
-    # anti-detection; the default below). Host-plane — one browser
+    # patchright-driven Chromium (app.patch — a Playwright fork closing
+    # Playwright's own automation leaks; strongest anti-detection; the
+    # default below).
     # process group serves every session; the tool row namespaces its tabs.
     - id: browser
       name: '@deepseek-ai/dsh-browser'
       config:
-        # CloakBrowser is the PREFERRED backend: its Chromium carries 71
-        # source-level C++ fingerprint patches + per-session randomization.
+        # patchright is the PREFERRED backend: it closes Playwright's CDP-client
+        # automation leaks (Runtime.enable, console/stack-trace/URL leaks) on top
+        # of the JS stealth layer the service applies per page.
         # A per-call app.patch=false falls back to launch/attach/relay.
         usePatch: true
 

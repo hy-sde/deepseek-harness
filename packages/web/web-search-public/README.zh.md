@@ -23,7 +23,7 @@ kind: "package-reference"
 
 一个无需凭据的 `WebSearchProvider`，用于 harness [web 能力 seam](../web/README.zh.md)（`ctx.web`）。无需 API 密钥或环境变量，它将一个查询并发散开到五个公共搜索引擎——Startpage、DuckDuckGo、Ecosia、Google 与 Mojeek——并按跨引擎共识整合答案，因此任何单个引擎的被风控、超时或缓慢响应都不会阻塞或拖垮检索。这是对 oh-my-pi `searchPublicWeb` 聚合的忠实移植。
 
-浏览器后端的引擎（Google、Ecosia、Mojeek）在廉价的普通 fetch 遇到机器人墙时会升级到宿主的真实浏览器（`ctx.browser.fetchPageHtml`——隐身 `launch` 或 CloakBrowser `patch`）：enable-JS 重试页、Cloudflare 托管挑战（"Ecosia Firewall"）、Mojeek 的 ALTCHA 工作量证明（在浏览器中点击其复选框自动求解），以及 Google 的 "unusual traffic" `/sorry` 闸门（硬墙——Google 仍会让出链路）。升级属于传输层细节，而非新引擎：未挂载浏览器服务时，这些引擎只是保持仅 fetch；只有当每种传输（fetch 与浏览器）都被封锁时，每引擎断路器才会打开。
+浏览器后端的引擎（Google、Ecosia、Mojeek）在廉价的普通 fetch 遇到机器人墙时会升级到宿主的真实浏览器（`ctx.browser.fetchPageHtml`——隐身 `launch` 或 patchright `patch`）：enable-JS 重试页、Cloudflare 托管挑战（"Ecosia Firewall"）、Mojeek 的 ALTCHA 工作量证明（在浏览器中点击其复选框自动求解），以及 Google 的 "unusual traffic" `/sorry` 闸门（硬墙——Google 仍会让出链路）。升级属于传输层细节，而非新引擎：未挂载浏览器服务时，这些引擎只是保持仅 fetch；只有当每种传输（fetch 与浏览器）都被封锁时，每引擎断路器才会打开。
 
 这是一个**实现**包：它向 `ctx.web` 注册提供方，不拥有 `ctx.web` 键，也不注册面向模型的工具（后者属于 `@deepseek-ai/dsh-tool-web`）。它是函数／命名空间插件（`inject: ['web']`），负责注册后端，而非默认导出服务。
 

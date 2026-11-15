@@ -4079,7 +4079,7 @@ Model-driven git commit + review: `commit` analyzes the staged diff and returns 
 
 ### `browser`
 
-Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a tab, snapshot the page as an ARIA ref tree, and close tabs. Four backends: launch a stealth-patched browser binary (app.path), use the CloakBrowser source-patched Chromium with C++-level fingerprint randomization (app.patch; needs the optional `cloakbrowser` peer), attach to an existing CDP endpoint (app.cdp_url), or relay into the user's own Chrome tabs via the local dsh browser relay + companion extension (app.relay). ARIA snapshots carry [ref=eN] ids that stay valid until the next snapshot; click/type via CSS selectors keep working. Screenshots are written to disk as PNG paths the model can re-read. Returned observation is the current title, url and ref tree, so prefer it over re-reading when no screenshot is needed.
+Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a tab, snapshot the page as an ARIA ref tree, and close tabs. Four backends: launch a stealth-patched browser binary (app.path), use the patchright-driven Chromium — a Playwright fork with automation-leak patches (app.patch; needs the optional `patchright` peer), attach to an existing CDP endpoint (app.cdp_url), or relay into the user's own Chrome tabs via the local dsh browser relay + companion extension (app.relay). ARIA snapshots carry [ref=eN] ids that stay valid until the next snapshot; click/type via CSS selectors keep working. Screenshots are written to disk as PNG paths the model can re-read. Returned observation is the current title, url and ref tree, so prefer it over re-reading when no screenshot is needed.
 
 ```json
 {
@@ -4122,7 +4122,7 @@ Drive a real browser over Chrome DevTools Protocol: open URLs, evaluate JS in a 
         },
         "patch": {
           "type": "boolean",
-          "description": "use the CloakBrowser patched Chromium (source-level C++ fingerprint patches; requires the optional `cloakbrowser` peer)"
+          "description": "use the patchright-driven Chromium (Playwright fork closing automation leaks; requires the optional `patchright` peer)"
         }
       }
     },

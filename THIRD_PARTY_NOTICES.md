@@ -86,7 +86,6 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`chokidar`](https://github.com/paulmillr/chokidar) | MIT |
 | [`chrome-devtools-frontend`](https://github.com/ChromeDevTools/devtools-frontend) | BSD-3-Clause |
 | [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp) | Apache-2.0 |
-| [`cloakbrowser`](https://github.com/CloakHQ/cloakbrowser) | MIT |
 | [`clsx`](https://github.com/lukeed/clsx) | MIT |
 | [`commander`](https://github.com/tj/commander.js) | MIT |
 | [`compression`](https://github.com/expressjs/compression) | MIT |
@@ -137,6 +136,7 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`pdfjs-dist`](https://github.com/mozilla/pdf.js) | Apache-2.0 |
 | [`picomatch`](https://github.com/micromatch/picomatch) | MIT |
 | [`pkce-challenge`](https://github.com/crouchcd/pkce-challenge) | MIT |
+| [`patchright`](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright) | Apache-2.0 |
 | [`playwright-core`](https://github.com/microsoft/playwright) | Apache-2.0 |
 | [`react`](https://github.com/facebook/react) | MIT |
 | [`react-dom`](https://github.com/facebook/react) | MIT |

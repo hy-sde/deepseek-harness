@@ -615,8 +615,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'resolveKind(input: { path?: string; cdpUrl?: string; relay?: boolean; patch?: boolean }): BrowserKind',
-        description: 'Resolve the browser kind for a session (attach/launch/relay), like omp.',
-        parameters: [{ name: 'input', description: 'optional app-path, cdp URL, or explicit relay opt-in.' }],
+        description: 'Resolve the browser kind for a session (attach/launch/patch/relay), like omp.',
+        parameters: [{ name: 'input', description: 'optional app-path, cdp URL, patch flag, or explicit relay opt-in.' }],
         returns: 'the resolved {@link BrowserKind} to drive.',
       },
       {
@@ -639,7 +639,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async fetchPageHtml( url: string, options?: { homeUrl?: string ready?: { selector: string; timeoutMs: number } timeoutMs?: number signal?: AbortSignal /** Mojeek-style ALTCHA interstitial: click its checkbox, wait for the PoW redirect to show results. */ altcha?: { resultsSelector: string; waitMs: number } }, ): Promise<{ html: string; status: number; url: string }>',
-        description: 'Scrape one URL in a dedicated browser (launch or CloakBrowser patch — never relay/attach, which belong to other owners). Used by credential-free web search engines as the challenge-fallthrough transport: optional home-page seeding for cookies, then navigate, optionally wait for a ready selector, and return the rendered HTML plus response status and final URL.',
+        description: 'Scrape one URL in a dedicated browser (launch or patchright patch — never relay/attach, which belong to other owners). Used by credential-free web search engines as the challenge-fallthrough transport: optional home-page seeding for cookies, then navigate, optionally wait for a ready selector, and return the rendered HTML plus response status and final URL.',
         parameters: [{ name: 'url', description: 'target URL.' }, { name: 'options', description: 'home-page seed, ready selector, per-navigation timeout.' }],
         returns: 'rendered HTML, HTTP status of the last navigation, final page URL.',
       },
@@ -6520,7 +6520,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'BrowserConfig',
-    declaration: 'export interface BrowserConfig {\n    browserPath?: string;\n    usePatch?: boolean;\n    patchOptions?: {\n        proxy?: string;\n        geoip?: boolean;\n        humanize?: boolean;\n    };\n    headless?: boolean;\n    viewport?: {\n        width: number;\n        height: number;\n        deviceScaleFactor?: number;\n    };\n    relayUrl?: string;\n    relayToken?: string;\n    timeoutMs?: number;\n}',
+    declaration: 'export interface BrowserConfig {\n    browserPath?: string;\n    usePatch?: boolean;\n    patchOptions?: {\n        proxy?: string;\n        channel?: string;\n    };\n    headless?: boolean;\n    viewport?: {\n        width: number;\n        height: number;\n        deviceScaleFactor?: number;\n    };\n    relayUrl?: string;\n    relayToken?: string;\n    timeoutMs?: number;\n}',
   },
   {
     name: 'BrowserKind',

@@ -44,8 +44,8 @@ One browser connection per (cwd + kind), one tab per name.
 relayEndpoint(): string
 
 /**
- * Resolve the browser kind for a session (attach/launch/relay), like omp.
- * @param input - optional app-path, cdp URL, or explicit relay opt-in.
+ * Resolve the browser kind for a session (attach/launch/patch/relay), like omp.
+ * @param input - optional app-path, cdp URL, patch flag, or explicit relay opt-in.
  * @returns the resolved {@link BrowserKind} to drive.
  */
 resolveKind(input: { path?: string; cdpUrl?: string; relay?: boolean; patch?: boolean }): BrowserKind
@@ -75,7 +75,7 @@ async open( name: string, url: string, opts: { kind: BrowserKind cwd: string wai
 async run( name: string, code: string, opts: { kind: BrowserKind; cwd: string; timeoutMs?: number }, ): Promise<unknown>
 
 /**
- * Scrape one URL in a dedicated browser (launch or CloakBrowser patch — never
+ * Scrape one URL in a dedicated browser (launch or patchright patch — never
  * relay/attach, which belong to other owners). Used by credential-free web
  * search engines as the challenge-fallthrough transport: optional home-page
  * seeding for cookies, then navigate, optionally wait for a ready selector,
