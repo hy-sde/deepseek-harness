@@ -174,6 +174,10 @@ export interface KernelRunRequest {
   signal?: AbortSignal
   /** Optional host functions exposed to the program, one global object per namespace. */
   bindings?: PtcBindingNamespace[]
+  /** Per-run working directory override. */
+  cwd?: string
+  /** Per-run environment overrides. */
+  env?: Record<string, string>
 }
 
 /**
@@ -419,9 +423,14 @@ export class KernelManager {
       const outcome: KernelExecResult = sessionId !== undefined && sessionId.length > 0
         ? await registry.executeOnSession(sessionId, request.code, bindings, {
           ...request.reset !== undefined ? { reset: request.reset } : {},
+          ...request.cwd !== undefined ? { cwd: request.cwd } : {},
+          ...request.env !== undefined ? { env: request.env } : {},
           signal: controller.signal,
         })
-        : await this.#runOneShot(request.language, request.code, bindings, controller.signal)
+        : await this.#runOneShot(request.language, request.code, bindings, controller.signal, {
+          ...request.cwd !== undefined ? { cwd: request.cwd } : {},
+          ...request.env !== undefined ? { env: request.env } : {},
+        })
       return await this.finalize(outcome, timedOut, onOutputLimit)
     } finally {
       clearTimeout(timer)
@@ -447,6 +456,8 @@ export class KernelManager {
         PYTHONUNBUFFERED: '1',
         PYTHONIOENCODING: 'utf-8',
         PYTHONDONTWRITEBYTECODE: '1',
+        // Decode the stdio pipes as UTF-8 regardless of the platform codepage.
+        PYTHONUTF8: '1',
         DSH_KERNEL_CWD: process.cwd(),
       },
       prefix: 'dsh-code-runtime-kernels-python',
@@ -488,10 +499,15 @@ export class KernelManager {
     code: string,
     bindings: PtcBindingNamespace[],
     signal: AbortSignal,
+    options: { cwd?: string; env?: Record<string, string> } = {},
   ): Promise<KernelExecResult> {
     const kernel = await this.#startKernel(language)
     try {
-      return await kernel.execute(randomUUID(), code, bindings, { signal })
+      return await kernel.execute(randomUUID(), code, bindings, {
+        signal,
+        ...options.cwd !== undefined ? { cwd: options.cwd } : {},
+        ...options.env !== undefined ? { env: options.env } : {},
+      })
     } catch (error: unknown) {
       return { status: 'error', logs: [], cancelled: false, invalidOutput: false, message: String(error), killed: false }
     } finally {
