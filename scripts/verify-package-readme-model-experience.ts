@@ -57,6 +57,7 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  * blocks. A package moves on or off this list with its context behavior.
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
+   'packages/experimental/inspector-profile': { kind: 'none', reason: 'The bundle mounts developer inspection plugins without registering a tool schema, prompt section, or model input.' },
   'packages/openwiki/openwiki-core': { kind: 'none', reason: 'The deterministic engine library registers no tool schema, prompt section, or result of its own; model-facing surfaces live in dsh-tool-openwiki over these exports.' },
   'packages/client/ui-context-menu': { kind: 'none', reason: 'Client menu presentation and contributed callbacks add no model input.' },
   'packages/client/ui-file-actions': { kind: 'none', reason: 'Explicit user file saves and clipboard operations add no model input.' },

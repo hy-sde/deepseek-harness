@@ -44,6 +44,7 @@ export const LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES: readonly string[]
   'packages/experimental/forge-github',
   'packages/experimental/forge-session',
   'packages/experimental/inspector',
+   'packages/experimental/inspector-profile',
   'packages/experimental/ptc-runtime-python',
   'packages/experimental/session-inspector',
   'packages/experimental/speech-to-text',

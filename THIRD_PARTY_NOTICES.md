@@ -133,10 +133,10 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`p-limit`](https://github.com/sindresorhus/p-limit) | MIT |
 | [`papaparse`](https://github.com/mholt/PapaParse) | MIT |
 | [`partial-json`](https://github.com/promplate/partial-json-parser-js) | MIT |
+| [`patchright`](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright) | Apache-2.0 |
 | [`pdfjs-dist`](https://github.com/mozilla/pdf.js) | Apache-2.0 |
 | [`picomatch`](https://github.com/micromatch/picomatch) | MIT |
 | [`pkce-challenge`](https://github.com/crouchcd/pkce-challenge) | MIT |
-| [`patchright`](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright) | Apache-2.0 |
 | [`playwright-core`](https://github.com/microsoft/playwright) | Apache-2.0 |
 | [`react`](https://github.com/facebook/react) | MIT |
 | [`react-dom`](https://github.com/facebook/react) | MIT |
