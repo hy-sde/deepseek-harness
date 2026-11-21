@@ -329,7 +329,8 @@ export class KernelHost {
     // `--no-warnings` for the Node runner is statically safe: a development
     // spawn of the .ts kernel would otherwise leak the type-stripping
     // ExperimentalWarning into the captured stderr. Python gets unfiltered
-    // stdout via -u plus PYTHONUNBUFFERED/PYTHONIOENCODING.
+    // stdout via -u plus PYTHONUNBUFFERED/PYTHONIOENCODING, and PYTHONUTF8
+    // pins UTF-8 pipe decoding across platform codepages.
     // `detached: true` on POSIX calls setsid(2), making the runner a session
     // leader: anything it spawns stays in ITS process group, so a shutdown can
     // sweep the whole tree via killProcessGroup (the #7714 orphan fix) instead
