@@ -1037,6 +1037,20 @@ describe('query constraint enforcement', () => {
     expect(parseDateValue('someday')).toBeUndefined()
   })
 
+  it('rejects calendar-impossible dates so the directive degrades to a plain term', () => {
+    // Date.parse('2023-02-29') silently ROLLS OVER to 2023-03-01 (V8 MakeDay),
+    // shifting the bound instead of rejecting it — probe the calendar instead.
+    expect(parseDateValue('2023-02-29')).toBeUndefined()
+    expect(parseDateValue('2024-02-31')).toBeUndefined()
+    expect(parseDateValue('2024-04-31')).toBeUndefined()
+    expect(parseDateValue('2024-02-29')).toBe('2024-02-29')
+    // Unparseable dates degrade to a plain term, not a silent no-op bound.
+    const q = parseQueryConstraints('after:2023-02-29 site:docs.test')
+    expect(q.after).toBeUndefined()
+    expect(q.sites).toEqual(['docs.test'])
+    expect(q.hasConstraints).toBe(true)
+  })
+
   it('drops sources outside site scope and keeps the rest', () => {
     const kept = applyQueryConstraints([
       source('https://docs.test/a'),
