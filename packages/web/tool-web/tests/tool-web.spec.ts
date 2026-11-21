@@ -11,7 +11,7 @@ import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { type ResolvedToolSet, type ToolExecutionInput, type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import WebRuntime from '@deepseek-ai/dsh-web'
-import type { WebFetchProvider, WebSearchProvider, WebSearchRequest, WebSearchResult } from '@deepseek-ai/dsh-web'
+import type { WebFetchProvider, WebSearchProvider, WebSearchRequest, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import {
   formatSearchOutput,
@@ -31,6 +31,14 @@ import {
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ToolResult } from '@deepseek-ai/dsh-tools'
 import { parseSearchArgs } from '../src/search.ts'
+import {
+  applyQueryConstraints,
+  enforceQueryScope,
+  matchesSite,
+  parseDateValue,
+  parseQueryConstraints,
+  scopeConstraints,
+} from '../src/query-constraints.ts'
 
 const testToolSignal = new AbortController().signal
 
@@ -972,6 +980,189 @@ describe('tool-web execution through the real registry', () => {
     controller.abort(new Error('caller cancelled'))
     await pending
     expect(signals.every(signal => signal?.aborted === true)).toBe(true)
+    await fiber.dispose()
+  })
+})
+
+describe('query constraint enforcement', () => {
+  const source = (url: string, extra: Partial<WebSearchSource> = {}): WebSearchSource => ({ url, ...extra })
+
+  it('parses site directives with normalization and negation', () => {
+    const q = parseQueryConstraints(
+      'site:https://*.Example.org/docs/ -site:pdf.test --site:docs.test NOT site:mail.test',
+    )
+    expect(q.sites).toEqual(['example.org/docs'])
+    expect(q.excludedSites).toEqual(['pdf.test', 'docs.test', 'mail.test'])
+    expect(q.hasConstraints).toBe(true)
+  })
+
+  it('parses advisory dimensions and quoted directive values', () => {
+    const q = parseQueryConstraints('intitle:"budget tips" inurl:docs filetype:.PDF after:2024-03 before:2024-06-15')
+    expect(q.inTitle).toEqual(['budget tips'])
+    expect(q.inUrl).toEqual(['docs'])
+    expect(q.filetypes).toEqual(['pdf'])
+    expect(q.after).toBe('2024-03-01')
+    expect(q.before).toBe('2024-06-15')
+  })
+
+  it('captures allintitle followers into the title scope', () => {
+    const q = parseQueryConstraints('allintitle:budget tips 2024')
+    expect(q.inTitle).toEqual(['budget', 'tips', '2024'])
+  })
+
+  it('leaves unknown name:value tokens unconstrained', () => {
+    const q = parseQueryConstraints('https://a.test/x:y C:\\paths TS2345:error')
+    expect(q.hasConstraints).toBe(false)
+  })
+
+  it('adopts the next token as an empty directive value', () => {
+    const q = parseQueryConstraints('site: example.com')
+    expect(q.sites).toEqual(['example.com'])
+  })
+
+  it('matches site hosts, subdomains, and paths', () => {
+    expect(matchesSite('https://docs.test/a', 'docs.test')).toBe(true)
+    expect(matchesSite('https://sub.docs.test/a', 'docs.test')).toBe(true)
+    expect(matchesSite('https://docs.test/guide/intro', 'docs.test/guide')).toBe(true)
+    expect(matchesSite('https://docs.test/other', 'docs.test/guide')).toBe(false)
+    expect(matchesSite('https://evil.docs.test.evil.test/', 'docs.test')).toBe(false)
+    expect(matchesSite('not a url', 'docs.test')).toBe(false)
+  })
+
+  it('parses date bounds', () => {
+    expect(parseDateValue('2024')).toBe('2024-01-01')
+    expect(parseDateValue('2024/3')).toBe('2024-03-01')
+    expect(parseDateValue('3/4/2024')).toBe('2024-03-04')
+    expect(parseDateValue('13/4/2024')).toBe('2024-04-13')
+    expect(parseDateValue('someday')).toBeUndefined()
+  })
+
+  it('drops sources outside site scope and keeps the rest', () => {
+    const kept = applyQueryConstraints([
+      source('https://docs.test/a'),
+      source('https://mail.test/b'),
+      source('https://sub.docs.test/c'),
+    ], parseQueryConstraints('site:docs.test'))
+    expect(kept.sources.map(s => s.url)).toEqual(['https://docs.test/a', 'https://sub.docs.test/c'])
+    expect(kept.dropped).toEqual([])
+  })
+
+  it('relaxes an advisory dimension that would remove every source', () => {
+    const kept = applyQueryConstraints(
+      [source('https://a.test/report.pdf')],
+      parseQueryConstraints('intitle:missing filetype:pdf'),
+    )
+    expect(kept.sources).toHaveLength(1)
+    expect(kept.dropped).toEqual(['intitle:missing'])
+  })
+
+  it('never relaxes a scope directive, even to an empty result', () => {
+    const kept = applyQueryConstraints(
+      [source('https://mail.test/b')],
+      parseQueryConstraints('site:docs.test intitle:missing'),
+    )
+    expect(kept.sources).toEqual([])
+    expect(kept.dropped).toEqual([])
+  })
+
+  it('exposes scope directives as one label and matcher', () => {
+    const scope = scopeConstraints(parseQueryConstraints('-site:pdf.test intitle:x'))
+    expect(scope?.label).toBe('-site:pdf.test')
+    expect(scope?.matches({ url: 'https://a.test' })).toBe(true)
+    expect(scope?.matches({ url: 'https://pdf.test/a.pdf' })).toBe(false)
+    expect(scopeConstraints(parseQueryConstraints('intitle:x'))).toBeUndefined()
+  })
+
+  it('passes through results without constraints or without sources', () => {
+    const unconstrained: WebSearchResult = { content: 'answer', sources: [source('https://a.test')], truncated: false }
+    expect(enforceQueryScope('plain query', unconstrained)).toBe(unconstrained)
+    const empty: WebSearchResult = { sources: [], truncated: false }
+    expect(enforceQueryScope('site:docs.test', empty)).toBe(empty)
+  })
+
+  it('returns an empty scoped result when every source is off-scope', () => {
+    const result: WebSearchResult = {
+      content: 'provider answer',
+      truncated: false,
+      sources: [{ url: 'https://mail.test/a', title: 'A' }],
+    }
+    expect(enforceQueryScope('site:docs.test', result)).toEqual({
+      notices: ['no results matched `site:docs.test`; scope directives are strictly enforced'],
+      sources: [],
+      truncated: false,
+    })
+  })
+
+  it('flags provider answers that may draw on removed off-scope sources', () => {
+    const result: WebSearchResult = {
+      content: 'provider answer',
+      notices: ['provider notice'],
+      truncated: false,
+      sources: [source('https://docs.test/a', { title: 'A' }), source('https://mail.test/b', { title: 'B' })],
+    }
+    expect(enforceQueryScope('site:docs.test', result)).toEqual({
+      content: 'provider answer',
+      notices: [
+        'provider notice',
+        'removed 1 source outside `site:docs.test`; the answer text is unfiltered and may draw on them',
+      ],
+      sources: [source('https://docs.test/a', { title: 'A' })],
+      truncated: false,
+    })
+  })
+
+  it('relaxes advisory dimensions with a note', () => {
+    const result: WebSearchResult = {
+      content: 'answer',
+      truncated: false,
+      sources: [source('https://docs.test/a', { title: 'Other' })],
+    }
+    expect(enforceQueryScope('site:docs.test intitle:budget', result)).toEqual({
+      content: 'answer',
+      notices: ['no results matched `intitle:budget`; the constraint was relaxed'],
+      sources: [source('https://docs.test/a', { title: 'Other' })],
+      truncated: false,
+    })
+  })
+
+  it('enforces site scope on executed searches and reports a scope miss as an empty result', async () => {
+    const result: WebSearchResult = {
+      content: 'off-site answer',
+      truncated: false,
+      sources: [{ url: 'https://mail.test/a', title: 'A' }],
+    }
+    const { fiber, call } = await mountTools({ webConfig: { searchProvider: 'stub-search' }, search: searchProvider(result) })
+    const out = await call('web_search', { queries: ['site:docs.test release notes'] })
+    expect(out.isError).toBe(false)
+    expect(out.value).toEqual({
+      notices: ['no results matched `site:docs.test`; scope directives are strictly enforced'],
+      sources: [],
+      truncated: false,
+    })
+    const body = out.content.map(block => block.type === 'text' ? block.text : '').join('')
+    expect(body).toContain('Note: no results matched')
+    expect(body).toContain('No results found.')
+    await fiber.dispose()
+  })
+
+  it('merges a scope-missed query as empty while keeping other queries sources', async () => {
+    const provider: WebSearchProvider = {
+      id: 'stub-search',
+      available: () => available,
+      search: request => Promise.resolve(
+        request.query === 'site:docs.test notes'
+          ? { content: 'off-site answer', truncated: false, sources: [{ url: 'https://mail.test/a' }] }
+          : { truncated: false, sources: [{ url: 'https://docs.test/b', title: 'B' }] },
+      ),
+    }
+    const { fiber, call } = await mountTools({ webConfig: { searchProvider: 'stub-search' }, search: provider })
+    const out = await call('web_search', { queries: ['site:docs.test notes', 'plain query'] })
+    expect(out.isError).toBe(false)
+    expect(out.value).toEqual({
+      notices: ['site:docs.test notes: no results matched `site:docs.test`; scope directives are strictly enforced'],
+      sources: [{ url: 'https://docs.test/b', title: 'B' }],
+      truncated: false,
+    })
     await fiber.dispose()
   })
 })
