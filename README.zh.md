@@ -6,12 +6,15 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
 
-本 fork（`hy-sde/deepseek-harness`）跟踪上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)，在其之上新增 **296 个提交的能力**——**16 个 fork 独有的包目录**、超过 **26.7 万行新增代码**——并通过持续回移上游修复保持同步。
+本 fork（`hy-sde/deepseek-harness`）跟踪上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)，在其之上新增 **432 个提交的能力**——**43 个 fork 独有的能力包**、超过 **38.9 万行新增代码**——并通过持续回移上游修复保持同步（0.2.2-rc.5 已于 2026-11-20 合入）。
 
 ![以产品视角看这个 fork：相对上游的能力与定制](.github/assets/fork-brief.png)
 
 用户能实际感受到的：
 
+- **面向局域网自用**——所有模型路由都指向 LAN/Tailscale 推理服务（零云提供方）；账号登录机制已从代码库删除，网络搜索运行在免凭据的公共引擎上。
+- **fork 依赖，精简表面**——15 个依赖库以维护中的 fork 形式放在 `vendor/`；39 个上游包与桌面应用被移除——约 9.3 万行无需再回移的代码。
+- **刻意收窄的 160K 上下文**——LAN 推理以 bf16（完整 16 位）权重服务默认模型，窗口刻意收紧为 160K token——LAN 上其他路由可达 1M，但更小的窗口换来更高的生成质量；billion-context 会自动修剪工具输出，并把长对话折叠为可恢复的摘要。
 - **冷启动类型检查快 7.7 倍**——在 337 个项目的 monorepo 上从 54 秒降到 7 秒，输出经字节级一致性验证；同一 Go 原生编译器还驱动编辑器的语言服务。
 - **整仓代码智能**——知识图谱一步回答「谁在调用它」、路由与架构问题，无需反复 grep 加阅读。
 - **每次推送都有独立评审**——并行评审 agent 将发现按 P0–P3 分级，并以 ship / no-ship 结论为推送把关。

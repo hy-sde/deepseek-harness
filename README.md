@@ -6,12 +6,15 @@ DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek 
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
-This fork (`hy-sde/deepseek-harness`) tracks upstream [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) and ships **296 commits of additional capability** on top of it — **16 fork-only package trees**, over **267,000 added lines** — while staying current through continuous re-ports of upstream fixes.
+This fork (`hy-sde/deepseek-harness`) tracks upstream [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) and ships **432 commits of additional capability** on top of it — **43 fork-only capability packages**, over **389,000 added lines** — while staying current through continuous re-ports of upstream fixes (0.2.2-rc.5 merged 2026-11-20).
 
 ![The fork in product terms — capabilities and customization over upstream stock](.github/assets/fork-brief.png)
 
 What users actually feel:
 
+- **Self-use over the LAN** — every model route points at a LAN/Tailscale inference server (zero cloud providers); account sign-in machinery is deleted from the codebase and web search runs on credential-free public engines.
+- **Forked dependencies, trimmed surface** — 15 libraries live in `vendor/` as maintained forks; 39 upstream packages and the desktop apps are removed — roughly 93,000 lines that never need re-porting.
+- **160K context, on purpose** — LAN inference serves the default model at bf16 (full 16-bit) weights with a deliberately tight 160K-token window — the LAN's other routes offer 1M, but a smaller window keeps generation quality; billion-context auto-prunes tool output and folds long stretches into restorable summaries.
 - **7.7× faster cold type-checks** — 54s → 7s on a 337-project monorepo, output verified byte-identical; the same Go-native compiler drives the editor's language server.
 - **Whole-repo code intelligence** — a knowledge graph answers who-calls-this, route, and architecture questions in one step instead of grep-and-read cycles.
 - **Independent review on every push** — parallel reviewer agents rank findings P0–P3 and a ship / no-ship verdict gates the push.
