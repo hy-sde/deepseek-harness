@@ -395,6 +395,96 @@ describe('tool-edit (hashline mode) × edit-result seen-line registration', () =
     )
   })
 })
+describe('tool-edit (hashline mode) × carried seen lines across outside changes (oh-my-pi 5de4b03810)', () => {
+  /** Full composition with seen-line enforcement: real backend + policy + read tool + rich editor. */
+  async function seenLineStack() {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-tool-edit-carry-'))
+    roots.push(root)
+    const ctx = new Context()
+    contexts.push(ctx)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(LocalFileSystem, { cwd: root })
+    await ctx.plugin(WorkingDirectory, { defaultDirectory: root })
+    await ctx.plugin(FsPolicy)
+    // read/write only from tool-fs; the literal `edit` slot is owned by tool-edit.
+    await ctx.plugin(ToolFs, { enableEdit: false })
+    const fiber = await ctx.plugin(ToolEdit, { enforceSeenLines: true })
+    return { ctx, root, fiber, owner: agent(ctx, root) }
+  }
+
+  async function run(ctx: Context, owner: Agent, name: string, args: unknown) {
+    return executeToolFixture(ctx, {
+      signal: new AbortController().signal,
+      callId: ToolCallId(`tool-edit-carry-${++callNumber}`),
+      name,
+      arguments: args,
+      agent: owner,
+    })
+  }
+
+  function modelText(result: { content: { type: string; text?: string }[] }): string {
+    return result.content.filter(b => b.type === 'text').map(b => b.text).join('')
+  }
+
+  /** Hashline header `[path#TAG]` tag from a rendered read/edit result. */
+  function tagFrom(text: string): string | undefined {
+    return /\[[^\]#]+#([0-9A-F]{4})\]/.exec(text)?.[1]
+  }
+
+  it('renders the rows an edit wrote whole and keeps them anchorable for the next edit', async () => {
+    const { ctx, root, owner } = await seenLineStack()
+    const sample = join(root, 'h.txt')
+    const text = `${Array.from({ length: 6 }, (_, i) => `line ${i + 1}`).join('\n')}\n`
+    await writeFile(sample, text)
+    const read = await run(ctx, owner, 'read', { file_path: 'h.txt' })
+    expect(read.isError).toBe(false)
+    const tag = tagFrom(modelText(read))
+    expect(tag).toBe(computeFileHash(text))
+
+    // The eight-row inserted run renders whole under the raised added-run
+    // context (2×20+1), so row 7 is displayed by the response that wrote it.
+    const rows = Array.from({ length: 8 }, (_, i) => `+new ${String.fromCharCode(97 + i)}`).join('\n')
+    const first = await run(ctx, owner, 'edit', { input: `[${sample}#${tag}]\nPUT >3:\n${rows}\n` })
+    expect(first.isError).toBe(false)
+    const firstText = modelText(first)
+    expect(firstText).toContain('\n7:new d\n')
+    const edited = text.replace('line 4\n', 'new a\nnew b\nnew c\nnew d\nnew e\nnew f\nnew g\nnew h\nline 4\n')
+    expect(tagFrom(firstText)).toBe(computeFileHash(edited))
+
+    // ...and the model can edit that row under the response tag with no re-read.
+    const second = await run(ctx, owner, 'edit', { input: `[${sample}#${tagFrom(firstText)}]\nPUT 7.=7:\n+new D\n` })
+    expect(second.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe(edited.replace('new d\n', 'new D\n'))
+  })
+
+  it('keeps lines seen where an outside change kept their number and content', async () => {
+    const { ctx, root, owner } = await seenLineStack()
+    const sample = join(root, 'f.txt')
+    const text = `${Array.from({ length: 60 }, (_, i) => `line ${i + 1}`).join('\n')}\n`
+    await writeFile(sample, text)
+    const read = await run(ctx, owner, 'read', { file_path: 'f.txt' })
+    expect(read.isError).toBe(false)
+    expect(modelText(read)).toContain('5: line 5')
+
+    // An outside write changes only line 50; a partial re-read of that
+    // region records the changed content with just its own displayed rows.
+    const changed = text.replace('line 50\n', 'line FIFTY\n')
+    await writeFile(sample, changed)
+    const reread = await run(ctx, owner, 'read', { file_path: 'f.txt', offset: 48, limit: 5 })
+    expect(reread.isError).toBe(false)
+    const rereadTag = tagFrom(modelText(reread))
+    expect(rereadTag).toBe(computeFileHash(changed))
+
+    // Line 5 kept its number and content across the outside change, so the
+    // store carries it into the changed snapshot and the edit applies.
+    const result = await run(ctx, owner, 'edit', { input: `[${sample}#${rereadTag}]\nPUT 5.=5:\n+line FIVE\n` })
+    expect(result.isError).toBe(false)
+    expect(await readFile(sample, 'utf8')).toBe(changed.replace('line 5\n', 'line FIVE\n'))
+  })
+})
 describe('tool-edit (hashline mode) × LSP writethrough', () => {
   it('persists the formatter output and reports the persisted bytes as the snapshot text', async () => {
     const { ctx, root, owner } = await setup(
