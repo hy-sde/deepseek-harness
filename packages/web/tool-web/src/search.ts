@@ -11,6 +11,7 @@ import type { GenericCallView, ToolResult, WebSearchResultView, WebSource } from
 import { truncateWithoutSplittingSurrogatePair } from '@deepseek-ai/dsh-output-retention'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { WebSearchRecency, WebSearchResult, WebSearchSource } from '@deepseek-ai/dsh-web'
+import { enforceQueryScope } from './query-constraints.ts'
 import { EXTERNAL_WEB_CONTENT_NOTICE } from './trust.ts'
 
 /**
@@ -272,8 +273,9 @@ export function presentSearchResult(args: WebSearchArgs, result: ToolResult): We
 }
 
 /**
- * Run one or more searches through the web seam. A single query keeps the
- * provider's exact result; multiple queries run concurrently and are merged
+ * Run one or more searches through the web seam. Each query's scope
+ * directives (`site:`, `inurl:`, and exclusions) are enforced on its own
+ * result before any merge. Multiple queries run concurrently and are merged
  * into one normalized result capped at `maxResults`. A failed search aborts
  * its siblings, and this function waits for every search to settle before
  * rethrowing the first failure.
@@ -297,8 +299,13 @@ async function runSearchQueries(
     ...recency !== undefined ? { recency } : {},
     ...route,
   })
+  // Scope directives (`site:`, `inurl:`, exclusions) are enforced per query
+  // before merging: one query's off-scope provider material must not leak
+  // into another query's merged result.
+  const searchOne = async (query: string, runSignal: AbortSignal): Promise<WebSearchResult> =>
+    enforceQueryScope(query, await ctx.web.search(seamRequest(query), runSignal))
   if (queries.length === 1) {
-    return ctx.web.search(seamRequest(queries[0] as string), signal)
+    return searchOne(queries[0] as string, signal)
   }
   const controller = new AbortController()
   const batchSignal = AbortSignal.any([signal, controller.signal])
@@ -306,7 +313,7 @@ async function runSearchQueries(
   const results: WebSearchResult[] = []
   const searches = queries.map(async (query, index) => {
     try {
-      results[index] = await ctx.web.search(seamRequest(query), batchSignal)
+      results[index] = await searchOne(query, batchSignal)
     } catch (error) {
       if (firstFailure === undefined) firstFailure = { error }
       controller.abort(error)
@@ -401,7 +408,7 @@ export function applyWebSearchTool(
         type: 'array',
         required: true,
         items: { type: 'string' },
-        description: `1–${maxQueries} queries; supports quoted phrases, negation, OR, site:, inurl:, intitle:, intext:, filetype:, after:/before:, and lang: where the provider supports them; results are merged.`,
+        description: `1–${maxQueries} queries; supports quoted phrases, negation, OR, site:, inurl:, intitle:, intext:, filetype:, after:/before:, and lang: where the provider supports them; site:, inurl:, and exclusion directives are enforced on returned sources even when that leaves no results; results are merged.`,
       },
       recency: {
         type: 'string',
