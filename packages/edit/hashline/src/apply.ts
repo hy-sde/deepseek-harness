@@ -3,10 +3,11 @@
  * post-edit lines plus any diagnostic warnings. Pure function: no FS, no
  * mutation of the input.
  *
- * Mis-set replacement range boundaries are repaired by bounded candidate
- * search. Exact line equality, indentation, tree-sitter structure, and a
- * narrow pure-closer shape gate constrain candidates; tree-sitter validates
- * the selected result.
+ * Mis-set replacement range boundaries are searched by bounded candidate
+ * search but never applied: when a candidate keeps the file parsing, the
+ * edit is rejected with the suggested fix instead. Exact line equality,
+ * indentation, tree-sitter structure, and a narrow pure-closer shape gate
+ * constrain candidates.
  * Ported from @oh-my-pi/hashline (https://github.com/can1357/oh-my-pi). MIT License. Copyright (c) 2025 Mario Zechner, Copyright (c) 2025-2026 Can Bölük.
  */
 
@@ -17,7 +18,8 @@ import {
   ambiguousBoundaryEchoMessage,
   ambiguousBoundaryPlacementMessage,
   blockInsertLandingShiftWarning,
-  boundaryVariantRepairWarning,
+  boundaryFixMessage,
+  type BoundaryFixDescription,
   editBrokeParseWarning,
   REPLACEMENT_INDENT_AUTO_SHIFT_WARNING,
   textualBoundaryEchoWarning,
@@ -481,6 +483,12 @@ interface GroupVariant {
   readonly kept: number
   /** Exact payload echoes removed from outside the selected range. */
   readonly dropped: number
+  /** Selected range row the variant keeps instead of replacing, if any. */
+  readonly keep?: number
+  /** Leading payload rows the variant drops (they repeat the line above). */
+  readonly dropLeading: number
+  /** Trailing payload rows the variant drops (they repeat the line below). */
+  readonly dropTrailing: number
 }
 
 interface GroupVariants {
@@ -724,9 +732,13 @@ function buildGroupVariants(
         if (keep.kept > 0 && group.deleteIndices.length > 1 && payload.length > group.deleteIndices.length) {
           continue
         }
+        const keepLine = keep.beforeLine ?? keep.afterLine
         variants.push({
           kept: keep.kept,
           dropped,
+          ...(keepLine === undefined ? {} : { keep: keepLine }),
+          dropLeading: leadingDrop,
+          dropTrailing: trailingDrop,
           edits: applyGroupVariant(
             inserts,
             deletes,
@@ -788,7 +800,9 @@ function compareBoundaryCombo(a: BoundaryCombo, b: BoundaryCombo): number {
  * then exact echo drops. Different texts tied at that full cost are not
  * guessed. Literal no-op echo groups ({@link TextualBoundaryNormalization.literal})
  * never enter the search: a repair would turn the deliberate copy back into
- * the no-op.
+ * the no-op. A unique best candidate is never applied: the caller rejects
+ * the authored edit and reports the candidate as the suggested fix
+ * (oh-my-pi 69df14cfa8).
  */
 function repairBoundaryVariants(
   edits: readonly AppliedEdit[],
@@ -796,7 +810,7 @@ function repairBoundaryVariants(
   fileLines: readonly string[],
   path: string | undefined,
   baselineParses: boolean,
-): { edits: AppliedEdit[]; warnings: string[] } | undefined {
+): { fixes: BoundaryFixDescription[] } | undefined {
   if (path === undefined) return undefined
 
   const groups: { group: ReplacementGroup; variants: GroupVariant[] }[] = []
@@ -882,12 +896,20 @@ function repairBoundaryVariants(
     return undefined
   }
 
-  const warnings: string[] = []
+  const fixes: BoundaryFixDescription[] = []
   groups.forEach((entry, index) => {
     const variant = bestCombo.variants[index]
-    if (variant) warnings.push(boundaryVariantRepairWarning(entry.group.startLine, variant.kept, variant.dropped))
+    if (variant) {
+      fixes.push({
+        start: entry.group.startLine,
+        end: entry.group.endLine,
+        ...(variant.keep === undefined ? {} : { keep: variant.keep }),
+        dropLeading: variant.dropLeading,
+        dropTrailing: variant.dropTrailing,
+      })
+    }
   })
-  return { edits: spliceBoundaryCombo(edits, groups, bestCombo), warnings }
+  return { fixes }
 }
 
 /** Replace each group's authored edits with its combo variant (or the authored
@@ -1283,11 +1305,12 @@ function materializeEdits(originalLines: readonly string[], edits: readonly Appl
  * Returns the post-edit text and the first changed line number (1-indexed).
  * Throws if an anchor is out of bounds.
  *
- * Mis-set replacement boundaries are repaired by {@link repairBoundaryVariants}
- * when `options.path` lets tree-sitter judge the result. A parsing authored
- * result is never second-guessed. For a broken result, only syntax-essential
- * edge retention with matching indentation and exact outside-row echo removal
- * are considered; every selected candidate must parse.
+ * Mis-set replacement boundaries are searched by {@link repairBoundaryVariants}
+ * when `options.path` lets tree-sitter judge the result, but a candidate is
+ * never applied: a unique best candidate rejects the edit with the suggested
+ * fix. A parsing authored result is never second-guessed. For a broken
+ * result, only syntax-essential edge retention with matching indentation and
+ * exact outside-row echo removal are considered; every candidate must parse.
  */
 export function applyEdits(text: string, edits: readonly Edit[], options: ApplyEditsOptions = {}): ApplyResult {
   if (edits.length === 0) return { text }
@@ -1351,12 +1374,11 @@ export function applyEdits(text: string, edits: readonly Edit[], options: ApplyE
     }
     return finish(authoredResult, leading)
   }
+  // A boundary candidate that would keep the file parsing is never applied:
+  // it rejects the authored edit with the suggested fix (69df14cfa8).
   const repaired = repairBoundaryVariants(normalized.edits, normalized.literal, fileLines, options.path, baselineParses)
   if (repaired) {
-    const repairedResult = materializeEdits(fileLines, repaired.edits)
-    if (parsesCleanly(options.path, repairedResult.text)) {
-      return finish(repairedResult, [...leading, ...repaired.warnings])
-    }
+    throw withErrorKind(new Error(boundaryFixMessage(repaired.fixes)), 'ambiguous_boundary')
   }
   if (ambiguity) {
     throw withErrorKind(
