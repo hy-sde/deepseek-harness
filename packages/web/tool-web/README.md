@@ -116,7 +116,7 @@ The package is built on one separation and one registration rule:
 
 ### Search flow
 
-`web_search` validates the arguments (non-empty array, count bound, non-blank strings, optional recency, and per-call limit), collapses exact duplicates to first occurrence, then runs one to `searchMaxQueries` distinct searches concurrently through `ctx.web`. A failure aborts the batch via a fused signal; the call waits for every started search to settle before returning the first failure. Successful results merge round-robin by rank, deduplicate by URL, preserve provider notices with query labels, cap at the effective per-call limit, and format into the model-facing text.
+`web_search` validates the arguments (non-empty array, count bound, non-blank strings, optional recency, and per-call limit), collapses exact duplicates to first occurrence, then runs one to `searchMaxQueries` distinct searches concurrently through `ctx.web`. Each search request carries, as `llmProvider`, the provider route of the calling Session's latest model request, which is the request that called the tool, so `ctx.web` selects the provider the step's readiness check asked. A failure aborts the batch via a fused signal; the call waits for every started search to settle before returning the first failure. Successful results merge round-robin by rank, deduplicate by URL, preserve provider notices with query labels, cap at the effective per-call limit, and format into the model-facing text.
 
 ### Readiness flow
 

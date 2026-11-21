@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-yaml",
   "description": "The repository's single YAML parser: js-yaml-compatible load/dump over eemeli yaml with the entry-list `!!js` expression dialect",
-  "version": "0.2.2-rc.3",
+  "version": "0.2.2-rc.5",
   "publishConfig": {
     "access": "public"
   },

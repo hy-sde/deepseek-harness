@@ -650,7 +650,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the re-observed page after the click.',
       },
       {
-        signature: 'async type( name: string, selector: string, /* jscpd:ignore-start -- the click and type methods of BrowserService keep independent copies of the ARIA-ref target resolution; each owns its interaction verb. */ text: string, opts: { kind: BrowserKind; cwd: string }, ): Promise<PageObservation>',
+        signature: 'async type( name: string, selector: string, /* jscpd:ignore-start -- click/type keep independent copies of the ARIA-ref target resolution. */ text: string, opts: { kind: BrowserKind; cwd: string }, ): Promise<PageObservation>',
         description: 'Type text into an ARIA-ref or CSS selector in the named tab.',
         parameters: [{ name: 'name', description: 'tab id.' }, { name: 'selector', description: 'ARIA ref selector or CSS selector.' }, { name: 'text', description: 'the text to fill.' }, { name: 'opts', description: 'backend kind, working directory.' }],
         returns: 'the re-observed page after the fill.',
@@ -4898,7 +4898,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'web',
     summary: 'The web access service.',
-    description: 'The web access service. Registered as `ctx.web` (one instance per context) and exposed to Clients as the `web` Remote namespace (`listProviders`).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
+    description: 'The web access service. Registered as `ctx.web` (one instance per context) and exposed to Clients as the `web` Remote namespace (`listProviders`).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No search id configured, and the provider assigned to the route of the model request the search serves is usable → that provider: `deepseek-official` (Messages search) on the `deepseek-official` and `deepseek-account` routes, `deepseek-search-api` on every other route and outside a model request.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
     methods: [
       {
         signature: 'registerSearchProvider(provider: WebSearchProvider): () => void',
@@ -4921,7 +4921,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       {
         signature: 'async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult>',
         description: 'Run one search through the selected provider. Resolves the provider at call time with the selection rules above; throws WebError when the capability cannot run. The seam enforces `request.maxResults` on the result: if the provider over-returns, `sources[]` is truncated and `truncated` set.',
-        parameters: [{ name: 'request', description: 'the query and optional result limit.' }, { name: 'signal', description: 'optional cancellation signal forwarded to the provider.' }],
+        parameters: [{ name: 'request', description: 'the query, the optional result limit, and the route of the model request the search serves.' }, { name: 'signal', description: 'optional cancellation signal forwarded to the provider.' }],
         returns: 'the provider\'s results, capped to `request.maxResults`.',
       },
       {
@@ -6519,16 +6519,8 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrandedNumber<B extends string> = number & {\n    readonly [BRAND]: B;\n};',
   },
   {
-    name: 'BrowserConfig',
-    declaration: 'export interface BrowserConfig {\n    browserPath?: string;\n    usePatch?: boolean;\n    patchOptions?: {\n        proxy?: string;\n        channel?: string;\n    };\n    headless?: boolean;\n    viewport?: {\n        width: number;\n        height: number;\n        deviceScaleFactor?: number;\n    };\n    relayUrl?: string;\n    relayToken?: string;\n    timeoutMs?: number;\n}',
-  },
-  {
     name: 'BrowserKind',
     declaration: 'export type BrowserKind = {\n    kind: \'launch\';\n    path?: string;\n} | {\n    kind: \'patch\';\n} | {\n    kind: \'attach\';\n    cdpUrl: string;\n} | {\n    kind: \'relay\';\n    cdpUrl: string;\n};',
-  },
-  {
-    name: 'BrowserService',
-    declaration: 'export class BrowserService extends Service {\n    constructor(ctx: Context, config: BrowserConfig = {});\n    relayEndpoint(): string;\n    resolveKind(input: {\n        path?: string;\n        cdpUrl?: string;\n        relay?: boolean;\n        patch?: boolean;\n    }): BrowserKind;\n    async ensureRelay(): Promise<string>;\n    async open(name: string, url: string, opts: {\n        kind: BrowserKind;\n        cwd: string;\n        waitUntil?: WaitUntil;\n        timeoutMs?: number;\n    }): Promise<PageObservation>;\n    async run(name: string, code: string, opts: {\n        kind: BrowserKind;\n        cwd: string;\n        timeoutMs?: number;\n    }): Promise<unknown>;\n    async fetchPageHtml(url: string, options?: {\n        homeUrl?: string;\n        ready?: {\n            selector: string;\n            timeoutMs: number;\n        };\n        timeoutMs?: number;\n        signal?: AbortSignal;\n        altcha?: {\n            resultsSelector: string;\n            waitMs: number;\n        };\n    }): Promise<{\n        html: string;\n        status: number;\n        url: string;\n    }>;\n    async click(name: string, selector: string, opts: {\n        kind: BrowserKind;\n        cwd: string;\n    }): Promise<PageObservation>;\n    async type(name: string, selector: string, text: string, opts: {\n        kind: BrowserKind;\n        cwd: string;\n    }): Promise<PageObservation>;\n    async close(name: string, opts: {\n        kind: BrowserKind;\n        cwd: string;\n        all?: boolean;\n        kill?: boolean;\n     /* …truncated — full shape in source */',
   },
   {
     name: 'BrowserUseProviderName',
@@ -11056,7 +11048,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WebSearchRequest',
-    declaration: 'export interface WebSearchRequest {\n    readonly query: string;\n    readonly recency?: WebSearchRecency;\n    readonly maxResults?: number;\n}',
+    declaration: 'export interface WebSearchRequest {\n    readonly query: string;\n    readonly recency?: WebSearchRecency;\n    readonly maxResults?: number;\n    readonly llmProvider?: string;\n}',
   },
   {
     name: 'WebSearchResult',

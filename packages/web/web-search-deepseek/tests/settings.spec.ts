@@ -71,8 +71,8 @@ describe('web-search-deepseek settings section', () => {
     expect(listed).not.toHaveProperty('title')
     expect(listed?.description).toMatchObject({
       // The fork de-accounts the provider: API key only.
-      en: 'Slower, and every search uses extra model tokens. Requires a DeepSeek API key.',
-      zh: '速度较慢，每次搜索都会额外消耗模型 token。需要 DeepSeek API Key。',
+      en: 'No per-search charge, but every search uses extra model tokens. Requires a DeepSeek API key.',
+      zh: '搜索不按次收费，每次搜索都会额外消耗模型 token。需要 DeepSeek API Key。',
     })
     await bench.ctx.fiber.dispose()
   })

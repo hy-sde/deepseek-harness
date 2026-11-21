@@ -10399,7 +10399,7 @@ importers:
         specifier: workspace:~
         version: link:../../../vendor/include
       '@deepseek-ai/dsh-yaml':
-        specifier: workspace:~
+        specifier: workspace:*
         version: link:../../util/yaml
 
   packages/experimental/plugin-recommendations:

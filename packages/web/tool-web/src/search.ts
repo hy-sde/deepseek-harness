@@ -279,19 +279,23 @@ export function presentSearchResult(args: WebSearchArgs, result: ToolResult): We
  * rethrowing the first failure.
  *
  * @param request - validated queries and controls.
+ * @param llmProvider - provider route of the model request that called the tool, when known.
  * @param signal - cancellation signal forwarded to every search.
  * @returns the combined search result.
  */
 async function runSearchQueries(
   ctx: Context,
   request: ParsedWebSearchArgs,
+  llmProvider: string | undefined,
   signal: AbortSignal,
 ): Promise<WebSearchResult> {
   const { queries, maxResults, recency } = request
+  const route = llmProvider === undefined ? {} : { llmProvider }
   const seamRequest = (query: string) => ({
     query,
     maxResults,
     ...recency !== undefined ? { recency } : {},
+    ...route,
   })
   if (queries.length === 1) {
     return ctx.web.search(seamRequest(queries[0] as string), signal)
@@ -445,7 +449,9 @@ export function applyWebSearchTool(
     isConcurrencySafe: () => true,
     async execute(args, exec) {
       const request = parseSearchArgs(args, maxQueries, maxResults)
-      const result = await runSearchQueries(ctx, request, exec.signal)
+      // The latest request context names the route that served the model request which called this tool.
+      const llmProvider = exec.agent?.session.requestContext()?.provider
+      const result = await runSearchQueries(ctx, request, llmProvider, exec.signal)
       return {
         ...result.content !== undefined ? { content: result.content } : {},
         ...result.notices !== undefined ? { notices: [...result.notices] } : {},
