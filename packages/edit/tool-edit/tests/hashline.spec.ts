@@ -664,6 +664,34 @@ describe('tool-edit (hashline mode) × default seen-line enforcement', () => {
     expect(await readFile(one, 'utf8')).toBe(oneSource)
     expect(await readFile(two, 'utf8')).toBe(twoSource)
   })
+
+  it('joins a later section’s missing-file rejection into the unseen-line reply', async () => {
+    const { ctx, root, owner } = await defaultStack()
+    const one = join(root, 'one.ts')
+    const absent = join(root, 'absent.ts')
+    const oneSource = `${numberedSource('let')}\n`
+    await writeFile(one, oneSource)
+
+    const store = getSessionSnapshotStore(owner.session)
+    const seen = Array.from({ length: 10 }, (_, i) => i + 1)
+    const oneTag = store.record(one, oneSource, seen)
+
+    const input = [
+      `[${one}#${oneTag}]`,
+      'PUT 20.=20:',
+      '+let v0020 = 200;',
+      `[${absent}#BAD0]`,
+      'PUT 2.=2:',
+      '+var v0002 = 200;',
+      '',
+    ].join('\n')
+    const result = await call(ctx, owner, { input })
+    expect(result.isError).toBe(true)
+    const text = modelText(result)
+    expect(text).toContain('  20:let v0020 = 20;')
+    expect(text).toContain('[absent.ts]: File not found')
+    expect(await readFile(one, 'utf8')).toBe(oneSource)
+  })
 })
 
 describe('tool-edit (hashline mode) × column-cut wide lines (upstream #15649)', () => {

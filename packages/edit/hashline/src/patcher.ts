@@ -626,7 +626,7 @@ export class Patcher {
     await this.fs.preflightWrite(target.path, { ...(fileOp === undefined ? {} : { fileOp }) })
 
     if (!read.exists) {
-      throw new Error(`File not found: ${target.path}. Use the write tool to create new files.`)
+      throw withErrorKind(new Error(`File not found: ${target.path}. Use the write tool to create new files.`), 'file_not_found')
     }
 
     // A section with no current tag (untagged header or a placeholder like
