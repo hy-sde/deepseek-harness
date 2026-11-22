@@ -366,7 +366,10 @@ export function parseQueryConstraints(raw: string): QueryConstraints {
       // `site: example.com` — lenient: adopt the next non-reserved token as the value.
       if (value.length === 0) {
         const next = tokens[idx + 1]
-        if (next !== undefined && (next.quoted || !isReservedToken(next.text))) {
+        // A sign-prefixed token is an exclusion/inclusion term, not the value
+        // (`site: -example.com` reads as "site: then exclude example.com");
+        // adopting it verbatim would make strict scope drop every source.
+        if (next !== undefined && (next.quoted || (!isReservedToken(next.text) && !/^[-+]/.test(next.text)))) {
           value = next.text.trim()
           idx += 1
         }

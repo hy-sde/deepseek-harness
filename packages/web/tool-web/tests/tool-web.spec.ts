@@ -1020,6 +1020,16 @@ describe('query constraint enforcement', () => {
     expect(q.sites).toEqual(['example.com'])
   })
 
+  it('does not adopt a sign-prefixed token as an empty directive value', () => {
+    // `site: -example.com` reads as "site: then exclude example.com"; adopting
+    // the '-' token verbatim would make strict scope drop every source.
+    const q = parseQueryConstraints('docs site: -example.com')
+    expect(q.sites).toEqual([])
+    expect(q.hasConstraints).toBe(false)
+    const quoted = parseQueryConstraints('site: -"exact phrase"')
+    expect(quoted.sites).toEqual([])
+  })
+
   it('matches site hosts, subdomains, and paths', () => {
     expect(matchesSite('https://docs.test/a', 'docs.test')).toBe(true)
     expect(matchesSite('https://sub.docs.test/a', 'docs.test')).toBe(true)
